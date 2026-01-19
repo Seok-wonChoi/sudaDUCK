@@ -35,3 +35,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# ===============================
+# Secrets (API Key, DB Password)
+# ===============================
+src/main/resources/application-secret.yml
+.env
