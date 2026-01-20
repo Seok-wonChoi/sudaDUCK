@@ -1,7 +1,9 @@
-package temp;
+package com.example.DuckDuck.domain.game.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import temp.GameSession;
+import temp.User;
 
 import java.time.LocalDateTime;
 

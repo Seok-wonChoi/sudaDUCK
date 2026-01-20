@@ -1,5 +1,4 @@
-package temp;
-
+package com.example.DuckDuck.domain.room.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
