@@ -10,7 +10,7 @@ import BottomRecordDone from '@/components/Recording/bottom/BottomRecordDone';
 import BottomAllDone from '@/components/Recording/bottom/BottomAllDone';
 
 // 개발용 패널 켜기/끄기
-const DEBUG_PANEL = false;
+const DEBUG_PANEL = true;
 
 // 서비스 설정
 const TURNS = 3;
