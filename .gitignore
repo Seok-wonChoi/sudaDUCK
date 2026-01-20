@@ -1,0 +1,61 @@
+### JetBrains (IntelliJ IDEA) ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+gen/
+
+### Eclipse ###
+.metadata/
+bin/
+tmp/
+.tmp/
+.classpath
+.project
+.settings/
+.factorypath
+
+### Visual Studio Code ###
+.vscode/
+
+### Build Tools (Maven / Gradle) ###
+target/
+build/
+.gradle/
+.mtl.xml
+.incremental/
+bin/
+obj/
+
+### Compiled class files ###
+*.class
+
+### Log files ###
+*.log
+
+### OS generated files ###
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+### Spring Boot ###
+*.jar
+*.war
+*.zip
+*.tar.gz
+*.rar
+
+### Environment Variables (중요: 보안 설정 파일) ###
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 아래 파일은 DB 정보나 API 키가 들어있을 수 있으므로 주의해서 관리하세요.
+# 만약 application.yml에 중요한 정보가 있다면 제외하는 것이 좋으나, 
+# 보통은 샘플용을 만들고 실제 파일은 제외합니다.
+# application.yml
+application.properties
