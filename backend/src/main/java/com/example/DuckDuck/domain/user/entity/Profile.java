@@ -1,28 +1,32 @@
 package com.example.DuckDuck.domain.user.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Profile")
+@Table(name = "profile")
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Profile {
+
     @Id
     private Long userId;
 
     @OneToOne
-    @MapsId // User의 PK를 Profile의 PK로 사용
+    @MapsId
     @JoinColumn(name = "user_id")
-    private User user;
+    private Member user;
 
-    private Integer coins = 0;
-    private Integer attendanceDays = 0;
+    private Integer coins;
+
+    private Integer attendanceDays;
 
     @Column(columnDefinition = "json")
     private String duckCustomJson;
@@ -31,7 +35,12 @@ public class Profile {
     private String avatarCustomJson;
 
     private LocalDateTime lastLoginAt;
-    private Integer totalTime = 0;
+
+    private Integer totalTime;
+
+    @CreatedDate
     private LocalDateTime createdAt;
+
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 }

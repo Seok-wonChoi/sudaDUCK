@@ -1,6 +1,6 @@
 package com.example.DuckDuck.domain.game.entity;
 
-import com.example.DuckDuck.domain.user.entity.User;
+import com.example.DuckDuck.domain.user.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -8,6 +8,7 @@ import org.springframework.data.annotation.CreatedDate;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "sentence")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,7 +22,7 @@ public class Sentence {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Member user;
 
     @Column(nullable = false, length = 20)
     private String speakerName;
