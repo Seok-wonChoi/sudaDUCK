@@ -1,8 +1,9 @@
 package com.example.DuckDuck.global.security.oauth;
 
+import com.example.DuckDuck.domain.user.entity.Member;
 import com.example.DuckDuck.domain.user.entity.Profile;
-import com.example.DuckDuck.domain.user.entity.User;
-import com.example.DuckDuck.domain.user.repository.UserRepository;
+import com.example.DuckDuck.domain.user.repository.MemberRepository;
+import com.example.DuckDuck.domain.user.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -13,12 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
-    private final UserRepository userRepository;
+    private final MemberRepository memberRepository;
+    private final ProfileRepository profileRepository;
 
     @Override
     @Transactional
@@ -33,6 +36,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Map<String, Object> profileMap = (Map<String, Object>) kakaoAccount.get("profile");
 
         String email = (String) kakaoAccount.get("email");
+
+        if ( email == null){
+            throw new RuntimeException("카카오 이메일 정보를 불러올 수 없습니다.");
+        }
+
         String nickname = (String) profileMap.get("nickname");
         String profileImageUrl = (String) profileMap.get("profile_image_url");
 
@@ -43,30 +51,37 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private void saveOrUpdateUser(Long kakaoId, String email, String nickname, String imageUrl) {
-        userRepository.findById(kakaoId)
-                .map(user -> {
-                    // 이미 존재하는 유저라면 정보 업데이트
-                    user.setNickname(nickname);
-                    user.setProfileImageUrl(imageUrl);
-                    return user;
-                })
-                .orElseGet(() -> {
-                    // 신규 유저라면 User와 Profile을 함께 생성
-                    User newUser = User.builder()
-                            .id(kakaoId)
-                            .email(email)
-                            .nickname(nickname)
-                            .profileImageUrl(imageUrl)
-                            .isActive(true)
-                            .build();
+        //기존 회원 확인
+        Optional<Member> memberOptional = memberRepository.findByEmail(email);
 
-                    Profile newProfile = new Profile();
-                    newProfile.setUser(newUser);
-                    newProfile.setCreatedAt(LocalDateTime.now());
-                    newProfile.setUpdatedAt(LocalDateTime.now());
+        if (memberOptional.isPresent()){
+            //기존 회원이면 정보 업데이트
+            Member member = memberOptional.get();
+            member.setNickname(nickname);
+            member.setProfileImageUrl(imageUrl);
+            member.setUpdatedAt(LocalDateTime.now());
 
-                    newUser.setProfile(newProfile);
-                    return userRepository.save(newUser);
-                });
+            if(member.getProfile() != null){
+                member.getProfile().setLastLoginAt(LocalDateTime.now());
+            }
+        } else {
+            Member newMember = Member.builder()
+                    .id(kakaoId)
+                    .email(email)
+                    .nickname(nickname)
+                    .profileImageUrl(imageUrl)
+                    .isActive(true)
+                    .build();
+
+            Profile newProfile = Profile.builder()
+                    .user(newMember)
+                    .coins(0)
+                    .attendanceDays(0)
+                    .lastLoginAt(LocalDateTime.now())
+                    .build();
+
+            newMember.setProfile(newProfile);
+            memberRepository.save(newMember);
+        }
     }
 }
