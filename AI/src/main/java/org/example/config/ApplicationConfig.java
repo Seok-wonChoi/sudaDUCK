@@ -13,7 +13,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.util.concurrent.Executor;
 
 /**
- * 통합 설정 파일
  * - RestTemplate, ObjectMapper Bean 등록
  * - 비동기 처리를 위한 ThreadPool 설정
  * - 정적 리소스 핸들러 설정 (TTS 파일)

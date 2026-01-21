@@ -2,19 +2,20 @@ package org.example.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.dto.ChatRequest;
 import org.example.dto.ChatResponse;
 import org.example.service.ChatService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import org.springframework.http.HttpStatus;
-import org.example.exception.GptServiceException;
-import org.example.exception.AzureSpeechException;
 
+/**
+ * 채팅 API 엔드포인트
+ * - HTTP 요청/응답만 처리
+ * - 비즈니스 로직은 Service에 위임
+ */
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
@@ -22,63 +23,40 @@ import org.example.exception.AzureSpeechException;
 public class ChatController {
 
     private final ChatService chatService;
+    private final ChatExceptionHandler exceptionHandler;
+
+    private int timeoutSeconds = 10;
 
     /**
-     * 비동기 방식 : CompletableFuture 반환
-     * POST /api/chat/translate-async
-     * - 동시 요청이 들어와도 각각 별도 쓰레드에서 처리
-     * - 순서는 응답의 sequence 필드로 클라이언트가 정렬
+     * POST /api/chat/translate?roomId=xxx
+     * Body: {"text": "안녕하세요", "sequence": 1}
      */
     @PostMapping("/translate")
-    public CompletableFuture<ResponseEntity<ChatResponse>> translateAsync(
+    public CompletableFuture<ResponseEntity<ChatResponse>> translate(
             @RequestParam String roomId,
-            @RequestBody ChatRequest request) {
+            @RequestParam String text,
+            @RequestParam Long sequence) {
 
-        log.info("비동기 요청 시작 - roomId: {}, seq: {}", roomId, request.getSequence());
+        // 파라미터 무결성 검증 (roomId 는 실제 있는 방인지 확인하는거 필요하지 않을까?)
+        if (roomId == null || roomId.trim().isEmpty()) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.badRequest()
+                            .body(ChatResponse.error(sequence, "INVALID_ROOM_ID", "방이 존재하지 않습니다."))
+            );
+        }
 
-        return chatService.translateAndGenerateAudioAsync(
-                        roomId,
-                        request.getText(),
-                        request.getSequence()
-                )
-                .orTimeout(5, TimeUnit.SECONDS) // 5초 타임아웃 설정
+        if (text == null || text.trim().isEmpty()) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.badRequest()
+                            .body(ChatResponse.error(sequence, "INVALID_TEXT", "빈 텍스트 입니다."))
+            );
+        }
+
+        log.info("요청 수신 - roomId: {}, seq: {}", roomId, sequence);
+
+        return chatService.translateAndGenerateAudio(roomId, text, sequence)
+                .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
                 .thenApply(ResponseEntity::ok)
-                .exceptionally(ex -> {
-                    Throwable cause = (ex instanceof java.util.concurrent.CompletionException)
-                            ? ex.getCause() : ex;
-
-                    // 타임아웃
-                    if (cause instanceof TimeoutException) {
-                        log.error("타임아웃 발생 (5s) - seq: {}", request.getSequence());
-                        return ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT)
-                                .body(ChatResponse.error(request.getSequence(), "TIMEOUT",
-                                        "처리 시간 초과"));
-                    }
-
-                    // GPT 관련 에러
-                    if (cause instanceof GptServiceException) {
-                        GptServiceException gptEx = (GptServiceException) cause;
-                        log.error("GPT 오류 - seq: {}, code: {}",
-                                request.getSequence(), gptEx.getErrorCode());
-                        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                                .body(ChatResponse.error(request.getSequence(),
-                                        gptEx.getErrorCode(), gptEx.getMessage()));
-                    }
-
-                    // Azure 관련 에러
-                    if (cause instanceof AzureSpeechException) {
-                        log.error("Azure Speech 오류 - seq: {}", request.getSequence());
-                        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                                .body(ChatResponse.error(request.getSequence(),
-                                        "AZURE_ERROR", cause.getMessage()));
-                    }
-
-                    // 기타 에러
-                    log.error("비동기 처리 중 예기치 않은 오류 - seq: {}, error: {}",
-                            request.getSequence(), cause.getMessage(), cause);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body(ChatResponse.error(request.getSequence(),
-                                    "SERVER_ERROR", "서버 내부 오류가 발생했습니다."));
-                });
+                .exceptionally(ex -> exceptionHandler.handle(ex, sequence));
     }
 }

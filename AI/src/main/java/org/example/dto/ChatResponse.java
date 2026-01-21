@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChatResponse {
     private Long sequence;            // 요청 순서 번호 (응답에 포함)
-    private String requestId;         // 요청 ID
     
     @JsonProperty("script")
     private GptScriptResponse script; // GPT 응답

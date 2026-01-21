@@ -4,11 +4,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.ChatResponse;
 import org.example.dto.GptScriptResponse;
+import org.example.exception.AzureSpeechException;
+import org.example.exception.GptServiceException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * 채팅 관련 비즈니스 로직
+ * - 모든 비동기 처리는 여기서
+ * - 예외는 그대로 던짐 (Controller에서 처리)
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -18,44 +25,31 @@ public class ChatService {
     private final AzureSpeechService azureSpeechService;
 
     /**
-     * 비동기 방식: 동시 호출 시 병렬 처리
-     * - @Async 어노테이션으로 별도 쓰레드에서 실행
-     * - CompletableFuture 반환으로 논블로킹 처리
+     * 한국어 → 영어 번역 + TTS 생성 (비동기)
+     * 
+     * @throws GptServiceException GPT 오류 시
+     * @throws AzureSpeechException Azure 오류 시
      */
     @Async("chatTaskExecutor")
-    public CompletableFuture<ChatResponse> translateAndGenerateAudioAsync(
+    public CompletableFuture<ChatResponse> translateAndGenerateAudio(
             String roomId, 
             String text, 
             Long sequence) {
         
-        log.info("[ASYNC-{}] 쓰레드 시작: {} - roomId: {}, text: {}", 
-                sequence, Thread.currentThread().getName(), roomId, text);
+        log.info("[ASYNC-{}] 처리 시작 - Thread: {}", sequence, Thread.currentThread().getName());
         
-        try {
-            // 1. GPT 번역
-            GptScriptResponse script = gptService.generateScript(text);
-            log.info("[ASYNC-{}] GPT 번역 완료", sequence);
-            
-            // 2. TTS 생성
-            String ttsUrl = azureSpeechService.generateTTS(script.getEn(), roomId);
-            log.info("[ASYNC-{}] TTS 생성 완료 - URL: {}", sequence, ttsUrl);
-            
-            // 3. 성공 응답
-            ChatResponse response = ChatResponse.success(sequence, script, ttsUrl);
-            
-            log.info("[ASYNC-{}] 처리 완료 - 쓰레드: {}", 
-                    sequence, Thread.currentThread().getName());
-            
-            return CompletableFuture.completedFuture(response);
-            
-        } catch (Exception e) {
-            log.error("[ASYNC-{}] 처리 실패: {}", sequence, e.getMessage(), e);
-            ChatResponse errorResponse = ChatResponse.error(
-                    sequence, 
-                    "CHAT_PROCESSING_ERROR", 
-                    e.getMessage()
-            );
-            return CompletableFuture.completedFuture(errorResponse);
-        }
+        // 1. GPT 번역 (예외 발생 시 자동으로 CompletableFuture.failedFuture()로 변환)
+        GptScriptResponse script = gptService.generateScript(text);
+        log.info("[ASYNC-{}] GPT 완료", sequence);
+        
+        // 2. TTS 생성
+        String ttsUrl = azureSpeechService.generateTTS(script.getEn(), roomId);
+        log.info("[ASYNC-{}] TTS 완료: {}", sequence, ttsUrl);
+        
+        // 3. 성공 응답
+        ChatResponse response = ChatResponse.success(sequence, script, ttsUrl);
+        log.info("[ASYNC-{}] 처리 완료", sequence);
+        
+        return CompletableFuture.completedFuture(response);
     }
 }
