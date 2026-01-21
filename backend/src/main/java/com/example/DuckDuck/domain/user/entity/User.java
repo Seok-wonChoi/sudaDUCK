@@ -2,10 +2,11 @@ package com.example.DuckDuck.domain.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "`User`")
+@Table(name = "`User`") // MySQL reserved word -> quoted
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,36 +16,40 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "user_id")
+    private Long id;
 
-    @Column(name = "email", nullable = false, length = 255)
+    @Column(name = "이메일", nullable = false, length = 100)
     private String email;
 
-    @Column(name = "nickname", nullable = false, length = 50)
+    @Column(name = "닉네임", nullable = false, length = 20)
     private String nickname;
 
-    @Lob
-    @Column(name = "profile_img")
-    private String profileImg;
+    @Column(name = "프로필 이미지 url", columnDefinition = "TEXT")
+    private String profileImageUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "user_status", nullable = false)
-    private UserStatus userStatus = UserStatus.ACTIVE;
+    @Column(name = "탈퇴 유무", nullable = false)
+    private Boolean isActive;
 
-    @Column(name = "created_at")
+    @Column(name = "최초 가입 일자")
     private LocalDateTime createdAt;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Column(name = "업데이트 날짜")
+    private LocalDateTime updatedAt;
+
+    // 1:1 Profile (Profile.user_id가 PK)
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = true)
     private Profile profile;
 
     @PrePersist
-    protected void onCreate() {
+    public void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
-        if (userStatus == null) userStatus = UserStatus.ACTIVE;
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+        if (isActive == null) isActive = true;
     }
 
-    public enum UserStatus {
-        ACTIVE, LEAVE
+    @PreUpdate
+    public void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

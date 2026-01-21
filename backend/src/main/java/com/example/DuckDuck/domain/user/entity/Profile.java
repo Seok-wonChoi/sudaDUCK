@@ -15,34 +15,49 @@ import java.time.LocalDateTime;
 public class Profile {
 
     @Id
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id")
     private Long userId;
 
     @MapsId
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "user_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_User_Profile")
-    )
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(name = "coins")
-    private Integer coins = 0;
+    @Column(name = "꾸미기 코인")
+    private Integer coins;
 
-    @Column(name = "attendance_days")
-    private Integer attendanceDays = 0;
+    @Column(name = "연속 출석 일자")
+    private Integer attendanceDays;
 
-    // JSON 컬럼: 가장 안전하게 String으로 매핑
-    @Column(name = "duck_custom_json", columnDefinition = "json")
+    @Column(name = "duck_custom_json", columnDefinition = "JSON")
     private String duckCustomJson;
 
-    @Column(name = "avatar_custom_json", columnDefinition = "json")
+    @Column(name = "avatar_custom_json", columnDefinition = "JSON")
     private String avatarCustomJson;
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
-    @Column(name = "total_time")
-    private Integer totalTime = 0; // 누적 학습 시간(초)
+    @Column(name = "총 플레이타임")
+    private Integer totalPlayTime; // 분/초 단위는 서비스 기준으로 통일 추천
+
+    @Column(name = "프로필 생성 날짜")
+    private LocalDateTime createdAt;
+
+    @Column(name = "프로필 수정 날짜")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void onCreate() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+        if (coins == null) coins = 0;
+        if (attendanceDays == null) attendanceDays = 0;
+        if (totalPlayTime == null) totalPlayTime = 0;
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
