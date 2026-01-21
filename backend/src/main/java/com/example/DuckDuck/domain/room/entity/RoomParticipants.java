@@ -7,7 +7,6 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "RoomParticipants")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,8 +16,7 @@ public class RoomParticipants {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "참여자 ID")
-    private Long id;
+    private Long participantId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
@@ -28,33 +26,17 @@ public class RoomParticipants {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "방장 여부", nullable = false)
-    private Boolean isHost;
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isHost = false;
 
-    @Column(name = "현재 방에 존재 여부", nullable = false)
-    private Boolean isPresent;
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isLeft = false;
 
-    @Column(name = "방 처음 들어온 날짜", nullable = false)
-    private LocalDateTime joinedAt;
+    @Column(nullable = false)
+    private LocalDateTime firstJoinedAt;
 
-    @Column(name = "방 다시 들어온 날짜", nullable = false)
-    private LocalDateTime rejoinedAt;
-
-    // DDL엔 없지만 네가 올려준 최신 설계에는 updated_at 있음
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void onCreate() {
-        if (joinedAt == null) joinedAt = LocalDateTime.now();
-        if (rejoinedAt == null) rejoinedAt = joinedAt;
-        if (updatedAt == null) updatedAt = LocalDateTime.now();
-        if (isHost == null) isHost = false;
-        if (isPresent == null) isPresent = false;
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @Column(nullable = false)
+    private LocalDateTime lastRejoinedAt;
 }
