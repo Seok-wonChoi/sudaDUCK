@@ -1,7 +1,15 @@
 /* 히어로 영역 래퍼 */
 .Wrap {
   text-align: center;
-  padding: 22px 0 10px;
+  padding: 14px 0 10px;
+}
+
+/* 상단 라벨 */
+.PageLabel {
+  font-size: 12px;
+  font-weight: 800;
+  color: #9ca3af;
+  margin-bottom: 6px;
 }
 
 /* 메인 타이틀 */

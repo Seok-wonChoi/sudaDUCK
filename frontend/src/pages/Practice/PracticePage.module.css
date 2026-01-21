@@ -1,13 +1,11 @@
-/* src/pages/Practice/PracticePage.module.css */
-
-/* 페이지 전체 배경 */
+/* 페이지 바깥 배경 */
 .Page {
   min-height: 100vh;
   background: #f6f8ff;
   padding: 28px 0;
 }
 
-/* 중앙 카드형 컨테이너 */
+/* 중앙 카드형 레이아웃 */
 .Shell {
   max-width: 1120px;
   margin: 0 auto;
@@ -22,10 +20,22 @@
   padding: 34px 34px 26px;
 }
 
+/* 뒤로가기 버튼 */
+.BackButton {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  background: rgba(99, 102, 241, 0.08);
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 /* 하단 연보라 영역 */
 .Bottom {
   padding: 28px 34px 38px;
-
   background: radial-gradient(
       1200px 380px at 50% 0%,
       rgba(99, 102, 241, 0.12),
@@ -35,12 +45,12 @@
 }
 
 @media (max-width: 768px) {
-  /* 모바일 상단 패딩 */
+  /* 모바일 상단 여백 */
   .Top {
     padding: 22px 16px 18px;
   }
 
-  /* 모바일 하단 패딩 */
+  /* 모바일 하단 여백 */
   .Bottom {
     padding: 18px 16px 24px;
   }

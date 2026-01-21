@@ -1,22 +1,27 @@
-import { useCallback } from "react";
+import styles from "./PracticePage.module.css";
+import { useNavigate } from "react-router-dom";
 
 import AppHeader from "../../components/Layout/AppHeader/AppHeader";
 import TipBanner from "../../components/Main/TipBanner/TipBanner";
 import StatsSection from "../../components/Main/StatsSection/StatsSection";
 
-import PracticeHero from "../../components/practice/PracticeHero/PracticeHero";
-import PracticeModeSelectSection from "../../components/practice/PracticeModeSelectSection/PracticeModeSelectSection";
-
-import styles from "./PracticePage.module.css";
+import PracticeHero from "../../components/Practice/PracticeHero/PracticeHero";
+import PracticeModeSelectSection from "../../components/Practice/PracticeModeSelectSection/PracticeModeSelectSection";
 
 export default function PracticePage() {
-  const handleSoloPractice = useCallback(() => {
-    console.log("혼자 연습하기 클릭");
-  }, []);
+  const navigate = useNavigate();
 
-  const handleAiPractice = useCallback(() => {
-    console.log("AI와 대화하기 클릭");
-  }, []);
+  const handleBack = () => {
+    navigate("/");
+  };
+
+  const handleSolo = () => {
+    navigate("/practice/solo");
+  };
+
+  const handleAi = () => {
+    navigate("/practice/ai");
+  };
 
   return (
     <div className={styles.Page}>
@@ -24,11 +29,17 @@ export default function PracticePage() {
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Top}>
+          <button
+            className={styles.BackButton}
+            type="button"
+            onClick={handleBack}
+            aria-label="뒤로 가기"
+          >
+            &lt; 뒤로가기
+          </button>
+
           <PracticeHero />
-          <PracticeModeSelectSection
-            onClickSolo={handleSoloPractice}
-            onClickAi={handleAiPractice}
-          />
+          <PracticeModeSelectSection onClickSolo={handleSolo} onClickAi={handleAi} />
         </div>
 
         <div className={styles.Bottom}>
