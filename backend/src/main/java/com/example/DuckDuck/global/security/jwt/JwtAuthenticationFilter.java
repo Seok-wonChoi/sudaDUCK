@@ -23,7 +23,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         //헤더에서 토큰 추출
-        String token = CookieUtil.getCookie(request, "accessToken")
+        String token = CookieUtil.getCookie(request, "access_token")
                 .map(Cookie::getValue)
                 .orElse(null);
 

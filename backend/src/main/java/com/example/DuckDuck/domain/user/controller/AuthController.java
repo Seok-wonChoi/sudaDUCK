@@ -1,23 +1,31 @@
 package com.example.DuckDuck.domain.user.controller;
 
 import com.example.DuckDuck.domain.user.dto.request.TestLoginRequest;
+import com.example.DuckDuck.domain.user.entity.Member;
+import com.example.DuckDuck.domain.user.repository.MemberRepository;
 import com.example.DuckDuck.global.security.jwt.CookieUtil;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "Auth", description = "인증 관련 API (카카오/테스트 로그인)")
 @RestController
 @RequestMapping("api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final MemberRepository memberRepository;
 
+    @Operation(summary = "내 정보 조회", description = "쿠키의 토큰을 확인하여 내 정보를 반환합니다.")
     @GetMapping("/me")
     public ResponseEntity<?> getMyInfo(Authentication authentication){
         if (authentication == null){
@@ -26,20 +34,35 @@ public class AuthController {
         return ResponseEntity.ok("현재 로그인 유저: " + authentication.getPrincipal());
     }
 
+    @Operation(summary = "테스트 로그인", description = "특정 유저로 강제 로그인하여 쿠키를 발급받습니다.")
     @PostMapping("/test-login")
     public ResponseEntity<String> testLogin(@RequestBody TestLoginRequest request,
                                             HttpServletResponse response){
+
+        Member member = memberRepository.findById(request.getUserId())
+                .orElseThrow(()-> new RuntimeException("DB에 없는 유저입니다."));
+
+        // 2. 조회된 유저의 이메일과 입력받은 이메일이 일치하는지 검증
+        if (!member.getEmail().equals(request.getEmail())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("인증 실패: 유저 ID와 이메일 정보가 일치하지 않습니다.");
+        }
+
         // 특정 유저 id로 우리 서버 전용 jwt 생성
         String accessToken = jwtTokenProvider.createAccessToken(request.getUserId(), request.getEmail());
         String refreshToken = jwtTokenProvider.createRefreshToken(request.getUserId(), request.getEmail());
 
         //HttpOnly 쿠키 생성
         CookieUtil.addCookie(response, "access_token", accessToken, 3600);
-        return ResponseEntity.ok("테스트 로그인 성공! (유저 ID: " + request.getUserId() + ", 이메일: " + request.getEmail() + ") " +
+        CookieUtil.addCookie(response, "refresh_token", refreshToken, 1209600);
+
+        return ResponseEntity.ok("DB 유저 기반 테스트 로그인 성공! (유저 ID: " + request.getUserId() + ", 이메일: " + request.getEmail() + ") " +
                 "이제 Postman에서 다른 API를 호출하면 자동으로 인증됩니다.");
     }
 
-//    @Operation(summary = "로그아웃", description = "액세스 및 리프레시 토큰 쿠키를 삭제합니다.")
+
+
+    @Operation(summary = "로그아웃", description = "액세스 및 리프레시 토큰 쿠키를 삭제합니다.")
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpServletResponse response){
         //수명이 0인 쿠키를 생성하여 기존 쿠키를 덮어씌움
@@ -49,7 +72,7 @@ public class AuthController {
         return ResponseEntity.ok("로그아웃 성공! 쿠키가 삭제되었습니다.");
     }
 
-//    @Operation(summary = "토큰 재발급", description = "리프레시 토큰을 확인하여 새 액세스 토큰을 발급합니다.")
+    @Operation(summary = "토큰 재발급", description = "리프레시 토큰을 확인하여 새 액세스 토큰을 발급합니다.")
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
         // 1. 쿠키에서 리프레시 토큰 추출
