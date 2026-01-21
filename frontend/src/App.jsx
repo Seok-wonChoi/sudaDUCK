@@ -7,8 +7,13 @@ import MakeRoomPage from "./pages/Together/MakeRoomPage";
 import RoomCreatedPage from "./pages/Together/RoomCreatedPage";
 import MyPage from "./pages/MyPage/MyPage";
 
+import RecordingPage from '@/pages/Recording';
+import './App.css';
+
 export default function App() {
   return (
+    <div className="app-container">
+      <RecordingPage />
     <Routes>
       <Route path="/" element={<MainPage />} />
       <Route path="/together" element={<TogetherPage />} />
@@ -17,5 +22,10 @@ export default function App() {
       <Route path="/together/created" element={<RoomCreatedPage />} />
       <Route path="/mypage" element={<MyPage />} />
     </Routes>
+    </div>
   );
 }
+
+// export default function App() {
+//   return (
+    
