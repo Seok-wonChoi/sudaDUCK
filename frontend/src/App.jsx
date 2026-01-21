@@ -11,6 +11,9 @@ import PracticePage from "./pages/Practice/PracticePage";
 import SoloPracticePage from "./pages/Practice/SoloPracticePage";
 import AiPracticePage from "./pages/Practice/AiPracticePage";
 
+// 대기방 페이지 (아래 2번 파일)
+import WaitingRoomPage from "./pages/Together/WaitingRoomPage";
+
 export default function App() {
   return (
     <Routes>
@@ -24,6 +27,9 @@ export default function App() {
       <Route path="/together/make" element={<MakeRoomPage />} />
       <Route path="/together/created" element={<RoomCreatedPage />} />
       <Route path="/together/join" element={<JoinRoomPage />} />
+
+
+      <Route path="/together/waiting" element={<WaitingRoomPage />} />
 
       <Route path="/mypage" element={<MyPage />} />
     </Routes>
