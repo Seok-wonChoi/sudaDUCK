@@ -2,23 +2,20 @@ package com.example.DuckDuck.domain.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "User")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "`User` ")
 public class User {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+    @Column(name = "user_id")
+    private Long id; // 카카오에서 주는 long 타입 ID를 그대로 사용
 
     @Column(nullable = false, length = 100)
     private String email;
@@ -26,16 +23,21 @@ public class User {
     @Column(nullable = false, length = 20)
     private String nickname;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "profile_image_url", columnDefinition = "TEXT")
     private String profileImageUrl;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean isActive = false;
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
-    @CreatedDate
     private LocalDateTime createdAt;
-
-    @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Profile profile;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 }
