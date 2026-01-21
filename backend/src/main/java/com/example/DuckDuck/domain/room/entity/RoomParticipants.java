@@ -1,12 +1,13 @@
 package com.example.DuckDuck.domain.room.entity;
 
-import com.example.DuckDuck.domain.user.entity.User;
+import com.example.DuckDuck.domain.user.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "room_participants")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,7 +25,7 @@ public class RoomParticipants {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Member user;
 
     @Column(nullable = false)
     @Builder.Default

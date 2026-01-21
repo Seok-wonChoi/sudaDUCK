@@ -8,6 +8,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "profile")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,7 +22,7 @@ public class Profile {
     @OneToOne
     @MapsId
     @JoinColumn(name = "user_id")
-    private User user;
+    private Member user;
 
     private Integer coins;
 
