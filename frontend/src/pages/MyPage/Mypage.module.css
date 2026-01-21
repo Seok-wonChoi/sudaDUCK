@@ -13,36 +13,24 @@
   overflow: hidden;
 }
 
-.Content {
-  padding: 26px 34px 34px;
-  text-align: center;
+.Main {
+  padding: 24px 34px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.Title {
-  margin: 12px 0 0;
-  font-size: 26px;
-  font-weight: 900;
-  color: #111827;
-}
+@media (max-width: 680px) {
+  .Page {
+    padding: 16px 0;
+  }
 
-.Text {
-  margin-top: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #6b7280;
-}
+  .Shell {
+    border-radius: 20px;
+    margin: 0 12px;
+  }
 
-.Button {
-  margin: 18px auto 0;
-  display: inline-block;
-
-  border: 1px solid rgba(79, 70, 229, 0.22);
-  background: rgba(79, 70, 229, 0.08);
-  color: #3730a3;
-
-  padding: 10px 14px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 13px;
+  .Main {
+    padding: 20px 16px 24px;
+  }
 }
