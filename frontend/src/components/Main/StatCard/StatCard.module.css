@@ -1,0 +1,27 @@
+/* src/components/Main/StatCard/StatCard.module.css */
+
+.Card {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(238, 240, 246, 0.9);
+  border-radius: 16px;
+
+  padding: 22px 18px;
+  text-align: center;
+
+  box-shadow: 0 12px 26px rgba(17, 24, 39, 0.08);
+  backdrop-filter: blur(6px);
+}
+
+.Value {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  color: #4f46e5;
+}
+
+.Label {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 600;
+}
