@@ -1,0 +1,49 @@
+.Card {
+  background: linear-gradient(135deg, #ede9fe 0%, #fae8ff 100%);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.Label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.English {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.Korean {
+  font-size: 15px;
+  color: #374151;
+  margin-bottom: 20px;
+}
+
+.PlayButton {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.PlayButton:hover {
+  filter: brightness(1.05);
+}
+
+.SpeakerIcon {
+  font-size: 18px;
+}
