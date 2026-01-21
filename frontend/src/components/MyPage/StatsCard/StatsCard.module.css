@@ -1,0 +1,52 @@
+.Card {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.StatItem {
+  padding: 20px 16px;
+  text-align: center;
+  border-right: 1px solid #e5e7eb;
+}
+
+.StatItem:last-child {
+  border-right: none;
+}
+
+.Value {
+  font-size: 24px;
+  font-weight: 900;
+  color: #4f46e5;
+}
+
+.Unit {
+  font-size: 16px;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.Label {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+@media (max-width: 480px) {
+  .Card {
+    grid-template-columns: 1fr;
+  }
+
+  .StatItem {
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .StatItem:last-child {
+    border-bottom: none;
+  }
+}

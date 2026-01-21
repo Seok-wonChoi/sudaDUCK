@@ -1,0 +1,39 @@
+.Tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.default {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.topic {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.score {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.review {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.participant {
+  background: #ffffff;
+  border: 1px solid #c7d2fe;
+  color: #4f46e5;
+}

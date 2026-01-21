@@ -1,0 +1,141 @@
+.Content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.Preview {
+  background: #f9fafb;
+  border-radius: 16px;
+  padding: 40px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.Section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.SectionTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111827;
+  text-align: center;
+  margin: 0;
+}
+
+.OptionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.OptionButton {
+  height: 44px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.OptionButton.Selected {
+  outline: 3px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Background styles for buttons */
+.bg_default {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+}
+
+.bg_gradient {
+  background: linear-gradient(90deg, #c084fc 0%, #f472b6 100%);
+  border: none;
+  color: #ffffff;
+}
+
+.bg_ocean {
+  background: linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%);
+  border: none;
+  color: #ffffff;
+}
+
+.bg_neon {
+  background: #000000;
+  border: 2px solid #22c55e;
+  color: #22c55e;
+}
+
+.bg_gold {
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+  border: none;
+  color: #ffffff;
+}
+
+.bg_rainbow {
+  background: linear-gradient(90deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #3b82f6 80%, #8b5cf6 100%);
+  border: none;
+  color: #ffffff;
+}
+
+.EffectsRow {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.EffectButton {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.EffectButton:hover {
+  background: #f9fafb;
+}
+
+.EffectButton.Selected {
+  border-color: #4f46e5;
+  outline: 2px solid #4f46e5;
+}
+
+.CancelBtn {
+  padding: 10px 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.CancelBtn:hover {
+  background: #f9fafb;
+}
+
+.SaveBtn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.SaveBtn:hover {
+  filter: brightness(1.05);
+}
