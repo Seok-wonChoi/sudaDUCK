@@ -11,7 +11,7 @@ export default function MainPage() {
   const navigate = useNavigate();
 
   const handlePractice = () => {
-    console.log("연습 모드 클릭");
+    navigate("/practice");
   };
 
   const handleTogether = () => {

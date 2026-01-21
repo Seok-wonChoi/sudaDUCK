@@ -1,0 +1,8 @@
+/* 모드 선택 섹션 컨테이너 */
+.Section {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 34px;
+  flex-wrap: wrap;
+}

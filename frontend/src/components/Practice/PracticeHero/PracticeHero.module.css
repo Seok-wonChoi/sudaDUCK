@@ -1,0 +1,22 @@
+/* 히어로 영역 래퍼 */
+.Wrap {
+  text-align: center;
+  padding: 22px 0 10px;
+}
+
+/* 메인 타이틀 */
+.Title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  color: #111827;
+}
+
+/* 서브 타이틀 */
+.Subtitle {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6b7280;
+}
