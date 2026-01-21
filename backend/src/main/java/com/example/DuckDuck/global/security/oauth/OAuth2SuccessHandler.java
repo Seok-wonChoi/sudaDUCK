@@ -46,7 +46,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         CookieUtil.addCookie(response, "refreshToken", refreshToken, 1209600); // 14일
 
         // 4. 프론트엔드 메인 페이지로 리다이렉트
-        getRedirectStrategy().sendRedirect(request, response, "http://localhost:3000/main");
+        getRedirectStrategy().sendRedirect(request, response, "/api/v1/auth/me");
 
     }
 }
