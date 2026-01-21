@@ -1,0 +1,302 @@
+/* Page: 화면 전체 배경과 세로 여백 */
+.Page {
+  min-height: 100vh;
+  background: #f6f8ff;
+  padding: 28px 0;
+}
+
+/* Shell: 가운데 흰 컨테이너(모서리/그림자/클리핑) */
+.Shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.1);
+  overflow: hidden;
+}
+
+/* Top: 상단 흰 영역(타이틀/카드 포함) */
+.Top {
+  position: relative;
+  padding: 44px 34px 18px;
+  background: #ffffff;
+}
+
+/* Bottom: 하단 연보라 그라데이션 영역(팁 배너) */
+.Bottom {
+  padding: 18px 34px 28px;
+  background: linear-gradient(
+    180deg,
+    rgba(247, 248, 255, 1) 0%,
+    rgba(245, 237, 255, 1) 100%
+  );
+}
+
+/* BackButton: 좌측 상단 뒤로가기 버튼 컨테이너 */
+.BackButton {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(79, 70, 229, 0.18);
+  background: rgba(79, 70, 229, 0.08);
+  color: #3730a3;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+/* BackButton hover: 버튼 호버 상태 */
+.BackButton:hover {
+  border-color: rgba(79, 70, 229, 0.35);
+  background: rgba(79, 70, 229, 0.12);
+}
+
+/* BackIcon: 뒤로가기 화살표 문자 스타일 */
+.BackIcon {
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+/* BackText: 뒤로가기 텍스트 스타일 */
+.BackText {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Title: 페이지 메인 제목 */
+.Title {
+  margin: 8px 0 0;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  text-align: center;
+  color: #111827;
+}
+
+/* Subtitle: 제목 아래 설명 문구 */
+.Subtitle {
+  margin: 12px 0 0;
+  font-size: 14px;
+  text-align: center;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+/* Card: 결과 정보가 들어가는 중앙 카드 */
+.Card {
+  max-width: 760px;
+  margin: 26px auto 0;
+
+  border: 1px solid rgba(229, 231, 235, 1);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(17, 24, 39, 0.08);
+
+  padding: 20px;
+}
+
+/* InfoGrid: 방 제목/주제/턴 수 정보 배치 그리드 */
+.InfoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* InfoWide: 방 제목(가로 전체 폭) 박스 */
+.InfoWide {
+  grid-column: 1 / -1;
+  border-radius: 14px;
+  background: rgba(243, 244, 246, 0.7);
+  border: 1px solid rgba(229, 231, 235, 1);
+  padding: 14px 16px;
+}
+
+/* InfoBox: 주제/턴 수 박스 */
+.InfoBox {
+  border-radius: 14px;
+  background: rgba(243, 244, 246, 0.7);
+  border: 1px solid rgba(229, 231, 235, 1);
+  padding: 14px 16px;
+}
+
+/* InfoLabel: 정보 라벨(방 제목/주제/턴 수) */
+.InfoLabel {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+/* InfoValue: 정보 값(실제 내용) */
+.InfoValue {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 900;
+}
+
+/* CodeLabel: 참여 코드 섹션의 라벨 */
+.CodeLabel {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 900;
+}
+
+/* CodeBox: 참여 코드가 들어가는 강조 박스 */
+.CodeBox {
+  position: relative;
+  margin-top: 10px;
+
+  border-radius: 16px;
+  border: 1px solid rgba(79, 70, 229, 0.25);
+  background: rgba(79, 70, 229, 0.06);
+
+  padding: 18px 16px 16px;
+  text-align: center;
+}
+
+/* CodeText: 참여 코드 큰 텍스트 */
+.CodeText {
+  font-size: 28px;
+  font-weight: 1000;
+  letter-spacing: 2px;
+  color: #4f46e5;
+}
+
+/* CodeActions: 공유/복사 버튼 위치(우측 상단) */
+.CodeActions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+/* BtnIcon: 버튼 안의 아이콘 이미지 */
+.BtnIcon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
+}
+
+/* ShareBtn: 공유 버튼 스타일 */
+.ShareBtn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+
+  background: #facc15;
+  color: #111827;
+  font-weight: 900;
+  font-size: 12px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* CopyBtn: 복사 버튼 스타일 */
+.CopyBtn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  cursor: pointer;
+
+  background: #ffffff;
+  border: 1px solid rgba(79, 70, 229, 0.35);
+  color: #4f46e5;
+
+  font-weight: 900;
+  font-size: 12px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* CodeHint: 코드 아래 안내 문구 */
+.CodeHint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 800;
+}
+
+/* PrimaryButton: 대기실로 이동 메인 버튼 */
+.PrimaryButton {
+  width: 100%;
+  height: 46px;
+  margin-top: 16px;
+
+  border: 0;
+  border-radius: 14px;
+
+  cursor: pointer;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 14px;
+
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 60%, #5b21b6 100%);
+  box-shadow: 0 14px 30px rgba(79, 70, 229, 0.22);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* PrimaryButton hover: 버튼 호버 상태 */
+.PrimaryButton:hover {
+  filter: brightness(1.02);
+}
+
+/* Arrow: 버튼 오른쪽 화살표 */
+.Arrow {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* TipWrap: 하단 팁 배너 폭 정렬 */
+.TipWrap {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Responsive: 모바일에서 패딩/그리드 조정 */
+@media (max-width: 680px) {
+  .Top {
+    padding: 44px 16px 14px;
+  }
+
+  .Bottom {
+    padding: 16px 16px 22px;
+  }
+
+  .BackButton {
+    top: 12px;
+    left: 12px;
+  }
+
+  .Card {
+    padding: 16px;
+  }
+
+  .InfoGrid {
+    grid-template-columns: 1fr;
+  }
+}

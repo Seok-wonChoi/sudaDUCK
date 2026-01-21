@@ -1,0 +1,48 @@
+.Page {
+  min-height: 100vh;
+  background: #f6f8ff;
+  padding: 28px 0;
+}
+
+.Shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.10);
+  overflow: hidden;
+}
+
+.Content {
+  padding: 26px 34px 34px;
+  text-align: center;
+}
+
+.Title {
+  margin: 12px 0 0;
+  font-size: 26px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.Text {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.Button {
+  margin: 18px auto 0;
+  display: inline-block;
+
+  border: 1px solid rgba(79, 70, 229, 0.22);
+  background: rgba(79, 70, 229, 0.08);
+  color: #3730a3;
+
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 13px;
+}
