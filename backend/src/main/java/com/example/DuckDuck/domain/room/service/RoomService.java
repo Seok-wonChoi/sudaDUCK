@@ -31,13 +31,17 @@ public class RoomService {
 
     // ===================== 방 생성 =====================
     @Transactional
-    public RoomCreateResponse createRoom(RoomCreateRequest request) {
-        Member host = memberRepository.findByEmail(request.email())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다. email=" + request.email()));
+    public RoomCreateResponse createRoomByEmail(String email, RoomCreateRequest request) {
 
+        // 1. 방장(Member) 조회 (JWT에서 얻은 userId 기준)
+        Member host = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        // 2. 턴 수 기본값 처리
         int turnCnt = (request.turnCnt() == null) ? 3 : request.turnCnt();
         LocalDateTime now = LocalDateTime.now();
 
+        // 3. Room 생성
         Room room = Room.builder()
                 .creator(host)
                 .title(request.title())
@@ -49,6 +53,7 @@ public class RoomService {
 
         Room savedRoom = roomRepository.save(room);
 
+        // 4. 방장을 참가자로 등록
         RoomParticipants hostParticipant = RoomParticipants.builder()
                 .room(savedRoom)
                 .user(host)
@@ -60,6 +65,7 @@ public class RoomService {
 
         roomParticipantsRepository.save(hostParticipant);
 
+        // 5. 룸 코드 발급 (Redis)
         String roomCode = issueUniqueRoomCode();
 
         String codeKey = "room:code:" + savedRoom.getRoomId(); // roomId -> code
@@ -68,6 +74,7 @@ public class RoomService {
         redisTemplate.opsForValue().set(codeKey, roomCode, 6, TimeUnit.HOURS);
         redisTemplate.opsForValue().set(reverseKey, String.valueOf(savedRoom.getRoomId()), 6, TimeUnit.HOURS);
 
+        // 6. 응답 반환
         return new RoomCreateResponse(
                 savedRoom.getRoomId(),
                 host.getId(),
@@ -99,12 +106,12 @@ public class RoomService {
 
     // ===================== 방 참가 =====================
     @Transactional
-    public RoomJoinResponse joinRoom(RoomJoinRequest request) {
+    public RoomJoinResponse joinRoom(String email, RoomJoinRequest request) {
 
-        // 1) member 조회
-        Member member = memberRepository.findByEmail(request.getEmail())
+        // 1) member 조회 (인증에서 가져온 email 사용)
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "존재하지 않는 이메일입니다. email=" + request.getEmail()
+                        "존재하지 않는 이메일입니다. email=" + email
                 ));
 
         // 2) Redis에서 roomCode -> roomId 조회
@@ -130,7 +137,7 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다. roomId=" + roomId));
 
-        // 정책: 게임 시작(isOpen=true)이면 누구든 입장 불가
+        // ✅ 정책: 게임 시작(isOpen=true)이면 누구든 입장 불가
         if (Boolean.TRUE.equals(room.getIsOpen())) {
             throw new IllegalStateException("게임이 이미 시작된 방입니다. 입장할 수 없습니다.");
         }
@@ -149,7 +156,6 @@ public class RoomService {
                 existing.setIsLeft(false);
             }
             existing.setLastRejoinedAt(now);
-
         } else {
             RoomParticipants participant = RoomParticipants.builder()
                     .room(room)
