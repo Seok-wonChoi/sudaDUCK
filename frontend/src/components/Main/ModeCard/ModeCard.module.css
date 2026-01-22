@@ -1,0 +1,79 @@
+
+.Card {
+  width: 300px;
+  height: 300px;
+
+  border: 1px solid #eef0f6;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 24px 20px;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 18px 36px rgba(17, 24, 39, 0.08);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.Card:hover {
+  border-color: #dbe3ff;
+  box-shadow: 0 22px 44px rgba(17, 24, 39, 0.10);
+}
+
+.ImageWrap {
+  position: relative;
+  width: 50;
+  height: 160px;          /* 오리 크게 => 영역도 넉넉히 */
+  display: grid;
+  place-items: center;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+/* 1마리 */
+.DuckSingle {
+  display: grid;
+  place-items: center;
+}
+
+/* 2마리: 나란히 */
+.DuckRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: -100px;   
+}
+
+/* ✅ 오리 더 크게 */
+.Duck {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 반짝이 위치 */
+.Sparkles {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  font-size: 40px;
+}
+
+.Title {
+  margin-top: 10px;
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: -0.3px;
+}
+
+.Description {
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 240px;
+}

@@ -1,0 +1,515 @@
+/* 페이지 전체 배경 */
+.Page {
+  min-height: 100vh;
+  background: #f6f8ff;
+  padding: 28px 0;
+}
+
+/* 중앙 카드형 컨테이너 */
+.Shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.10);
+  overflow: hidden;
+  position: relative;
+}
+
+/* 함께하기 페이지처럼 헤더 아래 좌측 뒤로가기 영역 */
+.BackRow {
+  padding: 14px 34px 0;
+}
+
+/* 뒤로가기 버튼 */
+.BackButton {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  background: rgba(99, 102, 241, 0.08);
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* 본문 패딩 */
+.Content {
+  padding: 12px 34px 28px;
+}
+
+/* 상단: 주제/프로그레스 */
+.HeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 10px;
+}
+
+/* 주제 말풍선 줄 */
+.TopicRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 460px;
+}
+
+/* 상단 오리 */
+.SmallDuck {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+/* 주제 말풍선 */
+.TopicBubble {
+  background: #ffffff;
+  border: 1px solid #e8edf6;
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.10);
+}
+
+/* 프로그레스/시간 */
+.ProgressRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* 프로그레스 바 트랙 */
+.ProgressTrack {
+  width: min(520px, 58vw);
+  height: 6px;
+  background: rgba(17, 24, 39, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* 남은 시간 바 */
+.ProgressFill {
+  height: 100%;
+  background: #111827;
+  width: 100%;
+}
+
+/* 시간 표시 */
+.Time {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #4f46e5;
+  min-width: 64px;
+  justify-content: flex-end;
+}
+
+/* 시계 점 */
+.ClockDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid rgba(79, 70, 229, 0.35);
+}
+
+/* 메인 스테이지(좌/우) */
+.Stage {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: center;
+}
+
+/* 좌측 영역 */
+.LeftStage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 중앙 카드 영역 */
+.VideoArea {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 28px 0 20px;
+}
+
+/* 프로필 사각형 카드 */
+.VideoCard {
+  width: min(520px, 100%);
+  height: 220px;
+  border-radius: 14px;
+  background: #fbfcff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 18px 14px;
+  border: 2px solid rgba(229, 231, 235, 1);
+  position: relative;
+}
+
+/* 말할 때 초록 테두리 + 글로우 */
+.VideoCardSpeaking {
+  border-color: rgba(34, 197, 94, 0.95);
+  box-shadow:
+    0 0 0 3px rgba(34, 197, 94, 0.18),
+    0 0 22px rgba(34, 197, 94, 0.30),
+    0 18px 34px rgba(17, 24, 39, 0.12);
+}
+
+/* 글로우 레이어 */
+.VideoCardSpeaking::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 16px;
+  pointer-events: none;
+  box-shadow:
+    0 0 28px rgba(34, 197, 94, 0.28),
+    0 0 10px rgba(34, 197, 94, 0.18);
+}
+
+/* 기본 상태 */
+.VideoCardIdle {
+  border-color: rgba(229, 231, 235, 1);
+  box-shadow: none;
+}
+
+/* 카드 내부 중앙 */
+.VideoInner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 150px;
+}
+
+/* 중앙 아바타 원 */
+.AvatarCircle {
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #eef2ff;
+  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 아바타 오리 */
+.AvatarDuck {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+}
+
+/* 카드 하단 */
+.VideoFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 하단 좌측 */
+.VideoFooterLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 하단 우측 */
+.VideoFooterRight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 18px;
+}
+
+/* 내 라벨 */
+.MeLabel {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+}
+
+/* 작은 마이크 아이콘 */
+.MicMini {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+/* 좌측 하단 마이크 파동(동적) */
+.Wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+
+/* 파동 막대 */
+.WaveBar {
+  width: 4px;
+  border-radius: 999px;
+  transition: height 120ms ease;
+}
+
+/* 마이크 켜짐 상태 */
+.WaveOn .WaveBar {
+  opacity: 0.95;
+}
+
+/* 마이크 꺼짐 상태 */
+.WaveOff .WaveBar {
+  background: rgba(209, 213, 219, 1);
+  opacity: 1;
+}
+
+/* 파동 컬러 구성 */
+.WaveBar1 { background: rgba(34, 197, 94, 0.95); }
+.WaveBar2 { background: rgba(16, 185, 129, 0.95); }
+.WaveBar3 { background: rgba(59, 130, 246, 0.95); }
+.WaveBar4 { background: rgba(99, 102, 241, 0.95); }
+.WaveBar5 { background: rgba(168, 85, 247, 0.95); }
+.WaveBar6 { background: rgba(59, 130, 246, 0.95); }
+.WaveBar7 { background: rgba(16, 185, 129, 0.95); }
+
+/* 하단 버튼 영역 */
+.BottomActions {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* 버튼 아이콘 */
+.ButtonIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+/* 마이크 토글 버튼 */
+.PrimaryButton {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #4f46e5;
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* 카운트다운 중 비활성화 */
+.PrimaryButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 대화 종료 버튼 */
+.SecondaryButton {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* 우측 AI 영역 */
+.RightStage {
+  position: relative;
+  height: 100%;
+  min-height: 440px;
+}
+
+/* AI 말풍선 카드 */
+.AiBubble {
+  position: relative;
+  background: #ffffff;
+  border: 2px solid rgba(79, 70, 229, 0.25);
+  border-radius: 16px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 18px 40px rgba(17, 24, 39, 0.14);
+  z-index: 2;
+}
+
+/* AI 헤더 */
+.AiHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #4f46e5;
+}
+
+/* AI 점 */
+.AiDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.65);
+}
+
+/* AI 타이틀 */
+.AiTitle {
+  color: #4f46e5;
+}
+
+/* AI 표정 */
+.AiFace {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 22px;
+}
+
+/* AI 메인 문구 */
+.AiMainText {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #111827;
+  line-height: 1.35;
+}
+
+/* AI 서브 문구 */
+.AiSubText {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* 말풍선 꼬리 */
+.AiPointer {
+  position: absolute;
+  left: 52%;
+  bottom: -10px;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border-left: 2px solid rgba(79, 70, 229, 0.25);
+  border-bottom: 2px solid rgba(79, 70, 229, 0.25);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* 우측 하단 큰 오리 */
+.BigDuck {
+  position: absolute;
+  right: -6px;
+  bottom: -8px;
+  width: 280px;
+  height: 280px;
+  object-fit: contain;
+  z-index: 1;
+  filter: drop-shadow(0 18px 30px rgba(17, 24, 39, 0.12));
+}
+
+/* 3초 카운트다운 오버레이 */
+.CountdownOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+/* 카운트다운 팝업 */
+.CountdownModal {
+  width: min(320px, 86vw);
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.18);
+  padding: 18px 18px 16px;
+  text-align: center;
+}
+
+/* 카운트다운 제목 */
+.CountdownTitle {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+}
+
+/* 카운트다운 숫자 */
+.CountdownNumber {
+  margin-top: 10px;
+  font-size: 46px;
+  font-weight: 900;
+  color: #4f46e5;
+  letter-spacing: -0.6px;
+}
+
+/* 카운트다운 안내 */
+.CountdownHint {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+@media (max-width: 980px) {
+  .BackRow {
+    padding: 12px 16px 0;
+  }
+
+  .Content {
+    padding: 12px 16px 22px;
+  }
+
+  .HeaderRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .TopicRow {
+    min-width: 0;
+  }
+
+  .ProgressRow {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .Stage {
+    grid-template-columns: 1fr;
+  }
+
+  .RightStage {
+    min-height: 360px;
+  }
+
+  .BigDuck {
+    width: 220px;
+    height: 220px;
+    right: 0;
+    bottom: 0;
+  }
+}

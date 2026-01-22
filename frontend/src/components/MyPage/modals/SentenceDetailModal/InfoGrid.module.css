@@ -1,0 +1,52 @@
+.Grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.Box {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.Header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.Icon {
+  font-size: 16px;
+}
+
+.Label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.Value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.Participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.Empty {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+@media (max-width: 400px) {
+  .Grid {
+    grid-template-columns: 1fr;
+  }
+}
