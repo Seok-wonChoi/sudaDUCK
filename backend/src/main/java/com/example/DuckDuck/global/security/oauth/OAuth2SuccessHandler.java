@@ -42,8 +42,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         refreshTokenRepository.save(new RefreshToken(email, refreshToken, 1209600L)); // 14일
 
         // 3. 쿠키에 토큰 담기 (만료시간은 초 단위)
-        CookieUtil.addCookie(response, "accessToken", accessToken, 3600); // 1시간
-        CookieUtil.addCookie(response, "refreshToken", refreshToken, 1209600); // 14일
+        CookieUtil.addCookie(response, "access_token", accessToken, 3600); // 1시간
+        CookieUtil.addCookie(response, "refresh_token", refreshToken, 1209600); // 14일
 
         // 4. 프론트엔드 메인 페이지로 리다이렉트
         getRedirectStrategy().sendRedirect(request, response, "/api/v1/auth/me");
