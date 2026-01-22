@@ -1,77 +1,51 @@
-import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import styles from "./RoomCreatedPage.module.css";
 
 import AppHeader from "../../components/Layout/AppHeader/AppHeader";
 import TipBanner from "../../components/Main/TipBanner/TipBanner";
 
-import kakaoIcon from "../../assets/icons/kakaotalk_icon.png";
 import copyIcon from "../../assets/icons/copy_icon.png";
+import kakaoIcon from "../../assets/icons/kakaotalk_icon.png";
+
+import styles from "./RoomCreatedPage.module.css";
 
 export default function RoomCreatedPage() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { state } = useLocation();
 
-  const fallback = useMemo(
-    () => ({
-      roomTitle: "1반 영어 공부하자!",
-      roomTopic: "좋아하는 음식",
-      turnCount: 3,
-      inviteCode: "92SA71",
-    }),
-    []
-  );
-
-  const [data] = useState(() => {
-    const fromState = location.state;
-    if (fromState && fromState.inviteCode) {
-      sessionStorage.setItem("roomCreateResult", JSON.stringify(fromState));
-      return fromState;
-    }
-
-    const saved = sessionStorage.getItem("roomCreateResult");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.inviteCode) return parsed;
-      } catch (e) {
-        return fallback;
-      }
-    }
-
-    return fallback;
-  });
+  const roomInfo = state ?? {};
+  const roomTitle = roomInfo.roomTitle ?? "1번 영어 공부하자!";
+  const topic = roomInfo.topic ?? "좋아하는 음식";
+  const turnCount = roomInfo.turnCount ?? "3턴";
+  const inviteCode = roomInfo.inviteCode ?? "92SA71";
 
   const handleBack = () => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate("/together");
+    navigate(-1);
   };
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(data.inviteCode);
-      alert("참여 코드가 복사되었습니다.");
+      await navigator.clipboard.writeText(inviteCode);
+      console.log("참여 코드 복사 완료");
     } catch (e) {
-      alert("복사에 실패했습니다.");
+      console.log("복사 실패", e);
     }
   };
 
-  const handleShare = async () => {
-    const text = `참여 코드: ${data.inviteCode}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "참여 코드 공유", text });
-        return;
-      }
-      await navigator.clipboard.writeText(text);
-      alert("공유 문구가 복사되었습니다.");
-    } catch (e) {
-      alert("공유에 실패했습니다.");
-    }
+  const handleKakaoShare = () => {
+    console.log("카카오 공유 클릭", inviteCode);
   };
 
   const handleGoWaiting = () => {
-    console.log("대기실로 이동");
+    navigate("/together/waiting", {
+      state: {
+        roomTitle,
+        topic,
+        turnCount,
+        inviteCode,
+        isHost: true,
+        maxCount: 4,
+      },
+    });
   };
 
   return (
@@ -79,53 +53,51 @@ export default function RoomCreatedPage() {
       <div className={styles.Shell}>
         <AppHeader userName="user" notifications={[]} />
 
-        <main className={styles.Top}>
-          <button
-            className={styles.BackButton}
-            type="button"
-            onClick={handleBack}
-            aria-label="뒤로 가기"
-          >
-            <span className={styles.BackIcon} aria-hidden="true">
-              &lt;
-            </span>
-            <span className={styles.BackText}>뒤로가기</span>
+        <div className={styles.Top}>
+          <button type="button" className={styles.BackButton} onClick={handleBack}>
+            &lt; 뒤로가기
           </button>
 
-          <h1 className={styles.Title}>방이 생성되었어요!</h1>
-          <p className={styles.Subtitle}>친구들에게 참여 코드를 공유해보세요.</p>
+          <div className={styles.Head}>
+            <h1 className={styles.Title}>방이 생성되었어요!</h1>
+            <p className={styles.Subtitle}>친구들에게 참여 코드를 공유해보세요.</p>
+          </div>
 
-          <section className={styles.Card} aria-label="방 생성 결과">
-            <div className={styles.InfoGrid}>
-              <div className={styles.InfoWide}>
-                <div className={styles.InfoLabel}>방 제목</div>
-                <div className={styles.InfoValue}>{data.roomTitle}</div>
+          <div className={styles.Card}>
+            <div className={styles.FieldFull}>
+              <div className={styles.Label}>방 제목</div>
+              <div className={styles.Value}>{roomTitle}</div>
+            </div>
+
+            <div className={styles.FieldRow}>
+              <div className={styles.FieldHalf}>
+                <div className={styles.Label}>주제</div>
+                <div className={styles.Value}>{topic}</div>
               </div>
 
-              <div className={styles.InfoBox}>
-                <div className={styles.InfoLabel}>주제</div>
-                <div className={styles.InfoValue}>{data.roomTopic}</div>
-              </div>
-
-              <div className={styles.InfoBox}>
-                <div className={styles.InfoLabel}>턴 수</div>
-                <div className={styles.InfoValue}>{data.turnCount}턴</div>
+              <div className={styles.FieldHalf}>
+                <div className={styles.Label}>턴 수</div>
+                <div className={styles.Value}>{turnCount}</div>
               </div>
             </div>
 
             <div className={styles.CodeLabel}>참여 코드</div>
 
             <div className={styles.CodeBox}>
-              <div className={styles.CodeText}>{data.inviteCode}</div>
+              <div className={styles.CodeText}>{inviteCode}</div>
 
               <div className={styles.CodeActions}>
-                <button type="button" className={styles.ShareBtn} onClick={handleShare}>
-                  <img className={styles.BtnIcon} src={kakaoIcon} alt="" aria-hidden="true" />
+                <button
+                  type="button"
+                  className={styles.KakaoButton}
+                  onClick={handleKakaoShare}
+                >
+                  <img className={styles.KakaoIcon} src={kakaoIcon} alt="카카오" />
                   공유
                 </button>
 
-                <button type="button" className={styles.CopyBtn} onClick={handleCopy}>
-                  <img className={styles.BtnIcon} src={copyIcon} alt="" aria-hidden="true" />
+                <button type="button" className={styles.CopyButton} onClick={handleCopy}>
+                  <img className={styles.CopyIcon} src={copyIcon} alt="복사" />
                   복사
                 </button>
               </div>
@@ -133,20 +105,19 @@ export default function RoomCreatedPage() {
               <div className={styles.CodeHint}>위 코드를 친구에게 공유해주세요.</div>
             </div>
 
-            <button type="button" className={styles.PrimaryButton} onClick={handleGoWaiting}>
-              대기실로 이동
-              <span className={styles.Arrow} aria-hidden="true">
-                →
-              </span>
+            <button
+              type="button"
+              className={styles.PrimaryButton}
+              onClick={handleGoWaiting}
+            >
+              대기실로 이동 →
             </button>
-          </section>
-        </main>
-
-        <section className={styles.Bottom}>
-          <div className={styles.TipWrap}>
-            <TipBanner text="Tip: 친구들이 코드를 입력하면 대기실에서 함께 만날 수 있어요!" />
           </div>
-        </section>
+        </div>
+
+        <div className={styles.Bottom}>
+          <TipBanner text="Tip: 친구들이 코드를 입력하면 대기실에서 함께 만날 수 있어요!" />
+        </div>
       </div>
     </div>
   );
