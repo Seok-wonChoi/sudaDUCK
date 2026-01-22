@@ -21,6 +21,9 @@ public class Member {
     private String email;
 
     @Column(nullable = false, length = 20)
+    private String name;
+
+    @Column(nullable = false, length = 20)
     private String nickname;
 
     @Column(name = "profile_image_url", columnDefinition = "TEXT")
@@ -41,9 +44,10 @@ public class Member {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Member(Long userId, String email, String nickname, String profileImageUrl) {
+    public Member(Long userId, String email, String name,String nickname, String profileImageUrl) {
         this.id = userId;
         this.email = email;
+        this.name = name;
         this.nickname = nickname;
         this.profileImageUrl = profileImageUrl;
         this.isActive = true;

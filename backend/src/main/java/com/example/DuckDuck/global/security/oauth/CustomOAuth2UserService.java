@@ -41,22 +41,24 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new RuntimeException("카카오 이메일 정보를 불러올 수 없습니다.");
         }
 
+        String name = (String) kakaoAccount.get("name");
         String nickname = (String) profileMap.get("nickname");
         String profileImageUrl = (String) profileMap.get("profile_image_url");
 
         // 3. 유저 정보 저장 또는 업데이트 (Upsert)
-        saveOrUpdateUser(kakaoId, email, nickname, profileImageUrl);
+        saveOrUpdateUser(kakaoId, email, name,nickname, profileImageUrl);
 
         return oAuth2User;
     }
 
-    private void saveOrUpdateUser(Long kakaoId, String email, String nickname, String imageUrl) {
+    private void saveOrUpdateUser(Long kakaoId, String email, String name, String nickname, String imageUrl) {
         //기존 회원 확인
         Optional<Member> memberOptional = memberRepository.findByEmail(email);
 
         if (memberOptional.isPresent()){
             //기존 회원이면 정보 업데이트
             Member member = memberOptional.get();
+            member.setName(name);
             member.setNickname(nickname);
             member.setProfileImageUrl(imageUrl);
             member.setUpdatedAt(LocalDateTime.now());
@@ -68,6 +70,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             Member newMember = Member.builder()
                     .id(kakaoId)
                     .email(email)
+                    .name(name)
                     .nickname(nickname)
                     .profileImageUrl(imageUrl)
                     .isActive(true)
