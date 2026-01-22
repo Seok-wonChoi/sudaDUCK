@@ -305,6 +305,13 @@
   box-shadow: 0 16px 30px rgba(79, 70, 229, 0.28);
 }
 
+.StartButtonActive {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
+}
+
+
 /* 시작 버튼 비활성 스타일 */
 .StartButtonDisabled {
   background: #cfd3db;
@@ -386,4 +393,10 @@
     grid-template-columns: 1fr;
     min-height: auto;
   }
+  .ExitWrap {
+  position: relative;
+  z-index: 50;
+}
+
+
 }

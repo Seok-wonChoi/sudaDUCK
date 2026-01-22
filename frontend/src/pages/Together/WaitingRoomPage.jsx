@@ -1,12 +1,11 @@
-import { useMemo, useState, useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import AppHeader from "../../components/Layout/AppHeader/AppHeader";
-import ExitGuard from "../../components/Common/ExitGuard/ExitGuard";
+import ExitButton from "../../components/Common/ExitButton/ExitButton";
 
 import duckImg from "../../assets/images/duck.png";
 
-// 실제 확장자에 맞게 수정 필요
 import micOnIcon from "../../assets/icons/mic_on.png";
 import micOffIcon from "../../assets/icons/mic_off.png";
 import usersIcon from "../../assets/icons/users_icon.png";
@@ -34,52 +33,86 @@ export default function WaitingRoomPage() {
 
   const roomInfo = state ?? {};
   const isHost = roomInfo.isHost ?? true;
+  const maxCount = roomInfo.maxCount ?? 4;
 
-  const participants = useMemo(
-    () => [
-      { id: "me", name: "나", isHost: true, isReady: false },
-      { id: "u2", name: "참여자", isHost: false, isReady: false },
-      { id: "u3", name: "참여자", isHost: false, isReady: false },
-      { id: "u4", name: "참여자", isHost: false, isReady: false },
-    ],
-    []
-  );
+  const [participants, setParticipants] = useState(() => {
+    if (isHost) {
+      return [
+        { id: "me", name: "나", isHost: true, isReady: true },
+        { id: "u2", name: "참여자 1", isHost: false, isReady: true },
+        { id: "u3", name: "참여자 2", isHost: false, isReady: true },
+        { id: "u4", name: "참여자 3", isHost: false, isReady: true },
+      ];
+    }
+
+    return [
+      { id: "host", name: "방장", isHost: true, isReady: true },
+      { id: "me", name: "나", isHost: false, isReady: false },
+      { id: "u2", name: "참여자 2", isHost: false, isReady: true },
+      { id: "u3", name: "참여자 3", isHost: false, isReady: true },
+    ];
+  });
 
   const [myMicOn, setMyMicOn] = useState(true);
 
   const currentCount = participants.length;
-  const maxCount = roomInfo.maxCount ?? 4;
 
-  const nonHostAllReady = participants
-    .filter((p) => !p.isHost)
-    .every((p) => p.isReady);
+  const me = useMemo(() => participants.find((p) => p.id === "me"), [participants]);
+  const myReady = me?.isReady ?? false;
+
+  const nonHostAllReady = useMemo(
+    () => participants.filter((p) => !p.isHost).every((p) => p.isReady),
+    [participants]
+  );
 
   const canStart = isHost && nonHostAllReady;
-
-  const handleBack = useCallback(() => {
-    navigate(-1);
-  }, [navigate]);
 
   const toggleMyMic = useCallback(() => {
     setMyMicOn((prev) => !prev);
   }, []);
 
+  const toggleMyReady = useCallback(() => {
+    setParticipants((prev) =>
+      prev.map((p) => (p.id === "me" ? { ...p, isReady: !p.isReady } : p))
+    );
+  }, []);
+
   const handleStart = useCallback(() => {
     if (!canStart) return;
-    console.log("대화 시작하기 클릭", roomInfo);
-  }, [canStart, roomInfo]);
+
+    navigate("/together/talk", {
+      state: {
+        ...roomInfo,
+        isHost,
+        maxCount,
+        participants: participants.map((p) => ({
+          id: p.id,
+          name: p.name,
+          isMe: p.id === "me",
+          micOn: p.id === "me" ? myMicOn : false,
+          voiceLevel: 0,
+        })),
+      },
+    });
+  }, [canStart, navigate, roomInfo, isHost, maxCount, participants, myMicOn]);
+
+  const handlePrimary = useCallback(() => {
+    if (isHost) handleStart();
+    else toggleMyReady();
+  }, [isHost, handleStart, toggleMyReady]);
+
+  const primaryLabel = isHost ? "대화 시작하기" : myReady ? "준비 취소" : "준비하기";
+  const primaryDisabled = isHost ? !canStart : false;
 
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        <ExitGuard to="/" message="메인 화면으로 나가시겠습니까?" />
-
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Top}>
-          <button type="button" className={styles.BackButton} onClick={handleBack}>
-            &lt; 뒤로가기
-          </button>
+          <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
+          replace 
+          />
 
           <div className={styles.SpeechRow}>
             <div className={styles.SpeechLeft}>
@@ -91,7 +124,9 @@ export default function WaitingRoomPage() {
 
             <div className={styles.SpeechRight}>
               <div className={styles.SpeechBubbleRight}>
-                준비가 완료 되면 대화 시작하기 버튼을 눌러주세요!
+                {isHost
+                  ? "준비가 완료 되면 대화 시작하기 버튼을 눌러주세요!"
+                  : "준비가 완료 되면 준비하기 버튼을 눌러주세요!"}
               </div>
               <img className={styles.Duck} src={duckImg} alt="오리" />
             </div>
@@ -171,15 +206,19 @@ export default function WaitingRoomPage() {
             <button
               type="button"
               className={`${styles.StartButton} ${
-                !canStart ? styles.StartButtonDisabled : ""
+                primaryDisabled ? styles.StartButtonDisabled : ""
               }`}
-              onClick={handleStart}
-              disabled={!canStart}
-              aria-disabled={!canStart}
-              title={!canStart ? "모든 참여자가 준비 완료해야 시작할 수 있습니다." : undefined}
+              onClick={handlePrimary}
+              disabled={primaryDisabled}
+              aria-disabled={primaryDisabled}
+              title={
+                isHost && primaryDisabled
+                  ? "모든 참여자가 준비 완료해야 시작할 수 있습니다."
+                  : undefined
+              }
             >
-              <PlayIcon />
-              대화 시작하기
+              {isHost ? <PlayIcon /> : null}
+              {primaryLabel}
             </button>
           </section>
 
@@ -190,7 +229,11 @@ export default function WaitingRoomPage() {
             </div>
 
             <ul className={styles.GuideList}>
-              <li className={styles.GuideItem}>모든 참여자가 준비 완료하면 대화가 시작됩니다</li>
+              <li className={styles.GuideItem}>
+                {isHost
+                  ? "모든 참여자가 준비 완료하면 대화를 시작할 수 있습니다"
+                  : "준비하기를 누르면 방장이 대화를 시작할 수 있습니다"}
+              </li>
               <li className={styles.GuideItem}>각 턴마다 1분간 자유롭게 대화하세요</li>
               <li className={styles.GuideItem}>AI가 대화를 분석하고 피드백을 제공합니다</li>
               <li className={styles.GuideItem}>조용한 환경에서 진행하면 더 좋습니다</li>

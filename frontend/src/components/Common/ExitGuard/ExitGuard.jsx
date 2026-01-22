@@ -1,44 +1,44 @@
-import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-import ExitConfirmModal from "../ExitConfirmModal/ExitConfirmModal";
-import styles from "./ExitGuard.module.css";
+import { useCallback, useEffect, useState } from "react";
+import ConfirmDialog from "../ConfirmDialog/ConfirmDialog";
+import { subscribeExitConfirm } from "./exitConfirmStore";
 
 export default function ExitGuard({
-  to = "/",
-  message = "메인 화면으로 나가시겠습니까?",
-  hitWidth = 190,
-  hitHeight = 72,
+  title = "나가기",
+  message = "정말 나가시겠습니까?",
+  confirmText = "나가기",
+  cancelText = "취소",
 }) {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const [dialog, setDialog] = useState(null);
 
-  const openModal = useCallback(() => setOpen(true), []);
-  const closeModal = useCallback(() => setOpen(false), []);
+  useEffect(() => {
+    const unsubscribe = subscribeExitConfirm((payload) => {
+      setDialog(payload);
+    });
+    return unsubscribe;
+  }, []);
 
-  const handleExit = useCallback(() => {
-    setOpen(false);
-    navigate(to);
-  }, [navigate, to]);
+  const handleCancel = useCallback(() => {
+    if (dialog && typeof dialog.onCancel === "function") dialog.onCancel();
+    setDialog(null);
+  }, [dialog]);
+
+  const handleConfirm = useCallback(() => {
+    const onConfirm = dialog?.onConfirm;
+    setDialog(null);
+    if (typeof onConfirm === "function") onConfirm();
+  }, [dialog]);
+
+  const open = Boolean(dialog);
 
   return (
-    <>
-      <button
-        type="button"
-        className={styles.LogoHitArea}
-        style={{ width: hitWidth, height: hitHeight }}
-        onClick={openModal}
-        aria-label="메인 화면으로 나가기"
-      />
-
-      <ExitConfirmModal
-        open={open}
-        message={message}
-        confirmText="나가기"
-        cancelText="취소"
-        onConfirm={handleExit}
-        onClose={closeModal}
-      />
-    </>
+    <ConfirmDialog
+      open={open}
+      title={dialog?.title ?? title}
+      message={dialog?.message ?? message}
+      confirmText={dialog?.confirmText ?? confirmText}
+      cancelText={dialog?.cancelText ?? cancelText}
+      onConfirm={handleConfirm}
+      onCancel={handleCancel}
+    />
   );
 }
