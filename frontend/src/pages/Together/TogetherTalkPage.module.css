@@ -388,4 +388,56 @@
     right: 0;
     bottom: 0;
   }
+
+  .QuestWarning {
+  color: #e54b4b;
+  font-weight: 900;
+}
+
+.TimerArea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.TimerArea {
+  display: flex;
+  align-items: center;
+  gap: 14px; /* TimerGauge와 버튼 그룹 간격 */
+}
+
+.QuestButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* 1/2/3 간격 */
+}
+
+.QuestBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: #ffffff;
+
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 16px;
+
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.QuestBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+
+.QuestBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
 }

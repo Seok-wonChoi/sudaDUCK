@@ -6,6 +6,9 @@ import MakeRoomPage from "./pages/Together/MakeRoomPage";
 import RoomCreatedPage from "./pages/Together/RoomCreatedPage";
 import JoinRoomPage from "./pages/Together/JoinRoomPage";
 import MyPage from "./pages/MyPage/MyPage";
+import RecordingPage from "./pages/Recording";
+
+
 
 import PracticePage from "./pages/Practice/PracticePage";
 import SoloPracticePage from "./pages/Practice/SoloPracticePage";
@@ -30,6 +33,8 @@ export default function App() {
 
 
       <Route path="/together/waiting" element={<WaitingRoomPage />} />
+
+      <Route path="/recording" element={<RecordingPage />} />
       <Route path="/together/talk" element={<TogetherTalkPage />} />
 
       <Route path="/mypage" element={<MyPage />} />
