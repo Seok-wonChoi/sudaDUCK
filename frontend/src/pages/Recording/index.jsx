@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import RecordingLayout from '@/components/Recording/layout/RecordingLayout';
 
 import BottomIdle from '@/components/Recording/bottom/BottomIdle';
@@ -43,12 +43,12 @@ export default function RecordingPage() {
     return currentTurn === TURNS && currentSentence === SENTENCES_PER_TURN;
   }, [currentTurn, currentSentence]);
 
-  const clearAllTimers = () => {
+  const clearAllTimers = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (intervalRef.current) clearInterval(intervalRef.current);
     timerRef.current = null;
     intervalRef.current = null;
-  };
+  }, []);
 
   const goNextSentence = () => {
     if (isLastSentence) {
@@ -82,11 +82,19 @@ export default function RecordingPage() {
     setStep(STEP.IDLE);
   };
 
+  // countdown 초기화 (타이머 단계 진입 시)
+  useEffect(() => {
+    if (step === STEP.AI_TIMER || step === STEP.RECORD_TIMER) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCountdown(3);
+    }
+  }, [step]);
+
+  // 메인 타이머 로직
   useEffect(() => {
     clearAllTimers();
 
     if (step === STEP.AI_TIMER) {
-      setCountdown(3);
       intervalRef.current = setInterval(() => {
         setCountdown((c) => {
           if (c <= 1) {
@@ -108,7 +116,6 @@ export default function RecordingPage() {
     }
 
     if (step === STEP.RECORD_TIMER) {
-      setCountdown(3);
       intervalRef.current = setInterval(() => {
         setCountdown((c) => {
           if (c <= 1) {
@@ -128,7 +135,7 @@ export default function RecordingPage() {
       }, MAX_RECORDING_MS);
       return;
     }
-  }, [step]);
+  }, [step, clearAllTimers]);
 
   // 카드에 전달할 props 결정
   const getCardProps = () => {
