@@ -111,14 +111,7 @@ public class RoomService {
                 String.valueOf(host.getId())
         );
 
-        // (4) ready hash에 방장 기본값 추가
-        redisTemplate.opsForHash().putIfAbsent(
-                keyRoomReady(savedRoom.getRoomId()),
-                String.valueOf(host.getId()),
-                "NOT_READY"
-        );
-
-        // (5) TTL 동기화(키들 TTL 통일)
+        // (4) TTL 동기화(키들 TTL 통일)
         refreshRoomTtl(savedRoom.getRoomId(), roomCode);
 
         // 6. 응답 반환
