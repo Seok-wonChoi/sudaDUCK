@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # 1. 로컬 개발 전용 MySQL
+  db:
+    image: mysql:8.0
+    container_name: duck-db-local
+    restart: always
+    ports:
+      - "3308:3306" # 내 컴퓨터의 3308을 컨테이너의 3306으로 연결
+    environment:
+      MYSQL_ROOT_PASSWORD: "dev_password"
+      MYSQL_DATABASE: dev
+      TZ: Asia/Seoul
+    volumes:
+      - ./db/data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
+  # 2. 로컬 개발 전용 Redis
+  redis:
+    image: redis:latest
+    container_name: duck-redis-local
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning

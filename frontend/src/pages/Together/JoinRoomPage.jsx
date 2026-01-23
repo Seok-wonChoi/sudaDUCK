@@ -49,6 +49,7 @@ export default function JoinRoomPage() {
 
   const handleChange = (idx, e) => {
     const v = normalizeCode(e.target.value);
+
     if (!v) {
       setAt(idx, "");
       return;
@@ -101,8 +102,15 @@ export default function JoinRoomPage() {
 
   const handleSubmit = () => {
     if (!isComplete) return;
-    console.log("참여 코드:", code);
-    alert(`참여 코드: ${code}`);
+
+    navigate("/together/waiting", {
+      state: {
+        isHost: false,
+        joinCode: code,
+        topic: "좋아하는 음식",
+        maxCount: 4,
+      },
+    });
   };
 
   return (
@@ -140,7 +148,7 @@ export default function JoinRoomPage() {
                   onKeyDown={(e) => handleKeyDown(idx, e)}
                   inputMode="text"
                   autoComplete="one-time-code"
-                  maxLength={CODE_LEN}
+                  maxLength={1}
                   aria-label={`코드 ${idx + 1}번째 자리`}
                 />
               ))}
