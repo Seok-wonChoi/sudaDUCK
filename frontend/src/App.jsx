@@ -15,6 +15,8 @@ import AiPracticePage from "./pages/Practice/AiPracticePage";
 import WaitingRoomPage from "./pages/Together/WaitingRoomPage";
 import TogetherTalkPage from "./pages/Together/TogetherTalkPage";
 
+import MiniGame1Page from "./pages/MiniGame1";
+
 export default function App() {
   return (
     <Routes>
@@ -35,6 +37,8 @@ export default function App() {
       <Route path="/together/talk" element={<TogetherTalkPage />} />
 
       <Route path="/mypage" element={<MyPage />} />
+
+      <Route path="/minigame1" element={<MiniGame1Page />} />
     </Routes>
   );
 }

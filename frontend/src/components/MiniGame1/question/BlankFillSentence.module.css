@@ -1,0 +1,58 @@
+.wrapper {
+  margin-bottom: 24px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.labelBlue {
+  color: #6366f1;
+}
+
+.labelGray {
+  color: #374151;
+}
+
+.card {
+  background: #ede9fe;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.sentence {
+  font-size: 16px;
+  color: #111827;
+  line-height: 2;
+}
+
+.blank {
+  display: inline-block;
+  min-width: 80px;
+  padding: 4px 12px;
+  margin: 0 4px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.empty {
+  background: #fff;
+  border: 2px solid #d1d5db;
+  color: transparent;
+}
+
+.correct {
+  background: #fff;
+  border: 2px solid #22c55e;
+  color: #22c55e;
+}
+
+.wrong {
+  background: #fff;
+  border: 2px solid #ef4444;
+  color: #ef4444;
+}

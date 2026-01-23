@@ -1,0 +1,87 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.list {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.participant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: visible;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatarPlaceholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #e5e7eb;
+}
+
+.active {
+  border: 2px solid #10b981;
+}
+
+.inactive {
+  border: 2px solid #9ca3af;
+  opacity: 0.6;
+}
+
+.micIcon {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.micActive {
+  background: #10b981;
+  color: #fff;
+}
+
+.micInactive {
+  background: #9ca3af;
+  color: #fff;
+}
+
+.name {
+  font-size: 12px;
+  color: #374151;
+  font-weight: 500;
+}
