@@ -8,14 +8,14 @@ import JoinRoomPage from "./pages/Together/JoinRoomPage";
 import MyPage from "./pages/MyPage/MyPage";
 import RecordingPage from "./pages/Recording";
 
-
-
 import PracticePage from "./pages/Practice/PracticePage";
 import SoloPracticePage from "./pages/Practice/SoloPracticePage";
 import AiPracticePage from "./pages/Practice/AiPracticePage";
 
 import WaitingRoomPage from "./pages/Together/WaitingRoomPage";
 import TogetherTalkPage from "./pages/Together/TogetherTalkPage";
+
+import MiniGame1Page from "./pages/MiniGame1";
 
 export default function App() {
   return (
@@ -31,13 +31,13 @@ export default function App() {
       <Route path="/together/created" element={<RoomCreatedPage />} />
       <Route path="/together/join" element={<JoinRoomPage />} />
 
-
       <Route path="/together/waiting" element={<WaitingRoomPage />} />
-
       <Route path="/recording" element={<RecordingPage />} />
       <Route path="/together/talk" element={<TogetherTalkPage />} />
 
       <Route path="/mypage" element={<MyPage />} />
+
+      <Route path="/minigame1" element={<MiniGame1Page />} />
     </Routes>
   );
 }
