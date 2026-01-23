@@ -24,43 +24,44 @@ public class GptService {
     private final String GMS_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1/chat/completions";
 
     /**
-     * 방 생성 시 주제 추천
-     * @return 주제 리스트 (직접 반환!)
+     * 방 생성 시 주제 추천 (1차원 배열!)
+     * @return 주제 리스트 ["주제1", "주제2", "주제3"]
      */
-    public List<Map<String, String>> getRecommendedTopics() {
+    public List<String> getRecommendedTopics() {
         String prompt = "보고 바로 고를 수 있게 '아주 짧고 간결한 구어체'로 주제 3가지를 추천해줘.\n\n" +
                 "선정 및 말투 가이드:\n" +
-                "1. 길이 제한: 'title'은 반드시 10자 내외의 아주 짧은 구어체로 작성할 것.\n" +
-                "2. 중복 금지: 내가 예시로 준 '오늘 저녁', '좋아하는 음식', '흑백요리사'는 참고만 하고, 이와 똑같은 주제는 자제해.\n" +
-                "3. 구성: 아주 평범한 일상 대화 3개.\n\n" +
-                "응답 구조 (반드시 JSON만):\n" +
-                "{\n" +
-                "  \"topics\": [\n" +
-                "    { \"title\": \"짧은 질문 형태\" }\n" +
-                "  ]\n" +
-                "}";
+                "1. 길이 제한: 반드시 10자 내외의 아주 짧은 구어체로 작성할 것.\n" +
+                "2. 구성: 아주 평범한 일상 대화 3개.\n\n" +
+                "응답 구조 (반드시 JSON 배열만, 다른 텍스트 없이!):\n" +
+                "[\n" +
+                "  \"짧은 질문 형태 1\",\n" +
+                "  \"짧은 질문 형태 2\",\n" +
+                "  \"짧은 질문 형태 3\"\n" +
+                "]";
 
-        // GPT 호출
-        String jsonResponse = callGptRaw(prompt);
-        
         try {
-            // JSON 파싱 - topics 배열만 추출
-            Map<String, Object> parsed = objectMapper.readValue(jsonResponse, Map.class);
-            
+            // GPT 호출
+            String jsonResponse = callGptRaw(prompt);
+
+            // JSON 배열 직접 파싱
             @SuppressWarnings("unchecked")
-            List<Map<String, String>> topics = (List<Map<String, String>>) parsed.get("topics");
-            
-            return topics != null ? topics : new ArrayList<>();
-            
+            List<String> topics = objectMapper.readValue(jsonResponse, List.class);
+
+            if (topics != null && !topics.isEmpty()) {
+                log.info("주제 추천 성공: {}", topics);
+                return topics;
+            }
+
         } catch (Exception e) {
-            log.error("주제 추천 파싱 실패: {}", e.getMessage());
-            // 기본값 반환
-            return List.of(
-                Map.of("title", "오늘 뭐 했어?"),
-                Map.of("title", "좋아하는 음식은?"),
-                Map.of("title", "요즘 관심사는?")
-            );
+            log.error("주제 추천 파싱 실패: {}", e.getMessage(), e);
         }
+
+        // 기본값 반환 (파싱 실패 또는 빈 결과)
+        return List.of(
+                "오늘 뭐 했어?",
+                "좋아하는 음식은?",
+                "요즘 관심사는?"
+        );
     }
 
     /**

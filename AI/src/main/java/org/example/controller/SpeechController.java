@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @RestController
-@RequestMapping("/api/speech")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
 public class SpeechController {
@@ -33,7 +33,7 @@ public class SpeechController {
 
         log.info("발음 평가 요청 - seq: {}, text: {}", sequence, referenceText);
 
-        return azureSpeechService.getPronunciationScoreAsync(
+        return azureSpeechService.getPronunciationScore(
                         audioFile.getBytes(), referenceText
                 )
                 .orTimeout(timeoutSeconds, TimeUnit.SECONDS)

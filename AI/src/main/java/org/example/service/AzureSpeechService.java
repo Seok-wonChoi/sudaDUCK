@@ -29,8 +29,8 @@ public class AzureSpeechService {
      * @param referenceText 정답 텍스트
      * @return 발음 점수 (0~100)
      */
-    @Async("ttsTaskExecutor")  // 별도 ThreadPool 사용
-    public CompletableFuture<Integer> getPronunciationScoreAsync(
+    @Async("azureTaskExecutor")
+    public CompletableFuture<Integer> getPronunciationScore(
             byte[] audioData, 
             String referenceText) {
         

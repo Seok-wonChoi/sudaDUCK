@@ -18,7 +18,7 @@ import java.util.concurrent.TimeoutException;
  */
 @Component
 @Slf4j
-public class ChatExceptionHandler {
+public class GptExceptionHandler {
 
     public ResponseEntity<ChatResponse> handle(Throwable ex, Long sequence) {
         // CompletionException 언래핑

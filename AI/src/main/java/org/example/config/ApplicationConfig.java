@@ -86,7 +86,7 @@ public class ApplicationConfig implements WebMvcConfigurer {
      * - Azure Speech API 호출 전용
      * - 채팅보다 가벼운 작업이므로 쓰레드 수 적게 설정
      */
-    @Bean(name = "ttsTaskExecutor")
+    @Bean(name = "azureTaskExecutor")
     public Executor ttsTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(3);
