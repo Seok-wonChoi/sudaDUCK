@@ -21,7 +21,6 @@ import java.util.Optional;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final MemberRepository memberRepository;
-    private final ProfileRepository profileRepository;
 
     @Override
     @Transactional
@@ -32,6 +31,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 2. 카카오 데이터 파싱
         Map<String, Object> attributes = oAuth2User.getAttributes();
         Long kakaoId = (Long) attributes.get("id");
+
         Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
         Map<String, Object> profileMap = (Map<String, Object>) kakaoAccount.get("profile");
 
@@ -53,7 +53,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private void saveOrUpdateUser(Long kakaoId, String email, String name, String nickname, String imageUrl) {
         //기존 회원 확인
-        Optional<Member> memberOptional = memberRepository.findByEmail(email);
+        Optional<Member> memberOptional = memberRepository.findById(kakaoId);
 
         if (memberOptional.isPresent()){
             //기존 회원이면 정보 업데이트
