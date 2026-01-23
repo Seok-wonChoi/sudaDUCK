@@ -86,9 +86,9 @@
 }
 
 .CardsGrid {
-  width: min(520px, 100%);
+  width: min(860px, 100%);
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 18px;
 }
 
@@ -128,6 +128,11 @@
   box-shadow: none;
 }
 
+.VideoCardAi {
+  border-color: rgba(229, 231, 235, 1);
+  background: #fbfcff;
+}
+
 .VideoInner {
   display: flex;
   justify-content: center;
@@ -165,17 +170,24 @@
   gap: 10px;
 }
 
+.MeLabel {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.AiLabel {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+  opacity: 0.95;
+}
+
 .VideoFooterRight {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   min-width: 18px;
-}
-
-.MeLabel {
-  font-size: 13px;
-  font-weight: 900;
-  color: #111827;
 }
 
 .MicMini {
@@ -189,12 +201,17 @@
   align-items: flex-end;
   gap: 3px;
   height: 22px;
+  overflow: hidden;
 }
 
 .WaveBar {
   width: 4px;
+  height: 22px;
   border-radius: 999px;
-  transition: height 120ms ease;
+  transform-origin: 50% 100%;
+  transform: scaleY(0.25);
+  transition: transform 120ms ease;
+  will-change: transform;
 }
 
 .WaveOn .WaveBar {
@@ -210,7 +227,7 @@
 .WaveBar2 { background: rgba(16, 185, 129, 0.95); }
 .WaveBar3 { background: rgba(59, 130, 246, 0.95); }
 .WaveBar4 { background: rgba(99, 102, 241, 0.95); }
-.WaveBar5 { background: rgba(168, 85, 247, 0.95); }
+.WaveBar5 { background: rgba(158, 67, 242, 0.95); }
 .WaveBar6 { background: rgba(59, 130, 246, 0.95); }
 .WaveBar7 { background: rgba(16, 185, 129, 0.95); }
 
@@ -241,11 +258,6 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-}
-
-.PrimaryButton:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 .SecondaryButton {
@@ -344,47 +356,6 @@
   filter: drop-shadow(0 18px 30px rgba(17, 24, 39, 0.12));
 }
 
-.CountdownOverlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(17, 24, 39, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-}
-
-.CountdownModal {
-  width: min(320px, 86vw);
-  background: #ffffff;
-  border-radius: 18px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.18);
-  padding: 18px 18px 16px;
-  text-align: center;
-}
-
-.CountdownTitle {
-  font-size: 13px;
-  font-weight: 900;
-  color: #111827;
-}
-
-.CountdownNumber {
-  margin-top: 10px;
-  font-size: 46px;
-  font-weight: 900;
-  color: #4f46e5;
-  letter-spacing: -0.6px;
-}
-
-.CountdownHint {
-  margin-top: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #6b7280;
-}
-
 @media (max-width: 980px) {
   .Content {
     padding: 18px 16px 22px;
@@ -400,6 +371,10 @@
   }
 
   .Stage {
+    grid-template-columns: 1fr;
+  }
+
+  .CardsGrid {
     grid-template-columns: 1fr;
   }
 

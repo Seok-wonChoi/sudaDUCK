@@ -1,22 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import styles from "./SoloPracticePage.module.css";
 
 import AppHeader from "../../components/Layout/AppHeader/AppHeader";
 import ExitGuard from "../../components/Common/ExitGuard/ExitGuard";
+import ExitButton from "../../components/Common/ExitButton/ExitButton";
+import TimerGauge from "../../components/Common/TimerGauge/TimerGauge";
 
 import duckImg from "../../assets/images/duck.png";
 import duckHappyImg from "../../assets/images/duck_happy.png";
 
-// 실제 확장자에 맞게 수정 필요
 import micOnIcon from "../../assets/icons/mic_on.png";
 import micOffIcon from "../../assets/icons/mic_off.png";
-
-function formatTime(sec) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 function VoiceWave({ level, enabled }) {
   const multipliers = [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35];
@@ -42,19 +36,16 @@ function VoiceWave({ level, enabled }) {
 }
 
 export default function SoloPracticePage() {
-  const navigate = useNavigate();
   const topic = useMemo(() => "좋아하는 음식", []);
-  const TOTAL_SECONDS = 60;
+  const DURATION_MS = 60_000;
 
   const [micOn, setMicOn] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
 
-  const [started, setStarted] = useState(false);
-  const [remainingSec, setRemainingSec] = useState(TOTAL_SECONDS);
-
   const [isCountdownOpen, setIsCountdownOpen] = useState(true);
   const [countdownSec, setCountdownSec] = useState(3);
+  const [isRunning, setIsRunning] = useState(false);
 
   const audioRef = useRef({
     stream: null,
@@ -119,14 +110,13 @@ export default function SoloPracticePage() {
 
       const source = ctx.createMediaStreamSource(stream);
       a.source = source;
-
       source.connect(analyser);
 
       const data = new Float32Array(analyser.fftSize);
 
-      const THRESHOLD = 0.03; // 음성 감지 임계값
-      const HOLD_MS = 220; // 말하는 상태 유지 시간
-      const UI_INTERVAL_MS = 60; // UI 업데이트 주기
+      const THRESHOLD = 0.03;
+      const HOLD_MS = 220;
+      const UI_INTERVAL_MS = 60;
 
       const tick = () => {
         if (!a.analyser) return;
@@ -176,20 +166,17 @@ export default function SoloPracticePage() {
     }
   }, []);
 
-  // 3초 카운트다운 후 시작
   useEffect(() => {
     setIsCountdownOpen(true);
     setCountdownSec(3);
-    setStarted(false);
-    setRemainingSec(TOTAL_SECONDS);
+    setIsRunning(false);
 
     const id = window.setInterval(() => {
       setCountdownSec((prev) => {
         if (prev <= 1) {
           window.clearInterval(id);
           setIsCountdownOpen(false);
-          setStarted(true);
-          setRemainingSec(TOTAL_SECONDS);
+          setIsRunning(true);
           return 0;
         }
         return prev - 1;
@@ -198,21 +185,6 @@ export default function SoloPracticePage() {
 
     return () => window.clearInterval(id);
   }, []);
-
-  // 카운트다운 진행
-  useEffect(() => {
-    if (!started) return;
-    if (remainingSec <= 0) return;
-
-    const id = window.setInterval(() => {
-      setRemainingSec((prev) => {
-        if (prev <= 1) return 0;
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(id);
-  }, [started, remainingSec]);
 
   useEffect(() => {
     return () => {
@@ -235,28 +207,21 @@ export default function SoloPracticePage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
-    console.log("대화 종료 클릭");
+    console.log("대화 종료");
   }, [stopAudioAnalysis]);
 
-  const handleBack = useCallback(() => {
-    navigate("/practice");
-  }, [navigate]);
-
-  const displaySec = started ? remainingSec : TOTAL_SECONDS;
-  const progressRatio = started ? remainingSec / TOTAL_SECONDS : 1;
+  const handleDone = useCallback(async () => {
+    await stopAudioAnalysis();
+    setMicOn(false);
+    setIsRunning(false);
+    console.log("시간 종료");
+  }, [stopAudioAnalysis]);
 
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
         <ExitGuard to="/" message="메인 화면으로 나가시겠습니까?" />
-
         <AppHeader userName="user" notifications={[]} />
-
-        <div className={styles.BackRow}>
-          <button type="button" className={styles.BackButton} onClick={handleBack}>
-            &lt; 뒤로가기
-          </button>
-        </div>
 
         {isCountdownOpen && (
           <div className={styles.CountdownOverlay} role="dialog" aria-label="연습 시작 카운트다운">
@@ -270,52 +235,48 @@ export default function SoloPracticePage() {
 
         <div className={styles.Content}>
           <div className={styles.HeaderRow}>
+            <div className={styles.ExitCol}>
+              <ExitButton to="/" label="나가기" confirmMessage="연습을 종료하고 나가시겠습니까?" />
+            </div>
+
             <div className={styles.TopicRow}>
               <img className={styles.SmallDuck} src={duckImg} alt="오리" />
               <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다!</div>
             </div>
 
-            <div className={styles.ProgressRow}>
-              <div className={styles.ProgressTrack} aria-label="남은 시간 진행 바">
-                <div
-                  className={styles.ProgressFill}
-                  style={{ width: `${Math.max(0, Math.min(1, progressRatio)) * 100}%` }}
-                />
-              </div>
-
-              <div className={styles.Time} aria-label="남은 시간">
-                <span className={styles.ClockDot} aria-hidden="true" />
-                {formatTime(displaySec)}
-              </div>
+            <div className={styles.TimerCol}>
+              <TimerGauge durationMs={DURATION_MS} isRunning={isRunning} onDone={handleDone} />
             </div>
           </div>
 
           <div className={styles.Stage}>
             <div className={styles.LeftStage}>
               <div className={styles.VideoArea}>
-                <div
-                  className={`${styles.VideoCard} ${
-                    isSpeaking ? styles.VideoCardSpeaking : styles.VideoCardIdle
-                  }`}
-                >
-                  <div className={styles.VideoInner}>
-                    <div className={styles.AvatarCircle}>
-                      <img className={styles.AvatarDuck} src={duckImg} alt="내 아바타" />
-                    </div>
-                  </div>
-
-                  <div className={styles.VideoFooter}>
-                    <div className={styles.VideoFooterLeft}>
-                      <VoiceWave level={voiceLevel} enabled={micOn} />
-                      <span className={styles.MeLabel}>나</span>
+                <div className={styles.CardsGrid}>
+                  <div
+                    className={`${styles.VideoCard} ${
+                      isSpeaking ? styles.VideoCardSpeaking : styles.VideoCardIdle
+                    }`}
+                  >
+                    <div className={styles.VideoInner}>
+                      <div className={styles.AvatarCircle}>
+                        <img className={styles.AvatarDuck} src={duckImg} alt="내 아바타" />
+                      </div>
                     </div>
 
-                    <div className={styles.VideoFooterRight} aria-label="마이크 상태">
-                      <img
-                        className={styles.MicMini}
-                        src={micOn ? micOffIcon : micOnIcon}
-                        alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
-                      />
+                    <div className={styles.VideoFooter}>
+                      <div className={styles.VideoFooterLeft}>
+                        <VoiceWave level={voiceLevel} enabled={micOn} />
+                        <span className={styles.MeLabel}>나</span>
+                      </div>
+
+                      <div className={styles.VideoFooterRight} aria-label="마이크 상태">
+                        <img
+                          className={styles.MicMini}
+                          src={micOn ? micOffIcon : micOnIcon}
+                          alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -328,12 +289,7 @@ export default function SoloPracticePage() {
                   onClick={toggleMic}
                   disabled={isCountdownOpen}
                 >
-                  <img
-                    className={styles.ButtonIcon}
-                    src={micOn ? micOnIcon : micOffIcon}
-                    alt=""
-                    aria-hidden="true"
-                  />
+                  <img className={styles.ButtonIcon} src={micOn ? micOnIcon : micOffIcon} alt="" aria-hidden="true" />
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
@@ -355,10 +311,8 @@ export default function SoloPracticePage() {
                   🙂
                 </div>
 
-                <div className={styles.AiMainText}>영어로 편하게 대화해 보세요!</div>
-                <div className={styles.AiSubText}>
-                  5초 동안 침묵이 지속되면 제가 도와드릴게요.
-                </div>
+                <div className={styles.AiMainText}>영어로 편하게 말해보세요!</div>
+                <div className={styles.AiSubText}>막히면 짧게라도 이어서 말하는 것이 중요합니다.</div>
 
                 <div className={styles.AiPointer} aria-hidden="true" />
               </div>

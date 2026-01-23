@@ -3,19 +3,14 @@ import styles from "./AiPracticePage.module.css";
 
 import AppHeader from "../../components/Layout/AppHeader/AppHeader";
 import ExitGuard from "../../components/Common/ExitGuard/ExitGuard";
+import ExitButton from "../../components/Common/ExitButton/ExitButton";
+import TimerGauge from "../../components/Common/TimerGauge/TimerGauge";
 
 import duckImg from "../../assets/images/duck.png";
 import duckHappyImg from "../../assets/images/duck_happy.png";
 
-// 실제 확장자에 맞게 수정 필요
 import micOnIcon from "../../assets/icons/mic_on.png";
 import micOffIcon from "../../assets/icons/mic_off.png";
-
-function formatTime(sec) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 function VoiceWave({ level, enabled }) {
   const multipliers = useMemo(() => [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35], []);
@@ -42,13 +37,11 @@ function VoiceWave({ level, enabled }) {
 
 export default function AiPracticePage() {
   const topic = useMemo(() => "좋아하는 음식", []);
-  const TOTAL_SECONDS = 60;
+  const DURATION_MS = 60_000;
 
   const [micOn, setMicOn] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
-
-  const [remainingSec, setRemainingSec] = useState(TOTAL_SECONDS);
 
   const audioRef = useRef({
     stream: null,
@@ -113,14 +106,13 @@ export default function AiPracticePage() {
 
       const source = ctx.createMediaStreamSource(stream);
       a.source = source;
-
       source.connect(analyser);
 
       const data = new Float32Array(analyser.fftSize);
 
-      const THRESHOLD = 0.03; // 말하기 감지 임계값
-      const HOLD_MS = 220; // 말하기 상태 유지 시간
-      const UI_INTERVAL_MS = 60; // UI 업데이트 주기
+      const THRESHOLD = 0.03;
+      const HOLD_MS = 220;
+      const UI_INTERVAL_MS = 60;
 
       const tick = () => {
         if (!a.analyser) return;
@@ -137,19 +129,17 @@ export default function AiPracticePage() {
 
           const now = performance.now();
 
-          // 말하기 여부
           if (rms > THRESHOLD) a.lastVoiceAt = now;
           const speaking = now - a.lastVoiceAt < HOLD_MS;
+
           if (speaking !== a.speakingNow) {
             a.speakingNow = speaking;
             setIsSpeaking(speaking);
           }
 
-          // 음성 레벨(0~1) 추정 및 스무딩
           const raw = Math.max(0, Math.min(1, (rms - 0.005) / 0.08));
           a.level = a.level * 0.82 + raw * 0.18;
 
-          // UI 업데이트(너무 잦은 setState 방지)
           if (now - a.lastUiAt > UI_INTERVAL_MS) {
             a.lastUiAt = now;
             setVoiceLevel(a.level);
@@ -172,25 +162,6 @@ export default function AiPracticePage() {
     }
   }, []);
 
-  // 페이지 진입 즉시 1분 카운트다운 시작
-  useEffect(() => {
-    setRemainingSec(TOTAL_SECONDS);
-  }, []);
-
-  // 카운트다운 진행
-  useEffect(() => {
-    if (remainingSec <= 0) return;
-
-    const id = window.setInterval(() => {
-      setRemainingSec((prev) => {
-        if (prev <= 1) return 0;
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(id);
-  }, [remainingSec]);
-
   useEffect(() => {
     return () => {
       stopAudioAnalysis();
@@ -210,37 +181,34 @@ export default function AiPracticePage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
-    console.log("대화 종료 클릭");
+    console.log("대화 종료");
   }, [stopAudioAnalysis]);
 
-  const progressRatio = remainingSec / TOTAL_SECONDS;
+  const handleDone = useCallback(async () => {
+    await stopAudioAnalysis();
+    setMicOn(false);
+    console.log("시간 종료");
+  }, [stopAudioAnalysis]);
 
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
         <ExitGuard to="/" message="메인 화면으로 나가시겠습니까?" />
-
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Content}>
           <div className={styles.HeaderRow}>
+            <div className={styles.ExitCol}>
+              <ExitButton to="/" label="나가기" confirmMessage="연습을 종료하고 나가시겠습니까?" />
+            </div>
+
             <div className={styles.TopicRow}>
               <img className={styles.SmallDuck} src={duckImg} alt="오리" />
               <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다!</div>
             </div>
 
-            <div className={styles.ProgressRow}>
-              <div className={styles.ProgressTrack} aria-label="남은 시간 진행 바">
-                <div
-                  className={styles.ProgressFill}
-                  style={{ width: `${Math.max(0, Math.min(1, progressRatio)) * 100}%` }}
-                />
-              </div>
-
-              <div className={styles.Time} aria-label="남은 시간">
-                <span className={styles.ClockDot} aria-hidden="true" />
-                {formatTime(remainingSec)}
-              </div>
+            <div className={styles.TimerCol}>
+              <TimerGauge durationMs={DURATION_MS} isRunning onDone={handleDone} />
             </div>
           </div>
 
@@ -248,7 +216,6 @@ export default function AiPracticePage() {
             <div className={styles.LeftStage}>
               <div className={styles.VideoArea}>
                 <div className={styles.CardsGrid}>
-                  {/* 나 */}
                   <div
                     className={`${styles.VideoCard} ${
                       isSpeaking ? styles.VideoCardSpeaking : styles.VideoCardIdle
@@ -276,17 +243,16 @@ export default function AiPracticePage() {
                     </div>
                   </div>
 
-                  {/* 오리(상대 프로필 카드) */}
                   <div className={`${styles.VideoCard} ${styles.VideoCardAi}`}>
                     <div className={styles.VideoInner}>
                       <div className={styles.AvatarCircle}>
-                        <img className={styles.AvatarDuck} src={duckImg} alt="오리 아바타" />
+                        <img className={styles.AvatarDuck} src={duckImg} alt="AI 아바타" />
                       </div>
                     </div>
 
                     <div className={styles.VideoFooter}>
                       <div className={styles.VideoFooterLeft}>
-                        <span className={styles.AiLabel}>오리</span>
+                        <span className={styles.AiLabel}>AI</span>
                       </div>
                       <div className={styles.VideoFooterRight} />
                     </div>
@@ -296,12 +262,7 @@ export default function AiPracticePage() {
 
               <div className={styles.BottomActions}>
                 <button type="button" className={styles.PrimaryButton} onClick={toggleMic}>
-                  <img
-                    className={styles.ButtonIcon}
-                    src={micOn ? micOnIcon : micOffIcon}
-                    alt=""
-                    aria-hidden="true"
-                  />
+                  <img className={styles.ButtonIcon} src={micOn ? micOnIcon : micOffIcon} alt="" aria-hidden="true" />
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
@@ -324,9 +285,7 @@ export default function AiPracticePage() {
                 </div>
 
                 <div className={styles.AiMainText}>영어로 편하게 대화해 보세요!</div>
-                <div className={styles.AiSubText}>
-                  5초 동안 침묵이 지속되면 제가 도와드릴게요.
-                </div>
+                <div className={styles.AiSubText}>5초 동안 침묵이 지속되면 제가 도와드릴게요.</div>
 
                 <div className={styles.AiPointer} aria-hidden="true" />
               </div>
