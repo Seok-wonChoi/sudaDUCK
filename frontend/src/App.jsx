@@ -31,7 +31,6 @@ export default function App() {
       <Route path="/together/created" element={<RoomCreatedPage />} />
       <Route path="/together/join" element={<JoinRoomPage />} />
 
-
       <Route path="/together/waiting" element={<WaitingRoomPage />} />
       <Route path="/recording" element={<RecordingPage />} />
       <Route path="/together/talk" element={<TogetherTalkPage />} />

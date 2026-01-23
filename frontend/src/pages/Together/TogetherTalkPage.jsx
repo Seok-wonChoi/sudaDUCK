@@ -10,8 +10,15 @@ import TimerGauge from "../../components/Common/TimerGauge/TimerGauge";
 import duckImg from "../../assets/images/duck.png";
 import duckHappyImg from "../../assets/images/duck_happy.png";
 
+import duckBombImg from "../../assets/images/duck_bomb.png";
+import duckSadImg from "../../assets/images/duck_sad.png";
+
 import micOnIcon from "../../assets/icons/mic_on.png";
 import micOffIcon from "../../assets/icons/mic_off.png";
+
+import UnexpectedQuestOverlay from "../../components/UnexpectedQuest/UnexpectedQuestOverlay";
+import UnexpectedQuestFillBlankModal from "../../components/UnexpectedQuest/UnexpectedQuestFillBlankModal";
+// import UnexpectedQuestMatchModeModal from "../../components/UnexpectedQuest/UnexpectedQuestMatchModeModal"; // 사용 안 함(파일 삭제 X)
 
 function VoiceWave({ level, enabled }) {
   const multipliers = useMemo(() => [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35], []);
@@ -225,6 +232,121 @@ export default function TogetherTalkPage() {
     console.log("시간 종료");
   }, []);
 
+  /* =========================
+     돌발 퀘스트 (수동 시작 1/2/3)
+     - 버튼 없는 화면: 클릭으로 다음
+     - 2번 입력 화면: 버튼으로 다음
+     - 진행 동안 TimerGauge 정지, 종료 후 재개
+  ========================= */
+  const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
+
+  const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | 3 | null
+  // idle | intro | q2game | q3intro | q3meaning | resultFail | resultSuccess
+  const [questStep, setQuestStep] = useState("idle");
+
+  const questRunning = questStep !== "idle";
+
+  const endQuestAndResume = useCallback(() => {
+    setActiveQuest(null);
+    setQuestStep("idle");
+    setIsRoomTimerRunning(true);
+  }, []);
+
+  const startQuest = useCallback(
+    (id) => {
+      if (questRunning) return;
+
+      setActiveQuest(id);
+      setIsRoomTimerRunning(false);
+
+      if (id === 1 || id === 2) {
+        setQuestStep("intro");
+        return;
+      }
+
+      if (id === 3) {
+        setQuestStep("q3intro");
+      }
+    },
+    [questRunning]
+  );
+
+  const handleOverlayClickNext = useCallback(() => {
+    // 1/2번 인트로
+    if (questStep === "intro") {
+      if (activeQuest === 1) setQuestStep("resultFail");
+      if (activeQuest === 2) setQuestStep("q2game");
+      return;
+    }
+
+    // 3번 첫 화면 -> 문장/뜻 화면
+    if (questStep === "q3intro") {
+      setQuestStep("q3meaning");
+      return;
+    }
+
+    // 3번 문장/뜻 화면 -> 결과 실패
+    if (questStep === "q3meaning") {
+      setQuestStep("resultFail");
+      return;
+    }
+
+    // 결과 실패 -> 결과 성공
+    if (questStep === "resultFail") {
+      setQuestStep("resultSuccess");
+      return;
+    }
+
+    // 결과 성공 -> 복귀
+    if (questStep === "resultSuccess") {
+      endQuestAndResume();
+    }
+  }, [questStep, activeQuest, endQuestAndResume]);
+
+  const handleSubmitQuest2 = useCallback(() => {
+    setQuestStep("resultFail");
+  }, []);
+
+  // 1번 인트로(영어 문장 하드코딩)
+  const quest1English = "Dd duck says: This is a random English sentence.";
+
+  // 2번 인트로
+  const quest2IntroTitle = "돌발 퀘스트!!\n빈칸을 채워요.";
+  const quest2IntroSub = "가장 먼저 맞힌 사람이 점수를 얻어요.";
+
+  // 3번 첫 화면(이미지 1)
+  const quest3IntroTitle = "돌발 퀘스트!!\n단어의 뜻을 맞춰요.";
+  const quest3IntroSub = "모두 협동해서 점수를 얻어보아요.";
+
+  // 3번 두 번째 화면(이미지 2)
+  const quest3EnglishSentence = "I couldn't agree with you more on that point.";
+  const quest3KoreanMeaning = "그 점에 대해서 당신의 말에 전적으로 동의합니다.";
+
+  // 결과 텍스트: 2번(랭킹), 1/3번(점수)
+  const isQuest2 = activeQuest === 2;
+  const isSuccess = questStep === "resultSuccess";
+
+  const failText = isQuest2
+    ? "아쉽게도 1등 하지 못했어요\n다음 번 기회를 노려봐요!"
+    : "아쉽게도 성공하지 못했어요\n다음 번 기회를 노려봐요!";
+
+  const successText = isQuest2
+    ? "대단해요!! 1등이에요!!"
+    : "대단해요!! 점수를 획득했어요!!";
+
+  const resultBubbleText = isSuccess ? successText : failText;
+  const resultDuckSrc = isSuccess ? duckHappyImg : duckSadImg;
+
+  const showIntroOverlay = questStep === "intro" && (activeQuest === 1 || activeQuest === 2);
+  const showQuest2Game = questStep === "q2game" && activeQuest === 2;
+
+  const showQuest3IntroOverlay = questStep === "q3intro" && activeQuest === 3;
+  const showQuest3MeaningOverlay = questStep === "q3meaning" && activeQuest === 3;
+
+  const showResultOverlay =
+    (questStep === "resultFail" || questStep === "resultSuccess") &&
+    (activeQuest === 1 || activeQuest === 2 || activeQuest === 3);
+
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
@@ -248,8 +370,44 @@ export default function TogetherTalkPage() {
             <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다!</div>
           </div>
 
-          <div className={styles.TimerWrap}>
-            <TimerGauge durationMs={60_000} isRunning onDone={handleDone} />
+          <div className={styles.TimerArea}>
+            <div className={styles.TimerWrap}>
+              <TimerGauge
+                durationMs={60_000}
+                isRunning={isRoomTimerRunning}
+                onDone={handleDone}
+              />
+            </div>
+
+            <div className={styles.QuestButtons} aria-label="돌발 퀘스트 시작 버튼">
+              <button
+                type="button"
+                className={styles.QuestBtn}
+                onClick={() => startQuest(1)}
+                disabled={questRunning}
+                aria-label="돌발 퀘스트 1 시작"
+              >
+                1
+              </button>
+              <button
+                type="button"
+                className={styles.QuestBtn}
+                onClick={() => startQuest(2)}
+                disabled={questRunning}
+                aria-label="돌발 퀘스트 2 시작"
+              >
+                2
+              </button>
+              <button
+                type="button"
+                className={styles.QuestBtn}
+                onClick={() => startQuest(3)}
+                disabled={questRunning}
+                aria-label="돌발 퀘스트 3 시작"
+              >
+                3
+              </button>
+            </div>
           </div>
         </div>
 
@@ -355,6 +513,69 @@ export default function TogetherTalkPage() {
             <img className={styles.BigDuck} src={duckHappyImg} alt="AI 오리" />
           </aside>
         </div>
+
+        {/* 1/2번 인트로 오버레이: 클릭으로 다음 */}
+        <UnexpectedQuestOverlay
+          open={showIntroOverlay}
+          onClose={handleOverlayClickNext}
+          duckSrc={duckBombImg}
+          bubbleText={activeQuest === 1 ? quest1English : quest2IntroTitle}
+          subText={activeQuest === 2 ? quest2IntroSub : null}
+          subTone={activeQuest === 2 ? "danger" : "normal"}
+          countdownNumber={undefined}
+          clickAnywhere
+          showCloseButton={false}
+          escToClose={false}
+        />
+
+        {/* 2번: 빈칸 입력 화면(버튼으로 진행) */}
+        <UnexpectedQuestFillBlankModal
+          open={showQuest2Game}
+          duckSrc={duckBombImg}
+          onSubmit={handleSubmitQuest2}
+        />
+
+        {/* 3번: 첫 화면(이미지1) */}
+        <UnexpectedQuestOverlay
+          open={showQuest3IntroOverlay}
+          onClose={handleOverlayClickNext}
+          duckSrc={duckBombImg}
+          bubbleText={quest3IntroTitle}
+          subText={quest3IntroSub}
+          subTone="danger"
+          countdownNumber={undefined}
+          clickAnywhere
+          showCloseButton={false}
+          escToClose={false}
+        />
+
+        {/* 3번: 두 번째 화면(이미지2) - 영어 문장 + 한글 뜻 */}
+        <UnexpectedQuestOverlay
+          open={showQuest3MeaningOverlay}
+          onClose={handleOverlayClickNext}
+          duckSrc={duckBombImg}
+          bubbleText={`영어 문장\n${quest3EnglishSentence}`}
+          subText={`한글 해석\n${quest3KoreanMeaning}`}
+          subTone="normal"
+          countdownNumber={undefined}
+          clickAnywhere
+          showCloseButton={false}
+          escToClose={false}
+        />
+
+        {/* 결과 오버레이: 클릭으로 실패 -> 성공 -> 복귀 */}
+        <UnexpectedQuestOverlay
+          open={showResultOverlay}
+          onClose={handleOverlayClickNext}
+          duckSrc={resultDuckSrc}
+          bubbleText={resultBubbleText}
+          subText={null}
+          subTone="normal"
+          countdownNumber={undefined}
+          clickAnywhere
+          showCloseButton={false}
+          escToClose={false}
+        />
       </div>
     </div>
   );
