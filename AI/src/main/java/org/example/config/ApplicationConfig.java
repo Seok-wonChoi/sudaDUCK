@@ -2,6 +2,8 @@ package org.example.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -32,17 +34,6 @@ public class ApplicationConfig implements WebMvcConfigurer {
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
-    
-    /**
-     * ObjectMapper Bean 등록
-     * JSON 파싱에 사용
-     */
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
-    }
-    
-    // ==================== 비동기 설정 ====================
     
     /**
      * 채팅 처리용 ThreadPool
@@ -126,5 +117,18 @@ public class ApplicationConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+
+        // Java 8 Date/Time 지원 모듈 등록
+        mapper.registerModule(new JavaTimeModule());
+
+        // 날짜를 타임스탬프 대신 ISO-8601 형식으로 저장
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        return mapper;
     }
 }

@@ -57,5 +57,5 @@ Thumbs.db
 # 아래 파일은 DB 정보나 API 키가 들어있을 수 있으므로 주의해서 관리하세요.
 # 만약 application.yml에 중요한 정보가 있다면 제외하는 것이 좋으나, 
 # 보통은 샘플용을 만들고 실제 파일은 제외합니다.
-# application.yml
+application.yml
 application.properties

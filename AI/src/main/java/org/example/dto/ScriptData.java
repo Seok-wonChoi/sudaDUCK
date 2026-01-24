@@ -29,9 +29,9 @@ public class ScriptData {
     
     @JsonProperty("blank_script")
     private String blankScript;
-    
+
     @JsonProperty("similarity_phrases")
-    private List<String> similarityPhrases;
+    private String[] similarityPhrases;
     
     @JsonProperty("tts_url")
     private String ttsUrl;

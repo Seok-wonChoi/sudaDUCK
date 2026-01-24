@@ -3,25 +3,17 @@ package org.example.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.dto.ChatResponse;
 import org.example.dto.GptScriptResponse;
-import org.example.dto.ScriptData;
-import org.example.exception.AzureSpeechException;
-import org.example.exception.GptServiceException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 번역 관련 비즈니스 로직
- * - GPT 번역
- * - TTS 생성
- * - Redis 저장
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -29,63 +21,52 @@ public class TranslateService {
 
     private final GptService gptService;
     private final AzureSpeechService azureSpeechService;
-    private final RedisTemplate<String, String> redisTemplate;  // ← Redis 추가!
+    private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    private static final String KEY_PREFIX = "chat:room:";
-    private static final long TTL_HOURS = 24; // 24시간 후 자동 삭제
+    private static final long TTL_MINUTES = 120; // 120분 (명세서 기준)
 
     /**
      * 한국어 → 영어 번역 + TTS 생성 + Redis 저장 (비동기)
-     * 
+     *
      * @param roomId 방 ID
-     * @param speakerName 발화자 이름
      * @param text 한국어 텍스트
-     * @param sequence 순서 번호
+     * @param sequence 순서 번호 (order_no)
+     * @param turnNo 턴 번호
+     * @param speakerId 발화자 ID
      * @return 성공 여부
-     * @throws GptServiceException GPT 오류 시
-     * @throws AzureSpeechException Azure 오류 시
      */
     @Async("chatTaskExecutor")
     public CompletableFuture<Boolean> translateAndSaveToRedis(
             String roomId,
-            String speakerName,
-            String text, 
-            Long sequence) {
-        
-        log.info("[ASYNC-{}] 처리 시작 - Thread: {}, roomId: {}",
-                sequence, Thread.currentThread().getName(), roomId);
-        
+            String text,
+            Long sequence,
+            Long turnNo,
+            Long speakerId) {
+
+        log.info("[ASYNC-{}] 처리 시작 - roomId: {}, turn: {}, speaker: {}",
+                sequence, roomId, turnNo, speakerId);
+
         try {
-            // roomId를 Long으로 변환
             Long roomIdLong = Long.parseLong(roomId);
-            
+
             // 1. GPT 번역
             GptScriptResponse script = gptService.generateScript(text);
-            log.info("[ASYNC-{}] GPT 완료", sequence);
-            
+            log.info("[ASYNC-{}] GPT 완료 - en: {}", sequence, script.getEn());
+
             // 2. TTS 생성
             String ttsUrl = azureSpeechService.generateTTS(script.getEn(), roomId);
             log.info("[ASYNC-{}] TTS 완료: {}", sequence, ttsUrl);
-            
-            // 3. ScriptData 생성
-            ScriptData scriptData = ScriptData.builder()
-                    .speakerName(speakerName)
-                    .koreanSentence(text)
-                    .englishSentence(script.getEn())
-                    .blankScript(script.getBlankScript())
-                    .similarityPhrases(script.getSimilarityPhrases())
-                    .ttsUrl(ttsUrl)
-                    .sequence(sequence)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            
-            // 4. Redis에 저장
-            saveToRedis(roomIdLong, scriptData);
-            log.info("[ASYNC-{}] Redis 저장 완료", sequence);
-            
+
+            // 3. scriptId 생성 (timestamp_sequence)
+            String scriptId = System.currentTimeMillis() + "_" + sequence;
+
+            // 4. Redis에 저장 (명세서 형식)
+            saveToRedis(roomIdLong, turnNo, scriptId, sequence, speakerId, text, script, ttsUrl);
+            log.info("[ASYNC-{}] Redis 저장 완료 - scriptId: {}", sequence, scriptId);
+
             return CompletableFuture.completedFuture(true);
-            
+
         } catch (NumberFormatException e) {
             log.error("[ASYNC-{}] 잘못된 roomId 형식: {}", sequence, roomId, e);
             return CompletableFuture.completedFuture(false);
@@ -96,53 +77,50 @@ public class TranslateService {
     }
 
     /**
-     * Redis에 스크립트 저장
+     * Redis에 명세서 형식으로 저장
+     * 1. Hash: room:{roomId}:turn:{turnNo}:script:{scriptId}
+     * 2. Sorted Set: room:{roomId}:turn:{turnNo}:scripts (순서 보장)
+     * 3. Set: room:{roomId}:scripts (Cleanup용)
      */
-    private void saveToRedis(Long roomId, ScriptData scriptData) {
+    private void saveToRedis(Long roomId, Long turnNo, String scriptId, Long orderNo,
+                             Long speakerId, String korean, GptScriptResponse script, String ttsUrl) {
         try {
-            String key = KEY_PREFIX + roomId + ":messages";
-            String scriptJson = objectMapper.writeValueAsString(scriptData);
-            
-            // List 구조로 저장 (순서 보장)
-            redisTemplate.opsForList().rightPush(key, scriptJson);
-            
-            // TTL 설정 (24시간)
-            redisTemplate.expire(key, TTL_HOURS, TimeUnit.HOURS);
-            
-            log.info("Redis 저장 완료 - roomId: {}, sequence: {}",
-                    roomId, scriptData.getSequence());
-            
+            // 1. Script Detail (Hash)
+            String detailKey = String.format("room:%d:turn:%d:script:%s", roomId, turnNo, scriptId);
+
+            Map<String, String> scriptData = new HashMap<>();
+            scriptData.put("order_no", orderNo.toString());
+            scriptData.put("speaker_id", speakerId.toString());
+            scriptData.put("english", script.getEn());
+            scriptData.put("korean", korean);
+            scriptData.put("score", "0");
+            scriptData.put("blank_script", script.getBlankScript());
+            scriptData.put("similarity_phrases", String.join(",", script.getSimilarityPhrases()));
+            scriptData.put("tts_url", ttsUrl);
+            scriptData.put("created_at", LocalDateTime.now().toString());
+
+            redisTemplate.opsForHash().putAll(detailKey, scriptData);
+            redisTemplate.expire(detailKey, TTL_MINUTES, TimeUnit.MINUTES);
+            log.info("✅ Hash 저장: {}", detailKey);
+
+            // 2. Turn-based Ordered Index (Sorted Set)
+            String indexKey = String.format("room:%d:turn:%d:scripts", roomId, turnNo);
+            redisTemplate.opsForZSet().add(indexKey, scriptId, orderNo.doubleValue());
+            redisTemplate.expire(indexKey, TTL_MINUTES, TimeUnit.MINUTES);
+            log.info("✅ Sorted Set 저장: {} (score: {})", indexKey, orderNo);
+
+            // 3. Cleanup Set
+            String cleanupKey = String.format("room:%d:scripts", roomId);
+            redisTemplate.opsForSet().add(cleanupKey, scriptId);
+            redisTemplate.expire(cleanupKey, TTL_MINUTES, TimeUnit.MINUTES);
+            log.info("✅ Cleanup Set 저장: {}", cleanupKey);
+
+            log.info("Redis 저장 완료 - room:{}, turn:{}, script:{}, order:{}",
+                    roomId, turnNo, scriptId, orderNo);
+
         } catch (Exception e) {
-            log.error("Redis 저장 실패 - roomId: {}", roomId, e);
+            log.error("Redis 저장 실패 - roomId: {}, turnNo: {}", roomId, turnNo, e);
             throw new RuntimeException("Redis 저장 실패", e);
         }
-    }
-
-    /**
-     * (기존 메서드 - 필요 시 유지)
-     * ChatResponse를 직접 반환하는 방식
-     * - Redis 저장 없이 응답만 반환
-     */
-    @Async("chatTaskExecutor")
-    public CompletableFuture<ChatResponse> translateAndGenerateAudio(
-            String roomId, 
-            String text, 
-            Long sequence) {
-        
-        log.info("[ASYNC-{}] 처리 시작 (응답 반환) - Thread: {}", sequence, Thread.currentThread().getName());
-        
-        // 1. GPT 번역
-        GptScriptResponse script = gptService.generateScript(text);
-        log.info("[ASYNC-{}] GPT 완료", sequence);
-        
-        // 2. TTS 생성
-        String ttsUrl = azureSpeechService.generateTTS(script.getEn(), roomId);
-        log.info("[ASYNC-{}] TTS 완료: {}", sequence, ttsUrl);
-        
-        // 3. 성공 응답
-        ChatResponse response = ChatResponse.success(sequence, script, ttsUrl);
-        log.info("[ASYNC-{}] 처리 완료", sequence);
-        
-        return CompletableFuture.completedFuture(response);
     }
 }

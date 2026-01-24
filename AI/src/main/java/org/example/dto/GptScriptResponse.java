@@ -1,14 +1,21 @@
 package org.example.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor  // JSON -> 객체 변환을 위해 필수!
-@AllArgsConstructor // 직접 객체 생성할 때 편리함
+@NoArgsConstructor
+@AllArgsConstructor
 public class GptScriptResponse {
+
+    @JsonProperty("en")
     private String en;
-    private String blank_script;
-    private String[] similarity_phrases;
+
+    @JsonProperty("blank_script")
+    private String blankScript;  // ← blank_script → blankScript (camelCase)
+
+    @JsonProperty("similarity_phrases")
+    private String[] similarityPhrases;  // ← similarity_phrases → similarityPhrases
 }
