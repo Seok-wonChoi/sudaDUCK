@@ -1,22 +1,19 @@
 import { Routes, Route } from "react-router-dom";
 
-import MainPage from "./pages/Main/MainPage";
-import TogetherPage from "./pages/Together/TogetherPage";
-import MakeRoomPage from "./pages/Together/MakeRoomPage";
-import RoomCreatedPage from "./pages/Together/RoomCreatedPage";
-import JoinRoomPage from "./pages/Together/JoinRoomPage";
-import MyPage from "./pages/MyPage/MyPage";
-import RecordingPage from "./pages/Recording";
-
-import PracticePage from "./pages/Practice/PracticePage";
-import SoloPracticePage from "./pages/Practice/SoloPracticePage";
-import AiPracticePage from "./pages/Practice/AiPracticePage";
-
-import WaitingRoomPage from "./pages/Together/WaitingRoomPage";
-import TogetherTalkPage from "./pages/Together/TogetherTalkPage";
-
-import MiniGame1Page from "./pages/MiniGame1";
-import MiniGame2Page from "./pages/MiniGame2";
+import MainPage from "./pages/MainPage";
+import PracticePage from "./pages/PracticePage";
+import SoloPracticePage from "./pages/SoloPracticePage";
+import AiPracticePage from "./pages/AiPracticePage";
+import TogetherPage from "./pages/TogetherPage";
+import MakeRoomPage from "./pages/MakeRoomPage";
+import RoomCreatedPage from "./pages/RoomCreatedPage";
+import JoinRoomPage from "./pages/JoinRoomPage";
+import WaitingRoomPage from "./pages/WaitingRoomPage";
+import TogetherTalkPage from "./pages/TogetherTalkPage";
+import RecordingPage from "./pages/RecordingPage";
+import MyPage from "./pages/MyPage";
+import MiniGame1Page from "./pages/MiniGame1Page";
+import MiniGame2Page from "./pages/MiniGame2Page";
 
 export default function App() {
   return (
@@ -31,10 +28,10 @@ export default function App() {
       <Route path="/together/make" element={<MakeRoomPage />} />
       <Route path="/together/created" element={<RoomCreatedPage />} />
       <Route path="/together/join" element={<JoinRoomPage />} />
-
       <Route path="/together/waiting" element={<WaitingRoomPage />} />
-      <Route path="/recording" element={<RecordingPage />} />
       <Route path="/together/talk" element={<TogetherTalkPage />} />
+
+      <Route path="/recording" element={<RecordingPage />} />
 
       <Route path="/mypage" element={<MyPage />} />
 

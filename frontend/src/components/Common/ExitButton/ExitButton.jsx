@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./ExitButton.module.css";
 
-import ExitConfirmModal from "../ExitConfirmModal/ExitConfirmModal";
+import ConfirmModal from "../ConfirmModal/ConfirmModal";
 
 
 export default function ExitButton({
@@ -47,7 +47,7 @@ export default function ExitButton({
         {label}
       </button>
 
-      <ExitConfirmModal
+      <ConfirmModal
         open={open}
         message={message}
         confirmText={confirmText}
