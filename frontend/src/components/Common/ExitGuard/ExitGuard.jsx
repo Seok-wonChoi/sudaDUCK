@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import ConfirmDialog from "../ConfirmDialog/ConfirmDialog";
+import ConfirmModal from "../ConfirmModal/ConfirmModal";
 import { subscribeExitConfirm } from "./exitConfirmStore";
 
 export default function ExitGuard({
@@ -31,7 +31,7 @@ export default function ExitGuard({
   const open = Boolean(dialog);
 
   return (
-    <ConfirmDialog
+    <ConfirmModal
       open={open}
       title={dialog?.title ?? title}
       message={dialog?.message ?? message}

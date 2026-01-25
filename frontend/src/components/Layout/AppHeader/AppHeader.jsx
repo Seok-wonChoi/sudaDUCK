@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./AppHeader.module.css";
-
-import bellIcon from "../../../assets/icons/notice_bell.png";
-import gearIcon from "../../../assets/icons/gear.png";
+import bellIcon from "@/assets/icons/notice_bell.png";
+import gearIcon from "@/assets/icons/gear.png";
 
 export default function AppHeader({
   userName = "user",
