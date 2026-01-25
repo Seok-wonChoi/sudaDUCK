@@ -5,7 +5,7 @@ import styles from "./JoinRoomPage.module.css";
 import AppHeader from "../components/layout/AppHeader/AppHeader";
 import TipBanner from "../components/common/TipBanner/TipBanner";
 
-import duckImg from "../assets/images/duck.png";
+import duckImg from "@/assets/images/duck.png";
 
 const CODE_LEN = 6;
 

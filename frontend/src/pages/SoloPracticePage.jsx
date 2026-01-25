@@ -6,11 +6,10 @@ import ExitGuard from "../components/common/ExitGuard/ExitGuard";
 import ExitButton from "../components/common/ExitButton/ExitButton";
 import TimerGauge from "../components/common/TimerGauge/TimerGauge";
 
-import duckImg from "../assets/images/duck.png";
-import duckHappyImg from "../assets/images/duck_happy.png";
-
-import micOnIcon from "../assets/icons/mic_on.png";
-import micOffIcon from "../assets/icons/mic_off.png";
+import duckImg from "@/assets/images/duck.png";
+import duckHappyImg from "@/assets/images/duck_happy.png";
+import micOnIcon from "@/assets/icons/mic_on.png";
+import micOffIcon from "@/assets/icons/mic_off.png";
 
 function VoiceWave({ level, enabled }) {
   const multipliers = [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35];
