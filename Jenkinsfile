@@ -21,23 +21,23 @@ pipeline {
 
         // 2. 백엔드 빌드 & 배포 (Blue/Green 무중단)
         stage('Deploy Backend') {
-            when {
-                anyOf { branch 'back-dev'; branch 'develop'; branch 'master' }
-            }
+            // [수정 1] when 블록 삭제함 (조건 없이 실행)
             steps {
-                dir('backend') { // [체크] 백엔드 코드 폴더명 확인
+                dir('backend') {
                     script {
-                        // (1) 환경 변수 설정 (Dev vs Prod)
-                        def isProd = (env.BRANCH_NAME == 'master')
+                        // [수정 2] BRANCH_NAME -> GIT_BRANCH로 변경 (.contains 사용)
+                        // 젠킨스가 주는 진짜 변수(GIT_BRANCH)를 사용하도록 수정
+                        def isProd = (env.GIT_BRANCH?.contains('master'))
+                        
                         def targetNet = isProd ? NET_PROD : NET_DEV
                         def confFile = isProd ? "service-url-prod.inc" : "service-url-dev.inc"
                         def profile = isProd ? "prod" : "dev"
 
                         // (2) 도커 이미지 빌드 (로컬)
-                        // 승엽님 도커파일(멀티스테이지)을 이용해서 빌드
                         sh "docker build -t ${IMG_BACK}:latest ."
 
                         // (3) 현재 실행 중인 컬러 확인 (Nginx에게 물어봄)
+                        // 처음이라 파일 없으면 에러 날 수 있으니 || true 추가 등은 나중에 고려, 일단 진행
                         def currentUrl = sh(script: "docker exec main-nginx cat /etc/nginx/conf.d/${confFile}", returnStdout: true).trim()
 
                         // (4) 타겟(반대편) 결정
@@ -58,8 +58,6 @@ pipeline {
                         sh "docker rm -f ${targetName} || true"
 
                         // (6) 새 컨테이너 실행 (설정 파일 주입!)
-                        // -v /home/ubuntu/config:/config : 호스트의 설정 폴더를 컨테이너 안으로 연결
-                        // --spring.config.location : 스프링에게 설정 파일 위치 알려줌
                         sh """
                             docker run -d \
                             --name ${targetName} \
@@ -88,14 +86,13 @@ pipeline {
 
         // 3. 프론트엔드 빌드 & 배포 (Recreate)
         stage('Deploy Frontend') {
-            when {
-                anyOf { branch 'front-dev'; branch 'develop'; branch 'master' }
-            }
+            // [수정 1] when 블록 삭제함
             steps {
-                dir('frontend') { // [체크] 프론트 코드 폴더명 확인
+                dir('frontend') {
                     script {
-                        // (1) 환경 설정
-                        def isProd = (env.BRANCH_NAME == 'master')
+                        // [수정 2] BRANCH_NAME -> GIT_BRANCH로 변경
+                        def isProd = (env.GIT_BRANCH?.contains('master'))
+                        
                         def targetNet = isProd ? NET_PROD : NET_DEV
                         def targetName = isProd ? "prod-frontend" : "dev-frontend"
 
