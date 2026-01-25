@@ -15,14 +15,15 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 public class SpeechExceptionHandler {
 
-    public ResponseEntity<Map<String, Object>> handle(Throwable ex, Long sequence) {
+    // Map<String, Object> → Map<String, String>
+    public ResponseEntity<Map<String, String>> handle(Throwable ex, String scriptId) {
         Throwable cause = (ex instanceof CompletionException) ? ex.getCause() : ex;
 
         if (cause instanceof TimeoutException) {
-            log.error("[SEQ-{}] 발음 평가 타임아웃", sequence);
+            log.error("[SCRIPT-{}] 발음 평가 타임아웃", scriptId);
 
-            Map<String, Object> body = new HashMap<>();
-            body.put("sequence", sequence);
+            Map<String, String> body = new HashMap<>();
+            body.put("scriptId", scriptId);
             body.put("errorCode", "TIMEOUT");
             body.put("message", "평가 시간 초과");
 
@@ -30,20 +31,20 @@ public class SpeechExceptionHandler {
         }
 
         if (cause instanceof AzureSpeechException) {
-            log.error("[SEQ-{}] Azure 오류: {}", sequence, cause.getMessage());
+            log.error("[SCRIPT-{}] Azure 오류: {}", scriptId, cause.getMessage());
 
-            Map<String, Object> body = new HashMap<>();
-            body.put("sequence", sequence);
+            Map<String, String> body = new HashMap<>();
+            body.put("scriptId", scriptId);
             body.put("errorCode", "AZURE_ERROR");
             body.put("message", cause.getMessage());
 
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
         }
 
-        log.error("[SEQ-{}] 발음 평가 실패", sequence, cause);
+        log.error("[SCRIPT-{}] 발음 평가 실패", scriptId, cause);
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("sequence", sequence);
+        Map<String, String> body = new HashMap<>();
+        body.put("scriptId", scriptId);
         body.put("errorCode", "SERVER_ERROR");
         body.put("message", "서버 오류");
 
