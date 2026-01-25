@@ -1,8 +1,9 @@
 package com.example.DuckDuck.domain.game.entity;
 
+import com.example.DuckDuck.domain.room.entity.Room;
 import jakarta.persistence.*;
 import lombok.*;
-import temp.Room;
+
 
 import java.time.LocalDateTime;
 
