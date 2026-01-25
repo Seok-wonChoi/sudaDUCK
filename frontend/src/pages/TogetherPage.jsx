@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import AppHeader from "../components/layout/AppHeader/AppHeader";
 import ActionCard from "../components/common/ActionCard/ActionCard";
 
-import makeRoomIcon from "../assets/icons/make_room.png";
-import joinRoomIcon from "../assets/icons/join_room.png";
+import makeRoomIcon from "@/assets/icons/make_room.png";
+import joinRoomIcon from "@/assets/icons/join_room.png";
 
 export default function TogetherPage() {
   const navigate = useNavigate();

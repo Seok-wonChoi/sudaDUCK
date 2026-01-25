@@ -4,11 +4,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import AppHeader from "../components/layout/AppHeader/AppHeader";
 import ExitButton from "../components/common/ExitButton/ExitButton";
 
-import duckImg from "../assets/images/duck.png";
-
-import micOnIcon from "../assets/icons/mic_on.png";
-import micOffIcon from "../assets/icons/mic_off.png";
-import usersIcon from "../assets/icons/users_icon.png";
+import duckImg from "@/assets/images/duck.png";
+import micOnIcon from "@/assets/icons/mic_on.png";
+import micOffIcon from "@/assets/icons/mic_off.png";
+import usersIcon from "@/assets/icons/users_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
