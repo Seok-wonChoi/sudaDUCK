@@ -16,6 +16,7 @@ import WaitingRoomPage from "./pages/Together/WaitingRoomPage";
 import TogetherTalkPage from "./pages/Together/TogetherTalkPage";
 
 import MiniGame1Page from "./pages/MiniGame1";
+import MiniGame2Page from "./pages/MiniGame2";
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
       <Route path="/mypage" element={<MyPage />} />
 
       <Route path="/minigame1" element={<MiniGame1Page />} />
+      <Route path="/minigame2" element={<MiniGame2Page />} />
     </Routes>
   );
 }
