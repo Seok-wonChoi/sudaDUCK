@@ -154,7 +154,7 @@ export default function MiniGame1Page() {
   }, [inputValue, currentQuestion, currentBlank, blanksState]);
 
   const handleReview = () => setPhase(GAME_PHASE.REVIEW);
-  const handleComplete = () => navigate('/');
+  const handleComplete = () => navigate('/minigame2');
 
   if (phase === GAME_PHASE.COUNTDOWN) {
     return <CountdownOverlay count={countdown} />;

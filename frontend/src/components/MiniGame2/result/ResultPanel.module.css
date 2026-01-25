@@ -1,0 +1,89 @@
+.panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fce7e7;
+  border-radius: 24px;
+  padding: 48px;
+  min-height: 300px;
+  position: relative;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+}
+
+.badge {
+  background: #fff;
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.grade {
+  font-size: 64px;
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+.message {
+  font-size: 18px;
+  font-weight: 500;
+  color: #1f2937;
+  margin: 0;
+}
+
+.stats {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 4px 0 24px 0;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.retryBtn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  transition: background 0.2s;
+}
+
+.retryBtn:hover {
+  background: #f9fafb;
+}
+
+.completeBtn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+  transition: background 0.2s;
+}
+
+.completeBtn:hover {
+  background: #2563eb;
+}
+
+.duck {
+  width: 200px;
+  height: auto;
+  margin-left: 40px;
+}
