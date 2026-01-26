@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        // 네트워크 및 이미지 이름 설정
         NET_DEV = 'dev-net'
         NET_PROD = 'prod-net'
         IMG_BACK = 'my-backend'
@@ -16,27 +17,28 @@ pipeline {
             }
         }
 
-        // [추가] 2. 백엔드 테스트 스테이지 (품질 검사)
+        // 2. 백엔드 테스트 스테이지 (품질 검사)
         stage('Test Backend') {
             when { 
-                anyOf { branch 'develop'; branch 'backend-dev' } 
+                expression { 
+                    return env.GIT_BRANCH?.contains('develop') || env.GIT_BRANCH?.contains('backend-dev') 
+                } 
             }
             steps {
                 dir('backend') {
-                    // 테스트가 실패하면 배포를 중단합니다.
+                    echo ">>> [Test] JUnit 테스트 코드를 실행합니다..."
                     sh './gradlew test' 
                 }
             }
         }
 
-        // 3. 백엔드 빌드 & 배포
+        // 3. 백엔드 빌드 & 배포 (Blue/Green)
         stage('Deploy Backend') {
-            // [검문소] 특정 브랜치 머지/푸시 때만 실행!
             when {
-                anyOf {
-                    branch 'master'
-                    branch 'develop'
-                    branch 'backend-dev'
+                expression { 
+                    return env.GIT_BRANCH?.contains('master') || 
+                           env.GIT_BRANCH?.contains('develop') || 
+                           env.GIT_BRANCH?.contains('backend-dev')
                 }
             }
             steps {
@@ -47,16 +49,18 @@ pipeline {
                         def confFile = isProd ? "service-url-prod.inc" : "service-url-dev.inc"
                         def profile = isProd ? "prod" : "dev"
 
-                        // 빌드 시 테스트는 위 스테이지에서 했으니 여기선 제외(-x test)
+                        echo ">>> [Backend] 도커 이미지 빌드 중..."
                         sh "docker build -t ${IMG_BACK}:latest ."
 
+                        // 현재 활성화된 컬러 확인 (Nginx에게 물어봄)
                         def currentUrl = sh(script: "docker exec main-nginx cat /etc/nginx/conf.d/${confFile}", returnStdout: true).trim()
                         def targetColor = currentUrl.contains("blue") ? "green" : "blue"
                         def targetName = isProd ? "prod-backend-${targetColor}" : "dev-backend-${targetColor}"
 
+                        // 포트 분리 (Dev: 8081/8082, Prod: 8083/8084)
                         def targetPort = isProd ? (targetColor == "blue" ? "8083" : "8084") : (targetColor == "blue" ? "8081" : "8082")
 
-                        echo ">>> [Backend] ${targetName} 배포 시작"
+                        echo ">>> [Backend] ${targetName} 배포 시작 (Port: ${targetPort})"
 
                         sh "docker rm -f ${targetName} || true"
                         sh """
@@ -65,7 +69,11 @@ pipeline {
                             -v /home/ubuntu/logs:/logs -v /home/ubuntu/config:/config \
                             ${IMG_BACK}:latest --spring.config.location=/config/application-${profile}.yml
                         """
+                        
+                        echo ">>> [Backend] 스프링 부팅 대기 중 (15초)..."
                         sleep 15
+
+                        // Nginx 스위칭
                         sh "echo 'set \$service_url http://${targetName}:8080;' > switch.tmp"
                         sh "docker cp switch.tmp main-nginx:/etc/nginx/conf.d/${confFile}"
                         sh "docker exec main-nginx nginx -s reload"
@@ -74,14 +82,13 @@ pipeline {
             }
         }
 
-        // 4. 프론트엔드 빌드 & 배포
+        // 4. 프론트엔드 빌드 & 배포 (Vite 경로 최적화)
         stage('Deploy Frontend') {
-            // [검문소] 프론트 관련 브랜치만 통과!
             when {
-                anyOf {
-                    branch 'master'
-                    branch 'develop'
-                    branch 'front-dev'
+                expression { 
+                    return env.GIT_BRANCH?.contains('master') || 
+                           env.GIT_BRANCH?.contains('develop') || 
+                           env.GIT_BRANCH?.contains('front-dev')
                 }
             }
             steps {
@@ -93,12 +100,12 @@ pipeline {
                         def hostPort = isProd ? "3001" : "3000"
                         def apiUrl = isProd ? "https://i14e104.p.ssafy.io/api" : "https://i14e104.p.ssafy.io/dev-api"
 
-                        // [핵심] 아까 package.json에 만든 명령어를 선택적으로 사용!
+                        // [핵심] 개발 브랜치일 때만 --base=/dev/ 옵션이 들어간 build:dev 사용
                         def buildCmd = isProd ? "build" : "build:dev"
 
-                        echo ">>> [Frontend] 빌드 모드: ${buildCmd} (API: ${apiUrl})"
+                        echo ">>> [Frontend] 빌드 모드: ${buildCmd} 실행 및 이미지 빌드"
 
-                        // Docker build 시점에 명령어를 주입합니다.
+                        // Dockerfile에 빌드 명령어를 인자로 전달
                         sh "docker build --build-arg BUILD_CMD='${buildCmd}' --build-arg VITE_API_URL=${apiUrl} -t ${IMG_FRONT}:latest ."
 
                         sh "docker rm -f ${targetName} || true"
