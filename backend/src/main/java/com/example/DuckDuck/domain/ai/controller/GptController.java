@@ -2,10 +2,12 @@ package com.example.DuckDuck.domain.ai.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.example.DuckDuck.domain.ai.dto.TranslateRequest;
 import com.example.DuckDuck.domain.ai.service.TranslateService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -17,66 +19,43 @@ import java.util.concurrent.TimeUnit;
 public class GptController {
 
     private final TranslateService translateService;
+    private final GptExceptionHandler exceptionHandler;
     private final int timeoutSeconds = 10;
 
     /**
      * 번역 API - Redis에 저장
-     * POST /api/v1/gpt/translate?roomId=1&text=안녕&sequence=1&turnNo=1&speakerId=100
+     * POST /api/v1/gpt/translate
+     * Body: {
+     *   "roomId": "1",
+     *   "text": "안녕하세요",
+     *   "turnNo": 1,
+     *   "speakerId": 100
+     * }
      */
     @PostMapping("/translate")
     public CompletableFuture<ResponseEntity<Map<String, String>>> translate(
-            @RequestParam String roomId,
-            @RequestParam String text,
-            @RequestParam Long sequence,
-            @RequestParam Long turnNo,
-            @RequestParam Long speakerId) {
+            @Valid @RequestBody TranslateRequest request) {
 
-        // 파라미터 검증
-        if (roomId == null || roomId.trim().isEmpty()) {
-            log.warn("잘못된 요청 - roomId 없음");
-            return CompletableFuture.completedFuture(
-                    ResponseEntity.badRequest().body(Map.of("message", "roomId는 필수입니다."))
-            );
-        }
+        log.info("번역 요청 - roomId: {}, turn: {}, speaker: {}",
+                request.getRoomId(), request.getTurnNo(), request.getSpeakerId());
 
-        if (text == null || text.trim().isEmpty()) {
-            log.warn("잘못된 요청 - text 없음");
-            return CompletableFuture.completedFuture(
-                    ResponseEntity.badRequest().body(Map.of("message", "text는 필수입니다."))
-            );
-        }
-
-        if (turnNo == null) {
-            log.warn("잘못된 요청 - turnNo 없음");
-            return CompletableFuture.completedFuture(
-                    ResponseEntity.badRequest().body(Map.of("message", "turnNo는 필수입니다."))
-            );
-        }
-
-        if (speakerId == null) {
-            log.warn("잘못된 요청 - speakerId 없음");
-            return CompletableFuture.completedFuture(
-                    ResponseEntity.badRequest().body(Map.of("message", "speakerId는 필수입니다."))
-            );
-        }
-
-        log.info("번역 요청 - roomId: {}, turn: {}, seq: {}, speaker: {}",
-                roomId, turnNo, sequence, speakerId);
-
-        return translateService.translateAndSaveToRedis(roomId, text, sequence, turnNo, speakerId)
+        return translateService.translateAndSaveToRedis(
+                        request.getRoomId(),
+                        request.getText(),
+                        request.getTurnNo(),
+                        request.getSpeakerId())
                 .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
                 .thenApply(success -> {
                     if (success) {
-                        log.info("번역 완료 - roomId: {}, turn: {}, seq: {}", roomId, turnNo, sequence);
+                        log.info("번역 완료 - roomId: {}, turn: {}",
+                                request.getRoomId(), request.getTurnNo());
                         return ResponseEntity.ok(Map.of("message", "저장 완료"));
                     } else {
-                        log.error("번역 실패 - roomId: {}, turn: {}, seq: {}", roomId, turnNo, sequence);
+                        log.error("번역 실패 - roomId: {}, turn: {}",
+                                request.getRoomId(), request.getTurnNo());
                         return ResponseEntity.status(500).body(Map.of("message", "저장 실패"));
                     }
                 })
-                .exceptionally(ex -> {
-                    log.error("번역 실패 - roomId: {}, turn: {}", roomId, turnNo, ex);
-                    return ResponseEntity.status(500).body(Map.of("message", "서버 오류: " + ex.getMessage()));
-                });
+                .exceptionally(exceptionHandler::handle);
     }
 }
