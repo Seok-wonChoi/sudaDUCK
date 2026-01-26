@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -28,12 +29,9 @@ public class TranslateService {
     private static final long TTL_MINUTES = 120;
 
     // 방별 sequence 관리를 위한 Map
-    private final Map<String, AtomicLong> roomSequenceMap = new HashMap<>();
+    private final Map<String, AtomicLong> roomSequenceMap = new ConcurrentHashMap<>();
 
-    /**
-     * 방별 sequence 생성 (thread-safe)
-     */
-    private synchronized Long generateSequence(String roomId) {
+    private Long generateSequence(String roomId) {
         return roomSequenceMap
                 .computeIfAbsent(roomId, k -> new AtomicLong(0))
                 .incrementAndGet();
