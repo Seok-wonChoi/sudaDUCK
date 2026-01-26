@@ -74,10 +74,12 @@ export default function MakeRoomPage() {
       roomTopic: topic.trim(),
       turnCount: turn,
       inviteCode: createInviteCode(),
+      isHost: true,
+      maxCount: 4,
     };
 
     sessionStorage.setItem("roomCreateResult", JSON.stringify(payload));
-    navigate("/together/created", { state: payload });
+    navigate("/together/waiting", { state: payload });
   };
 
   return (

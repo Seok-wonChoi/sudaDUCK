@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import styles from "./TimerGauge.module.css";
 
 function formatMMSS(totalSeconds) {
   const m = Math.floor(totalSeconds / 60);
@@ -61,11 +60,17 @@ export default function TimerGauge({
   }, [durationMs, isRunning, onDone]);
 
   return (
-    <div className={styles.Wrap} aria-label="남은 시간">
-      <div className={styles.Track}>
-        <div ref={fillRef} className={styles.Fill} />
+    <div className="inline-flex items-center gap-2.5" aria-label="남은 시간">
+      <div className="w-52 sm:w-[260px] h-2.5 rounded-full bg-gray-900/10 overflow-hidden">
+        <div
+          ref={fillRef}
+          className="w-full h-full origin-left bg-indigo-600/85 will-change-transform"
+          style={{ transform: "scaleX(1)" }}
+        />
       </div>
-      <div className={styles.Time}>{label}</div>
+      <div className="text-xs font-black text-gray-900 min-w-[44px] text-right">
+        {label}
+      </div>
     </div>
   );
 }

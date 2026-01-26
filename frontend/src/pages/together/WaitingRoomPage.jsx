@@ -8,6 +8,8 @@ import duckImg from "@/assets/images/duck.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 import usersIcon from "@/assets/icons/users_icon.png";
+import copyIcon from "@/assets/icons/copy_icon.png";
+import kakaoIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
@@ -33,6 +35,23 @@ export default function WaitingRoomPage() {
   const roomInfo = state ?? {};
   const isHost = roomInfo.isHost ?? true;
   const maxCount = roomInfo.maxCount ?? 4;
+  const roomTitle = roomInfo.roomTitle ?? "영어 공부하자!";
+  const topic = roomInfo.roomTopic ?? roomInfo.topic ?? "좋아하는 음식";
+  const turnCount = roomInfo.turnCount ?? 3;
+  const inviteCode = roomInfo.inviteCode ?? "ABC123";
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      alert("참여 코드가 복사되었습니다!");
+    } catch (e) {
+      console.log("복사 실패", e);
+    }
+  };
+
+  const handleKakaoShare = () => {
+    console.log("카카오 공유 클릭", inviteCode);
+  };
 
   const [participants, setParticipants] = useState(() => {
     if (isHost) {
@@ -109,15 +128,60 @@ export default function WaitingRoomPage() {
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Top}>
-          <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
-          replace 
-          />
+          <div className={styles.TopHeader}>
+            <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
+            replace
+            />
+
+            {/* 방 정보 카드 (우측 상단) */}
+            <aside className={styles.RoomInfoCard} aria-label="방 정보">
+              <div className={styles.RoomInfoRow}>
+                <div className={styles.RoomInfoItem}>
+                  <span className={styles.RoomInfoLabel}>방 제목</span>
+                  <span className={styles.RoomInfoValue}>{roomTitle}</span>
+                </div>
+                <div className={styles.RoomInfoItem}>
+                  <span className={styles.RoomInfoLabel}>주제</span>
+                  <span className={styles.RoomInfoValue}>{topic}</span>
+                </div>
+                <div className={styles.RoomInfoItem}>
+                  <span className={styles.RoomInfoLabel}>턴 수</span>
+                  <span className={styles.RoomInfoValue}>{turnCount}턴</span>
+                </div>
+              </div>
+
+              <div className={styles.CodeSection}>
+                <span className={styles.CodeLabel}>참여 코드</span>
+                <div className={styles.CodeBox}>
+                  <span className={styles.CodeText}>{inviteCode}</span>
+                  <div className={styles.CodeActions}>
+                    <button
+                      type="button"
+                      className={styles.KakaoButton}
+                      onClick={handleKakaoShare}
+                    >
+                      <img className={styles.ActionIcon} src={kakaoIcon} alt="카카오" />
+                      공유
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.CopyButton}
+                      onClick={handleCopy}
+                    >
+                      <img className={styles.ActionIcon} src={copyIcon} alt="복사" />
+                      복사
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
 
           <div className={styles.SpeechRow}>
             <div className={styles.SpeechLeft}>
               <img className={styles.Duck} src={duckImg} alt="오리" />
               <div className={styles.SpeechBubbleLeft}>
-                첫 번째 대화 주제는 {roomInfo.topic ?? "좋아하는 음식"}입니다!
+                첫 번째 대화 주제는 {topic}입니다!
               </div>
             </div>
 
