@@ -1,61 +1,43 @@
-### JetBrains (IntelliJ IDEA) ###
-.idea/
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
 *.iws
 *.iml
 *.ipr
 out/
-gen/
+!**/src/main/**/out/
+!**/src/test/**/out/
 
-### Eclipse ###
-.metadata/
-bin/
-tmp/
-.tmp/
-.classpath
-.project
-.settings/
-.factorypath
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
 
-### Visual Studio Code ###
+### VS Code ###
 .vscode/
 
-### Build Tools (Maven / Gradle) ###
-target/
-build/
-.gradle/
-.mtl.xml
-.incremental/
-bin/
-obj/
-
-### Compiled class files ###
-*.class
-
-### Log files ###
-*.log
-
-### OS generated files ###
-.DS_Store
-.DS_Store?
-._*
-Thumbs.db
-
-### Spring Boot ###
-*.jar
-*.war
-*.zip
-*.tar.gz
-*.rar
-
-### Environment Variables (중요: 보안 설정 파일) ###
+# ===============================
+# Secrets (API Key, DB Password)
+# ===============================
+src/main/resources/application.yaml
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# 아래 파일은 DB 정보나 API 키가 들어있을 수 있으므로 주의해서 관리하세요.
-# 만약 application.yml에 중요한 정보가 있다면 제외하는 것이 좋으나, 
-# 보통은 샘플용을 만들고 실제 파일은 제외합니다.
-application.yml
-application.properties
