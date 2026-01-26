@@ -1,13 +1,12 @@
 pipeline {
     agent any
 
-    // 1. 젠킨스 도구 설정에서 만든 JDK 17을 사용합니다.
+    // 1. 젠킨스 설정에서 만든 jdk17 사용
     tools {
         jdk 'jdk17' 
     }
 
     environment {
-        // 네트워크 및 이미지 이름 설정
         NET_DEV = 'dev-net'
         NET_PROD = 'prod-net'
         IMG_BACK = 'my-backend'
@@ -15,27 +14,20 @@ pipeline {
     }
 
     stages {
-        // 1. 소스 코드 가져오기
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        // ---------------------------------------------------------
-        // 2. 백엔드 빌드 및 테스트 스킵 (DB 연결 에러 해결책)
-        // ---------------------------------------------------------
+        // 2. 백엔드 빌드 (테스트 스킵으로 DB 에러 회피)
         stage('Test Backend') {
-            when { 
-                anyOf { branch 'develop'; branch 'back-dev' } 
-            }
+            when { anyOf { branch 'develop'; branch 'back-dev' } }
             steps {
                 dir('backend') {
                     script {
-                        echo ">>> [Test] DB 연결 이슈 해결 전까지 테스트를 스킵하고 빌드만 확인합니다..."
-                        // gradlew 실행 권한 부여
+                        echo ">>> [Build] gradlew 권한 부여 및 빌드 진행..."
                         sh "chmod +x gradlew" 
-                        // -x test 옵션으로 테스트를 건너뛰고 빌드만 수행합니다.
                         sh "./gradlew build -x test" 
                     }
                 }
@@ -43,12 +35,10 @@ pipeline {
         }
 
         // ---------------------------------------------------------
-        // 3. 백엔드 배포 (Blue/Green 무중단 배포)
+        // 3. 백엔드 배포 (Blue/Green 스위칭 + Cleanup 로직 추가)
         // ---------------------------------------------------------
         stage('Deploy Backend') {
-            when { 
-                anyOf { branch 'develop'; branch 'back-dev'; branch 'master' } 
-            }
+            when { anyOf { branch 'develop'; branch 'back-dev'; branch 'master' } }
             steps {
                 dir('backend') {
                     script {
@@ -57,19 +47,16 @@ pipeline {
                         def profile = isProd ? "prod" : "dev"
                         def confFile = isProd ? "service-url-prod.inc" : "service-url-dev.inc"
 
-                        echo ">>> [Backend] ${env.BRANCH_NAME} 환경 배포 중..."
-
-                        // 빌드 전 권한 확인 및 도커 이미지 생성
                         sh "chmod +x gradlew"
                         sh "docker build -t ${IMG_BACK}:latest ."
 
-                        // Nginx 컬러 확인 및 타겟 결정
+                        // 현재 서비스 중인 컬러 확인
                         def currentUrl = sh(script: "docker exec main-nginx cat /etc/nginx/conf.d/${confFile}", returnStdout: true).trim()
                         def targetColor = currentUrl.contains("blue") ? "green" : "blue"
                         def targetName = isProd ? "prod-backend-${targetColor}" : "dev-backend-${targetColor}"
                         def targetPort = isProd ? (targetColor == "blue" ? "8083" : "8084") : (targetColor == "blue" ? "8081" : "8082")
 
-                        // 기존 컨테이너 제거 및 새 컨테이너 실행
+                        // 1) 새로운 컬러 컨테이너 실행
                         sh "docker rm -f ${targetName} || true"
                         sh """
                             docker run -d --name ${targetName} --network ${targetNet} \
@@ -81,22 +68,25 @@ pipeline {
                         echo ">>> [Backend] 스프링 부팅 대기 중 (15초)..."
                         sleep 15
 
-                        // Nginx 스위칭 (교통정리)
+                        // 2) Nginx 스위칭 (교통 정리)
                         sh "echo 'set \$service_url http://${targetName}:8080;' > switch.tmp"
                         sh "docker cp switch.tmp main-nginx:/etc/nginx/conf.d/${confFile}"
                         sh "docker exec main-nginx nginx -s reload"
+
+                        // 3) [핵심 추가] 이제 필요 없어진 이전 컨테이너 정리 (Cleanup)
+                        def oldColor = (targetColor == 'blue') ? 'green' : 'blue'
+                        def oldName = isProd ? "prod-backend-${oldColor}" : "dev-backend-${oldColor}"
+                        
+                        echo ">>> [Cleanup] 배포 성공! 이제 이전 버전인 ${oldName}을 정리합니다."
+                        sh "docker rm -f ${oldName} || true"
                     }
                 }
             }
         }
 
-        // ---------------------------------------------------------
-        // 4. 프론트엔드 배포 (Vite 경로 및 API URL 최적화)
-        // ---------------------------------------------------------
+        // 4. 프론트엔드 배포
         stage('Deploy Frontend') {
-            when {
-                anyOf { branch 'develop'; branch 'front-dev'; branch 'master' }
-            }
+            when { anyOf { branch 'develop'; branch 'front-dev'; branch 'master' } }
             steps {
                 dir('frontend') {
                     script {
@@ -105,13 +95,8 @@ pipeline {
                         def targetName = isProd ? "prod-frontend" : "dev-frontend"
                         def hostPort = isProd ? "3001" : "3000"
                         def apiUrl = isProd ? "https://i14e104.p.ssafy.io/api" : "https://i14e104.p.ssafy.io/dev-api"
-
-                        // 배포 환경에 따른 빌드 커맨드 설정
                         def buildCmd = isProd ? "build" : "build:dev"
 
-                        echo ">>> [Frontend] ${env.BRANCH_NAME} 환경 배포 중 (Command: ${buildCmd})"
-
-                        // 프론트엔드 도커 빌드 및 실행
                         sh "docker build --build-arg BUILD_CMD='${buildCmd}' --build-arg VITE_API_URL=${apiUrl} -t ${IMG_FRONT}:latest ."
                         sh "docker rm -f ${targetName} || true"
                         sh "docker run -d --name ${targetName} --network ${targetNet} -p ${hostPort}:80 ${IMG_FRONT}:latest"
