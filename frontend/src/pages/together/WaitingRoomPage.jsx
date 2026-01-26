@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import AppHeader from "../components/layout/AppHeader/AppHeader";
-import ExitButton from "../components/common/ExitButton/ExitButton";
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import ExitButton from "@/components/common/ExitButton/ExitButton";
 
 import duckImg from "@/assets/images/duck.png";
 import micOnIcon from "@/assets/icons/mic_on.png";

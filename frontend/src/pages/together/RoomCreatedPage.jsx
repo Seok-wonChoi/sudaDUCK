@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 
-import AppHeader from "../components/layout/AppHeader/AppHeader";
-import TipBanner from "../components/common/TipBanner/TipBanner";
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import TipBanner from "@/components/common/TipBanner/TipBanner";
 
 import copyIcon from "@/assets/icons/copy_icon.png";
 import kakaoIcon from "@/assets/icons/kakaotalk_icon.png";

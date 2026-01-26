@@ -1,11 +1,11 @@
 import styles from "./MainPage.module.css";
 import { useNavigate } from "react-router-dom";
 
-import AppHeader from "../components/layout/AppHeader/AppHeader";
-import MainHero from "../components/features/main/MainHero/MainHero";
-import ModeSelectSection from "../components/features/main/ModeSelectSection/ModeSelectSection";
-import TipBanner from "../components/common/TipBanner/TipBanner";
-import StatsSection from "../components/features/main/StatsSection/StatsSection";
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import MainHero from "@/components/features/main/MainHero/MainHero";
+import ModeSelectSection from "@/components/features/main/ModeSelectSection/ModeSelectSection";
+import TipBanner from "@/components/common/TipBanner/TipBanner";
+import StatsSection from "@/components/features/main/StatsSection/StatsSection";
 
 export default function MainPage() {
   const navigate = useNavigate();

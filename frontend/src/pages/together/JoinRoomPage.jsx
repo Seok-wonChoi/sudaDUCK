@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./JoinRoomPage.module.css";
 
-import AppHeader from "../components/layout/AppHeader/AppHeader";
-import TipBanner from "../components/common/TipBanner/TipBanner";
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import TipBanner from "@/components/common/TipBanner/TipBanner";
 
 import duckImg from "@/assets/images/duck.png";
 

@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./MakeRoomPage.module.css";
 
-import AppHeader from "../components/layout/AppHeader/AppHeader";
-import TipBanner from "../components/common/TipBanner/TipBanner";
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import TipBanner from "@/components/common/TipBanner/TipBanner";
 
 function createInviteCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

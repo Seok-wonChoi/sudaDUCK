@@ -1,12 +1,12 @@
 import styles from "./PracticePage.module.css";
 import { useNavigate } from "react-router-dom";
 
-import AppHeader from "../components/layout/AppHeader/AppHeader";
-import TipBanner from "../components/common/TipBanner/TipBanner";
-import StatsSection from "../components/features/main/StatsSection/StatsSection";
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import TipBanner from "@/components/common/TipBanner/TipBanner";
+import StatsSection from "@/components/features/main/StatsSection/StatsSection";
 
-import PracticeHero from "../components/features/practice/PracticeHero/PracticeHero";
-import PracticeModeSelectSection from "../components/features/practice/PracticeModeSelectSection/PracticeModeSelectSection";
+import PracticeHero from "@/components/features/practice/PracticeHero/PracticeHero";
+import PracticeModeSelectSection from "@/components/features/practice/PracticeModeSelectSection/PracticeModeSelectSection";
 
 export default function PracticePage() {
   const navigate = useNavigate();
