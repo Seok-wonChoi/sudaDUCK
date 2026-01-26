@@ -1,7 +1,7 @@
 import styles from "./TogetherPage.module.css";
 import { useNavigate } from "react-router-dom";
 
-import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import AppHeader from "@/components/Layout/AppHeader/AppHeader";
 import ActionCard from "@/components/common/ActionCard/ActionCard";
 
 import makeRoomIcon from "@/assets/icons/make_room.png";

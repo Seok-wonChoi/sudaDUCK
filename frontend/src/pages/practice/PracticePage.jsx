@@ -1,7 +1,7 @@
 import styles from "./PracticePage.module.css";
 import { useNavigate } from "react-router-dom";
 
-import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import AppHeader from "@/components/Layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 import StatsSection from "@/components/features/main/StatsSection/StatsSection";
 
