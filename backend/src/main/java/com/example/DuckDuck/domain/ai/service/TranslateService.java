@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @RequiredArgsConstructor
@@ -24,14 +25,25 @@ public class TranslateService {
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    private static final long TTL_MINUTES = 120; // 120분 (명세서 기준)
+    private static final long TTL_MINUTES = 120;
+
+    // 방별 sequence 관리를 위한 Map
+    private final Map<String, AtomicLong> roomSequenceMap = new HashMap<>();
+
+    /**
+     * 방별 sequence 생성 (thread-safe)
+     */
+    private synchronized Long generateSequence(String roomId) {
+        return roomSequenceMap
+                .computeIfAbsent(roomId, k -> new AtomicLong(0))
+                .incrementAndGet();
+    }
 
     /**
      * 한국어 → 영어 번역 + TTS 생성 + Redis 저장 (비동기)
      *
      * @param roomId 방 ID
      * @param text 한국어 텍스트
-     * @param sequence 순서 번호 (order_no)
      * @param turnNo 턴 번호
      * @param speakerId 발화자 ID
      * @return 성공 여부
@@ -40,9 +52,11 @@ public class TranslateService {
     public CompletableFuture<Boolean> translateAndSaveToRedis(
             String roomId,
             String text,
-            Long sequence,
             Long turnNo,
             Long speakerId) {
+
+        // API 호출 순서대로 sequence 생성
+        Long sequence = generateSequence(roomId);
 
         log.info("[ASYNC-{}] 처리 시작 - roomId: {}, turn: {}, speaker: {}",
                 sequence, roomId, turnNo, speakerId);
@@ -85,7 +99,7 @@ public class TranslateService {
     private void saveToRedis(Long roomId, Long turnNo, String scriptId, Long orderNo,
                              Long speakerId, String korean, GptScriptResponse script, String ttsUrl) {
         try {
-            // 1. Script Detail (Hash)
+            // 1. Script Detail
             String detailKey = String.format("room:%d:turn:%d:script:%s", roomId, turnNo, scriptId);
 
             Map<String, String> scriptData = new HashMap<>();
@@ -101,19 +115,19 @@ public class TranslateService {
 
             redisTemplate.opsForHash().putAll(detailKey, scriptData);
             redisTemplate.expire(detailKey, TTL_MINUTES, TimeUnit.MINUTES);
-            log.info("✅ Hash 저장: {}", detailKey);
+            log.info("Hash 저장: {}", detailKey);
 
             // 2. Turn-based Ordered Index (Sorted Set)
             String indexKey = String.format("room:%d:turn:%d:scripts", roomId, turnNo);
             redisTemplate.opsForZSet().add(indexKey, scriptId, orderNo.doubleValue());
             redisTemplate.expire(indexKey, TTL_MINUTES, TimeUnit.MINUTES);
-            log.info("✅ Sorted Set 저장: {} (score: {})", indexKey, orderNo);
+            log.info("Sorted Set 저장: {} (score: {})", indexKey, orderNo);
 
             // 3. Cleanup Set
             String cleanupKey = String.format("room:%d:scripts", roomId);
             redisTemplate.opsForSet().add(cleanupKey, scriptId);
             redisTemplate.expire(cleanupKey, TTL_MINUTES, TimeUnit.MINUTES);
-            log.info("✅ Cleanup Set 저장: {}", cleanupKey);
+            log.info("Cleanup Set 저장: {}", cleanupKey);
 
             log.info("Redis 저장 완료 - room:{}, turn:{}, script:{}, order:{}",
                     roomId, turnNo, scriptId, orderNo);
