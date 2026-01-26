@@ -11,12 +11,10 @@ import usersIcon from "@/assets/icons/users_icon.png";
 import copyIcon from "@/assets/icons/copy_icon.png";
 import kakaoIcon from "@/assets/icons/kakaotalk_icon.png";
 
-import styles from "./WaitingRoomPage.module.css";
-
 function PlayIcon() {
   return (
     <svg
-      className={styles.PlayIcon}
+      className="inline-block"
       width="16"
       height="16"
       viewBox="0 0 24 24"
@@ -123,52 +121,62 @@ export default function WaitingRoomPage() {
   const primaryDisabled = isHost ? !canStart : false;
 
   return (
-    <div className={styles.Page}>
-      <div className={styles.Shell}>
+    <div className="min-h-screen bg-[#f6f8ff] py-7">
+      <div className="max-w-[1120px] mx-auto bg-white rounded-[28px] shadow-[0_18px_50px_rgba(17,24,39,0.1)] overflow-hidden relative">
         <AppHeader userName="user" notifications={[]} />
 
-        <div className={styles.Top}>
-          <div className={styles.TopHeader}>
-            <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
-            replace
+        <div className="px-4 md:px-8 py-5 pb-8">
+          {/* 상단 헤더 */}
+          <div className="flex flex-col md:flex-row justify-between items-start gap-3 md:gap-4">
+            <ExitButton
+              to="/"
+              label="나가기"
+              confirmMessage="메인 화면으로 나가시겠습니까?"
+              replace
             />
 
-            {/* 방 정보 카드 (우측 상단) */}
-            <aside className={styles.RoomInfoCard} aria-label="방 정보">
-              <div className={styles.RoomInfoRow}>
-                <div className={styles.RoomInfoItem}>
-                  <span className={styles.RoomInfoLabel}>방 제목</span>
-                  <span className={styles.RoomInfoValue}>{roomTitle}</span>
+            {/* 방 정보 카드 */}
+            <aside
+              className="bg-white border border-[#e8edf6] rounded-xl p-3.5 px-4
+                shadow-[0_8px_20px_rgba(17,24,39,0.08)] w-full md:w-auto md:min-w-[320px]"
+              aria-label="방 정보"
+            >
+              <div className="flex flex-wrap gap-3 md:gap-5 mb-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] font-bold text-gray-500">방 제목</span>
+                  <span className="text-[13px] font-black text-gray-900">{roomTitle}</span>
                 </div>
-                <div className={styles.RoomInfoItem}>
-                  <span className={styles.RoomInfoLabel}>주제</span>
-                  <span className={styles.RoomInfoValue}>{topic}</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] font-bold text-gray-500">주제</span>
+                  <span className="text-[13px] font-black text-gray-900">{topic}</span>
                 </div>
-                <div className={styles.RoomInfoItem}>
-                  <span className={styles.RoomInfoLabel}>턴 수</span>
-                  <span className={styles.RoomInfoValue}>{turnCount}턴</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] font-bold text-gray-500">턴 수</span>
+                  <span className="text-[13px] font-black text-gray-900">{turnCount}턴</span>
                 </div>
               </div>
 
-              <div className={styles.CodeSection}>
-                <span className={styles.CodeLabel}>참여 코드</span>
-                <div className={styles.CodeBox}>
-                  <span className={styles.CodeText}>{inviteCode}</span>
-                  <div className={styles.CodeActions}>
+              <div className="border-t border-indigo-50 pt-3">
+                <span className="text-[11px] font-bold text-gray-500 block mb-1.5">참여 코드</span>
+                <div className="flex items-center justify-between bg-indigo-500/5 border border-indigo-200 rounded-xl py-2 px-3">
+                  <span className="text-lg font-black tracking-widest text-indigo-600">{inviteCode}</span>
+                  <div className="flex gap-1.5">
                     <button
                       type="button"
-                      className={styles.KakaoButton}
+                      className="h-7 px-2.5 rounded-full border-0 bg-yellow-400 text-[11px] font-black text-gray-900
+                        inline-flex items-center gap-1 cursor-pointer"
                       onClick={handleKakaoShare}
                     >
-                      <img className={styles.ActionIcon} src={kakaoIcon} alt="카카오" />
+                      <img className="w-3 h-3 object-contain" src={kakaoIcon} alt="카카오" />
                       공유
                     </button>
                     <button
                       type="button"
-                      className={styles.CopyButton}
+                      className="h-7 px-2.5 rounded-full border border-indigo-200 bg-white text-[11px] font-black text-indigo-600
+                        inline-flex items-center gap-1 cursor-pointer"
                       onClick={handleCopy}
                     >
-                      <img className={styles.ActionIcon} src={copyIcon} alt="복사" />
+                      <img className="w-3 h-3 object-contain" src={copyIcon} alt="복사" />
                       복사
                     </button>
                   </div>
@@ -177,79 +185,85 @@ export default function WaitingRoomPage() {
             </aside>
           </div>
 
-          <div className={styles.SpeechRow}>
-            <div className={styles.SpeechLeft}>
-              <img className={styles.Duck} src={duckImg} alt="오리" />
-              <div className={styles.SpeechBubbleLeft}>
+          {/* 말풍선 영역 */}
+          <div className="mt-3.5 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 items-center">
+            <div className="flex items-center gap-3.5 justify-start">
+              <img className="w-16 h-16 object-contain" src={duckImg} alt="오리" />
+              <div className="max-w-[420px] p-3 px-3.5 rounded-xl bg-white border border-[#e8edf6]
+                shadow-[0_14px_26px_rgba(17,24,39,0.1)] text-xs font-extrabold text-gray-900 leading-snug">
                 첫 번째 대화 주제는 {topic}입니다!
               </div>
             </div>
 
-            <div className={styles.SpeechRight}>
-              <div className={styles.SpeechBubbleRight}>
+            <div className="flex items-center gap-3.5 justify-start md:justify-end">
+              <div className="max-w-[420px] p-3 px-4 rounded-xl bg-white border border-[#e8edf6]
+                shadow-[0_18px_30px_rgba(17,24,39,0.14)] text-xs font-black text-gray-900 leading-snug">
                 {isHost
                   ? "준비가 완료 되면 대화 시작하기 버튼을 눌러주세요!"
                   : "준비가 완료 되면 준비하기 버튼을 눌러주세요!"}
               </div>
-              <img className={styles.Duck} src={duckImg} alt="오리" />
+              <img className="w-16 h-16 object-contain" src={duckImg} alt="오리" />
             </div>
           </div>
 
-          <section className={styles.ParticipantsCard} aria-label="참여자 목록">
-            <div className={styles.ParticipantsHeader}>
-              <div className={styles.ParticipantsTitle}>
-                <img
-                  className={styles.ParticipantsTitleIcon}
-                  src={usersIcon}
-                  alt=""
-                  aria-hidden="true"
-                />
+          {/* 참여자 카드 */}
+          <section className="mt-4 border border-[#e8edf6] rounded-2xl bg-white overflow-hidden" aria-label="참여자 목록">
+            <div className="flex items-center justify-between p-3.5 px-4 border-b border-indigo-50">
+              <div className="inline-flex items-center gap-2 text-[13px] font-black text-gray-900">
+                <img className="w-4 h-4 object-contain" src={usersIcon} alt="" aria-hidden="true" />
                 <span>참여자</span>
-                <span className={styles.ParticipantsCount}>
-                  ({currentCount}/{maxCount})
-                </span>
+                <span className="font-black text-indigo-600">({currentCount}/{maxCount})</span>
               </div>
-
-              <div className={styles.StatusBadge}>대기 중</div>
+              <div className="py-1.5 px-3 rounded-xl bg-gray-100 border border-gray-200 text-xs font-extrabold text-gray-500">
+                대기 중
+              </div>
             </div>
 
-            <div className={styles.ParticipantsBody}>
+            <div className="p-3.5 px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-3 min-h-[210px]">
               {participants.map((p) => {
                 const isMe = p.id === "me";
                 const micOn = isMe ? myMicOn : false;
 
                 return (
-                  <div key={p.id} className={styles.ParticipantRow}>
-                    <div className={styles.ParticipantLeft}>
-                      <div className={styles.UserIconWrap} aria-hidden="true">
-                        <img className={styles.UserIconImg} src={usersIcon} alt="" />
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between border border-indigo-50 rounded-xl p-3.5 min-h-[80px] bg-white"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center"
+                        aria-hidden="true"
+                      >
+                        <img className="w-4.5 h-4.5 object-contain" src={usersIcon} alt="" />
                       </div>
 
-                      <div className={styles.InfoColumn}>
-                        <div className={styles.NameRow}>
-                          <div className={styles.ParticipantName}>{p.name}</div>
-
-                          {!p.isHost ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="text-[13px] font-black text-gray-900">{p.name}</div>
+                          {!p.isHost && (
                             <span
-                              className={`${styles.ReadyTag} ${
-                                p.isReady ? styles.ReadyTagOn : styles.ReadyTagOff
-                              }`}
+                              className={`py-1 px-2.5 rounded-full text-xs font-black
+                                ${p.isReady
+                                  ? "bg-green-500/15 border border-green-500/35 text-green-600"
+                                  : "bg-gray-500/10 border border-gray-500/20 text-gray-500"
+                                }`}
                             >
                               {p.isReady ? "준비 완료" : "대기"}
                             </span>
-                          ) : null}
+                          )}
                         </div>
 
-                        <div className={styles.ActionRow}>
+                        <div className="flex items-center">
                           <button
                             type="button"
-                            className={styles.MicButton}
+                            className="w-6 h-6 p-0 border-0 bg-transparent cursor-pointer
+                              inline-flex items-center justify-center disabled:cursor-default disabled:opacity-60"
                             onClick={isMe ? toggleMyMic : undefined}
                             disabled={!isMe}
                             aria-label={micOn ? "마이크 끄기" : "마이크 켜기"}
                           >
                             <img
-                              className={styles.MicIconImg}
+                              className="w-4.5 h-4.5 object-contain"
                               src={micOn ? micOnIcon : micOffIcon}
                               alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                             />
@@ -258,8 +272,12 @@ export default function WaitingRoomPage() {
                       </div>
                     </div>
 
-                    <div className={styles.ParticipantRight}>
-                      {p.isHost ? <span className={styles.HostTag}>방장</span> : null}
+                    <div className="flex items-center">
+                      {p.isHost && (
+                        <span className="py-1.5 px-2.5 rounded-full bg-amber-500/20 border border-amber-500/35 text-xs font-black text-amber-700">
+                          방장
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -268,9 +286,12 @@ export default function WaitingRoomPage() {
 
             <button
               type="button"
-              className={`${styles.StartButton} ${
-                primaryDisabled ? styles.StartButtonDisabled : ""
-              }`}
+              className={`w-[calc(100%-32px)] mx-4 mb-4 h-13 border-0 rounded-xl
+                text-sm font-black flex items-center justify-center gap-2.5 cursor-pointer
+                ${primaryDisabled
+                  ? "bg-gray-300 text-gray-500 shadow-none cursor-not-allowed"
+                  : "bg-indigo-600 text-white shadow-[0_16px_30px_rgba(79,70,229,0.28)]"
+                }`}
               onClick={handlePrimary}
               disabled={primaryDisabled}
               aria-disabled={primaryDisabled}
@@ -280,26 +301,36 @@ export default function WaitingRoomPage() {
                   : undefined
               }
             >
-              {isHost ? <PlayIcon /> : null}
+              {isHost && <PlayIcon />}
               {primaryLabel}
             </button>
           </section>
 
-          <section className={styles.GuideBox} aria-label="시작 전 안내사항">
-            <div className={styles.GuideHeader}>
-              <span className={styles.GuideDot} aria-hidden="true" />
-              <span className={styles.GuideTitle}>시작 전 안내사항</span>
+          {/* 안내 박스 */}
+          <section
+            className="mt-3 rounded-xl border border-amber-500/25 bg-amber-100/20 p-3.5 px-4"
+            aria-label="시작 전 안내사항"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/55" aria-hidden="true" />
+              <span className="text-[13px] font-black text-gray-900">시작 전 안내사항</span>
             </div>
 
-            <ul className={styles.GuideList}>
-              <li className={styles.GuideItem}>
+            <ul className="mt-2.5 pl-4 m-0">
+              <li className="text-xs font-bold text-gray-500 leading-relaxed my-1.5">
                 {isHost
                   ? "모든 참여자가 준비 완료하면 대화를 시작할 수 있습니다"
                   : "준비하기를 누르면 방장이 대화를 시작할 수 있습니다"}
               </li>
-              <li className={styles.GuideItem}>각 턴마다 1분간 자유롭게 대화하세요</li>
-              <li className={styles.GuideItem}>AI가 대화를 분석하고 피드백을 제공합니다</li>
-              <li className={styles.GuideItem}>조용한 환경에서 진행하면 더 좋습니다</li>
+              <li className="text-xs font-bold text-gray-500 leading-relaxed my-1.5">
+                각 턴마다 1분간 자유롭게 대화하세요
+              </li>
+              <li className="text-xs font-bold text-gray-500 leading-relaxed my-1.5">
+                AI가 대화를 분석하고 피드백을 제공합니다
+              </li>
+              <li className="text-xs font-bold text-gray-500 leading-relaxed my-1.5">
+                조용한 환경에서 진행하면 더 좋습니다
+              </li>
             </ul>
           </section>
         </div>

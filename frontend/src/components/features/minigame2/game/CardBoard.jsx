@@ -1,7 +1,5 @@
 import SentenceCard from './SentenceCard';
-import styles from './CardBoard.module.css';
 
-// 카드 위치 및 회전 각도 사전 정의
 const CARD_POSITIONS = [
   { top: '35%', left: '65%', rotation: 5 },
   { top: '50%', left: '55%', rotation: -3 },
@@ -17,7 +15,7 @@ const CARD_POSITIONS = [
 
 export default function CardBoard({ cards = [], removedCards = [] }) {
   return (
-    <div className={styles.board}>
+    <div className="relative w-full h-[400px] sm:h-[500px]">
       {cards.map((card, idx) => {
         const position = CARD_POSITIONS[idx % CARD_POSITIONS.length];
         return (
