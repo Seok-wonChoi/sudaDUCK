@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styles from "./MyPage.module.css";
-import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import AppHeader from "@/components/Layout/AppHeader/AppHeader";
 
 import ProfileSection from "@/components/features/mypage/ProfileSection/ProfileSection";
 import StatsCard from "@/components/features/mypage/StatsCard/StatsCard";
