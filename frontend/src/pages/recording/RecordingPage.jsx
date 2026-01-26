@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Recordinglayout from '@/components/features/recording/layout/Recordinglayout';
+import Recordinglayout from '@/components/features/recording/layout/RecordingLayout';
 
 import BottomIdle from '@/components/features/recording/bottom/BottomIdle';
 import BottomAITimer from '@/components/features/recording/bottom/BottomAITimer';
