@@ -4,6 +4,7 @@ import styles from "./AppHeader.module.css";
 import bellIcon from "@/assets/icons/notice_bell.png";
 import gearIcon from "@/assets/icons/gear.png";
 
+
 export default function AppHeader({
   userName = "user",
   notifications = [],
