@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./TogetherTalkPage.module.css";
 
-import AppHeader from "@/components/Layout/AppHeader/AppHeader";
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitGuard from "@/components/common/ExitGuard/ExitGuard";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";

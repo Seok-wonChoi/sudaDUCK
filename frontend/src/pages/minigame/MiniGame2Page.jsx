@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './MiniGame2Page.module.css';
 
-import MiniGameLayout from '@/components/features/minigame/Layout/MiniGameLayout';
+import MiniGameLayout from '@/components/features/minigame/layout/MiniGamelayout';
 import CountdownOverlay from '@/components/features/minigame/countdown/CountdownOverlay';
 import CardBoard from '@/components/features/minigame2/game/CardBoard';
 import GameStats from '@/components/features/minigame2/game/GameStats';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import RecordingLayout from '@/components/features/recording/Layout/RecordingLayout';
+import Recordinglayout from '@/components/features/recording/layout/Recordinglayout';
 
 import BottomIdle from '@/components/features/recording/bottom/BottomIdle';
 import BottomAITimer from '@/components/features/recording/bottom/BottomAITimer';
@@ -234,7 +234,7 @@ export default function RecordingPage() {
 
   return (
     <>
-      <RecordingLayout
+      <Recordinglayout
         currentTurn={currentTurn}
         currentSentence={currentSentence}
         bottomContent={bottomContent()}

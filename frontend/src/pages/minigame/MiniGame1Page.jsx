@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './MiniGame1Page.module.css';
 
-import MiniGameLayout from '@/components/features/minigame/Layout/MiniGameLayout';
+import MiniGameLayout from '@/components/features/minigame/layout/MiniGamelayout';
 import CountdownOverlay from '@/components/features/minigame/countdown/CountdownOverlay';
 import QuestionPanel from '@/components/features/minigame1/question/QuestionPanel';
 import WaitingPanel from '@/components/features/minigame1/waiting/WaitingPanel';
