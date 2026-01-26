@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface RoomParticipantsRepository extends JpaRepository<RoomParticipants, Long> {
@@ -22,4 +23,7 @@ public interface RoomParticipantsRepository extends JpaRepository<RoomParticipan
     """)
     int markAllLeftByRoomId(@Param("roomId") Long roomId,
                             @Param("now") LocalDateTime now);
+
+    // 대기방에 남아있는 참가자만 조회
+    List<RoomParticipants> findByRoom_RoomIdAndIsLeftFalse(Long roomId);
 }

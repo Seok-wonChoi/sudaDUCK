@@ -105,8 +105,6 @@ public class RoomReadyService {
         Long totalCount = redisTemplate.opsForSet().size(keyRoomMembers(roomId));
         if (totalCount == null) totalCount = 0L;
 
-        boolean isAllReady = (totalCount > 0 && readyCount == totalCount);
-
         // 7) TTL 갱신
         refreshRoomTtl(roomId, roomCode);
 
@@ -115,7 +113,6 @@ public class RoomReadyService {
                 .roomCode(roomCode)
                 .readyCount(readyCount)
                 .totalCount(totalCount)
-                .isAllReady(isAllReady)
                 .myReadyStatus(newStatus)
                 .isHost(isHost)
                 .build();
