@@ -1,9 +1,11 @@
-import styles from "./ModeSelectSection.module.css";
 import ModeCard from "@/components/common/ModeCard/ModeCard";
 
 export default function ModeSelectSection({ onClickPractice, onClickTogether }) {
   return (
-    <section className={styles.Section} aria-label="학습 모드 선택">
+    <section
+      className="mt-4 sm:mt-[18px] flex justify-center gap-6 sm:gap-[34px] flex-wrap"
+      aria-label="학습 모드 선택"
+    >
       <ModeCard
         title="연습 모드"
         description="편하게 연습하고 실력을 쌓아보세요"

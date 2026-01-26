@@ -1,4 +1,3 @@
-import styles from "./MainPage.module.css";
 import { useNavigate } from "react-router-dom";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
@@ -19,11 +18,11 @@ export default function MainPage() {
   };
 
   return (
-    <div className={styles.Page}>
-      <div className={styles.Shell}>
+    <div className="min-h-screen bg-[#f6f8ff]">
+      <div className="max-w-[1120px] mx-auto px-4 sm:px-6">
         <AppHeader userName="user" notifications={[]} />
 
-        <div className={styles.Top}>
+        <div className="py-6">
           <MainHero />
           <ModeSelectSection
             onClickPractice={handlePractice}
@@ -31,7 +30,7 @@ export default function MainPage() {
           />
         </div>
 
-        <div className={styles.Bottom}>
+        <div className="py-6">
           <TipBanner text="Tip: 연습 모드로 워밍업 후 함께 하기 모드에 도전해보세요!" />
           <StatsSection
             stats={[

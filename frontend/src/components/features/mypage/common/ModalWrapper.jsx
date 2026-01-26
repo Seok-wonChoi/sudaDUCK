@@ -1,5 +1,3 @@
-import styles from "./ModalWrapper.module.css";
-
 export default function ModalWrapper({
   title,
   onClose,
@@ -14,13 +12,21 @@ export default function ModalWrapper({
   };
 
   return (
-    <div className={styles.Overlay} onClick={handleOverlayClick}>
-      <div className={styles.Modal}>
-        <div className={styles.Header}>
-          <h2 className={styles.Title}>{title}</h2>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-5"
+      onClick={handleOverlayClick}
+    >
+      <div
+        className="bg-white rounded-[20px] w-full max-w-[480px] max-h-[90vh]
+          overflow-hidden flex flex-col shadow-2xl"
+      >
+        <div className="flex items-center justify-between py-5 px-6">
+          <h2 className="text-xl font-black text-gray-900 m-0">{title}</h2>
           <button
             type="button"
-            className={styles.CloseButton}
+            className="w-8 h-8 border-none bg-transparent cursor-pointer
+              flex items-center justify-center text-2xl text-gray-500 rounded-lg
+              hover:bg-gray-100 hover:text-gray-900 transition-colors"
             onClick={onClose}
             aria-label="닫기"
           >
@@ -28,14 +34,14 @@ export default function ModalWrapper({
           </button>
         </div>
 
-        <div className={styles.Divider} />
+        <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200" />
 
-        <div className={styles.Content}>{children}</div>
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
 
         {showFooter && (
           <>
-            <div className={styles.FooterDivider} />
-            <div className={styles.Footer}>{footer}</div>
+            <div className="h-px bg-gray-200" />
+            <div className="py-4 px-6 flex justify-end gap-3 bg-gray-50">{footer}</div>
           </>
         )}
       </div>

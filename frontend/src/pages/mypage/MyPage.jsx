@@ -1,5 +1,4 @@
 import { useState } from "react";
-import styles from "./MyPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 
 import ProfileSection from "@/components/features/mypage/ProfileSection/ProfileSection";
@@ -157,11 +156,11 @@ export default function MyPage() {
   };
 
   return (
-    <div className={styles.Page}>
-      <div className={styles.Shell}>
+    <div className="min-h-screen bg-[#f6f8ff] py-4 sm:py-7">
+      <div className="max-w-[1120px] mx-3 sm:mx-auto bg-white rounded-[20px] sm:rounded-[28px] shadow-[0_18px_50px_rgba(17,24,39,0.1)] overflow-hidden">
         <AppHeader userName="장가은" notifications={[{}, {}, {}]} />
 
-        <main className={styles.Main}>
+        <main className="px-4 sm:px-8 py-5 sm:py-6 pb-6 sm:pb-8 flex flex-col gap-5">
           <ProfileSection
             nickname="영어 마스터"
             email="example@test.com"

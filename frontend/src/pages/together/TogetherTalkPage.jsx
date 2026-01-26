@@ -222,8 +222,8 @@ export default function TogetherTalkPage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
-    navigate("/", { replace: true });
-  }, [navigate, stopAudioAnalysis]);
+    navigate("/recording", { replace: true, state: roomInfo });
+  }, [navigate, stopAudioAnalysis, roomInfo]);
 
   const handleDone = useCallback(() => {
     console.log("시간 종료");

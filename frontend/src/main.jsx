@@ -1,7 +1,8 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import App from './App'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App.jsx';
+import "./styles/index.css";
 
 // [핵심] Vite가 상황에 맞춰서 알아서 값을 바꿔줍니다.
 // 로컬 실행 시: '/' 
@@ -15,4 +16,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <App />
     </BrowserRouter>
   </React.StrictMode>,
-)
+);

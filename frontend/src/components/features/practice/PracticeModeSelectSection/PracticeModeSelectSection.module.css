@@ -1,8 +1,0 @@
-/* 카드 섹션 레이아웃 */
-.Section {
-  margin-top: 18px;
-  display: flex;
-  justify-content: center;
-  gap: 34px;
-  flex-wrap: wrap;
-}
