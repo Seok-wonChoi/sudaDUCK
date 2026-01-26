@@ -11,7 +11,6 @@ public class RoomReadyPatchResponse {
 
     private Long readyCount;
     private Long totalCount;
-    private Boolean isAllReady;
 
     private String myReadyStatus; // READY | NOT_READY
     private Boolean isHost; // 내가 방장인지
