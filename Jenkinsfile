@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    // 1. 젠킨스 전역 도구 설정에서 만든 JDK 17을 불러옵니다.
+    tools {
+        jdk 'jdk17' 
+    }
+
     environment {
         // 네트워크 및 이미지 이름 설정
         NET_DEV = 'dev-net'
@@ -18,7 +23,7 @@ pipeline {
         }
 
         // ---------------------------------------------------------
-        // 2. 백엔드 테스트 및 권한 부여 (Permission denied 해결)
+        // 2. 백엔드 테스트 및 권한 부여 (Java 17 환경에서 실행)
         // ---------------------------------------------------------
         stage('Test Backend') {
             when { 
@@ -27,8 +32,8 @@ pipeline {
             steps {
                 dir('backend') {
                     script {
-                        echo ">>> [Test] 실행 권한을 부여하고 JUnit 테스트를 진행합니다..."
-                        // [핵심] 리눅스 환경에서 gradlew 실행 권한을 줍니다.
+                        echo ">>> [Test] Java 17 환경에서 JUnit 테스트를 진행합니다..."
+                        // gradlew 실행 권한 부여
                         sh "chmod +x gradlew" 
                         sh "./gradlew test"
                     }
