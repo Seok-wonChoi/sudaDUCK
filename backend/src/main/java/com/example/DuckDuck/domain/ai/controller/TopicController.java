@@ -1,5 +1,6 @@
 package com.example.DuckDuck.domain.ai.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.example.DuckDuck.domain.ai.service.GptService;
@@ -9,6 +10,7 @@ import java.util.*;
 /**
  * 주제 추천 API
  */
+@Tag(name = "topic", description = "주제 추천")
 @RestController
 @RequestMapping("/api/v1/topics")
 @RequiredArgsConstructor
