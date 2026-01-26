@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        // 네트워크 및 이미지 이름 설정
         NET_DEV = 'dev-net'
         NET_PROD = 'prod-net'
         IMG_BACK = 'my-backend'
@@ -17,17 +18,34 @@ pipeline {
         }
 
         // ---------------------------------------------------------
-        // 2. 백엔드 배포 (대상: develop, back-dev, master)
+        // 2. 백엔드 테스트 및 권한 부여 (Permission denied 해결)
+        // ---------------------------------------------------------
+        stage('Test Backend') {
+            when { 
+                anyOf { branch 'develop'; branch 'back-dev' } 
+            }
+            steps {
+                dir('backend') {
+                    script {
+                        echo ">>> [Test] 실행 권한을 부여하고 JUnit 테스트를 진행합니다..."
+                        // [핵심] 리눅스 환경에서 gradlew 실행 권한을 줍니다.
+                        sh "chmod +x gradlew" 
+                        sh "./gradlew test"
+                    }
+                }
+            }
+        }
+
+        // ---------------------------------------------------------
+        // 3. 백엔드 배포 (Blue/Green 무중단 배포)
         // ---------------------------------------------------------
         stage('Deploy Backend') {
             when { 
-                // [수정] 멀티브랜치에서는 branch 문법이 100% 정확하게 작동합니다.
                 anyOf { branch 'develop'; branch 'back-dev'; branch 'master' } 
             }
             steps {
                 dir('backend') {
                     script {
-                        // [수정] env.BRANCH_NAME을 사용하면 'origin/' 없이 이름만 깔끔하게 옵니다.
                         def isProd = (env.BRANCH_NAME == 'master')
                         def targetNet = isProd ? NET_PROD : NET_DEV
                         def profile = isProd ? "prod" : "dev"
@@ -35,6 +53,8 @@ pipeline {
 
                         echo ">>> [Backend] ${env.BRANCH_NAME} 환경 배포 중..."
 
+                        // 빌드 전 권한 한 번 더 확인 (안전장치)
+                        sh "chmod +x gradlew"
                         sh "docker build -t ${IMG_BACK}:latest ."
 
                         // Nginx 컬러 확인 및 타겟 결정
@@ -51,7 +71,10 @@ pipeline {
                             ${IMG_BACK}:latest --spring.config.location=/config/application-${profile}.yml
                         """
                         
+                        echo ">>> [Backend] 스프링 부팅 대기 중 (15초)..."
                         sleep 15
+
+                        // Nginx 스위칭
                         sh "echo 'set \$service_url http://${targetName}:8080;' > switch.tmp"
                         sh "docker cp switch.tmp main-nginx:/etc/nginx/conf.d/${confFile}"
                         sh "docker exec main-nginx nginx -s reload"
@@ -61,7 +84,7 @@ pipeline {
         }
 
         // ---------------------------------------------------------
-        // 3. 프론트엔드 배포 (대상: develop, front-dev, master)
+        // 4. 프론트엔드 배포 (Vite 경로 최적화)
         // ---------------------------------------------------------
         stage('Deploy Frontend') {
             when {
@@ -76,11 +99,12 @@ pipeline {
                         def hostPort = isProd ? "3001" : "3000"
                         def apiUrl = isProd ? "https://i14e104.p.ssafy.io/api" : "https://i14e104.p.ssafy.io/dev-api"
 
-                        // [핵심] master 브랜치가 아니면 무조건 build:dev 사용
+                        // [핵심] master 브랜치가 아니면 무조건 build:dev 사용 (경로 문제 해결)
                         def buildCmd = isProd ? "build" : "build:dev"
 
                         echo ">>> [Frontend] ${env.BRANCH_NAME} 환경 배포 중 (Command: ${buildCmd})"
 
+                        // Dockerfile에 빌드 명령어를 인자로 전달
                         sh "docker build --build-arg BUILD_CMD='${buildCmd}' --build-arg VITE_API_URL=${apiUrl} -t ${IMG_FRONT}:latest ."
                         sh "docker rm -f ${targetName} || true"
                         sh "docker run -d --name ${targetName} --network ${targetNet} -p ${hostPort}:80 ${IMG_FRONT}:latest"
