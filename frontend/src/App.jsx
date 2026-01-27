@@ -7,7 +7,6 @@ import SoloPracticePage from "./pages/practice/SoloPracticePage";
 import AiPracticePage from "./pages/practice/AiPracticePage";
 import TogetherPage from "./pages/together/TogetherPage";
 import MakeRoomPage from "./pages/together/MakeRoomPage";
-import RoomCreatedPage from "./pages/together/RoomCreatedPage";
 import JoinRoomPage from "./pages/together/JoinRoomPage";
 import WaitingRoomPage from "./pages/together/WaitingRoomPage";
 import TogetherTalkPage from "./pages/together/TogetherTalkPage";
@@ -28,7 +27,6 @@ export default function App() {
 
       <Route path="/together" element={<TogetherPage />} />
       <Route path="/together/make" element={<MakeRoomPage />} />
-      <Route path="/together/created" element={<RoomCreatedPage />} />
       <Route path="/together/join" element={<JoinRoomPage />} />
       <Route path="/together/waiting" element={<WaitingRoomPage />} />
       <Route path="/together/talk" element={<TogetherTalkPage />} />

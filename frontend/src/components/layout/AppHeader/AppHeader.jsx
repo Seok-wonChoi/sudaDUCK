@@ -95,7 +95,7 @@ export default function AppHeader({
           aria-label="메인으로 이동"
         >
           <div className={styles.LogoMark} aria-hidden="true" />
-          <div className={styles.BrandText}>Your Logo</div>
+          <div className={styles.BrandText}>수다DUCK</div>
         </button>
 
       </div>
