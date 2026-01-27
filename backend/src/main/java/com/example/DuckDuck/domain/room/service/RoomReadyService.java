@@ -117,4 +117,9 @@ public class RoomReadyService {
                 .isHost(isHost)
                 .build();
     }
+
+    @Transactional
+    public RoomReadyPatchResponse updateReadyByWs(String email, String roomCode, boolean ready) {
+        return patchReady(email, roomCode, new RoomReadyPatchRequest(ready));
+    }
 }
