@@ -47,7 +47,7 @@ public class TranslateService {
      * @param roomId 방 ID
      * @param text 한국어 텍스트
      * @param turnNo 턴 번호
-     * @param speakerName 발화자 이름
+     * @param speakerId 발화자 이름
      * @return 성공 여부
      */
     @Async("chatTaskExecutor")
@@ -66,13 +66,13 @@ public class TranslateService {
         try {
             Long roomIdLong = Long.parseLong(roomId);
             //발화자 id로 이름 찾기
-            String topic = redisTemplate.opsForValue().get("room:" + roomId + ":members", speakerId.toString());
-            String speakerName = (String) redisTemplate.opsForValue().get("room:" + roomId + ":members", speakerId.toString());
+            String topic = redisTemplate.opsForValue().get("room:" + roomId + ":topic");
+            String speakerName = (String) redisTemplate.opsForHash().get("room:" + roomId + ":member", speakerId);
             //참여자 전체 명단
             String participantsJson = redisTemplate.opsForValue().get("room:" + roomId + ":participants");
             //방 정보가 없으면 에러
             if (topic == null || speakerName == null){
-                log.error("[ASYNC-{}] Redis 세션 정보 누락 - roomId: {}", sequence, roomId);
+                log.error("[ASYNC-{}] Redis 세션 정보 누락 - roomId: {}, topic: {}, speakerName: {}",sequence, roomId, topic, speakerName);
                 return CompletableFuture.completedFuture(false);
             }
 
@@ -88,7 +88,7 @@ public class TranslateService {
             String scriptId = System.currentTimeMillis() + "_" + sequence;
 
             // 4. Redis에 저장 (명세서 형식)
-            saveToRedis(roomIdLong, turnNo, scriptId, sequence, speakerId, text, script, ttsUrl);
+            saveToRedis(roomIdLong, turnNo, scriptId, sequence, topic, speakerName, text, script,ttsUrl, participantsJson);
             log.info("[ASYNC-{}] Redis 저장 완료 - scriptId: {}", sequence, scriptId);
 
             return CompletableFuture.completedFuture(true);
@@ -109,14 +109,16 @@ public class TranslateService {
      * 3. Set: room:{roomId}:scripts (Cleanup용)
      */
     private void saveToRedis(Long roomId, Long turnNo, String scriptId, Long orderNo,
-                             Long speakerId, String korean, GptScriptResponse script, String ttsUrl, List<String> participantNames) {
+                             String topic, String speakerName, String korean, GptScriptResponse script, String ttsUrl, String participantsJson) {
         try {
             // 1. Script Detail
             String detailKey = String.format("room:%d:turn:%d:script:%s", roomId, turnNo, scriptId);
 
             Map<String, String> scriptData = new HashMap<>();
             scriptData.put("order_no", orderNo.toString());
-            scriptData.put("speaker_name", speakerId.toString());
+            scriptData.put("speaker_name", speakerName);
+            scriptData.put("topic", topic);
+            scriptData.put("participants", participantsJson);
             scriptData.put("english", script.getEn());
             scriptData.put("korean", korean);
             scriptData.put("score", "0");
@@ -124,9 +126,6 @@ public class TranslateService {
             scriptData.put("similarity_phrases", String.join(",", script.getSimilarityPhrases()));
             scriptData.put("tts_url", ttsUrl);
             scriptData.put("created_at", LocalDateTime.now().toString());
-
-            String participants = objectMapper.writeValueAsString(participantNames);
-            scriptData.put("participants", participants);
 
             redisTemplate.opsForHash().putAll(detailKey, scriptData);
             redisTemplate.expire(detailKey, TTL_MINUTES, TimeUnit.MINUTES);

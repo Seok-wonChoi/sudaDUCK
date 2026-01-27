@@ -40,7 +40,7 @@ public class GptController {
      * }
      */
     @Operation(
-            summary = "스크립트 redis에 저장",
+            summary = "스크립트 생성 및 redis에 저장",
             description = "생성된 스크립트를 Redis에 임시 저장합니다."
     )
     @ApiResponses(value = {
@@ -52,7 +52,7 @@ public class GptController {
             @Valid @RequestBody TranslateRequest request) {
 
         log.info("번역 요청 - roomId: {}, turn: {}, speaker: {}",
-                request.getRoomId(), request.getTurnNo(), request.getSpeakerName());
+                request.getRoomId(), request.getTurnNo(), request.getSpeakerId());
 
         return translateService.translateAndSaveToRedis(
                         request.getRoomId(),

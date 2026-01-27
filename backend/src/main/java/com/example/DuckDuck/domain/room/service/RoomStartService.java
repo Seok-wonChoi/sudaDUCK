@@ -163,7 +163,7 @@ public class RoomStartService {
         //Redis에 저장
         try{
             String jsonNames = new ObjectMapper().writeValueAsString(allNames);
-            redisTemplate.opsForValue().set(participantsKey, jsonNames, ROOM_TTL_HOURS);
+            redisTemplate.opsForValue().set(participantsKey, jsonNames, ROOM_TTL_HOURS, TimeUnit.HOURS);
         } catch (Exception e){
             log.error("참여자 리스트 변환 실패", e);
         }

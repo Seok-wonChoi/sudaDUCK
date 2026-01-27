@@ -24,5 +24,5 @@ public class TranslateRequest {
     private Long turnNo;
 
     @NotNull(message = "참여자 id는 필수입니다.")
-    private Long speakerId;
+    private String speakerId;
 }

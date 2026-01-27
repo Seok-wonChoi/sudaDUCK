@@ -1,5 +1,6 @@
 package com.example.DuckDuck.domain.game.controller;
 
+import com.example.DuckDuck.domain.game.entity.Sentence;
 import com.example.DuckDuck.domain.game.service.ScriptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -9,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.Optional;
 
 @Tag(name = "Script", description = "스크립트 관련 API")
 @RestController
@@ -28,11 +32,13 @@ public class ScriptController {
             @ApiResponse(responseCode = "404", description = "Redis에서 해당 스크립트를 찾을 수 없음")
     })
     @PostMapping("/{scriptId}/like")
-    public ResponseEntity<String> like(@AuthenticationPrincipal String email,
+    public ResponseEntity<Map<String, Object>> like(@AuthenticationPrincipal String email,
                                        @RequestParam Long roomId,
                                        @RequestParam int turnNo,
                                        @PathVariable String scriptId){
-        scriptService.likeSentence(email, roomId, turnNo, scriptId);
-        return ResponseEntity.ok("좋아요 저장 완료!");
+
+        Map<String, Object> result = scriptService.likeSentence(email, roomId, turnNo, scriptId);
+
+        return ResponseEntity.ok(result);
     }
 }
