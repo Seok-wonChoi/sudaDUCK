@@ -1,0 +1,206 @@
+/* Main Card Container */
+.sentenceCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08),
+              0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  padding: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+  transition: box-shadow 0.3s ease;
+}
+
+.sentenceCard:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Card Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.speakerInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.speakerIcon {
+  width: 48px;
+  height: 48px;
+  background: #2b7fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.speakerName {
+  font-weight: 600;
+  font-size: 20px;
+  color: #1e2939;
+}
+
+.progress {
+  font-weight: 500;
+  font-size: 16px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* Card Content */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #6b7280;
+  text-transform: none;
+}
+
+.text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1e2939;
+  margin: 0;
+}
+
+/* English Section */
+.englishSection {
+  background: #eff6ff;
+  padding: 20px;
+  border-radius: 16px;
+  margin-top: 8px;
+}
+
+.englishHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.englishSection .label {
+  color: #2b7fff;
+}
+
+.englishSection .text {
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.aiStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #2b7fff;
+  font-weight: 500;
+}
+
+/* Recording Box */
+.recordingBox {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recordingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 20px 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sentenceCard {
+    padding: 24px;
+    border-radius: 20px;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .speakerIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .speakerName {
+    font-size: 18px;
+  }
+
+  .progress {
+    font-size: 14px;
+  }
+
+  .text {
+    font-size: 15px;
+  }
+
+  .englishSection .text {
+    font-size: 16px;
+  }
+
+  .englishSection {
+    padding: 16px;
+  }
+
+  .recordingBox {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sentenceCard {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .content {
+    gap: 12px;
+  }
+
+  .englishSection {
+    padding: 14px;
+    margin-top: 4px;
+  }
+
+  .recordingBox {
+    padding: 14px;
+  }
+
+  .text {
+    font-size: 14px;
+  }
+
+  .englishSection .text {
+    font-size: 15px;
+  }
+}

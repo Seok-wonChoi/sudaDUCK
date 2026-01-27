@@ -1,4 +1,5 @@
 import { useMemo, useCallback, useState } from "react";
+import styles from "./RoomUI.module.css";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
@@ -78,57 +79,43 @@ export default function RoomUI({
     [mode, normalized, maxCount]
   );
 
-  const slotsClass =
-    mode === "solo"
-      ? "flex justify-center items-center"
-      : mode === "ai"
-        ? "flex justify-center items-center gap-3.5"
-        : "grid grid-cols-1 md:grid-cols-2 gap-3.5 content-start";
-
   return (
-    <div className="min-h-screen bg-[#f6f8ff] px-4 sm:px-[18px] pt-4 sm:pt-[18px] pb-6">
-      <div className="max-w-[1120px] mx-auto">
+    <div className={styles.Page}>
+      <div className={styles.Shell}>
         <AppHeader userName="user" notifications={[]} />
 
-        <div
-          className="mt-3 grid grid-cols-[auto_1fr] md:grid-cols-[auto_1fr_auto] items-center gap-3.5
-            py-3.5 px-4 bg-white rounded-[18px] shadow-lg"
-        >
+        <div className={styles.TopBar}>
           <ExitButton to={exitTo} confirmMessage={exitMessage} />
 
-          <div className="flex flex-col gap-2.5 items-center">
-            <div className="text-sm font-black text-gray-900">{title}</div>
+          <div className={styles.CenterArea}>
+            <div className={styles.PageTitle}>{title}</div>
             <TimerGauge durationMs={durationMs} isRunning onDone={onTimeDone} />
           </div>
 
-          <div className="flex justify-center md:justify-end col-span-2 md:col-span-1">
-            <div className="w-[220px] border border-[#e8edf6] rounded-[14px] py-2.5 px-3 bg-white">
-              <div className="text-xs font-black text-indigo-600 mb-1.5">{rightTitle}</div>
-              <div className="text-xs font-bold text-gray-900 leading-snug">{rightBody}</div>
+          <div className={styles.RightArea}>
+            <div className={styles.RightCard}>
+              <div className={styles.RightCardTitle}>{rightTitle}</div>
+              <div className={styles.RightCardBody}>{rightBody}</div>
             </div>
           </div>
         </div>
 
-        <div className="mt-3 flex justify-start">
-          <div
-            className="py-2.5 px-3 rounded-[14px] bg-white border border-[#e8edf6]
-              shadow-lg text-xs font-black text-gray-900"
-          >
-            첫 번째 대화 주제는 {topic}입니다.
-          </div>
+        <div className={styles.TopicRow}>
+          <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다.</div>
         </div>
 
-        <main className="mt-3.5 bg-white rounded-[18px] p-4 shadow-lg">
-          <section className={`min-h-[420px] ${slotsClass}`} aria-label="참여자 영역">
+        <main className={styles.Main}>
+          <section
+            className={`${styles.Slots} ${
+              mode === "solo" ? styles.SlotsSolo : mode === "ai" ? styles.SlotsAi : styles.SlotsTogether
+            }`}
+            aria-label="참여자 영역"
+          >
             {slots.map((slot) => {
               if (slot.kind === "empty") {
                 return (
-                  <div
-                    key={slot.id}
-                    className="relative border border-dashed border-indigo-50 rounded-2xl
-                      bg-gray-900/[0.02] flex flex-col items-center justify-center p-4 min-h-[180px]"
-                  >
-                    <div className="text-xs font-black text-gray-400">빈 자리</div>
+                  <div key={slot.id} className={`${styles.Tile} ${styles.TileEmpty}`}>
+                    <div className={styles.EmptyText}>빈 자리</div>
                   </div>
                 );
               }
@@ -138,34 +125,24 @@ export default function RoomUI({
               const micOn = isMe ? myMicOn : false;
 
               return (
-                <div
-                  key={p.id}
-                  className="relative border border-indigo-50 rounded-2xl bg-white
-                    flex flex-col items-center justify-center p-4 min-h-[180px]"
-                >
-                  <div
-                    className="w-[86px] h-[86px] rounded-full bg-indigo-600/10
-                      flex items-center justify-center"
-                    aria-hidden="true"
-                  >
-                    <img className="w-[34px] h-[34px] object-contain" src={usersIcon} alt="" />
+                <div key={p.id} className={styles.Tile}>
+                  <div className={styles.Avatar} aria-hidden="true">
+                    <img className={styles.AvatarImg} src={usersIcon} alt="" />
                   </div>
 
-                  <div className="mt-3">
-                    <div className="text-[13px] font-black text-gray-900">{p.name}</div>
+                  <div className={styles.NameRow}>
+                    <div className={styles.NameText}>{p.name}</div>
                   </div>
 
                   <button
                     type="button"
-                    className="absolute right-3 bottom-3 w-8 h-8 rounded-full border border-[#e8edf6]
-                      bg-white inline-flex items-center justify-center cursor-pointer
-                      disabled:opacity-55 disabled:cursor-default"
+                    className={styles.MicBtn}
                     onClick={isMe ? toggleMyMic : undefined}
                     disabled={!isMe}
                     aria-label={micOn ? "마이크 끄기" : "마이크 켜기"}
                   >
                     <img
-                      className="w-[18px] h-[18px] object-contain"
+                      className={styles.MicImg}
                       src={micOn ? micOnIcon : micOffIcon}
                       alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                     />

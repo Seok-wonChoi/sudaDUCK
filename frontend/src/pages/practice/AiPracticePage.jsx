@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import styles from "./AiPracticePage.module.css";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitGuard from "@/components/common/ExitGuard/ExitGuard";
@@ -10,33 +11,22 @@ import duckHappyImg from "@/assets/images/duck_happy.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 
-const WAVE_COLORS = [
-  "rgba(34, 197, 94, 0.95)",
-  "rgba(16, 185, 129, 0.95)",
-  "rgba(59, 130, 246, 0.95)",
-  "rgba(99, 102, 241, 0.95)",
-  "rgba(158, 67, 242, 0.95)",
-  "rgba(59, 130, 246, 0.95)",
-  "rgba(16, 185, 129, 0.95)",
-];
-
 function VoiceWave({ level, enabled }) {
   const multipliers = useMemo(() => [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35], []);
   const v = Math.max(0, Math.min(1, level));
 
   return (
-    <span className="inline-flex items-end gap-[3px] h-[22px]" aria-hidden="true">
+    <span
+      className={`${styles.Wave} ${enabled ? styles.WaveOn : styles.WaveOff}`}
+      aria-hidden="true"
+    >
       {multipliers.map((m, idx) => {
         const h = enabled ? 6 + v * 20 * m : 6;
         return (
           <span
             key={idx}
-            className="w-1 rounded-full transition-[height] duration-[120ms]"
-            style={{
-              height: `${h}px`,
-              background: enabled ? WAVE_COLORS[idx] : "rgba(209, 213, 219, 1)",
-              opacity: enabled ? 0.95 : 1,
-            }}
+            className={`${styles.WaveBar} ${styles[`WaveBar${idx + 1}`]}`}
+            style={{ height: `${h}px` }}
           />
         );
       })}
@@ -137,8 +127,8 @@ export default function AiPracticePage() {
           const rms = Math.sqrt(sum / data.length);
 
           const now = performance.now();
-          if (rms > THRESHOLD) a.lastVoiceAt = now;
 
+          if (rms > THRESHOLD) a.lastVoiceAt = now;
           const speaking = now - a.lastVoiceAt < HOLD_MS;
 
           if (speaking !== a.speakingNow) {
@@ -200,60 +190,51 @@ export default function AiPracticePage() {
   }, [stopAudioAnalysis]);
 
   return (
-    <div className="min-h-screen bg-[#f6f8ff] py-7">
-      <div className="max-w-[1120px] mx-auto bg-white rounded-[28px] shadow-[0_18px_50px_rgba(17,24,39,0.1)] overflow-hidden relative">
+    <div className={styles.Page}>
+      <div className={styles.Shell}>
         <ExitGuard to="/" message="메인 화면으로 나가시겠습니까?" />
         <AppHeader userName="user" notifications={[]} />
 
-        <div className="px-4 lg:px-8 py-5 pb-7">
-          <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] items-center gap-3.5 pb-2.5">
-            <div className="flex items-center">
-              <ExitButton to="/" label="나가기" confirmMessage="AI 대화를 종료하고 나가시겠습니까?" />
+        <div className={styles.Content}>
+          <div className={styles.HeaderRow}>
+            <div className={styles.ExitCol}>
+              <ExitButton to="/" label="나가기" confirmMessage="연습을 종료하고 나가시겠습니까?" />
             </div>
 
-            <div className="flex items-center gap-3.5 min-w-0">
-              <img className="w-14 h-14 object-contain" src={duckImg} alt="오리" />
-              <div className="bg-white border border-[#e8edf6] rounded-2xl py-3 px-4
-                text-[13px] font-black text-gray-900 shadow-[0_14px_26px_rgba(17,24,39,0.1)]
-                whitespace-nowrap overflow-hidden text-ellipsis">
-                첫 번째 대화 주제는 {topic}입니다!
-              </div>
+            <div className={styles.TopicRow}>
+              <img className={styles.SmallDuck} src={duckImg} alt="오리" />
+              <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다!</div>
             </div>
 
-            <div className="flex justify-end items-center lg:justify-start">
-              <TimerGauge durationMs={DURATION_MS} isRunning={true} onDone={handleDone} />
+            <div className={styles.TimerCol}>
+              <TimerGauge durationMs={DURATION_MS} isRunning onDone={handleDone} />
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-center">
-            <div className="flex flex-col items-center">
-              <div className="w-full flex justify-center py-7 pb-5">
-                <div className="w-[min(860px,100%)] grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* 내 카드 */}
+          <div className={styles.Stage}>
+            <div className={styles.LeftStage}>
+              <div className={styles.VideoArea}>
+                <div className={styles.CardsGrid}>
                   <div
-                    className={`h-[220px] rounded-xl bg-[#fbfcff] flex flex-col justify-between p-4 pb-3.5
-                      border-2 relative
-                      ${isSpeaking
-                        ? "border-green-500/95 shadow-[0_0_0_3px_rgba(34,197,94,0.18),0_0_22px_rgba(34,197,94,0.30),0_18px_34px_rgba(17,24,39,0.12)]"
-                        : "border-gray-200 shadow-none"
-                      }`}
+                    className={`${styles.VideoCard} ${
+                      isSpeaking ? styles.VideoCardSpeaking : styles.VideoCardIdle
+                    }`}
                   >
-                    <div className="flex justify-center items-center h-[150px]">
-                      <div className="w-[92px] h-[92px] rounded-full bg-white border border-indigo-50
-                        shadow-[0_14px_26px_rgba(17,24,39,0.1)] flex items-center justify-center">
-                        <img className="w-[62px] h-[62px] object-contain" src={duckImg} alt="내 아바타" />
+                    <div className={styles.VideoInner}>
+                      <div className={styles.AvatarCircle}>
+                        <img className={styles.AvatarDuck} src={duckImg} alt="내 아바타" />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="inline-flex items-center gap-2.5">
+                    <div className={styles.VideoFooter}>
+                      <div className={styles.VideoFooterLeft}>
                         <VoiceWave level={voiceLevel} enabled={micOn} />
-                        <span className="text-[13px] font-black text-gray-900">나</span>
+                        <span className={styles.MeLabel}>나</span>
                       </div>
 
-                      <div className="inline-flex items-center justify-end min-w-[18px]" aria-label="마이크 상태">
+                      <div className={styles.VideoFooterRight} aria-label="마이크 상태">
                         <img
-                          className="w-4.5 h-4.5 object-contain"
+                          className={styles.MicMini}
                           src={micOn ? micOffIcon : micOnIcon}
                           alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                         />
@@ -261,79 +242,54 @@ export default function AiPracticePage() {
                     </div>
                   </div>
 
-                  {/* AI 카드 */}
-                  <div className="h-[220px] rounded-xl bg-[#fbfcff] flex flex-col justify-between p-4 pb-3.5
-                    border-2 border-gray-200 relative">
-                    <div className="flex justify-center items-center h-[150px]">
-                      <div className="w-[92px] h-[92px] rounded-full bg-white border border-indigo-50
-                        shadow-[0_14px_26px_rgba(17,24,39,0.1)] flex items-center justify-center">
-                        <img className="w-[62px] h-[62px] object-contain" src={duckHappyImg} alt="AI 아바타" />
+                  <div className={`${styles.VideoCard} ${styles.VideoCardAi}`}>
+                    <div className={styles.VideoInner}>
+                      <div className={styles.AvatarCircle}>
+                        <img className={styles.AvatarDuck} src={duckImg} alt="AI 아바타" />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="inline-flex items-center gap-2.5">
-                        <span className="text-[13px] font-black text-gray-900 opacity-95">AI 영어덕</span>
+                    <div className={styles.VideoFooter}>
+                      <div className={styles.VideoFooterLeft}>
+                        <span className={styles.AiLabel}>AI</span>
                       </div>
-
-                      <div className="inline-flex items-center justify-end min-w-[18px]" aria-label="AI 상태">
-                        <img className="w-4.5 h-4.5 object-contain" src={micOnIcon} alt="AI 대기중" />
-                      </div>
+                      <div className={styles.VideoFooterRight} />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-1.5 flex items-center justify-center gap-3.5">
-                <button
-                  type="button"
-                  className="h-[38px] px-4 rounded-xl border border-indigo-600 bg-indigo-600 text-white
-                    text-xs font-black inline-flex items-center gap-2 cursor-pointer"
-                  onClick={toggleMic}
-                >
-                  <img className="w-4 h-4 object-contain" src={micOn ? micOnIcon : micOffIcon} alt="" aria-hidden="true" />
+              <div className={styles.BottomActions}>
+                <button type="button" className={styles.PrimaryButton} onClick={toggleMic}>
+                  <img className={styles.ButtonIcon} src={micOn ? micOnIcon : micOffIcon} alt="" aria-hidden="true" />
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
-                <button
-                  type="button"
-                  className="h-[38px] px-4 rounded-xl border border-gray-200 bg-white text-gray-900
-                    text-xs font-black cursor-pointer"
-                  onClick={handleEnd}
-                >
+                <button type="button" className={styles.SecondaryButton} onClick={handleEnd}>
                   대화 종료
                 </button>
               </div>
             </div>
 
-            <aside className="relative h-full min-h-[360px] lg:min-h-[440px]" aria-label="AI 도우미">
-              <div className="relative bg-white border-2 border-indigo-600/25 rounded-2xl p-3.5 px-4 pb-4
-                shadow-[0_18px_40px_rgba(17,24,39,0.14)] z-[2]">
-                <div className="flex items-center justify-center gap-2 text-xs font-black text-indigo-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600/65" aria-hidden="true" />
-                  <span className="text-indigo-600">AI 영어덕</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600/65" aria-hidden="true" />
+            <aside className={styles.RightStage} aria-label="AI 도우미">
+              <div className={styles.AiBubble}>
+                <div className={styles.AiHeader}>
+                  <span className={styles.AiDot} aria-hidden="true" />
+                  <span className={styles.AiTitle}>AI 영어덕</span>
+                  <span className={styles.AiDot} aria-hidden="true" />
                 </div>
 
-                <div className="mt-2.5 text-center text-[22px]" aria-hidden="true">🙂</div>
-
-                <div className="mt-2 text-center text-sm font-black text-gray-900 leading-snug">
-                  영어로 편하게 말해보세요!
-                </div>
-                <div className="mt-2 text-center text-xs font-bold text-gray-500 leading-relaxed">
-                  AI가 대화 상대가 되어줄게요.
+                <div className={styles.AiFace} aria-hidden="true">
+                  🙂
                 </div>
 
-                <div className="absolute left-[52%] -bottom-2.5 w-4.5 h-4.5 bg-white
-                  border-l-2 border-b-2 border-indigo-600/25 -translate-x-1/2 rotate-45" aria-hidden="true" />
+                <div className={styles.AiMainText}>영어로 편하게 대화해 보세요!</div>
+                <div className={styles.AiSubText}>5초 동안 침묵이 지속되면 제가 도와드릴게요.</div>
+
+                <div className={styles.AiPointer} aria-hidden="true" />
               </div>
 
-              <img
-                className="absolute -right-1.5 -bottom-2 w-[220px] lg:w-[280px] h-[220px] lg:h-[280px] object-contain z-[1]
-                  drop-shadow-[0_18px_30px_rgba(17,24,39,0.12)]"
-                src={duckHappyImg}
-                alt="AI 오리"
-              />
+              <img className={styles.BigDuck} src={duckHappyImg} alt="AI 오리" />
             </aside>
           </div>
         </div>

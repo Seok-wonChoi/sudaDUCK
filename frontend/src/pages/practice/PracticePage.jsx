@@ -1,3 +1,4 @@
+import styles from "./PracticePage.module.css";
 import { useNavigate } from "react-router-dom";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
@@ -23,14 +24,13 @@ export default function PracticePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f8ff]">
-      <div className="max-w-[1120px] mx-auto px-4 sm:px-6">
+    <div className={styles.Page}>
+      <div className={styles.Shell}>
         <AppHeader userName="user" notifications={[]} />
 
-        <div className="py-6">
+        <div className={styles.Top}>
           <button
-            className="mb-4 py-2 px-4 border-none bg-transparent text-gray-500
-              text-sm font-semibold cursor-pointer hover:text-gray-900"
+            className={styles.BackButton}
             type="button"
             onClick={handleBack}
             aria-label="뒤로 가기"
@@ -42,7 +42,7 @@ export default function PracticePage() {
           <PracticeModeSelectSection onClickSolo={handleSolo} onClickAi={handleAi} />
         </div>
 
-        <div className="py-6">
+        <div className={styles.Bottom}>
           <TipBanner text="Tip: 연습 모드로 워밍업 후 함께 하기 모드에 도전해보세요!" />
           <StatsSection
             stats={[

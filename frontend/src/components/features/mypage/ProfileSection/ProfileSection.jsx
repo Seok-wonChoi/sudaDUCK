@@ -1,3 +1,4 @@
+import styles from "./ProfileSection.module.css";
 import NicknameBadge from "./NicknameBadge";
 import duckImage from "@/assets/images/duck.png";
 
@@ -13,56 +14,57 @@ export default function ProfileSection({
   onEditDuck,
 }) {
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-5 py-6">
-      <div className="flex items-end">
-        <div className="relative">
-          <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100">
+    <div className={styles.Section}>
+      <div className={styles.ImagesWrapper}>
+        <div className={styles.ProfileImageContainer}>
+          <div className={styles.ProfileImage}>
             {profileImage ? (
-              <img src={profileImage} alt="프로필" className="w-full h-full object-cover" />
+              <img src={profileImage} alt="프로필" className={styles.Image} />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-indigo-200 to-indigo-300" />
+              <div className={styles.DefaultAvatar} />
             )}
           </div>
           <button
             type="button"
-            className="absolute bottom-0 right-0 w-7 h-7 rounded-full border-2 border-white
-              bg-white cursor-pointer flex items-center justify-center shadow-md hover:bg-gray-50"
+            className={styles.EditButton}
             onClick={onEditProfile}
             aria-label="프로필 사진 변경"
           >
-            <span className="text-sm">📷</span>
+            <span className={styles.CameraIcon}>📷</span>
           </button>
         </div>
 
-        <div className="relative -ml-4">
-          <div className="w-20 h-20 rounded-full overflow-hidden bg-amber-100">
-            <img src={duckImage} alt="AI 오리" className="w-full h-full object-cover" />
+        <div className={styles.DuckImageContainer}>
+          <div className={styles.DuckImage}>
+            <img src={duckImage} alt="AI 오리" className={styles.Image} />
           </div>
           <button
             type="button"
-            className="absolute bottom-0 right-0 w-7 h-7 rounded-full border-2 border-white
-              bg-white cursor-pointer flex items-center justify-center shadow-md hover:bg-gray-50"
+            className={styles.EditButton}
             onClick={onEditDuck}
             aria-label="AI 오리 스타일 변경"
           >
-            <span className="text-sm">✏️</span>
+            <span className={styles.PencilIcon}>✏️</span>
           </button>
         </div>
       </div>
 
-      <div className="flex-1 w-full sm:w-auto bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-2xl py-5 px-6 text-white">
-        <div className="flex items-center justify-center sm:justify-start gap-2">
-          <NicknameBadge nickname={nickname} style={nicknameStyle} />
+      <div className={styles.InfoCard}>
+        <div className={styles.InfoContent}>
+          <NicknameBadge
+            nickname={nickname}
+            style={nicknameStyle}
+          />
           <button
             type="button"
-            className="bg-transparent border-none cursor-pointer p-1 flex items-center justify-center opacity-80 hover:opacity-100"
+            className={styles.NicknameEditButton}
             onClick={onEditNickname}
             aria-label="닉네임 스타일 변경"
           >
             <span>✏️</span>
           </button>
         </div>
-        <div className="mt-1 text-sm opacity-90 text-center sm:text-left">{email}</div>
+        <div className={styles.Email}>{email}</div>
       </div>
     </div>
   );
