@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -41,12 +42,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         refreshTokenRepository.save(new RefreshToken(email, refreshToken, 1209600L)); // 14일
 
         // 3. 쿠키에 토큰 담기 (만료시간은 초 단위)
-        CookieUtil.addCookie(response, "access_token", accessToken, 3600); // 1시간
         CookieUtil.addCookie(response, "refresh_token", refreshToken, 1209600); // 14일
 
-        // 4. 프론트엔드 메인 페이지로 리다이렉트
+        // 프론트엔드 메인 페이지로 리다이렉트
 //        getRedirectStrategy().sendRedirect(request, response, "/api/v1/auth/me");
+        //access_token을 리다이렉트 경로에 포함
+        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth2/redirect")
+                        .queryParam("access_token",accessToken)
+                                .build().toUriString();
 
-        getRedirectStrategy().sendRedirect(request, response, "http://localhost:5173");
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }
