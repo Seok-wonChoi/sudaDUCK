@@ -55,10 +55,10 @@ public class SecurityConfig {
                         ).permitAll() //swagger 관련 주소 모두 허용
                         .requestMatchers(
                                 "/api/v1/auth/**",
-                                "/dev-api/oauth2/**",
-                                "/dev-api/login/**",
+                                "/oauth2/**",
+                                "/login/**",
                                 "/api/v1/gpt/translate",
-                                "api/v1/topics").permitAll() // 로그인 관련은 모두 허용
+                                "/api/v1/topics").permitAll() // 로그인 관련은 모두 허용
                         .anyRequest().authenticated() // 그 외 나머지는 인증 필요
                 )
 
