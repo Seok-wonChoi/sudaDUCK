@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styles from './MiniGame2Page.module.css';
 
 import MiniGameLayout from '@/components/features/minigame/layout/MiniGameLayout';
 import CountdownOverlay from '@/components/features/minigame/countdown/CountdownOverlay';
@@ -35,59 +34,58 @@ const GAME_PHASE = {
   RESULT: 'result',
 };
 
-const GAME_TIME = 30; // 게임 시간 (초)
+const GAME_TIME = 30;
 
 export default function MiniGame2Page() {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState(GAME_PHASE.COUNTDOWN);
+
+  // ✅ phase를 state로 두지 않고, 아래 상태들로 "계산"해서 사용
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME);
   const [removedCards, setRemovedCards] = useState([]);
   const [showGuide, setShowGuide] = useState(true);
 
-  // 카운트다운
-  useEffect(() => {
-    if (phase === GAME_PHASE.COUNTDOWN && countdown > 0) {
-      const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-    if (phase === GAME_PHASE.COUNTDOWN && countdown === 0) {
-      setPhase(GAME_PHASE.PLAYING);
-    }
-  }, [phase, countdown]);
+  const isCleared = removedCards.length >= MOCK_CARDS.length;
+  const isTimeOver = timeLeft <= 0;
 
-  // 게임 타이머
+  const phase =
+    countdown > 0
+      ? GAME_PHASE.COUNTDOWN
+      : isCleared || isTimeOver
+        ? GAME_PHASE.RESULT
+        : GAME_PHASE.PLAYING;
+
+  // 1) 카운트다운 진행 (setPhase 필요 없음)
   useEffect(() => {
-    if (phase === GAME_PHASE.PLAYING) {
-      const interval = setInterval(() => {
-        setTimer((t) => t + 1);
-        setTimeLeft((t) => {
-          if (t <= 1) {
-            setPhase(GAME_PHASE.RESULT);
-            return 0;
-          }
-          return t - 1;
-        });
-      }, 1000);
-      return () => clearInterval(interval);
-    }
+    if (countdown <= 0) return;
+
+    const id = setTimeout(() => {
+      setCountdown((c) => c - 1);
+    }, 1000);
+
+    return () => clearTimeout(id);
+  }, [countdown]);
+
+  // 2) 게임 타이머 진행 (timeLeft만 줄이면 RESULT는 phase 계산으로 자동 전환)
+  useEffect(() => {
+    if (phase !== GAME_PHASE.PLAYING) return;
+
+    const id = setInterval(() => {
+      setTimer((t) => t + 1);
+      setTimeLeft((t) => Math.max(0, t - 1));
+    }, 1000);
+
+    return () => clearInterval(id);
   }, [phase]);
 
-  // 가이드 숨기기 (3초 후)
+  // 3) 가이드 3초 후 숨김
   useEffect(() => {
     if (phase === GAME_PHASE.PLAYING && showGuide) {
-      const timer = setTimeout(() => setShowGuide(false), 3000);
-      return () => clearTimeout(timer);
+      const id = setTimeout(() => setShowGuide(false), 3000);
+      return () => clearTimeout(id);
     }
   }, [phase, showGuide]);
-
-  // 모든 카드 제거시 결과 화면으로
-  useEffect(() => {
-    if (removedCards.length === MOCK_CARDS.length && phase === GAME_PHASE.PLAYING) {
-      setPhase(GAME_PHASE.RESULT);
-    }
-  }, [removedCards, phase]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -96,7 +94,6 @@ export default function MiniGame2Page() {
   };
 
   const handleRetry = () => {
-    setPhase(GAME_PHASE.COUNTDOWN);
     setCountdown(3);
     setTimer(0);
     setTimeLeft(GAME_TIME);
@@ -121,6 +118,8 @@ export default function MiniGame2Page() {
   const progress = (removedCards.length / MOCK_CARDS.length) * 100;
   const title = phase === GAME_PHASE.RESULT ? '카드 제거하기 결과' : '카드 제거하기';
 
+
+
   return (
     <MiniGameLayout
       title={title}
@@ -131,13 +130,13 @@ export default function MiniGame2Page() {
       participants={MOCK_PARTICIPANTS}
     >
       {phase === GAME_PHASE.PLAYING && (
-        <div className={styles.gameArea}>
+        <div className="flex flex-col h-full">
           <GameStats
             current={removedCards.length}
             total={MOCK_CARDS.length}
             timeLeft={timeLeft}
           />
-          <div className={styles.cardArea}>
+          <div className="relative flex-1 min-h-[400px]">
             <CardBoard cards={MOCK_CARDS} removedCards={removedCards} />
             <DuckGuide
               message="문장을 읽어서 카드를 없애봐요!!"
