@@ -1,8 +1,8 @@
 package com.example.DuckDuck.domain.client.openvidu;
 
-import com.example.DuckDuck.domain.client.openvidu.dto.OpenViduConnectionCreateResponse;
-import com.example.DuckDuck.domain.client.openvidu.dto.OpenViduSessionCreateRequest;
-import com.example.DuckDuck.domain.client.openvidu.dto.OpenViduSessionCreateResponse;
+import com.example.DuckDuck.domain.client.openvidu.dto.reponse.OpenViduConnectionCreateResponse;
+import com.example.DuckDuck.domain.client.openvidu.dto.request.OpenViduSessionCreateRequest;
+import com.example.DuckDuck.domain.client.openvidu.dto.reponse.OpenViduSessionCreateResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
