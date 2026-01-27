@@ -5,14 +5,9 @@ import styles from "./MakeRoomPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 
-function createInviteCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "";
-  for (let i = 0; i < 6; i += 1) {
-    out += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return out;
-}
+import { createRoom } from "@/api/rooms";
+
+const ROOM_INFO_KEY = "together_room_info";
 
 export default function MakeRoomPage() {
   const navigate = useNavigate();
@@ -32,6 +27,7 @@ export default function MakeRoomPage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
   const [turn, setTurn] = useState(3);
+  const [loading, setLoading] = useState(false);
 
   const titleCount = title.length;
 
@@ -59,7 +55,9 @@ export default function MakeRoomPage() {
     setTopic(next);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (loading) return;
+
     if (!title.trim()) {
       alert("방 제목을 입력해주세요.");
       return;
@@ -69,15 +67,38 @@ export default function MakeRoomPage() {
       return;
     }
 
-    const payload = {
-      roomTitle: title.trim(),
-      roomTopic: topic.trim(),
-      turnCount: turn,
-      inviteCode: createInviteCode(),
-    };
+    setLoading(true);
+    try {
+      // POST /api/v1/rooms
+      const res = await createRoom({
+        title: title.trim(),
+        topic: topic.trim(),
+        turnCnt: turn,
+      });
 
-    sessionStorage.setItem("roomCreateResult", JSON.stringify(payload));
-    navigate("/together/created", { state: payload });
+      // WaitingRoomPage에서 쓰는 형태로 맞춤
+      const roomInfo = {
+        isHost: true,
+        maxCount: 4,
+
+        roomId: res.roomId,
+        hostUserId: res.hostUserId,
+        createdAt: res.createdAt,
+
+        roomTitle: res.title,
+        topic: res.topic,
+        turnCount: res.turnCnt,
+
+        joinCode: res.roomCode,
+      };
+
+      sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));
+      navigate("/together/waiting", { state: roomInfo });
+    } catch (e) {
+      alert(e.message || "방 생성에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,6 +112,7 @@ export default function MakeRoomPage() {
             type="button"
             onClick={handleBack}
             aria-label="뒤로 가기"
+            disabled={loading}
           >
             <span className={styles.BackIcon} aria-hidden="true">
               &lt;
@@ -113,6 +135,7 @@ export default function MakeRoomPage() {
                 value={title}
                 onChange={handleTitleChange}
                 placeholder="예: 친구들과 수다타임"
+                disabled={loading}
               />
 
               <div className={styles.Counter}>{titleCount}/30</div>
@@ -130,11 +153,13 @@ export default function MakeRoomPage() {
                   value={topic}
                   onChange={handleTopicChange}
                   placeholder="직접 입력하거나 아래에서 선택하세요"
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   className={styles.AiButton}
                   onClick={handleAiRecommend}
+                  disabled={loading}
                 >
                   AI 추천
                 </button>
@@ -152,8 +177,11 @@ export default function MakeRoomPage() {
                     <button
                       key={t}
                       type="button"
-                      className={`${styles.TopicChip} ${active ? styles.TopicChipActive : ""}`}
+                      className={`${styles.TopicChip} ${
+                        active ? styles.TopicChipActive : ""
+                      }`}
                       onClick={() => handlePickTopic(t)}
+                      disabled={loading}
                     >
                       {t}
                     </button>
@@ -174,8 +202,11 @@ export default function MakeRoomPage() {
                     <button
                       key={n}
                       type="button"
-                      className={`${styles.TurnCard} ${active ? styles.TurnCardActive : ""}`}
+                      className={`${styles.TurnCard} ${
+                        active ? styles.TurnCardActive : ""
+                      }`}
                       onClick={() => setTurn(n)}
+                      disabled={loading}
                     >
                       <span className={styles.TurnIcon} aria-hidden="true">
                         ↻
@@ -187,8 +218,13 @@ export default function MakeRoomPage() {
               </div>
             </div>
 
-            <button type="button" className={styles.PrimaryButton} onClick={handleSubmit}>
-              방 만들기
+            <button
+              type="button"
+              className={styles.PrimaryButton}
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? "생성 중..." : "방 만들기"}
             </button>
           </section>
 

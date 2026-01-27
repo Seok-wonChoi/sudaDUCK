@@ -6,8 +6,10 @@ import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 
 import duckImg from "@/assets/images/duck.png";
+import { joinRoom } from "@/api/rooms";
 
 const CODE_LEN = 6;
+const ROOM_INFO_KEY = "together_room_info";
 
 function normalizeCode(raw) {
   return (raw || "")
@@ -21,6 +23,7 @@ export default function JoinRoomPage() {
 
   const [codeArr, setCodeArr] = useState(() => Array(CODE_LEN).fill(""));
   const inputsRef = useRef([]);
+  const [loading, setLoading] = useState(false);
 
   const code = useMemo(() => codeArr.join(""), [codeArr]);
   const isComplete = codeArr.every((c) => c.length === 1);
@@ -100,17 +103,38 @@ export default function JoinRoomPage() {
     focusAt(Math.min(pasted.length, CODE_LEN - 1));
   };
 
-  const handleSubmit = () => {
-    if (!isComplete) return;
+  const handleSubmit = async () => {
+    if (!isComplete || loading) return;
 
-    navigate("/together/waiting", {
-      state: {
+    const roomCode = code.trim().toUpperCase();
+    if (roomCode.length !== CODE_LEN) return;
+
+    setLoading(true);
+    try {
+      // POST /api/v1/rooms/join
+      const res = await joinRoom({ roomCode });
+
+      const roomInfo = {
         isHost: false,
-        joinCode: code,
-        topic: "좋아하는 음식",
         maxCount: 4,
-      },
-    });
+
+        roomId: res.roomId,
+        joinCode: res.roomCode,
+        readyStatus: res.readyStatus,
+        alreadyJoined: res.alreadyJoined,
+
+        roomTitle: "-",
+        topic: "-",
+        turnCount: "-",
+      };
+
+      sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));
+      navigate("/together/waiting", { state: roomInfo });
+    } catch (e) {
+      alert(e.message || "방 참가에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -124,6 +148,7 @@ export default function JoinRoomPage() {
             type="button"
             onClick={handleBack}
             aria-label="뒤로 가기"
+            disabled={loading}
           >
             <span className={styles.BackIcon} aria-hidden="true">
               &lt;
@@ -150,17 +175,20 @@ export default function JoinRoomPage() {
                   autoComplete="one-time-code"
                   maxLength={1}
                   aria-label={`코드 ${idx + 1}번째 자리`}
+                  disabled={loading}
                 />
               ))}
             </div>
 
             <button
               type="button"
-              className={`${styles.JoinButton} ${isComplete ? styles.JoinButtonActive : ""}`}
+              className={`${styles.JoinButton} ${
+                isComplete ? styles.JoinButtonActive : ""
+              }`}
               onClick={handleSubmit}
-              disabled={!isComplete}
+              disabled={!isComplete || loading}
             >
-              참여하기
+              {loading ? "입장 중..." : "참여하기"}
             </button>
           </section>
 

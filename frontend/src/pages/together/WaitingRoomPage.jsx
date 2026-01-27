@@ -8,6 +8,8 @@ import duckImg from "@/assets/images/duck.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 import usersIcon from "@/assets/icons/users_icon.png";
+import copyIcon from "@/assets/icons/copy_icon.png";
+import kakaoIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
@@ -33,22 +35,21 @@ export default function WaitingRoomPage() {
   const roomInfo = state ?? {};
   const isHost = roomInfo.isHost ?? true;
   const maxCount = roomInfo.maxCount ?? 4;
+  const roomTitle = roomInfo.roomTitle ?? "수다방";
+  const topic = roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식";
+  const turnCount = roomInfo.turnCount ?? 3;
+  const inviteCode = roomInfo.joinCode ?? roomInfo.inviteCode ?? "000000";
 
   const [participants, setParticipants] = useState(() => {
     if (isHost) {
       return [
         { id: "me", name: "나", isHost: true, isReady: true },
-        { id: "u2", name: "참여자 1", isHost: false, isReady: true },
-        { id: "u3", name: "참여자 2", isHost: false, isReady: true },
-        { id: "u4", name: "참여자 3", isHost: false, isReady: true },
       ];
     }
 
     return [
       { id: "host", name: "방장", isHost: true, isReady: true },
       { id: "me", name: "나", isHost: false, isReady: false },
-      { id: "u2", name: "참여자 2", isHost: false, isReady: true },
-      { id: "u3", name: "참여자 3", isHost: false, isReady: true },
     ];
   });
 
@@ -75,6 +76,19 @@ export default function WaitingRoomPage() {
       prev.map((p) => (p.id === "me" ? { ...p, isReady: !p.isReady } : p))
     );
   }, []);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      console.log("참여 코드 복사 완료");
+    } catch (e) {
+      console.log("복사 실패", e);
+    }
+  }, [inviteCode]);
+
+  const handleKakaoShare = useCallback(() => {
+    console.log("카카오 공유 클릭", inviteCode);
+  }, [inviteCode]);
 
   const handleStart = useCallback(() => {
     if (!canStart) return;
@@ -109,25 +123,57 @@ export default function WaitingRoomPage() {
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Top}>
-          <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
-          replace 
-          />
+          <div className={styles.TopRow}>
+            <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
+            replace
+            />
+
+            <div className={styles.RoomInfoCard}>
+              <div className={styles.RoomInfoRow}>
+                <div className={styles.RoomInfoLabel}>방 제목</div>
+                <div className={styles.RoomInfoValue}>{roomTitle}</div>
+              </div>
+              <div className={styles.RoomInfoRow}>
+                <div className={styles.RoomInfoLabel}>주제</div>
+                <div className={styles.RoomInfoValue}>{topic}</div>
+              </div>
+              <div className={styles.RoomInfoRow}>
+                <div className={styles.RoomInfoLabel}>턴 수</div>
+                <div className={styles.RoomInfoValue}>{turnCount}턴</div>
+              </div>
+              <div className={styles.RoomCodeSection}>
+                <div className={styles.RoomCodeLabel}>참여 코드</div>
+                <div className={styles.RoomCodeBox}>
+                  <div className={styles.RoomCodeText}>{inviteCode}</div>
+                  <div className={styles.RoomCodeActions}>
+                    <button
+                      type="button"
+                      className={styles.KakaoButton}
+                      onClick={handleKakaoShare}
+                    >
+                      <img className={styles.KakaoIcon} src={kakaoIcon} alt="카카오" />
+                      공유
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.CopyButton}
+                      onClick={handleCopy}
+                    >
+                      <img className={styles.CopyIcon} src={copyIcon} alt="복사" />
+                      복사
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className={styles.SpeechRow}>
             <div className={styles.SpeechLeft}>
               <img className={styles.Duck} src={duckImg} alt="오리" />
               <div className={styles.SpeechBubbleLeft}>
-                첫 번째 대화 주제는 {roomInfo.topic ?? "좋아하는 음식"}입니다!
+                첫 번째 대화 주제는 {topic}입니다!
               </div>
-            </div>
-
-            <div className={styles.SpeechRight}>
-              <div className={styles.SpeechBubbleRight}>
-                {isHost
-                  ? "준비가 완료 되면 대화 시작하기 버튼을 눌러주세요!"
-                  : "준비가 완료 되면 준비하기 버튼을 눌러주세요!"}
-              </div>
-              <img className={styles.Duck} src={duckImg} alt="오리" />
             </div>
           </div>
 
@@ -150,7 +196,18 @@ export default function WaitingRoomPage() {
             </div>
 
             <div className={styles.ParticipantsBody}>
-              {participants.map((p) => {
+              {Array.from({ length: maxCount }).map((_, index) => {
+                const p = participants[index];
+
+                if (!p) {
+                  // 빈 슬롯
+                  return (
+                    <div key={`empty-${index}`} className={styles.ParticipantRowEmpty}>
+                      <div className={styles.EmptySlotText}>빈 자리</div>
+                    </div>
+                  );
+                }
+
                 const isMe = p.id === "me";
                 const micOn = isMe ? myMicOn : false;
 

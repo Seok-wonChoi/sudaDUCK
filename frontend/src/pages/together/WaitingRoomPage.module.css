@@ -21,6 +21,14 @@
   padding: 22px 34px 34px;
 }
 
+/* 상단 첫 줄: 나가기 버튼 + 방 정보 카드 */
+.TopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
 /* 뒤로가기 버튼 */
 .BackButton {
   display: inline-flex;
@@ -371,6 +379,151 @@
   margin: 6px 0;
 }
 
+/* 우측 상단 방 정보 카드 */
+.RoomInfoCard {
+  min-width: 280px;
+  max-width: 320px;
+  border: 1px solid #e8edf6;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 16px;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+}
+
+/* 방 정보 행 */
+.RoomInfoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.RoomInfoRow:last-of-type {
+  border-bottom: none;
+}
+
+/* 방 정보 라벨 */
+.RoomInfoLabel {
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b7280;
+}
+
+/* 방 정보 값 */
+.RoomInfoValue {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+}
+
+/* 참여 코드 섹션 */
+.RoomCodeSection {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eef2ff;
+}
+
+/* 참여 코드 라벨 */
+.RoomCodeLabel {
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* 참여 코드 박스 */
+.RoomCodeBox {
+  border-radius: 12px;
+  border: 1px solid #c7d2fe;
+  background: rgba(99, 102, 241, 0.06);
+  padding: 12px;
+  position: relative;
+}
+
+/* 참여 코드 텍스트 */
+.RoomCodeText {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #4f46e5;
+  margin-bottom: 10px;
+}
+
+/* 코드 액션 버튼 영역 */
+.RoomCodeActions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 카카오 공유 버튼 */
+.KakaoButton {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: none;
+  background: #facc15;
+  font-size: 11px;
+  font-weight: 900;
+  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* 복사 버튼 */
+.CopyButton {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #c7d2fe;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  color: #4f46e5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* 카카오 아이콘 */
+.KakaoIcon {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+/* 복사 아이콘 */
+.CopyIcon {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+/* 빈 슬롯 */
+.ParticipantRowEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 14px;
+  min-height: 80px;
+  background: #f9fafb;
+}
+
+/* 빈 슬롯 텍스트 */
+.EmptySlotText {
+  font-size: 12px;
+  font-weight: 700;
+  color: #9ca3af;
+}
+
 @media (max-width: 768px) {
   /* 모바일 Top 패딩 */
   .Top {
@@ -398,5 +551,14 @@
   z-index: 50;
 }
 
+  /* 모바일 TopRow */
+  .TopRow {
+    flex-direction: column;
+    gap: 12px;
+  }
 
+  /* 모바일 방 정보 카드 */
+  .RoomInfoCard {
+    width: 100%;
+  }
 }
