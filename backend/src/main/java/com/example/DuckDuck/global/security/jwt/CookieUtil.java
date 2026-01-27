@@ -10,11 +10,11 @@ import java.util.Optional;
 
 public class CookieUtil {
 
-    public static void addCookie(HttpServletResponse response, String name, String value, int maxAge) {
+    public static void addCookie(HttpServletResponse response, String name, String value, int maxAge, boolean httpOnly) {
         // ResponseCookie를 사용하면 sameSite 메서드를 바로 쓸 수 있습니다.
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .path("/")
-                .httpOnly(true)    // JavaScript 접근 방지
+                .httpOnly(httpOnly)    // JavaScript 접근 방지
                 .secure(true)      // SameSite("None") 설정 시 필수 (HTTPS 필요)
                 .sameSite("None")  // Cross-Site 간 쿠키 전송 허용
                 .maxAge(maxAge)
