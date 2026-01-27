@@ -1,34 +1,25 @@
 import { Routes, Route } from "react-router-dom";
 
-// Main
+import LoginPage from "./pages/auth/LoginPage";
 import MainPage from "./pages/main/MainPage";
-
-// Practice
 import PracticePage from "./pages/practice/PracticePage";
 import SoloPracticePage from "./pages/practice/SoloPracticePage";
 import AiPracticePage from "./pages/practice/AiPracticePage";
-
-// Together
 import TogetherPage from "./pages/together/TogetherPage";
 import MakeRoomPage from "./pages/together/MakeRoomPage";
 import RoomCreatedPage from "./pages/together/RoomCreatedPage";
 import JoinRoomPage from "./pages/together/JoinRoomPage";
 import WaitingRoomPage from "./pages/together/WaitingRoomPage";
 import TogetherTalkPage from "./pages/together/TogetherTalkPage";
-
-// Recording
 import RecordingPage from "./pages/recording/RecordingPage";
-
-// MyPage
 import MyPage from "./pages/mypage/MyPage";
-
-// MiniGame
 import MiniGame1Page from "./pages/minigame/MiniGame1Page";
 import MiniGame2Page from "./pages/minigame/MiniGame2Page";
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<MainPage />} />
 
       <Route path="/practice" element={<PracticePage />} />
