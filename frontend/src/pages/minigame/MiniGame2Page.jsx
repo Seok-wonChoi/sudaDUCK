@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import styles from './MiniGame2Page.module.css';
 
 import MiniGameLayout from '@/components/features/minigame/layout/MiniGameLayout';
 import CountdownOverlay from '@/components/features/minigame/countdown/CountdownOverlay';
@@ -34,7 +35,7 @@ const GAME_PHASE = {
   RESULT: 'result',
 };
 
-const GAME_TIME = 30;
+const GAME_TIME = 30; // 게임 시간 (초)
 
 export default function MiniGame2Page() {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ export default function MiniGame2Page() {
   const [removedCards, setRemovedCards] = useState([]);
   const [showGuide, setShowGuide] = useState(true);
 
+  // 카운트다운
   useEffect(() => {
     if (phase === GAME_PHASE.COUNTDOWN && countdown > 0) {
       const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
@@ -55,6 +57,7 @@ export default function MiniGame2Page() {
     }
   }, [phase, countdown]);
 
+  // 게임 타이머
   useEffect(() => {
     if (phase === GAME_PHASE.PLAYING) {
       const interval = setInterval(() => {
@@ -71,6 +74,7 @@ export default function MiniGame2Page() {
     }
   }, [phase]);
 
+  // 가이드 숨기기 (3초 후)
   useEffect(() => {
     if (phase === GAME_PHASE.PLAYING && showGuide) {
       const timer = setTimeout(() => setShowGuide(false), 3000);
@@ -78,6 +82,7 @@ export default function MiniGame2Page() {
     }
   }, [phase, showGuide]);
 
+  // 모든 카드 제거시 결과 화면으로
   useEffect(() => {
     if (removedCards.length === MOCK_CARDS.length && phase === GAME_PHASE.PLAYING) {
       setPhase(GAME_PHASE.RESULT);
@@ -126,13 +131,13 @@ export default function MiniGame2Page() {
       participants={MOCK_PARTICIPANTS}
     >
       {phase === GAME_PHASE.PLAYING && (
-        <div className="flex flex-col h-full">
+        <div className={styles.gameArea}>
           <GameStats
             current={removedCards.length}
             total={MOCK_CARDS.length}
             timeLeft={timeLeft}
           />
-          <div className="relative flex-1 min-h-[400px]">
+          <div className={styles.cardArea}>
             <CardBoard cards={MOCK_CARDS} removedCards={removedCards} />
             <DuckGuide
               message="문장을 읽어서 카드를 없애봐요!!"

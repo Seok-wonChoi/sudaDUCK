@@ -1,8 +1,9 @@
 import RankingItem from './RankingItem';
+import styles from './RankingList.module.css';
 
 export default function RankingList({ rankings = [], currentUserId }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className={styles.list}>
       {rankings.map((player, idx) => (
         <RankingItem
           key={player.id || idx}

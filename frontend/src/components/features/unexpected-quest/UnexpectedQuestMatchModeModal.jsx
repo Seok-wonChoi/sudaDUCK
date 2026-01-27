@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import styles from "./UnexpectedQuestMatchModeModal.module.css";
 
 export default function UnexpectedQuestMatchModeModal({ open, duckSrc, onSubmit }) {
   const [selected, setSelected] = useState(null);
@@ -50,56 +51,47 @@ export default function UnexpectedQuestMatchModeModal({ open, duckSrc, onSubmit 
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-indigo-900/90 flex items-center justify-center z-[9999]"
-      role="dialog"
-      aria-modal="true"
-      onKeyDown={onKeyDown}
-    >
-      <div className="relative flex flex-col items-center">
-        <div className="bg-white rounded-2xl p-5 w-[320px] sm:w-[420px] shadow-2xl">
-          <div className="text-center mb-4">
-            <div className="text-lg font-black text-indigo-600 mb-1">돌발 퀘스트 - 매칭 모드</div>
-            <div className="text-xs text-gray-400">퍼블리싱 단계: 아무 항목이나 선택해도 진행됩니다.</div>
+    <div className={styles.Backdrop} role="dialog" aria-modal="true" onKeyDown={onKeyDown}>
+      <div className={styles.Stage}>
+        <div className={styles.Card}>
+          <div className={styles.CardTop}>
+            <div className={styles.CardTitle}>돌발 퀘스트 - 매칭 모드</div>
+            <div className={styles.CardSub}>퍼블리싱 단계: 아무 항목이나 선택해도 진행됩니다.</div>
           </div>
 
-          <div className="bg-blue-50 rounded-xl p-4 mb-4">
-            <div className="text-xs font-semibold text-blue-600 mb-1">영어 문장</div>
-            <div className="text-base font-medium text-gray-900">{question}</div>
+          <div className={styles.QuestionBox}>
+            <div className={styles.QuestionLabel}>영어 문장</div>
+            <div className={styles.QuestionText}>{question}</div>
           </div>
 
-          <div className="flex items-center gap-2 mb-3">
-            <div className="py-1 px-2 bg-indigo-100 text-indigo-700 text-xs font-bold rounded">매칭</div>
-            <div className="text-xs text-gray-600">위 문장과 의미/뉘앙스가 가장 가까운 표현을 골라주세요.</div>
+          <div className={styles.Instruction}>
+            <div className={styles.Badge}>매칭</div>
+            <div className={styles.InstructionText}>
+              위 문장과 의미/뉘앙스가 가장 가까운 표현을 골라주세요.
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2" role="list">
+          <div className={styles.Options} role="list">
             {options.map((opt, idx) => (
               <button
                 key={opt.id}
                 type="button"
                 ref={idx === 0 ? firstBtnRef : null}
-                className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all
-                  ${selected === opt.id
-                    ? "border-indigo-500 bg-indigo-50"
-                    : "border-gray-200 bg-white hover:border-indigo-200"
-                  }`}
+                className={`${styles.OptionBtn} ${
+                  selected === opt.id ? styles.OptionBtnSelected : ""
+                }`}
                 onClick={() => handleChoose(opt.id)}
                 onFocus={() => setSelected(opt.id)}
                 role="listitem"
               >
-                <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center
-                  ${selected === opt.id ? "border-indigo-500 bg-indigo-500" : "border-gray-300"}`}
-                >
-                  {selected === opt.id && <span className="w-2 h-2 bg-white rounded-full" />}
-                </span>
-                <span className="text-sm text-gray-900">{opt.text}</span>
+                <span className={styles.OptionDot} aria-hidden="true" />
+                <span className={styles.OptionText}>{opt.text}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {duckSrc && <img className="w-24 h-24 object-contain mt-4" src={duckSrc} alt="돌발 퀘스트 오리" />}
+        {duckSrc ? <img className={styles.Duck} src={duckSrc} alt="돌발 퀘스트 오리" /> : null}
       </div>
     </div>
   );

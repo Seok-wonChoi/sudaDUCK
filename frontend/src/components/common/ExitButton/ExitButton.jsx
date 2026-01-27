@@ -1,6 +1,9 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import styles from "./ExitButton.module.css";
+
 import ConfirmModal from "../ConfirmModal/ConfirmModal";
+
 
 export default function ExitButton({
   to = "/",
@@ -37,14 +40,9 @@ export default function ExitButton({
     <>
       <button
         type="button"
+        className={`${styles.Button} ${className}`}
         onClick={handleOpen}
         disabled={disabled}
-        className={`inline-flex items-center justify-center h-9 px-3.5 rounded-lg
-          border border-red-500/35 bg-red-500/10 text-red-500
-          text-xs font-black cursor-pointer select-none
-          hover:bg-red-500/15 active:translate-y-px transition-colors
-          disabled:opacity-50 disabled:cursor-not-allowed
-          ${className}`}
       >
         {label}
       </button>

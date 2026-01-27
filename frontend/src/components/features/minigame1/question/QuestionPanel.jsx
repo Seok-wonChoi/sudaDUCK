@@ -1,3 +1,4 @@
+import styles from './QuestionPanel.module.css';
 import QuestionInfo from './QuestionInfo';
 import KoreanSentence from './KoreanSentence';
 import BlankFillSentence from './BlankFillSentence';
@@ -15,7 +16,7 @@ export default function QuestionPanel({
   onSubmit
 }) {
   return (
-    <div className="flex flex-col gap-5 p-5">
+    <div className={styles.panel}>
       <QuestionInfo current={current} total={total} score={score} />
       <KoreanSentence sentence={koreanSentence} />
       <BlankFillSentence parts={englishParts} blanks={blanks} />

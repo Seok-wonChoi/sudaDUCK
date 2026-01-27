@@ -1,4 +1,5 @@
 import { useState } from "react";
+import styles from "./SentenceDetailModal.module.css";
 import ModalWrapper from "@/components/features/mypage/common/ModalWrapper";
 import SentenceCard from "./SentenceCard";
 import InfoGrid from "./InfoGrid";
@@ -27,8 +28,7 @@ export default function SentenceDetailModal({ sentence, onClose }) {
   const footer = (
     <button
       type="button"
-      className="py-2.5 px-6 border-none rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600
-        text-white text-sm font-bold cursor-pointer hover:brightness-105"
+      className={styles.CloseBtn}
       onClick={onClose}
     >
       닫기
@@ -37,7 +37,7 @@ export default function SentenceDetailModal({ sentence, onClose }) {
 
   return (
     <ModalWrapper title="문장 상세" onClose={onClose} footer={footer}>
-      <div className="flex flex-col gap-5">
+      <div className={styles.Content}>
         <SentenceCard
           english={english}
           korean={korean}

@@ -1,3 +1,4 @@
+import styles from './MiniGameLayout.module.css';
 import AppHeader from '@/components/layout/AppHeader/AppHeader';
 import GameHeader from '../common/GameHeader';
 import ProgressBar from '../common/ProgressBar';
@@ -14,10 +15,10 @@ export default function MiniGameLayout({
   userName = 'user'
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className={styles.layout}>
       <AppHeader userName={userName} />
 
-      <main className="flex-1 flex flex-col">
+      <main className={styles.main}>
         {showGameHeader && (
           <>
             <GameHeader title={title} timer={timer} />
@@ -25,12 +26,12 @@ export default function MiniGameLayout({
           </>
         )}
 
-        <div className="flex-1 overflow-y-auto">
+        <div className={styles.content}>
           {children}
         </div>
       </main>
 
-      <footer className="mt-auto">
+      <footer className={styles.footer}>
         <ParticipantList participants={participants} />
       </footer>
     </div>
