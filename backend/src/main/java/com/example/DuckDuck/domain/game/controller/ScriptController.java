@@ -1,5 +1,6 @@
 package com.example.DuckDuck.domain.game.controller;
 
+import com.example.DuckDuck.domain.game.dto.response.MySentenceResponse;
 import com.example.DuckDuck.domain.game.entity.Sentence;
 import com.example.DuckDuck.domain.game.service.ScriptService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,5 +42,17 @@ public class ScriptController {
         Map<String, Object> result = scriptService.likeSentence(email, roomId, turnNo, scriptId);
 
         return ResponseEntity.ok(result);
+    }
+
+    @Operation(
+            summary = "내가 좋아요한 문장 조회",
+            description = "내가 좋아요를 눌러 저장한 문장 목록을 최신순으로 가져옵니다."
+    )
+    @GetMapping("/my")
+    public ResponseEntity<List<MySentenceResponse>> getMySentences(
+            @AuthenticationPrincipal String email
+    ) {
+        List<MySentenceResponse> response = scriptService.getMySentences(email);
+        return ResponseEntity.ok(response);
     }
 }
