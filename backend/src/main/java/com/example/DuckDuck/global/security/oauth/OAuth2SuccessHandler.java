@@ -1,6 +1,5 @@
 package com.example.DuckDuck.global.security.oauth;
 
-import com.example.DuckDuck.domain.user.service.RedisService;
 import com.example.DuckDuck.global.security.jwt.CookieUtil;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import com.example.DuckDuck.global.security.jwt.RefreshToken;
@@ -46,7 +45,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         CookieUtil.addCookie(response, "refresh_token", refreshToken, 1209600); // 14일
 
         // 4. 프론트엔드 메인 페이지로 리다이렉트
-        getRedirectStrategy().sendRedirect(request, response, "/api/v1/auth/me");
+//        getRedirectStrategy().sendRedirect(request, response, "/api/v1/auth/me");
 
+        getRedirectStrategy().sendRedirect(request, response, "http://localhost:5173");
     }
 }

@@ -6,18 +6,22 @@ import com.example.DuckDuck.domain.room.repository.RoomParticipantsRepository;
 import com.example.DuckDuck.domain.room.repository.RoomRepository;
 import com.example.DuckDuck.domain.user.entity.Member;
 import com.example.DuckDuck.domain.user.repository.MemberRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.transaction.Transactional;
-import java.util.Set;
+
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RoomStartService {
 
     private final RoomRepository roomRepository;
@@ -131,6 +135,38 @@ public class RoomStartService {
         room.setIsOpen(true);
         roomRepository.save(room);
 
+        //====== redis에 topic과 member id-name 정보 저장 ======
+        String topicKey = "room:"+roomId + ":topic";
+        redisTemplate.opsForValue().set(topicKey, room.getTopic(), ROOM_TTL_HOURS, TimeUnit.HOURS);
+
+        String memberNamesKey = "room:" + roomId +":member";
+        String participantsKey = "room:" + roomId + ":participants";
+
+        List<Long> memberIds = members.stream()
+                .map(m -> Long.parseLong(String.valueOf(m)))
+                .toList();
+
+        List<Member> memberList = memberRepository.findAllById(memberIds);
+
+        Map<String, String> idToNameMap = new HashMap<>();
+        List<String> allNames = new ArrayList<>();
+
+        for(Member m : memberList){
+            idToNameMap.put(m.getId().toString(), m.getNickname());
+            allNames.add(m.getNickname());
+        }
+
+        //Redis에 저장
+        redisTemplate.opsForHash().putAll(memberNamesKey, idToNameMap);
+        redisTemplate.expire(memberNamesKey, ROOM_TTL_HOURS, TimeUnit.HOURS);
+
+        //Redis에 저장
+        try{
+            String jsonNames = new ObjectMapper().writeValueAsString(allNames);
+            redisTemplate.opsForValue().set(participantsKey, jsonNames, ROOM_TTL_HOURS, TimeUnit.HOURS);
+        } catch (Exception e){
+            log.error("참여자 리스트 변환 실패", e);
+        }
         // 8) TTL 갱신
         refreshRoomTtl(roomId, roomCode);
 

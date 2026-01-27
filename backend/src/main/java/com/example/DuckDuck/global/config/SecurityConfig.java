@@ -54,7 +54,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll() //swagger 관련 주소 모두 허용
                         .requestMatchers(
-                                "/api/v1/auth/**", "/oauth2/**", "/login/**").permitAll() // 로그인 관련은 모두 허용
+                                "/api/v1/auth/**", "/oauth2/**", "/login/**","/api/v1/gpt/translate"
+                        ,"api/v1/topics").permitAll() // 로그인 관련은 모두 허용
                         .anyRequest().authenticated() // 그 외 나머지는 인증 필요
                 )
 
@@ -81,7 +82,13 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 허용할 프론트엔드 도메인 (주의: 쿠키 사용 시 "*"는 절대 안 됨)
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",          // 로컬 테스트용 (Vue 기본 포트 예시)
+                "http://192.168.30.196:5173",       // 확인하신 실제 내 IP 주소
+                "http://127.0.0.1:5173",
+                "https://i14e104.p.ssafy.io",    // ✅ 추가: HTTPS 도메인
+                "http://i14e104.p.ssafy.io"
+        ));
 
         // 허용할 HTTP 메서드
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

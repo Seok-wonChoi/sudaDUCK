@@ -1,5 +1,6 @@
 package com.example.DuckDuck.domain.ai.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.example.DuckDuck.domain.ai.service.AzureSpeechService;
@@ -17,6 +18,7 @@ import java.util.concurrent.TimeUnit;
  * 발음 평가 API
  * - Redis에 저장된 스크립트의 score 업데이트
  */
+@Tag(name = "Speech", description = "발음 평가")
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
