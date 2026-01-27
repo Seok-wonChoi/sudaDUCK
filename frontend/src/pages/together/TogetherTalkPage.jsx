@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./TogetherTalkPage.module.css";
 
-import AppHeader from "../components/layout/AppHeader/AppHeader";
-import ExitGuard from "../components/common/ExitGuard/ExitGuard";
-import ExitButton from "../components/common/ExitButton/ExitButton";
-import TimerGauge from "../components/common/TimerGauge/TimerGauge";
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import ExitGuard from "@/components/common/ExitGuard/ExitGuard";
+import ExitButton from "@/components/common/ExitButton/ExitButton";
+import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
 
 import duckImg from "@/assets/images/duck.png";
 import duckHappyImg from "@/assets/images/duck_happy.png";
@@ -14,8 +14,8 @@ import duckSadImg from "@/assets/images/duck_sad.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 
-import UnexpectedQuestOverlay from "../components/features/unexpected-quest/UnexpectedQuestOverlay";
-import UnexpectedQuestFillBlankModal from "../components/features/unexpected-quest/UnexpectedQuestFillBlankModal";
+import UnexpectedQuestOverlay from "@/components/features/unexpected-quest/UnexpectedQuestOverlay";
+import UnexpectedQuestFillBlankModal from "@/components/features/unexpected-quest/UnexpectedQuestFillBlankModal";
 
 function VoiceWave({ level, enabled }) {
   const multipliers = useMemo(() => [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35], []);

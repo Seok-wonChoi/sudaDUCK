@@ -1,14 +1,14 @@
 import { useState } from "react";
 import styles from "./MyPage.module.css";
-import AppHeader from "../components/layout/AppHeader/AppHeader";
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
 
-import ProfileSection from "../components/features/mypage/ProfileSection/ProfileSection";
-import StatsCard from "../components/features/mypage/StatsCard/StatsCard";
-import SentenceList from "../components/features/mypage/SentenceList/SentenceList";
+import ProfileSection from "@/components/features/mypage/ProfileSection/ProfileSection";
+import StatsCard from "@/components/features/mypage/StatsCard/StatsCard";
+import SentenceList from "@/components/features/mypage/SentenceList/SentenceList";
 
-import SentenceDetailModal from "../components/features/mypage/modals/SentenceDetailModal/SentenceDetailModal";
-import NicknameStyleModal from "../components/features/mypage/modals/NicknameStyleModal/NicknameStyleModal";
-import DuckStyleModal from "../components/features/mypage/modals/DuckStyleModal/DuckStyleModal";
+import SentenceDetailModal from "@/components/features/mypage/modals/SentenceDetailModal/SentenceDetailModal";
+import NicknameStyleModal from "@/components/features/mypage/modals/NicknameStyleModal/NicknameStyleModal";
+import DuckStyleModal from "@/components/features/mypage/modals/DuckStyleModal/DuckStyleModal";
 
 const MOCK_SENTENCES = [
   {
