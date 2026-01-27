@@ -44,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 //인증 거부 및 쿠키 삭제 처리 기능
                 SecurityContextHolder.clearContext();
 
-                CookieUtil.addCookie(response, "refresh_token", null, 0);
+                CookieUtil.addCookie(response, "refresh_token", null, 0,true);
 
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "다른 기기에서 로그인되어 로그아웃되었습니다.");
                 return;
