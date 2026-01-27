@@ -26,11 +26,16 @@ export default function NicknameStyleModal({
   onSave,
   onClose,
 }) {
+  const [editedNickname, setEditedNickname] = useState(nickname);
   const [selectedBg, setSelectedBg] = useState(currentStyle.background || "gradient");
   const [selectedEffect, setSelectedEffect] = useState(currentStyle.effect || null);
 
   const handleSave = () => {
-    onSave?.({ background: selectedBg, effect: selectedEffect });
+    onSave?.({
+      nickname: editedNickname.trim() || nickname,
+      background: selectedBg,
+      effect: selectedEffect,
+    });
     onClose?.();
   };
 
@@ -50,8 +55,20 @@ export default function NicknameStyleModal({
       <div className={styles.Content}>
         <div className={styles.Preview}>
           <NicknameBadge
-            nickname={nickname}
+            nickname={editedNickname || nickname}
             style={{ background: selectedBg, effect: selectedEffect }}
+          />
+        </div>
+
+        <div className={styles.Section}>
+          <h3 className={styles.SectionTitle}>닉네임</h3>
+          <input
+            type="text"
+            className={styles.NicknameInput}
+            value={editedNickname}
+            onChange={(e) => setEditedNickname(e.target.value)}
+            placeholder="닉네임을 입력하세요"
+            maxLength={12}
           />
         </div>
 
