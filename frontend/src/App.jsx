@@ -1,20 +1,20 @@
 import { Routes, Route } from "react-router-dom";
 
-import LoginPage from "./pages/LoginPage";
-import MainPage from "./pages/MainPage";
-import PracticePage from "./pages/PracticePage";
-import SoloPracticePage from "./pages/SoloPracticePage";
-import AiPracticePage from "./pages/AiPracticePage";
-import TogetherPage from "./pages/TogetherPage";
-import MakeRoomPage from "./pages/MakeRoomPage";
-import RoomCreatedPage from "./pages/RoomCreatedPage";
-import JoinRoomPage from "./pages/JoinRoomPage";
-import WaitingRoomPage from "./pages/WaitingRoomPage";
-import TogetherTalkPage from "./pages/TogetherTalkPage";
-import RecordingPage from "./pages/RecordingPage";
-import MyPage from "./pages/MyPage";
-import MiniGame1Page from "./pages/MiniGame1Page";
-import MiniGame2Page from "./pages/MiniGame2Page";
+import LoginPage from "./pages/auth/LoginPage";
+import MainPage from "./pages/main/MainPage";
+import PracticePage from "./pages/practice/PracticePage";
+import SoloPracticePage from "./pages/practice/SoloPracticePage";
+import AiPracticePage from "./pages/practice/AiPracticePage";
+import TogetherPage from "./pages/together/TogetherPage";
+import MakeRoomPage from "./pages/together/MakeRoomPage";
+import RoomCreatedPage from "./pages/together/RoomCreatedPage";
+import JoinRoomPage from "./pages/together/JoinRoomPage";
+import WaitingRoomPage from "./pages/together/WaitingRoomPage";
+import TogetherTalkPage from "./pages/together/TogetherTalkPage";
+import RecordingPage from "./pages/recording/RecordingPage";
+import MyPage from "./pages/mypage/MyPage";
+import MiniGame1Page from "./pages/minigame/MiniGame1Page";
+import MiniGame2Page from "./pages/minigame/MiniGame2Page";
 
 export default function App() {
   return (

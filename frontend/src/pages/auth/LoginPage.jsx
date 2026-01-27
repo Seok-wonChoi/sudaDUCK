@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "./LoginPage.module.css";
 import duckImage from "@/assets/images/duck_happy.png";
 import kakaoIcon from "@/assets/icons/kakaotalk_icon.png";
+import { loginWithKakao } from "@/api/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -19,8 +20,7 @@ export default function LoginPage() {
   };
 
   const handleKakaoLogin = () => {
-    // TODO: 카카오 로그인 로직 구현
-    console.log("Kakao login");
+    loginWithKakao();
   };
 
   return (
