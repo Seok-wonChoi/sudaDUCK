@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 
+import LoginPage from "./pages/LoginPage";
 import MainPage from "./pages/MainPage";
 import PracticePage from "./pages/PracticePage";
 import SoloPracticePage from "./pages/SoloPracticePage";
@@ -18,6 +19,7 @@ import MiniGame2Page from "./pages/MiniGame2Page";
 export default function App() {
   return (
     <Routes>
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<MainPage />} />
 
       <Route path="/practice" element={<PracticePage />} />
