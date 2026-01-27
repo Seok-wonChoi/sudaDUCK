@@ -9,6 +9,31 @@ import SentenceList from "@/components/features/mypage/SentenceList/SentenceList
 import SentenceDetailModal from "@/components/features/mypage/modals/SentenceDetailModal/SentenceDetailModal";
 import NicknameStyleModal from "@/components/features/mypage/modals/NicknameStyleModal/NicknameStyleModal";
 import DuckStyleModal from "@/components/features/mypage/modals/DuckStyleModal/DuckStyleModal";
+import DuckBotModal from "@/components/features/mypage/modals/DuckBotModal/DuckBotModal";
+
+import duckBotCyan from "@/assets/images/duck_bot_cyan.png";
+import duckBotOrange from "@/assets/images/duck_bot_orange.png";
+import duckBotDigital from "@/assets/images/duck_bot_digital.png";
+import duckBotMecha from "@/assets/images/duck_bot_mecha.png";
+
+import duckProfile1 from "@/assets/images/duck_profile1.png";
+import duckProfile2 from "@/assets/images/duck_profile2.png";
+import duckProfile3 from "@/assets/images/duck_profile3.png";
+import duckProfile4 from "@/assets/images/duck_profile4.png";
+
+const DUCK_BOT_IMAGES = {
+  cyan: duckBotCyan,
+  orange: duckBotOrange,
+  digital: duckBotDigital,
+  mecha: duckBotMecha,
+};
+
+const DUCK_PROFILE_IMAGES = {
+  profile1: duckProfile1,
+  profile2: duckProfile2,
+  profile3: duckProfile3,
+  profile4: duckProfile4,
+};
 
 const MOCK_SENTENCES = [
   {
@@ -118,15 +143,19 @@ export default function MyPage() {
   const [selectedSentence, setSelectedSentence] = useState(null);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [showDuckModal, setShowDuckModal] = useState(false);
+  const [showDuckBotModal, setShowDuckBotModal] = useState(false);
 
+  const [nickname, setNickname] = useState("영어 마스터");
   const [nicknameStyle, setNicknameStyle] = useState({
     background: "gradient",
     effect: null,
   });
+  const [duckProfileId, setDuckProfileId] = useState("profile1");
   const [duckStyle, setDuckStyle] = useState({
     color: "yellow",
     accessory: null,
   });
+  const [duckBotId, setDuckBotId] = useState("cyan");
 
   const stats = [
     { value: 0, label: "총 플레이 타임", unit: "" },
@@ -144,33 +173,37 @@ export default function MyPage() {
     }
   };
 
-  const handleEditProfile = () => {
-    console.log("Edit profile clicked");
-  };
-
-  const handleSaveNicknameStyle = (style) => {
+  const handleSaveNicknameStyle = ({ nickname: newNickname, ...style }) => {
+    if (newNickname) setNickname(newNickname);
     setNicknameStyle(style);
   };
 
-  const handleSaveDuckStyle = (style) => {
+  const handleSaveDuckStyle = ({ profileId, ...style }) => {
+    if (profileId) setDuckProfileId(profileId);
     setDuckStyle(style);
+  };
+
+  const handleSaveDuckBot = (id) => {
+    setDuckBotId(id);
   };
 
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        <AppHeader userName="장가은" notifications={[{}, {}, {}]} />
+        <AppHeader userName="장가은" />
 
         <main className={styles.Main}>
           <ProfileSection
-            nickname="영어 마스터"
+            profileImage={DUCK_PROFILE_IMAGES[duckProfileId]}
+            profileColor={duckStyle.color}
+            profileAccessory={duckStyle.accessory}
+            nickname={nickname}
             email="example@test.com"
             nicknameStyle={nicknameStyle}
-            duckColor={duckStyle.color}
-            duckAccessory={duckStyle.accessory}
-            onEditProfile={handleEditProfile}
+            duckBotImage={DUCK_BOT_IMAGES[duckBotId]}
+            onEditProfile={() => setShowDuckModal(true)}
             onEditNickname={() => setShowNicknameModal(true)}
-            onEditDuck={() => setShowDuckModal(true)}
+            onEditDuckBot={() => setShowDuckBotModal(true)}
           />
 
           <StatsCard stats={stats} />
@@ -192,7 +225,7 @@ export default function MyPage() {
 
       {showNicknameModal && (
         <NicknameStyleModal
-          nickname="영어 마스터"
+          nickname={nickname}
           currentStyle={nicknameStyle}
           onSave={handleSaveNicknameStyle}
           onClose={() => setShowNicknameModal(false)}
@@ -201,10 +234,19 @@ export default function MyPage() {
 
       {showDuckModal && (
         <DuckStyleModal
+          currentProfileId={duckProfileId}
           currentColor={duckStyle.color}
           currentAccessory={duckStyle.accessory}
           onSave={handleSaveDuckStyle}
           onClose={() => setShowDuckModal(false)}
+        />
+      )}
+
+      {showDuckBotModal && (
+        <DuckBotModal
+          currentDuckId={duckBotId}
+          onSave={handleSaveDuckBot}
+          onClose={() => setShowDuckBotModal(false)}
         />
       )}
     </div>

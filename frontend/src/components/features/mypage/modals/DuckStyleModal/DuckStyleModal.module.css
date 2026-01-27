@@ -27,9 +27,45 @@
 
 .Accessory {
   position: absolute;
-  top: -10px;
-  right: 20px;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 32px;
+}
+
+.ProfileGrid {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ProfileCard {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.15s ease;
+  overflow: hidden;
+}
+
+.ProfileCard:hover {
+  border-color: #c7d2fe;
+  background: #f5f3ff;
+}
+
+.ProfileCard.Selected {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.ProfileThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .Section {

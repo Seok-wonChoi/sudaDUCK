@@ -1,7 +1,18 @@
 import { useState } from "react";
 import styles from "./DuckStyleModal.module.css";
 import ModalWrapper from "@/components/features/mypage/common/ModalWrapper";
-import duckImage from "@/assets/images/duck.png";
+
+import duckProfile1 from "@/assets/images/duck_profile1.png";
+import duckProfile2 from "@/assets/images/duck_profile2.png";
+import duckProfile3 from "@/assets/images/duck_profile3.png";
+import duckProfile4 from "@/assets/images/duck_profile4.png";
+
+const PROFILE_OPTIONS = [
+  { id: "profile1", image: duckProfile1 },
+  { id: "profile2", image: duckProfile2 },
+  { id: "profile3", image: duckProfile3 },
+  { id: "profile4", image: duckProfile4 },
+];
 
 const COLOR_OPTIONS = [
   { id: "yellow", color: "#fef08a" },
@@ -21,20 +32,23 @@ const ACCESSORY_OPTIONS = [
 ];
 
 export default function DuckStyleModal({
+  currentProfileId = "profile1",
   currentColor = "yellow",
   currentAccessory = null,
   onSave,
   onClose,
 }) {
+  const [selectedProfileId, setSelectedProfileId] = useState(currentProfileId);
   const [selectedColor, setSelectedColor] = useState(currentColor);
   const [selectedAccessory, setSelectedAccessory] = useState(currentAccessory);
 
   const handleSave = () => {
-    onSave?.({ color: selectedColor, accessory: selectedAccessory });
+    onSave?.({ profileId: selectedProfileId, color: selectedColor, accessory: selectedAccessory });
     onClose?.();
   };
 
   const selectedColorObj = COLOR_OPTIONS.find((c) => c.id === selectedColor);
+  const selectedProfile = PROFILE_OPTIONS.find((p) => p.id === selectedProfileId);
 
   const footer = (
     <>
@@ -48,19 +62,45 @@ export default function DuckStyleModal({
   );
 
   return (
-    <ModalWrapper title="AI 오리 스타일" onClose={onClose} footer={footer}>
+    <ModalWrapper title="프로필 바꾸기" onClose={onClose} footer={footer}>
       <div className={styles.Content}>
         <div
           className={styles.Preview}
           style={{ backgroundColor: selectedColorObj?.color || "#fef08a" }}
         >
           <div className={styles.DuckWrapper}>
-            <img src={duckImage} alt="AI 오리" className={styles.DuckImage} />
+            <img
+              src={selectedProfile?.image}
+              alt="프로필 오리"
+              className={styles.DuckImage}
+            />
             {selectedAccessory && (
               <span className={styles.Accessory}>
                 {ACCESSORY_OPTIONS.find((a) => a.id === selectedAccessory)?.icon}
               </span>
             )}
+          </div>
+        </div>
+
+        <div className={styles.Section}>
+          <h3 className={styles.SectionTitle}>프로필</h3>
+          <div className={styles.ProfileGrid}>
+            {PROFILE_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={`${styles.ProfileCard} ${
+                  selectedProfileId === option.id ? styles.Selected : ""
+                }`}
+                onClick={() => setSelectedProfileId(option.id)}
+              >
+                <img
+                  src={option.image}
+                  alt={option.id}
+                  className={styles.ProfileThumb}
+                />
+              </button>
+            ))}
           </div>
         </div>
 
