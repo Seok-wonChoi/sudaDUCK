@@ -8,8 +8,6 @@ import duckImg from "@/assets/images/duck.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 import usersIcon from "@/assets/icons/users_icon.png";
-import copyIcon from "@/assets/icons/copy_icon.png";
-import kakaoIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
@@ -90,6 +88,12 @@ export default function WaitingRoomPage() {
     console.log("카카오 공유 클릭", inviteCode);
   }, [inviteCode]);
 
+  const handleEditRoomInfo = useCallback(() => {
+    if (!isHost) return;
+    console.log("방 정보 수정");
+    // TODO: 방 정보 수정 모달 또는 페이지로 이동
+  }, [isHost]);
+
   const handleStart = useCallback(() => {
     if (!canStart) return;
 
@@ -123,50 +127,9 @@ export default function WaitingRoomPage() {
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Top}>
-          <div className={styles.TopRow}>
-            <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
-            replace
-            />
-
-            <div className={styles.RoomInfoCard}>
-              <div className={styles.RoomInfoRow}>
-                <div className={styles.RoomInfoLabel}>방 제목</div>
-                <div className={styles.RoomInfoValue}>{roomTitle}</div>
-              </div>
-              <div className={styles.RoomInfoRow}>
-                <div className={styles.RoomInfoLabel}>주제</div>
-                <div className={styles.RoomInfoValue}>{topic}</div>
-              </div>
-              <div className={styles.RoomInfoRow}>
-                <div className={styles.RoomInfoLabel}>턴 수</div>
-                <div className={styles.RoomInfoValue}>{turnCount}턴</div>
-              </div>
-              <div className={styles.RoomCodeSection}>
-                <div className={styles.RoomCodeLabel}>참여 코드</div>
-                <div className={styles.RoomCodeBox}>
-                  <div className={styles.RoomCodeText}>{inviteCode}</div>
-                  <div className={styles.RoomCodeActions}>
-                    <button
-                      type="button"
-                      className={styles.KakaoButton}
-                      onClick={handleKakaoShare}
-                    >
-                      <img className={styles.KakaoIcon} src={kakaoIcon} alt="카카오" />
-                      공유
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.CopyButton}
-                      onClick={handleCopy}
-                    >
-                      <img className={styles.CopyIcon} src={copyIcon} alt="복사" />
-                      복사
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
+          replace
+          />
 
           <div className={styles.SpeechRow}>
             <div className={styles.SpeechLeft}>
@@ -179,20 +142,65 @@ export default function WaitingRoomPage() {
 
           <section className={styles.ParticipantsCard} aria-label="참여자 목록">
             <div className={styles.ParticipantsHeader}>
-              <div className={styles.ParticipantsTitle}>
-                <img
-                  className={styles.ParticipantsTitleIcon}
-                  src={usersIcon}
-                  alt=""
-                  aria-hidden="true"
-                />
-                <span>참여자</span>
-                <span className={styles.ParticipantsCount}>
-                  ({currentCount}/{maxCount})
-                </span>
+              <div className={styles.HeaderLeft}>
+                <div className={styles.ParticipantsTitle}>
+                  <img
+                    className={styles.ParticipantsTitleIcon}
+                    src={usersIcon}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  <span>참여자</span>
+                  <span className={styles.ParticipantsCount}>
+                    ({currentCount}/{maxCount})
+                  </span>
+                </div>
+
+                <div className={styles.RoomInfoText}>
+                  <span className={styles.RoomInfoLabel}>방 제목:</span>
+                  <span className={styles.RoomInfoValue}>{roomTitle}</span>
+                  <span className={styles.RoomInfoSeparator}>|</span>
+                  <span className={styles.RoomInfoLabel}>주제:</span>
+                  <span className={styles.RoomInfoValue}>{topic}</span>
+                  <span className={styles.RoomInfoSeparator}>|</span>
+                  <span className={styles.RoomInfoLabel}>턴 수:</span>
+                  <span className={styles.RoomInfoValue}>{turnCount}턴</span>
+                </div>
+
+                <div className={styles.InviteCodeText}>
+                  <span className={styles.InviteCodeLabel}>참여 코드:</span>
+                  <span className={styles.InviteCodeValue}>{inviteCode}</span>
+                  <span className={styles.InviteCodeSeparator}>|</span>
+                  <span
+                    className={styles.InviteCodeAction}
+                    onClick={handleKakaoShare}
+                    onKeyDown={(e) => e.key === 'Enter' && handleKakaoShare()}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    공유
+                  </span>
+                  <span
+                    className={styles.InviteCodeAction}
+                    onClick={handleCopy}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCopy()}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    복사
+                  </span>
+                </div>
               </div>
 
-              <div className={styles.StatusBadge}>대기 중</div>
+              {isHost && (
+                <button
+                  type="button"
+                  className={styles.EditButton}
+                  onClick={handleEditRoomInfo}
+                >
+                  방 설정 변경
+                </button>
+              )}
             </div>
 
             <div className={styles.ParticipantsBody}>
