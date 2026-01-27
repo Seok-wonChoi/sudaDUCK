@@ -49,8 +49,8 @@ public class AuthController {
         TokenDto tokens = authService.login(request.getUserId(), request.getEmail());
 
         //HttpOnly 쿠키 생성
-        CookieUtil.addCookie(response, "access_token", tokens.accessToken(), 3600);
-        CookieUtil.addCookie(response, "refresh_token", tokens.refreshToken(), 1209600);
+        CookieUtil.addCookie(response, "access_token", tokens.accessToken(), 3600, false);
+        CookieUtil.addCookie(response, "refresh_token", tokens.refreshToken(), 1209600, true);
 
         return ResponseEntity.ok("DB 유저 기반 테스트 로그인 성공! (유저 ID: " + request.getUserId() + ", 이메일: " + request.getEmail() + ") " +
                 "이제 Postman에서 다른 API를 호출하면 자동으로 인증됩니다.");
@@ -66,8 +66,8 @@ public class AuthController {
             authService.logout(authentication.getName());
         }
         //수명이 0인 쿠키를 생성하여 기존 쿠키를 덮어씌움
-        CookieUtil.addCookie(response, "access_token",null,0);
-        CookieUtil.addCookie(response, "refresh_token", null, 0);
+        CookieUtil.addCookie(response, "access_token",null,0, false);
+        CookieUtil.addCookie(response, "refresh_token", null, 0, true);
 
         return ResponseEntity.ok("로그아웃 성공! 쿠키가 삭제되었습니다.");
     }
@@ -82,12 +82,12 @@ public class AuthController {
 
         try{
             String newAccessToken = authService.refresh(refreshToken);
-            CookieUtil.addCookie(response, "access_token", newAccessToken, 3600);
+            CookieUtil.addCookie(response, "access_token", newAccessToken, 3600, false);
             return ResponseEntity.ok("토큰이 갱신되었습니다.");
         } catch (RuntimeException e){
             //검증 실패 시 쿠키 삭제 후 401 반환
-            CookieUtil.addCookie(response, "access_token", null, 0);
-            CookieUtil.addCookie(response, "refresh_token", null, 0);
+            CookieUtil.addCookie(response, "access_token", null, 0, false);
+            CookieUtil.addCookie(response, "refresh_token", null, 0, true);
             return ResponseEntity.status(401).body(e.getMessage());
         }
 
