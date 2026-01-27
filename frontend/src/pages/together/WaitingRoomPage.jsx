@@ -33,22 +33,21 @@ export default function WaitingRoomPage() {
   const roomInfo = state ?? {};
   const isHost = roomInfo.isHost ?? true;
   const maxCount = roomInfo.maxCount ?? 4;
+  const roomTitle = roomInfo.roomTitle ?? "수다방";
+  const topic = roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식";
+  const turnCount = roomInfo.turnCount ?? 3;
+  const inviteCode = roomInfo.joinCode ?? roomInfo.inviteCode ?? "000000";
 
   const [participants, setParticipants] = useState(() => {
     if (isHost) {
       return [
         { id: "me", name: "나", isHost: true, isReady: true },
-        { id: "u2", name: "참여자 1", isHost: false, isReady: true },
-        { id: "u3", name: "참여자 2", isHost: false, isReady: true },
-        { id: "u4", name: "참여자 3", isHost: false, isReady: true },
       ];
     }
 
     return [
       { id: "host", name: "방장", isHost: true, isReady: true },
       { id: "me", name: "나", isHost: false, isReady: false },
-      { id: "u2", name: "참여자 2", isHost: false, isReady: true },
-      { id: "u3", name: "참여자 3", isHost: false, isReady: true },
     ];
   });
 
@@ -75,6 +74,25 @@ export default function WaitingRoomPage() {
       prev.map((p) => (p.id === "me" ? { ...p, isReady: !p.isReady } : p))
     );
   }, []);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      console.log("참여 코드 복사 완료");
+    } catch (e) {
+      console.log("복사 실패", e);
+    }
+  }, [inviteCode]);
+
+  const handleKakaoShare = useCallback(() => {
+    console.log("카카오 공유 클릭", inviteCode);
+  }, [inviteCode]);
+
+  const handleEditRoomInfo = useCallback(() => {
+    if (!isHost) return;
+    console.log("방 정보 수정");
+    // TODO: 방 정보 수정 모달 또는 페이지로 이동
+  }, [isHost]);
 
   const handleStart = useCallback(() => {
     if (!canStart) return;
@@ -110,47 +128,94 @@ export default function WaitingRoomPage() {
 
         <div className={styles.Top}>
           <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
-          replace 
+          replace
           />
 
           <div className={styles.SpeechRow}>
             <div className={styles.SpeechLeft}>
               <img className={styles.Duck} src={duckImg} alt="오리" />
               <div className={styles.SpeechBubbleLeft}>
-                첫 번째 대화 주제는 {roomInfo.topic ?? "좋아하는 음식"}입니다!
+                첫 번째 대화 주제는 {topic}입니다!
               </div>
-            </div>
-
-            <div className={styles.SpeechRight}>
-              <div className={styles.SpeechBubbleRight}>
-                {isHost
-                  ? "준비가 완료 되면 대화 시작하기 버튼을 눌러주세요!"
-                  : "준비가 완료 되면 준비하기 버튼을 눌러주세요!"}
-              </div>
-              <img className={styles.Duck} src={duckImg} alt="오리" />
             </div>
           </div>
 
           <section className={styles.ParticipantsCard} aria-label="참여자 목록">
             <div className={styles.ParticipantsHeader}>
-              <div className={styles.ParticipantsTitle}>
-                <img
-                  className={styles.ParticipantsTitleIcon}
-                  src={usersIcon}
-                  alt=""
-                  aria-hidden="true"
-                />
-                <span>참여자</span>
-                <span className={styles.ParticipantsCount}>
-                  ({currentCount}/{maxCount})
-                </span>
+              <div className={styles.HeaderLeft}>
+                <div className={styles.ParticipantsTitle}>
+                  <img
+                    className={styles.ParticipantsTitleIcon}
+                    src={usersIcon}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  <span>참여자</span>
+                  <span className={styles.ParticipantsCount}>
+                    ({currentCount}/{maxCount})
+                  </span>
+                </div>
+
+                <div className={styles.RoomInfoText}>
+                  <span className={styles.RoomInfoLabel}>방 제목:</span>
+                  <span className={styles.RoomInfoValue}>{roomTitle}</span>
+                  <span className={styles.RoomInfoSeparator}>|</span>
+                  <span className={styles.RoomInfoLabel}>주제:</span>
+                  <span className={styles.RoomInfoValue}>{topic}</span>
+                  <span className={styles.RoomInfoSeparator}>|</span>
+                  <span className={styles.RoomInfoLabel}>턴 수:</span>
+                  <span className={styles.RoomInfoValue}>{turnCount}턴</span>
+                </div>
+
+                <div className={styles.InviteCodeText}>
+                  <span className={styles.InviteCodeLabel}>참여 코드:</span>
+                  <span className={styles.InviteCodeValue}>{inviteCode}</span>
+                  <span className={styles.InviteCodeSeparator}>|</span>
+                  <span
+                    className={styles.InviteCodeAction}
+                    onClick={handleKakaoShare}
+                    onKeyDown={(e) => e.key === 'Enter' && handleKakaoShare()}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    공유
+                  </span>
+                  <span
+                    className={styles.InviteCodeAction}
+                    onClick={handleCopy}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCopy()}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    복사
+                  </span>
+                </div>
               </div>
 
-              <div className={styles.StatusBadge}>대기 중</div>
+              {isHost && (
+                <button
+                  type="button"
+                  className={styles.EditButton}
+                  onClick={handleEditRoomInfo}
+                >
+                  방 설정 변경
+                </button>
+              )}
             </div>
 
             <div className={styles.ParticipantsBody}>
-              {participants.map((p) => {
+              {Array.from({ length: maxCount }).map((_, index) => {
+                const p = participants[index];
+
+                if (!p) {
+                  // 빈 슬롯
+                  return (
+                    <div key={`empty-${index}`} className={styles.ParticipantRowEmpty}>
+                      <div className={styles.EmptySlotText}>빈 자리</div>
+                    </div>
+                  );
+                }
+
                 const isMe = p.id === "me";
                 const micOn = isMe ? myMicOn : false;
 
