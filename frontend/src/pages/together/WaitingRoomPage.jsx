@@ -8,6 +8,8 @@ import duckImg from "@/assets/images/duck.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 import usersIcon from "@/assets/icons/users_icon.png";
+import copyIcon from "@/assets/icons/copy_icon.png";
+import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
@@ -52,6 +54,7 @@ export default function WaitingRoomPage() {
   });
 
   const [myMicOn, setMyMicOn] = useState(true);
+  const [toastMessage, setToastMessage] = useState("");
 
   const currentCount = participants.length;
 
@@ -75,18 +78,47 @@ export default function WaitingRoomPage() {
     );
   }, []);
 
+  const showToast = useCallback((message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(""), 2000);
+  }, []);
+
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(inviteCode);
-      console.log("참여 코드 복사 완료");
+      showToast("참여 코드가 복사되었습니다!");
     } catch (e) {
-      console.log("복사 실패", e);
+      showToast("복사에 실패했습니다.");
     }
-  }, [inviteCode]);
+  }, [inviteCode, showToast]);
 
-  const handleKakaoShare = useCallback(() => {
-    console.log("카카오 공유 클릭", inviteCode);
-  }, [inviteCode]);
+  const handleKakaoShare = useCallback(async () => {
+    // 웹 공유 API 지원 확인
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "수다DUCK 방 초대",
+          text: `참여 코드: ${inviteCode}\n방 제목: ${roomTitle}\n주제: ${topic}`,
+          url: window.location.href,
+        });
+        showToast("공유가 완료되었습니다!");
+      } catch (e) {
+        if (e.name !== "AbortError") {
+          showToast("공유에 실패했습니다.");
+        }
+      }
+    } else {
+      // 웹 공유 API를 지원하지 않는 경우 복사
+      try {
+        await navigator.clipboard.writeText(
+          `참여 코드: ${inviteCode}\n방 제목: ${roomTitle}\n주제: ${topic}`
+        );
+        showToast("초대 정보가 복사되었습니다!");
+      } catch (e) {
+        showToast("공유에 실패했습니다.");
+      }
+    }
+  }, [inviteCode, roomTitle, topic, showToast]);
 
   const handleEditRoomInfo = useCallback(() => {
     if (!isHost) return;
@@ -143,52 +175,57 @@ export default function WaitingRoomPage() {
           <section className={styles.ParticipantsCard} aria-label="참여자 목록">
             <div className={styles.ParticipantsHeader}>
               <div className={styles.HeaderLeft}>
-                <div className={styles.ParticipantsTitle}>
-                  <img
-                    className={styles.ParticipantsTitleIcon}
-                    src={usersIcon}
-                    alt=""
-                    aria-hidden="true"
-                  />
-                  <span>참여자</span>
-                  <span className={styles.ParticipantsCount}>
-                    ({currentCount}/{maxCount})
-                  </span>
-                </div>
+                <div className={styles.TopRow}>
+                  <div className={styles.ParticipantsTitle}>
+                    <img
+                      className={styles.ParticipantsTitleIcon}
+                      src={usersIcon}
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    <span>참여자</span>
+                    <span className={styles.ParticipantsCount}>
+                      ({currentCount}/{maxCount})
+                    </span>
+                  </div>
 
-                <div className={styles.RoomInfoText}>
-                  <span className={styles.RoomInfoLabel}>방 제목:</span>
-                  <span className={styles.RoomInfoValue}>{roomTitle}</span>
-                  <span className={styles.RoomInfoSeparator}>|</span>
-                  <span className={styles.RoomInfoLabel}>주제:</span>
-                  <span className={styles.RoomInfoValue}>{topic}</span>
-                  <span className={styles.RoomInfoSeparator}>|</span>
-                  <span className={styles.RoomInfoLabel}>턴 수:</span>
-                  <span className={styles.RoomInfoValue}>{turnCount}턴</span>
-                </div>
+                  <div className={styles.RoomInfoText}>
+                    <span className={styles.RoomInfoLabel}>방 제목:</span>
+                    <span className={styles.RoomInfoValue}>{roomTitle}</span>
+                    <span className={styles.RoomInfoSeparator}>|</span>
+                    <span className={styles.RoomInfoLabel}>주제:</span>
+                    <span className={styles.RoomInfoValue}>{topic}</span>
+                    <span className={styles.RoomInfoSeparator}>|</span>
+                    <span className={styles.RoomInfoLabel}>턴 수:</span>
+                    <span className={styles.RoomInfoValue}>{turnCount}턴</span>
+                  </div>
 
-                <div className={styles.InviteCodeText}>
-                  <span className={styles.InviteCodeLabel}>참여 코드:</span>
-                  <span className={styles.InviteCodeValue}>{inviteCode}</span>
-                  <span className={styles.InviteCodeSeparator}>|</span>
-                  <span
-                    className={styles.InviteCodeAction}
-                    onClick={handleKakaoShare}
-                    onKeyDown={(e) => e.key === 'Enter' && handleKakaoShare()}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    공유
-                  </span>
-                  <span
-                    className={styles.InviteCodeAction}
-                    onClick={handleCopy}
-                    onKeyDown={(e) => e.key === 'Enter' && handleCopy()}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    복사
-                  </span>
+                  <div className={styles.InviteCodeBox}>
+                    <div className={styles.InviteCodeHeader}>
+                      <span className={styles.InviteCodeLabel}>참여 코드</span>
+                    </div>
+                    <div className={styles.InviteCodeRow}>
+                      <div className={styles.InviteCodeValue}>{inviteCode}</div>
+                      <div className={styles.InviteCodeActions}>
+                        <button
+                          type="button"
+                          className={styles.InviteCodeButton}
+                          onClick={handleKakaoShare}
+                        >
+                          <img src={shareIcon} alt="" className={styles.ButtonIcon} />
+                          공유
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.InviteCodeButton}
+                          onClick={handleCopy}
+                        >
+                          <img src={copyIcon} alt="" className={styles.ButtonIcon} />
+                          복사
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -305,6 +342,12 @@ export default function WaitingRoomPage() {
           </section>
         </div>
       </div>
+
+      {toastMessage && (
+        <div className={styles.Toast}>
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }
