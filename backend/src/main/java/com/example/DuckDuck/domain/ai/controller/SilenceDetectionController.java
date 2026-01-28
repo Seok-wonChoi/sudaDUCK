@@ -2,7 +2,6 @@ package com.example.DuckDuck.domain.ai.controller;
 
 import com.example.DuckDuck.domain.ai.service.SilenceDetectionService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,53 +9,72 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 정적 감지 대화 추천 API
- * 
- * 프론트엔드에서 일정 시간 동안 음성 입력이 없을 때 호출
+ * 중앙 집중식 정적 감지 API
  */
 @RestController
-@RequestMapping("/api/v1/silence")
+@RequestMapping("/api/v1/silence/central")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Silence Detection", description = "정적 감지 대화 추천 API")
+@Tag(name = "Central Silence Detection", description = "중앙 집중식 정적 감지 API")
 public class SilenceDetectionController {
 
     private final SilenceDetectionService silenceService;
 
     /**
-     * 정적 감지 시 대화 추천 요청
-     * 
-     * @param roomId 방 ID
-     * @param turn 현재 턴
-     * @return 추천 대화 주제/질문
+     * 음성 활동 알림
+     *
+     * 프론트에서 누군가 말할 때마다 호출
      */
-    @PostMapping("/suggest")
+    @PostMapping("/voice-activity")
     @Operation(
-            summary = "대화 추천 생성",
+            summary = "음성 활동 알림",
             description = """
-                    정적(침묵) 감지 시 대화 추천을 생성합니다.
+                    누군가 말을 시작하면 호출합니다.
                     
-                    동작 방식:
-                    - 대화 내용이 있으면: 맥락에 맞는 후속 질문 생성
-                    - 대화 내용이 없으면: 방 주제 기반 시작 질문 생성
-                    
-                    프론트엔드 권장 사항:
-                    - 10초 정도 음성 입력이 없을 때 호출
-                    - 중복 호출 방지 (연속 호출 금지)
+                    백엔드에서 방의 마지막 음성 활동 시간을 업데이트하고,
+                    15초 동안 추가 호출이 없으면 자동으로 추천 질문을 생성하여
+                    WebSocket으로 모든 참가자에게 전송합니다.
                     """
     )
-    public ResponseEntity<SilenceDetectionService.ConversationSuggestion> suggest(
-            @Parameter(description = "방 ID", required = true)
+    public ResponseEntity<Void> reportVoiceActivity(
             @RequestParam Long roomId,
-            
-            @Parameter(description = "현재 턴", required = true)
+            @RequestParam Long userId,
             @RequestParam Integer turn) {
 
-        log.info("정적 감지 API 호출 - roomId: {}, turn: {}", roomId, turn);
+        log.info("음성 활동 API 호출 - roomId: {}, userId: {}, turn: {}", roomId, userId, turn);
 
-        SilenceDetectionService.ConversationSuggestion suggestion = 
-                silenceService.generateSuggestion(roomId, turn);
+        silenceService.reportVoiceActivity(roomId, userId, turn);
 
-        return ResponseEntity.ok(suggestion);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 모니터링 시작 (방 입장 시)
+     */
+    @PostMapping("/start-monitoring")
+    @Operation(summary = "모니터링 시작", description = "방 입장 시 정적 감지 시작")
+    public ResponseEntity<Void> startMonitoring(
+            @RequestParam Long roomId,
+            @RequestParam(defaultValue = "1") Integer turn) {
+
+        log.info("모니터링 시작 API 호출 - roomId: {}, turn: {}", roomId, turn);
+
+        silenceService.startMonitoring(roomId, turn);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 모니터링 종료 (방 퇴장 시)
+     */
+    @PostMapping("/stop-monitoring")
+    @Operation(summary = "모니터링 종료", description = "방 퇴장 시 정적 감지 종료")
+    public ResponseEntity<Void> stopMonitoring(@RequestParam Long roomId) {
+
+        log.info("모니터링 종료 API 호출 - roomId: {}", roomId);
+
+        silenceService.stopMonitoring(roomId);
+
+        return ResponseEntity.ok().build();
     }
 }

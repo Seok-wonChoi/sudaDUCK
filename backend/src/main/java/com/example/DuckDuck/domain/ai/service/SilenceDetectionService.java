@@ -3,14 +3,19 @@ package com.example.DuckDuck.domain.ai.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 
 /**
- * 정적 감지 대화 추천 서비스
- * 
- * 프론트에서 정적(침묵) 감지 시 대화 주제를 추천하는 기능
+ * 중앙 집중식 정적 감지 서비스
+ *
+ * 백엔드에서 방의 전체 음성 활동을 추적하고
+ * 15초 침묵 시 모든 참가자에게 추천 전송
  */
 @Service
 @RequiredArgsConstructor
@@ -20,140 +25,155 @@ public class SilenceDetectionService {
     private final AiContextService contextService;
     private final GptService gptService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final TaskScheduler taskScheduler;
+
+    // 방별 마지막 음성 활동 시간
+    private final Map<Long, Long> lastVoiceActivityTime = new ConcurrentHashMap<>();
+
+    // 방별 현재 턴
+    private final Map<Long, Integer> currentTurns = new ConcurrentHashMap<>();
+
+    // 방별 정적 체크 스케줄
+    private final Map<Long, ScheduledFuture<?>> silenceCheckSchedules = new ConcurrentHashMap<>();
+
+    private static final long SILENCE_THRESHOLD_MS = 15000; // 15초
 
     /**
-     * 정적 감지 시 대화 추천 생성
-     * 
-     * @param roomId 방 ID
-     * @param turn 현재 턴
-     * @return 추천 대화 질문 (영어만)
-     * @throws IllegalArgumentException 방이 존재하지 않을 때
+     * 음성 활동 알림 (프론트에서 호출)
+     *
+     * 누군가 말할 때마다 호출
      */
-    public ConversationSuggestion generateSuggestion(Long roomId, Integer turn) {
-        log.info("정적 감지 - 대화 추천 생성 시작: roomId={}, turn={}", roomId, turn);
+    public void reportVoiceActivity(Long roomId, Long userId, Integer turn) {
+        long now = System.currentTimeMillis();
 
-        // 1. 컨텍스트 수집 (방 없으면 여기서 예외 발생)
-        AiContextService.ConversationContext context = contextService.buildContext(roomId, turn);
+        log.info("🎤 [음성 활동] roomId={}, userId={}, turn={}", roomId, userId, turn);
 
-        // 2. 프롬프트 생성
-        String prompt = buildPrompt(context);
+        // 마지막 활동 시간 & 현재 턴 저장
+        lastVoiceActivityTime.put(roomId, now);
+        currentTurns.put(roomId, turn);
 
-        // 3. GPT 호출
-        String gptResponse = gptService.callGptForJson(prompt);
-
-        // 4. 응답 파싱
-        Map<String, Object> parsed = gptService.parseJsonResponse(gptResponse);
-
-        ConversationSuggestion suggestion = ConversationSuggestion.builder()
-                .roomId(roomId)
-                .turn(turn)
-                .question((String) parsed.get("question"))
-                .build();
-
-        log.info("대화 추천 생성 완료: {}", suggestion.getQuestion());
-
-        // 5. WebSocket으로 전송 (선택)
-        sendSuggestionViaWebSocket(roomId, suggestion);
-
-        return suggestion;
+        // 정적 체크 스케줄 시작/리셋
+        startSilenceCheck(roomId);
     }
 
-    // ============================================
-    // 프롬프트 빌더
-    // ============================================
+    /**
+     * 방 입장 시 정적 감지 시작
+     */
+    public void startMonitoring(Long roomId, Integer turn) {
+        log.info("👀 [모니터링 시작] roomId={}, turn={}", roomId, turn);
+
+        // 현재 시간 & 턴으로 초기화
+        lastVoiceActivityTime.put(roomId, System.currentTimeMillis());
+        currentTurns.put(roomId, turn);
+
+        // 정적 체크 시작
+        startSilenceCheck(roomId);
+    }
 
     /**
-     * GPT 프롬프트 생성
-     * 
-     * 대화 내용 유무에 따라 다른 프롬프트 사용
+     * 방 퇴장 시 정적 감지 종료
      */
-    private String buildPrompt(AiContextService.ConversationContext context) {
-        
-        if (context.isHasConversation()) {
-            // 대화 맥락 기반 추천
-            return buildContextBasedPrompt(context);
+    public void stopMonitoring(Long roomId) {
+        log.info("🛑 [모니터링 종료] roomId={}", roomId);
+
+        // 스케줄 취소
+        ScheduledFuture<?> future = silenceCheckSchedules.remove(roomId);
+        if (future != null && !future.isDone()) {
+            future.cancel(false);
+        }
+
+        // 데이터 삭제
+        lastVoiceActivityTime.remove(roomId);
+    }
+
+    /**
+     * 정적 체크 스케줄 시작/리셋
+     */
+    private void startSilenceCheck(Long roomId) {
+
+        // 기존 스케줄 취소
+        ScheduledFuture<?> oldFuture = silenceCheckSchedules.remove(roomId);
+        if (oldFuture != null && !oldFuture.isDone()) {
+            oldFuture.cancel(false);
+        }
+
+        // 새 스케줄 시작 (10초 후)
+        ScheduledFuture<?> future = taskScheduler.schedule(
+                () -> checkSilence(roomId),
+                Instant.now().plusMillis(SILENCE_THRESHOLD_MS)
+        );
+
+        silenceCheckSchedules.put(roomId, future);
+
+        log.debug("⏰ [스케줄 등록] roomId={}, 10초 후 체크", roomId);
+    }
+
+    /**
+     * 정적 체크 (10초 후 자동 실행)
+     */
+    private void checkSilence(Long roomId) {
+
+        Long lastActivity = lastVoiceActivityTime.get(roomId);
+        if (lastActivity == null) {
+            log.warn("⚠️  [정적 체크] 활동 기록 없음 - roomId={}", roomId);
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long silenceDuration = now - lastActivity;
+
+        log.info("🔍 [정적 체크] roomId={}, 침묵 시간: {}ms", roomId, silenceDuration);
+
+        if (silenceDuration >= SILENCE_THRESHOLD_MS) {
+            // 10초 이상 침묵! 추천 생성
+            log.info("🔇 [정적 감지!] roomId={}, 추천 생성 시작", roomId);
+            generateAndBroadcastSuggestion(roomId);
+
+            // ✅ 추천 후 다시 모니터링 시작 (계속 추천 가능)
+            lastVoiceActivityTime.put(roomId, System.currentTimeMillis());
+            startSilenceCheck(roomId);
+
         } else {
-            // 주제 기반 추천
-            return buildTopicBasedPrompt(context);
+            // 아직 10초 안 됨 (누군가 중간에 말함)
+            log.debug("⏳ [정적 미감지] roomId={}, 다시 스케줄", roomId);
+
+            // 남은 시간만큼 다시 스케줄
+            long remaining = SILENCE_THRESHOLD_MS - silenceDuration;
+            ScheduledFuture<?> future = taskScheduler.schedule(
+                    () -> checkSilence(roomId),
+                    Instant.now().plusMillis(remaining)
+            );
+            silenceCheckSchedules.put(roomId, future);
         }
     }
 
     /**
-     * 대화 맥락 기반 프롬프트
-     * 
-     * 이미 나눈 대화를 분석해서 자연스러운 후속 질문 생성
+     * 추천 생성 및 전체 브로드캐스트
      */
-    private String buildContextBasedPrompt(AiContextService.ConversationContext context) {
-        return String.format("""
-                You are an English conversation coach helping students practice speaking.
-                
-                Topic: %s
-                Current Turn: %d
-                
-                Previous Conversation:
-                %s
-                
-                The conversation has paused. Suggest a natural follow-up question to restart the conversation.
-                
-                Requirements:
-                - The question should relate to the previous conversation
-                - Make it open-ended and easy to answer
-                - Appropriate difficulty for English learners
-                - Encourage natural conversation flow
-                - Keep it 1-2 sentences
-                
-                Return JSON only:
-                {
-                  "question": "English question"
-                }
-                """,
-                context.getTopic(),
-                context.getTurn(),
-                context.getFormattedConversation()
-        );
-    }
-
-    /**
-     * 주제 기반 프롬프트
-     * 
-     * 대화가 없을 때 주제를 기반으로 시작 질문 생성
-     */
-    private String buildTopicBasedPrompt(AiContextService.ConversationContext context) {
-        return String.format("""
-                You are an English conversation coach helping students practice speaking.
-                
-                Topic: %s
-                
-                There is no conversation yet. Suggest an engaging starter question about this topic.
-                
-                Requirements:
-                - Make it interesting and relatable
-                - Easy to answer for beginners
-                - Open-ended to encourage conversation
-                - Natural and friendly tone
-                - Keep it 1-2 sentences
-                
-                Return JSON only:
-                {
-                  "question": "English question"
-                }
-                """,
-                context.getTopic()
-        );
-    }
-
-    // ============================================
-    // WebSocket 전송
-    // ============================================
-
-    /**
-     * WebSocket으로 추천 질문 전송
-     */
-    private void sendSuggestionViaWebSocket(Long roomId, ConversationSuggestion suggestion) {
+    private void generateAndBroadcastSuggestion(Long roomId) {
         try {
+            // 현재 턴 조회 (Redis나 DB에서 - 여기서는 예시로 1)
+            Integer currentTurn = getCurrentTurn(roomId);
+
+            // 컨텍스트 수집
+            AiContextService.ConversationContext context =
+                    contextService.buildContext(roomId, currentTurn);
+
+            // 프롬프트 생성
+            String prompt = buildPrompt(context);
+
+            // GPT 호출
+            String gptResponse = gptService.callGptForJson(prompt);
+            Map<String, Object> parsed = gptService.parseJsonResponse(gptResponse);
+
+            String koreanQuestion = (String) parsed.get("koreanQuestion");
+
+            log.info("✅ [추천 생성 완료] 한글: {}", koreanQuestion);
+
+            // WebSocket으로 방 전체에 브로드캐스트 (한글만!)
             Map<String, Object> message = Map.of(
                     "type", "CONVERSATION_SUGGESTION",
-                    "question", suggestion.getQuestion()
+                    "question", koreanQuestion
             );
 
             messagingTemplate.convertAndSend(
@@ -161,27 +181,87 @@ public class SilenceDetectionService {
                     message
             );
 
-            log.info("대화 추천 WebSocket 전송 완료: roomId={}", roomId);
+            log.info("📤 [WebSocket 전송] roomId={}, 전체 참가자에게 전송 완료", roomId);
 
         } catch (Exception e) {
-            log.error("WebSocket 전송 실패: roomId={}", roomId, e);
+            log.error("❌ [추천 생성 실패] roomId={}, error={}", roomId, e.getMessage(), e);
         }
     }
 
-    // ============================================
-    // DTO (단순화)
-    // ============================================
-
     /**
-     * 대화 추천 결과 (영어 질문만)
+     * 현재 턴 조회 (메모리에서)
      */
-    @lombok.Data
-    @lombok.Builder
-    public static class ConversationSuggestion {
-        private Long roomId;
-        private Integer turn;
-        
-        /** 영어 질문 */
-        private String question;
+    private Integer getCurrentTurn(Long roomId) {
+        return currentTurns.getOrDefault(roomId, 1);  // 기본값 1
+    }
+
+    private String buildPrompt(AiContextService.ConversationContext context) {
+        if (context.isHasConversation()) {
+            return String.format("""
+                    당신은 영어 회화 학습을 돕는 친근한 코치입니다.
+                    
+                    주제: %s
+                    현재까지의 대화:
+                    %s
+                    
+                    대화가 잠시 멈췄습니다. 대화를 자연스럽게 이어갈 수 있는 질문을 추천해주세요.
+                    
+                    요구사항:
+                    - 이전 대화의 구체적인 내용을 언급하며 이어가는 질문
+                    - 추상적이거나 뻔한 질문 금지 (예: "경험이 어땠나요?", "어떻게 생각하나요?" 등)
+                    - 대답하기 쉽고 재미있는 개방형 질문
+                    - 친구와 대화하듯 자연스럽고 구체적으로
+                    - 1-2 문장으로 간결하게
+                    
+                    나쁜 예시:
+                    - "가장 최근에 어떤 테스트를 받았나요?"
+                    - "그 경험은 어땠나요?"
+                    - "어떻게 생각하나요?"
+                    
+                    좋은 예시:
+                    - "아까 여행 얘기 나왔는데, 다음에 가고 싶은 나라가 있어?"
+                    - "좋아하는 음식 중에 직접 만들어본 건 뭐야?"
+                    - "주말에 보통 뭐 하면서 시간 보내?"
+                    
+                    JSON 형식으로만 응답:
+                    {
+                      "koreanQuestion": "한국어 질문"
+                    }
+                    """,
+                    context.getTopic(),
+                    context.getFormattedConversation()
+            );
+        } else {
+            return String.format("""
+                    당신은 영어 회화 학습을 돕는 친근한 코치입니다.
+                    
+                    주제: %s
+                    
+                    아직 대화가 시작되지 않았습니다. 이 주제로 편하게 대화를 시작할 수 있는 질문을 추천해주세요.
+                    
+                    요구사항:
+                    - 친구에게 물어보듯 자연스럽고 구체적인 질문
+                    - 추상적이거나 딱딱한 질문 금지
+                    - 개인적인 경험이나 취향을 물어보는 질문
+                    - 대답하기 쉽고 재미있게
+                    - 1-2 문장으로 간결하게
+                    
+                    나쁜 예시:
+                    - "이 주제에 대해 어떻게 생각하나요?"
+                    - "경험이 있으신가요?"
+                    
+                    좋은 예시:
+                    - "요즘 자주 듣는 노래 있어?"
+                    - "가장 최근에 본 영화 뭐야?"
+                    - "주말에 뭐 할 계획이야?"
+                    
+                    JSON 형식으로만 응답:
+                    {
+                      "koreanQuestion": "한국어 질문"
+                    }
+                    """,
+                    context.getTopic()
+            );
+        }
     }
 }

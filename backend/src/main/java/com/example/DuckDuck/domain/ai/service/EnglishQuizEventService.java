@@ -14,10 +14,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 영어 퀴즈 서비스 (최종 단순화 버전)
- * 
- * - DTO 단순화: isCorrect만 사용
- * - GptService 재사용
- * - 의미 기반 평가 (정답과 완전 일치 불필요)
  */
 @Service
 @RequiredArgsConstructor
@@ -58,7 +54,7 @@ public class EnglishQuizEventService {
     private static class UserAnswer {
         Long userId;
         String answer;
-        Boolean isCorrect;  // 단순화: isCorrect만 사용
+        Boolean isCorrect;
     }
 
     // ============================================
