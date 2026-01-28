@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import styles from "./LoginPage.module.css";
 import duckImage from "@/assets/images/duck_happy.png";
 import kakaoIcon from "@/assets/icons/kakaotalk_icon.png";
 import { loginWithKakao } from "@/api/auth";
 
 export default function LoginPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -14,9 +12,8 @@ export default function LoginPage() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // TODO: 로그인 로직 구현
-    console.log("Login:", { email, password, rememberMe });
-    navigate("/");
+    // 일반 로그인은 미구현 - 카카오 로그인만 사용
+    alert("카카오 로그인을 이용해주세요.");
   };
 
   const handleKakaoLogin = () => {

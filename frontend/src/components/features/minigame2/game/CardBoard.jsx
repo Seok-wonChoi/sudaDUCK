@@ -15,7 +15,7 @@ const CARD_POSITIONS = [
   { top: '30%', left: '15%', rotation: -85 },
 ];
 
-export default function CardBoard({ cards = [], removedCards = [] }) {
+export default function CardBoard({ cards = [], removedCards = [], onCardClick }) {
   return (
     <div className={styles.board}>
       {cards.map((card, idx) => {
@@ -27,6 +27,7 @@ export default function CardBoard({ cards = [], removedCards = [] }) {
             text={card.text}
             rotation={position.rotation}
             isRemoved={removedCards.includes(card.id)}
+            onClick={() => onCardClick?.(card.id)}
             style={{
               top: position.top,
               left: position.left,
