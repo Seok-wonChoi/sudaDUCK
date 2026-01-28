@@ -14,15 +14,19 @@ RUN npm install
 
 # 소스 복사 및 빌드
 COPY . .
-# 아까 package.json에 추가한 'build:dev'가 여기서 실행됩니다.
+# package.json에 정의된 빌드 명령어 실행
 RUN npm run ${BUILD_CMD}
 
 # 2. 실행 단계 (Nginx)
 FROM nginx:stable-alpine
 
-# [핵심] /dev 경로 대응을 위한 폴더 생성
+# [핵심] /dev 경로 대응을 위한 폴더 생성 및 빌드 결과물 복사
 RUN mkdir -p /usr/share/nginx/html/dev
 COPY --from=build /app/dist /usr/share/nginx/html/dev
+
+# ★ 추가된 부분: 작성한 nginx.conf를 Nginx 설정 디렉토리로 복사합니다.
+# 기본 설정인 default.conf를 우리가 만든 설정으로 교체하는 작업입니다.
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

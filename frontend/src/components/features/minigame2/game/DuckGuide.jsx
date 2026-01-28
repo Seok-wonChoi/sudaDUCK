@@ -1,8 +1,8 @@
 import styles from './DuckGuide.module.css';
-import duckImg from '@/assets/images/duck.png';
+import duckImg from '@/assets/images/duck_minigame.png';
 
 export default function DuckGuide({
-  message = '문장을 읽어서 카드를 없애봐요!!',
+  message = '문장을 읽어서 카드를 없애보아요!!',
   visible = true
 }) {
   if (!visible) return null;
