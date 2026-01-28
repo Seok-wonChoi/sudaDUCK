@@ -8,6 +8,7 @@ import ExitButton from "@/components/common/ExitButton/ExitButton";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
 
 import duckImg from "@/assets/images/duck.png";
+import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
 import duckHappyImg from "@/assets/images/duck_happy.png";
 import duckBombImg from "@/assets/images/duck_bomb.png";
 import duckSadImg from "@/assets/images/duck_sad.png";
@@ -510,7 +511,7 @@ export default function TogetherTalkPage() {
               <div className={styles.AiPointer} aria-hidden="true" />
             </div>
 
-            <img className={styles.BigDuck} src={duckHappyImg} alt="AI 오리" />
+            <img className={styles.BigDuck} src={duckBotCyanImg} alt="AI 오리" />
           </aside>
         </div>
         </div>

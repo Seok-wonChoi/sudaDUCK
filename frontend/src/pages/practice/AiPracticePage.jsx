@@ -7,7 +7,7 @@ import ExitButton from "@/components/common/ExitButton/ExitButton";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
 
 import duckImg from "@/assets/images/duck.png";
-import duckHappyImg from "@/assets/images/duck_happy.png";
+import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 
@@ -43,6 +43,11 @@ export default function AiPracticePage() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [aiVoiceLevel, setAiVoiceLevel] = useState(0);
+  const [aiMessage, setAiMessage] = useState("너가 제일 좋아하는 음식은 뭐야?");
+
+  const [isCountdownOpen, setIsCountdownOpen] = useState(true);
+  const [countdownSec, setCountdownSec] = useState(3);
+  const [isRunning, setIsRunning] = useState(false);
 
   const audioRef = useRef({
     stream: null,
@@ -168,13 +173,32 @@ export default function AiPracticePage() {
   }, []);
 
   useEffect(() => {
-    // 페이지 로드 시 마이크 자동 켜기
-    startAudioAnalysis();
+    setIsCountdownOpen(true);
+    setCountdownSec(3);
+    setIsRunning(false);
 
+    const id = window.setInterval(() => {
+      setCountdownSec((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(id);
+          setIsCountdownOpen(false);
+          setIsRunning(true);
+          // 카운트다운 종료 시 마이크 자동 켜기
+          startAudioAnalysis();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, [startAudioAnalysis]);
+
+  useEffect(() => {
     return () => {
       stopAudioAnalysis();
     };
-  }, [startAudioAnalysis, stopAudioAnalysis]);
+  }, [stopAudioAnalysis]);
 
   // AI 발화 상태는 나중에 실제 AI 연결 시 사용
   // setIsAiSpeaking(true/false), setAiVoiceLevel(0~1) 로 제어
@@ -207,6 +231,16 @@ export default function AiPracticePage() {
         <ExitGuard to="/" message="메인 화면으로 나가시겠습니까?" />
         <AppHeader userName="user" notifications={[]} />
 
+        {isCountdownOpen && (
+          <div className={styles.CountdownOverlay} role="dialog" aria-label="연습 시작 카운트다운">
+            <div className={styles.CountdownModal}>
+              <div className={styles.CountdownTitle}>곧 시작합니다</div>
+              <div className={styles.CountdownNumber}>{countdownSec}</div>
+              <div className={styles.CountdownHint}>마이크를 준비해 주세요</div>
+            </div>
+          </div>
+        )}
+
         <div className={styles.Content}>
           <div className={styles.HeaderRow}>
             <div className={styles.ExitCol}>
@@ -219,7 +253,7 @@ export default function AiPracticePage() {
             </div>
 
             <div className={styles.TimerCol}>
-              <TimerGauge durationMs={DURATION_MS} isRunning onDone={handleDone} />
+              <TimerGauge durationMs={DURATION_MS} isRunning={isRunning} onDone={handleDone} />
             </div>
           </div>
 
@@ -253,26 +287,6 @@ export default function AiPracticePage() {
                       </div>
                     </div>
                   </div>
-
-                  <div
-                    className={`${styles.VideoCard} ${
-                      isAiSpeaking ? styles.VideoCardSpeaking : styles.VideoCardAi
-                    }`}
-                  >
-                    <div className={styles.VideoInner}>
-                      <div className={styles.AvatarCircle}>
-                        <img className={styles.AvatarDuck} src={duckImg} alt="AI 아바타" />
-                      </div>
-                    </div>
-
-                    <div className={styles.VideoFooter}>
-                      <div className={styles.VideoFooterLeft}>
-                        <VoiceWave level={aiVoiceLevel} enabled={isAiSpeaking} />
-                        <span className={styles.AiLabel}>AI</span>
-                      </div>
-                      <div className={styles.VideoFooterRight} />
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -289,24 +303,12 @@ export default function AiPracticePage() {
             </div>
 
             <aside className={styles.RightStage} aria-label="AI 도우미">
-              <div className={styles.AiBubble}>
-                <div className={styles.AiHeader}>
-                  <span className={styles.AiDot} aria-hidden="true" />
-                  <span className={styles.AiTitle}>AI 영어덕</span>
-                  <span className={styles.AiDot} aria-hidden="true" />
-                </div>
-
-                <div className={styles.AiFace} aria-hidden="true">
-                  🙂
-                </div>
-
-                <div className={styles.AiMainText}>영어로 편하게 대화해 보세요!</div>
-                <div className={styles.AiSubText}>5초 동안 침묵이 지속되면 제가 도와드릴게요.</div>
-
-                <div className={styles.AiPointer} aria-hidden="true" />
+              <div className={styles.AiSpeechBubble}>
+                <div className={styles.AiSpeechDot}>• AI 수덕 •</div>
+                <div className={styles.AiSpeechText}>{aiMessage}</div>
               </div>
 
-              <img className={styles.BigDuck} src={duckHappyImg} alt="AI 오리" />
+              <img className={styles.BigDuck} src={duckBotCyanImg} alt="AI 오리" />
             </aside>
           </div>
         </div>

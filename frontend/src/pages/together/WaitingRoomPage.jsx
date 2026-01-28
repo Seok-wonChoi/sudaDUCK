@@ -14,6 +14,7 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 import styles from "./WaitingRoomPage.module.css";
 
 import { leaveRoom } from "@/api/rooms";
+import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
 
@@ -62,6 +63,53 @@ export default function WaitingRoomPage() {
 
   const currentCount = participants.length;
 
+  const showToast = useCallback((message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(""), 2000);
+  }, []);
+
+  // WebSocket 이벤트 핸들러
+  const handleReadyChanged = useCallback((payload) => {
+    console.log("READY_CHANGED 수신:", payload);
+
+    // TODO: GET /lobby API를 먼저 호출해서 참여자 목록을 이메일 기반으로 관리해야 함
+    // 현재는 임시로 myReadyStatus만 사용
+    if (payload.myReadyStatus !== undefined) {
+      const newReadyStatus = payload.myReadyStatus === "READY";
+      setParticipants((prev) =>
+        prev.map((p) => (p.id === "me" ? { ...p, isReady: newReadyStatus } : p))
+      );
+    }
+
+    // readyCount, totalCount는 서버에서 계산된 값 사용 (프론트에서 계산 금지)
+    // 나중에 UI에 표시 가능
+  }, []);
+
+  const handleMicChanged = useCallback((payload) => {
+    console.log("MIC_CHANGED 수신:", payload);
+
+    // TODO: senderKey(이메일)로 참여자를 찾아서 마이크 상태 업데이트
+    // 현재는 임시 구현
+    // 실제로는 GET /lobby로 받은 참여자 목록에서 senderKey로 매칭
+  }, []);
+
+  const handleWebSocketError = useCallback(
+    (errorMessage) => {
+      console.error("WebSocket ERROR:", errorMessage);
+      showToast(errorMessage || "오류가 발생했습니다.");
+    },
+    [showToast]
+  );
+
+  // WebSocket 연결
+  const { sendReady, sendMic } = useRoomWebSocket(inviteCode, {
+    onReadyChanged: handleReadyChanged,
+    onMicChanged: handleMicChanged,
+    onError: handleWebSocketError,
+    onConnected: () => console.log("WebSocket 연결됨"),
+    onDisconnected: () => console.log("WebSocket 연결 해제됨"),
+  });
+
   const me = useMemo(() => participants.find((p) => p.id === "me"), [participants]);
   const myReady = me?.isReady ?? false;
 
@@ -72,20 +120,23 @@ export default function WaitingRoomPage() {
 
   const canStart = isHost && nonHostAllReady;
 
+  // 마이크 토글: 로컬 상태 즉시 변경 + WebSocket 전송
   const toggleMyMic = useCallback(() => {
-    setMyMicOn((prev) => !prev);
-  }, []);
+    setMyMicOn((prev) => {
+      const newMicOn = !prev;
+      // WebSocket으로 마이크 상태 전송
+      sendMic(newMicOn);
+      return newMicOn;
+    });
+  }, [sendMic]);
 
+  // 준비 상태 토글: WebSocket으로 전송 (상태는 READY_CHANGED 이벤트로 받아서 업데이트)
   const toggleMyReady = useCallback(() => {
-    setParticipants((prev) =>
-      prev.map((p) => (p.id === "me" ? { ...p, isReady: !p.isReady } : p))
-    );
-  }, []);
-
-  const showToast = useCallback((message) => {
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(""), 2000);
-  }, []);
+    const newReadyState = !myReady;
+    // WebSocket으로 준비 상태 전송
+    sendReady(newReadyState);
+    // 실제 상태 업데이트는 handleReadyChanged에서 처리
+  }, [myReady, sendReady]);
 
   const handleCopy = useCallback(async () => {
     try {
