@@ -27,7 +27,7 @@ pipeline {
                     script {
                         echo ">>> [Build] 테스트 없이 빌드 수행 (Config 파일 불필요)"
                         sh "chmod +x gradlew"
-                        sh "./gradlew clean build -x test"
+                        sh "./gradlew clean build -x test --no-daemon -Dorg.gradle.jvmargs='-Xmx2g -XX:MaxMetaspaceSize=512m'"
                     }
                 }
             }
