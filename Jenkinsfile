@@ -7,7 +7,8 @@ pipeline {
 
     environment {
         // [설정] 백엔드 개발 전용 환경 변수
-        NET_DEV = 'dev-net'
+        // ★ 중요: 도커 컴포즈에 있는 네트워크 이름과 일치해야 함
+        NET_DEV = 'dev-net'     
         IMG_BACK = 'my-backend'
         PROFILE = 'dev'
     }
@@ -19,21 +20,22 @@ pipeline {
             }
         }
 
-        // 1. 백엔드 빌드 (테스트 생략 -> 설정 파일 없어도 OK)
+        // 1. 백엔드 빌드 (메모리 최적화 적용됨)
         stage('Build Backend') {
             when { branch 'back-dev' }
             steps {
                 dir('backend') {
                     script {
-                        echo ">>> [Build] 테스트 없이 빌드 수행 (Config 파일 불필요)"
+                        echo ">>> [Build] 테스트 없이 빌드 수행 (16GB 서버 메모리 활용)"
                         sh "chmod +x gradlew"
+                        // 16GB 서버에 맞춰 힙 메모리를 2GB로 넉넉하게 할당 (-Xmx2g)
                         sh "./gradlew clean build -x test --no-daemon -Dorg.gradle.jvmargs='-Xmx2g -XX:MaxMetaspaceSize=512m'"
                     }
                 }
             }
         }
 
-        // 2. 백엔드 배포 (Health Check 적용됨)
+        // 2. 백엔드 배포 (Health Check 주소 수정됨)
         stage('Deploy Backend') {
             when { branch 'back-dev' }
             steps {
@@ -46,7 +48,6 @@ pipeline {
 
                         // 2) 현재 실행 중인 컬러 확인 (Blue/Green)
                         def confFile = "service-url-dev.inc"
-                        // 파일이 없거나 에러나면 기본값 'blue'로 가정
                         def currentUrl = sh(script: "docker exec main-nginx cat /etc/nginx/conf.d/${confFile} || echo 'blue'", returnStdout: true).trim()
                         
                         // 3) 타겟 설정 (반대 컬러 선택)
@@ -72,17 +73,22 @@ pipeline {
                         """
 
                         // ========================================================
-                        // [Health Check] 서버가 진짜 켜졌는지 확인 (최대 30초)
+                        // [Health Check] localhost -> targetName으로 변경 (핵심 수정!)
                         // ========================================================
                         def isHealthy = false
-                        for(int i=0; i<10; i++) {
-                            sleep 3 // 3초 대기
-                            // curl로 찔러보기 (000이 아니면 연결 성공)
-                            def status = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${targetPort} || echo '000'", returnStdout: true).trim()
+                        // 안전하게 15회(45초)까지 대기
+                        for(int i=0; i<15; i++) {
+                            sleep 3 
                             
-                            echo ">>> [Health Check ${i+1}/10] 상태 코드: ${status}"
+                            // ★ 여기가 바뀌었습니다! ★
+                            // localhost가 아니라 컨테이너 이름(targetName)과 내부포트(8080) 사용
+                            // 이제 젠킨스가 dev-net 안에 있으므로 이름으로 통신 가능
+                            def status = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://${targetName}:8080 || echo '000'", returnStdout: true).trim()
                             
-                            if(status != '000') { 
+                            echo ">>> [Health Check ${i+1}/15] ${targetName} 상태 코드: ${status}"
+                            
+                            // 000(연결실패)나 502(게이트웨이오류)가 아니면 성공으로 간주
+                            if(status != '000' && status != '502') { 
                                 isHealthy = true
                                 break 
                             }
@@ -92,7 +98,7 @@ pipeline {
                         if (isHealthy) {
                             echo ">>> [Success] 서버 생존 확인! Nginx를 연결합니다."
                             
-                            // Nginx 스위칭
+                            // Nginx 스위칭 (Nginx도 같은 망에 있어야 함)
                             sh "echo 'set \$service_url http://${targetName}:8080;' > switch.tmp"
                             sh "docker cp switch.tmp main-nginx:/etc/nginx/conf.d/${confFile}"
                             sh "docker exec main-nginx nginx -s reload"
@@ -105,8 +111,9 @@ pipeline {
 
                         } else {
                             echo ">>> [Fail] 서버가 뜨지 않습니다. 롤백합니다 (기존 서버 유지)."
+                            sh "docker logs --tail 50 ${targetName}" // 왜 죽었는지 로그 출력
                             sh "docker rm -f ${targetName}" // 방금 띄운 죽은 컨테이너 삭제
-                            error("배포 실패: Health Check 통과 못함") // 젠킨스 빌드 실패 처리
+                            error("배포 실패: Health Check 통과 못함") 
                         }
                     }
                 }
