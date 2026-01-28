@@ -15,3 +15,9 @@ export async function joinRoom({ roomCode }) {
   const { data } = await api.post("/api/v1/rooms/join", { roomCode });
   return data;
 }
+
+// 방 퇴장: POST /api/v1/rooms/leave
+export async function leaveRoom({ roomCode }) {
+  const { data } = await api.post("/api/v1/rooms/leave", { roomCode });
+  return data;
+}

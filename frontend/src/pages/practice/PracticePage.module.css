@@ -22,15 +22,27 @@
 
 /* 뒤로가기 버튼 */
 .BackButton {
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(99, 102, 241, 0.28);
-  background: rgba(99, 102, 241, 0.08);
-  color: #111827;
-  font-size: 12px;
-  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  font-weight: 700;
+  color: #374151;
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.BackButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.BackButton:active {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 /* 하단 연보라 영역 */
