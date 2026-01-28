@@ -59,8 +59,10 @@ public class AuthService {
             throw new RuntimeException("이메일 정보가 일치하지 않습니다.");
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getEmail());
-        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getEmail());
+        String refreshToken = jwtTokenProvider.createRefreshToken(
+                member.getId(),
+                member.getEmail()
+        );
 
         //redis에 Refresh Token 저장
         //만료 시간을 리프레쉬 토큰 수명과 동일하게 설정
@@ -70,7 +72,7 @@ public class AuthService {
                 Duration.ofDays(14)
         );
 
-        return new TokenDto(accessToken, refreshToken);
+        return new TokenDto(null, refreshToken);
     }
 
     @Transactional

@@ -48,9 +48,13 @@ public class AuthController {
 
         TokenDto tokens = authService.login(request.getUserId(), request.getEmail());
 
-        //HttpOnly 쿠키 생성
-        CookieUtil.addCookie(response, "access_token", tokens.accessToken(), 3600, false);
-        CookieUtil.addCookie(response, "refresh_token", tokens.refreshToken(), 1209600, true);
+        CookieUtil.addCookie(
+                response,
+                "refresh_token",
+                tokens.refreshToken(),
+                60 * 60 * 24 * 14,
+                true
+        );
 
         return ResponseEntity.ok("DB 유저 기반 테스트 로그인 성공! (유저 ID: " + request.getUserId() + ", 이메일: " + request.getEmail() + ") " +
                 "이제 Postman에서 다른 API를 호출하면 자동으로 인증됩니다.");
