@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Tag(name = "Auth", description = "인증 관련 API (카카오/테스트 로그인)")
 @RestController
@@ -85,11 +86,16 @@ public class AuthController {
 
     @Operation(summary = "토큰 재발급", description = "리프레시 토큰을 확인하여 새 액세스 토큰을 발급합니다.")
     @PostMapping("/refresh")
-    public ResponseEntity<TokenDto> refresh(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response,
+                                            @RequestBody(required = false) Map<String, String> body) {
         // 1. 쿠키에서 리프레시 토큰 추출
-        String refreshToken = CookieUtil.getCookie(request, "refresh_token")
+        String refreshToken = CookieUtil.getCookie(request, "refreshToken")
                 .map(Cookie::getValue)
-                .orElse(null);
+                .orElse(body != null ? body.get("refreshToken") : null);
+
+        if (refreshToken == null) {
+            return ResponseEntity.status(401).body("리프레시 토큰이 없습니다.");
+        }
 
         // 2. access token 재발급
         try {
