@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class RoomEndService {
@@ -27,6 +29,9 @@ public class RoomEndService {
     private String keyRoomTopic(Long roomId) { return "room:" + roomId + ":topic"; }
     private String keyRoomMemberNames(Long roomId) { return "room:" + roomId + ":member"; }
     private String keyRoomParticipants(Long roomId) { return "room:" + roomId + ":participants"; }
+    private String keyRoomReady(Long roomId) { return "room:ready:" + roomId; }
+    private String keyRoomMembers(Long roomId) { return "room:members:" + roomId; }
+
 
     @Transactional
     public RoomEndResponse endRoom(String email, String roomCode) {
@@ -80,6 +85,25 @@ public class RoomEndService {
         // 6) 방 종료(대기방 전환)
         room.setIsOpen(false);
         roomRepository.save(room);
+
+        // 6-1) READY 상태 초기화 (방장 제외)
+        Long hostId = room.getCreator().getId(); // 방 생성자 = 방장이라는 전제
+        Set<Object> members = redisTemplate.opsForSet().members(keyRoomMembers(roomId));
+
+        if (members != null) {
+            for (Object m : members) {
+                String userIdStr = String.valueOf(m);
+
+                // 방장 제외
+                if (String.valueOf(hostId).equals(userIdStr)) continue;
+
+                redisTemplate.opsForHash().put(
+                        keyRoomReady(roomId),
+                        userIdStr,
+                        "NOT_READY"
+                );
+            }
+        }
 
         // 7) start에서 만들었던 세션성 데이터만 정리 (members/ready는 유지해야 대기방 유지됨)
         redisTemplate.delete(keyRoomTopic(roomId));
