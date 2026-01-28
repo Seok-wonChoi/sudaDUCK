@@ -21,6 +21,7 @@ public class SwaggerConfig {
                 .in(SecurityScheme.In.COOKIE);
 
         return new OpenAPI()
+                .servers(List.of(new Server().url(apiPrefix).description("DuckDuck Server")))
                 .info(new Info()
                         .title("DuckDuck API 명세서")
                         .description("카카오 소셜 로그인 및 쿠키 기반 인증을 사용하는 API")
