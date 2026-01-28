@@ -7,7 +7,6 @@ pipeline {
 
     environment {
         // [설정] 백엔드 개발 전용 환경 변수
-        // ★ 중요: 도커 컴포즈(docker-compose.yml)에 정의된 네트워크 이름과 똑같아야 합니다.
         NET_DEV = 'dev-net'     
         IMG_BACK = 'my-backend'
         PROFILE = 'dev'
@@ -20,7 +19,6 @@ pipeline {
             }
         }
 
-        // 1. 백엔드 빌드 (16GB 서버 자원 활용)
         stage('Build Backend') {
             when { branch 'back-dev' }
             steps {
@@ -28,14 +26,12 @@ pipeline {
                     script {
                         echo ">>> [Build] 테스트 없이 빌드 수행 (메모리 최적화)"
                         sh "chmod +x gradlew"
-                        // 힙 메모리를 2GB로 넉넉하게 주어 빌드 속도 향상
                         sh "./gradlew clean build -x test --no-daemon -Dorg.gradle.jvmargs='-Xmx2g -XX:MaxMetaspaceSize=512m'"
                     }
                 }
             }
         }
 
-        // 2. 백엔드 배포 (Blue/Green + 무중단 로직 적용)
         stage('Deploy Backend') {
             when { branch 'back-dev' }
             steps {
@@ -46,23 +42,21 @@ pipeline {
                         // 1) 도커 이미지 빌드
                         sh "docker build -t ${IMG_BACK}:latest ."
 
-                        // 2) 현재 실행 중인 컬러 확인 (Blue/Green)
+                        // 2) 현재 실행 중인 컬러 확인
                         def confFile = "service-url-dev.inc"
-                        // 파일이 없으면 초기 상태인 'blue'로 가정
                         def currentUrl = sh(script: "docker exec main-nginx cat /etc/nginx/conf.d/${confFile} || echo 'blue'", returnStdout: true).trim()
                         
-                        // 3) 타겟 설정 (반대 컬러 선택)
+                        // 3) 타겟 설정
                         def targetColor = currentUrl.contains("blue") ? "green" : "blue"
                         def targetName = "dev-backend-${targetColor}"
                         def targetPort = (targetColor == "blue" ? "8081" : "8082")
 
                         echo ">>> [Target] 현재: ${currentUrl} -> 목표: ${targetName} (Port: ${targetPort})"
 
-                        // 4) 혹시 남아있을 타겟 컨테이너 청소 (충돌 방지)
+                        // 4) 청소
                         sh "docker rm -f ${targetName} || true"
 
-                        // 5) [배포] 새 컨테이너 실행
-                        // ★ 핵심: --network ${NET_DEV}를 통해 젠킨스/Nginx와 같은 망에 접속
+                        // 5) 새 컨테이너 실행
                         sh """
                             docker run -d --name ${targetName} \
                             --network ${NET_DEV} \
@@ -75,49 +69,62 @@ pipeline {
                         """
 
                         // ========================================================
-                        // [Health Check] 내부망(8080)을 통한 생존 확인
+                        // [1차 검증] 젠킨스 -> 백엔드 (서버가 켜졌는가?)
                         // ========================================================
                         def isHealthy = false
-                        // 15회 시도 (약 45초)
                         for(int i=0; i<15; i++) {
                             sleep 3 
-                            
-                            // ★ 수정됨: localhost가 아닌 컨테이너 이름(targetName)으로 내부 포트(8080) 접속
-                            // 헬스 컨트롤러가 없으므로 루트(/)를 찌름 -> 401/404가 나와도 서버 뜬 걸로 인정
                             def status = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://${targetName}:8080/ || echo '000'", returnStdout: true).trim()
-                            
-                            echo ">>> [Health Check ${i+1}/15] ${targetName} 상태 코드: ${status}"
-                            
-                            // 000(연결실패)나 502(게이트웨이오류)가 아니면 서버 부팅 완료로 판단
+                            echo ">>> [Jenkins Health Check ${i+1}/15] ${targetName} 상태: ${status}"
                             if(status != '000' && status != '502') { 
                                 isHealthy = true
                                 break 
                             }
                         }
 
-                        // 6) 결과 처리
                         if (isHealthy) {
-                            echo ">>> [Success] 서버 생존 확인! Nginx를 연결합니다."
+                            echo ">>> [Success] 서버 부팅 완료! 이제 Nginx 연결 가능성을 확인합니다."
                             
-                            // Nginx 스위칭
+                            // ========================================================
+                            // ★ [2차 검증] Nginx -> 백엔드 (DNS가 전파되었는가?) - 핵심 로직
+                            // ========================================================
+                            def nginxCanSee = false
+                            for(int j=0; j<20; j++) { // 최대 20초 대기
+                                // Nginx 컨테이너 안에서 curl을 실행해 봅니다.
+                                // 401, 404, 200 등 응답이 오면 DNS가 풀린 것입니다.
+                                def dnsCheck = sh(script: "docker exec main-nginx curl -s -o /dev/null -w '%{http_code}' --max-time 2 http://${targetName}:8080/ || echo 'fail'", returnStdout: true).trim()
+                                
+                                echo ">>> [Nginx Connectivity ${j+1}/20] Nginx가 보는 상태: ${dnsCheck}"
+                                
+                                if(dnsCheck != 'fail' && dnsCheck != '000' && dnsCheck != '502') {
+                                    nginxCanSee = true
+                                    break
+                                }
+                                sleep 1 // 1초 대기 후 재시도
+                            }
+
+                            if (!nginxCanSee) {
+                                error("배포 실패: Nginx가 새 컨테이너(${targetName})를 찾지 못합니다 (DNS 문제)")
+                            }
+
+                            echo ">>> [Verified] Nginx가 새 서버를 인식했습니다! 스위칭을 진행합니다."
+
+                            // Nginx 스위칭 (이제 502가 뜰 수 없음)
                             sh "echo 'set \$service_url http://${targetName}:8080;' > switch.tmp"
                             sh "docker cp switch.tmp main-nginx:/etc/nginx/conf.d/${confFile}"
                             sh "docker exec main-nginx nginx -s reload"
 
-                            // ====================================================
-                            // ★ [핵심 추가] 502 에러 방지를 위한 Grace Period
-                            // ====================================================
-                            echo ">>> [Wait] 트래픽이 완전히 넘어갈 때까지 10초 대기 (Graceful Shutdown)..."
+                            // [Wait] 기존 트래픽 처리 대기 (10초는 필수 - 기존 유저 보호)
+                            echo ">>> [Graceful Shutdown] 기존 연결 종료 대기 (10초)..."
                             sleep 10
 
-                            // 이전 버전 정리 (Cleanup)
+                            // 이전 버전 정리
                             def oldColor = (targetColor == 'blue') ? 'green' : 'blue'
                             def oldName = "dev-backend-${oldColor}"
                             echo ">>> [Cleanup] 이전 버전(${oldName})을 정리합니다."
                             sh "docker rm -f ${oldName} || true"
 
                         } else {
-                            // 실패 시 롤백 (새로 띄운 걸 죽임)
                             echo ">>> [Fail] 서버가 뜨지 않습니다. 롤백합니다."
                             sh "docker logs --tail 50 ${targetName}"
                             sh "docker rm -f ${targetName}"
