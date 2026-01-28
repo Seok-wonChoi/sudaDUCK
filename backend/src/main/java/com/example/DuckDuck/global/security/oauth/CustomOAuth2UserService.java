@@ -42,7 +42,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         String name = (String) kakaoAccount.get("name");
-        String name = "test";
         String nickname = (String) profileMap.get("nickname");
         String profileImageUrl = (String) profileMap.get("profile_image_url");
 
