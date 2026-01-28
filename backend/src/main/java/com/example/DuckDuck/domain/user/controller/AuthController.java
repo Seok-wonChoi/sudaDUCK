@@ -74,21 +74,19 @@ public class AuthController {
 
     @Operation(summary = "토큰 재발급", description = "리프레시 토큰을 확인하여 새 액세스 토큰을 발급합니다.")
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<TokenDto> refresh(HttpServletRequest request, HttpServletResponse response) {
         // 1. 쿠키에서 리프레시 토큰 추출
         String refreshToken = CookieUtil.getCookie(request, "refresh_token")
                 .map(Cookie::getValue)
                 .orElse(null);
 
-        try{
+        // 2. access token 재발급
+        try {
             String newAccessToken = authService.refresh(refreshToken);
-            CookieUtil.addCookie(response, "access_token", newAccessToken, 3600, false);
-            return ResponseEntity.ok("토큰이 갱신되었습니다.");
-        } catch (RuntimeException e){
-            //검증 실패 시 쿠키 삭제 후 401 반환
-            CookieUtil.addCookie(response, "access_token", null, 0, false);
-            CookieUtil.addCookie(response, "refresh_token", null, 0, true);
-            return ResponseEntity.status(401).body(e.getMessage());
+            return ResponseEntity.ok(new TokenDto(newAccessToken, null));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
     }

@@ -2,21 +2,17 @@ package com.example.DuckDuck.global.security.oauth;
 
 import com.example.DuckDuck.global.security.jwt.CookieUtil;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
-import com.example.DuckDuck.global.security.jwt.RefreshToken;
-import com.example.DuckDuck.global.security.jwt.RefreshTokenRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.Map;
 
 @Component
@@ -24,7 +20,7 @@ import java.util.Map;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final StringRedisTemplate redisTemplate;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -35,17 +31,28 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         Long userId = (Long) oAuth2User.getAttribute("id");
 
         // 1. 토큰 생성
-        String accessToken = jwtTokenProvider.createAccessToken(userId, email);
         String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
-        // 2. Refresh Token을 Redis에 저장
-        refreshTokenRepository.save(new RefreshToken(email, refreshToken, 1209600L)); // 14일
+        //RT:{email} 저장 (중복 로그인 기준)
+        redisTemplate.opsForValue().set(
+                "RT:" + email,
+                refreshToken,
+                Duration.ofDays(14)
+        );
+        // HttpOnly 쿠키
+        CookieUtil.addCookie(
+                response,
+                "refresh_token",
+                refreshToken,
+                60 * 60 * 24 * 14,
+                true
+        );
 
-        // 3. 쿠키에 토큰 담기 (만료시간은 초 단위)
-        CookieUtil.addCookie(response, "refresh_token", refreshToken, 1209600, true); // 14일
-        CookieUtil.addCookie(response, "access_token", accessToken, 60, false);
+        getRedirectStrategy().sendRedirect(
+                request,
+                response,
+                "http://localhost:5173/oauth2/redirect"
+        );
 
-        // 프론트엔드 메인 페이지로 리다이렉트
-        getRedirectStrategy().sendRedirect(request, response, "http://localhost:5173/oauth2/redirect");
     }
 }
