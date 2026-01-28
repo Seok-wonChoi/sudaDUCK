@@ -2,15 +2,16 @@
 .Page {
   min-height: 100vh;
   background: #f6f8ff;
-  padding: 28px 0;
+  padding: clamp(12px, 3vw, 28px) clamp(8px, 2vw, 16px);
 }
 
 /* Shell: 가운데 흰 컨테이너(모서리/그림자/클리핑) */
 .Shell {
   max-width: 1120px;
+  width: 100%;
   margin: 0 auto;
   background: #ffffff;
-  border-radius: 28px;
+  border-radius: clamp(16px, 3vw, 28px);
   box-shadow: 0 18px 50px rgba(17, 24, 39, 0.1);
   overflow: hidden;
 }

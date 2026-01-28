@@ -96,4 +96,8 @@ export default function OAuth2RedirectHandler() {
   }, [navigate]);
 
   return <div style={{ padding: 24 }}>로그인 처리 중...</div>;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 81cfa692fef2dc99b1446eed0d8b7469ff2037eb
