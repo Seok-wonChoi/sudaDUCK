@@ -15,7 +15,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": {
+      "/dev-api": {
         target: "https://i14e104.p.ssafy.io",
         changeOrigin: true,
       },
