@@ -81,7 +81,7 @@ export default function TogetherTalkPage() {
     return arr;
   }, [maxCount, participants]);
 
-  const [micOn, setMicOn] = useState(false);
+  const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
 
@@ -205,10 +205,13 @@ export default function TogetherTalkPage() {
   }, []);
 
   useEffect(() => {
+    // 페이지 로드 시 마이크 자동 켜기
+    startAudioAnalysis();
+
     return () => {
       stopAudioAnalysis();
     };
-  }, [stopAudioAnalysis]);
+  }, [startAudioAnalysis, stopAudioAnalysis]);
 
   const toggleMic = useCallback(async () => {
     if (micOn) {
@@ -474,7 +477,7 @@ export default function TogetherTalkPage() {
               <button type="button" className={styles.PrimaryButton} onClick={toggleMic}>
                 <img
                   className={styles.ButtonIcon}
-                  src={micOn ? micOnIcon : micOffIcon}
+                  src={micOn ? micOffIcon : micOnIcon}
                   alt=""
                   aria-hidden="true"
                 />

@@ -38,7 +38,7 @@ export default function SoloPracticePage() {
   const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 60_000;
 
-  const [micOn, setMicOn] = useState(false);
+  const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
 
@@ -176,6 +176,8 @@ export default function SoloPracticePage() {
           window.clearInterval(id);
           setIsCountdownOpen(false);
           setIsRunning(true);
+          // 카운트다운 종료 시 마이크 자동 켜기
+          startAudioAnalysis();
           return 0;
         }
         return prev - 1;
@@ -183,7 +185,7 @@ export default function SoloPracticePage() {
     }, 1000);
 
     return () => window.clearInterval(id);
-  }, []);
+  }, [startAudioAnalysis]);
 
   useEffect(() => {
     return () => {
@@ -288,7 +290,7 @@ export default function SoloPracticePage() {
                   onClick={toggleMic}
                   disabled={isCountdownOpen}
                 >
-                  <img className={styles.ButtonIcon} src={micOn ? micOnIcon : micOffIcon} alt="" aria-hidden="true" />
+                  <img className={styles.ButtonIcon} src={micOn ? micOffIcon : micOnIcon} alt="" aria-hidden="true" />
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 

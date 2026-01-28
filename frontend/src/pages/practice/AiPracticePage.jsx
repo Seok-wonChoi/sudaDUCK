@@ -38,7 +38,7 @@ export default function AiPracticePage() {
   const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 60_000;
 
-  const [micOn, setMicOn] = useState(false);
+  const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
 
@@ -162,10 +162,13 @@ export default function AiPracticePage() {
   }, []);
 
   useEffect(() => {
+    // 페이지 로드 시 마이크 자동 켜기
+    startAudioAnalysis();
+
     return () => {
       stopAudioAnalysis();
     };
-  }, [stopAudioAnalysis]);
+  }, [startAudioAnalysis, stopAudioAnalysis]);
 
   const toggleMic = useCallback(async () => {
     if (micOn) {
@@ -261,7 +264,7 @@ export default function AiPracticePage() {
 
               <div className={styles.BottomActions}>
                 <button type="button" className={styles.PrimaryButton} onClick={toggleMic}>
-                  <img className={styles.ButtonIcon} src={micOn ? micOnIcon : micOffIcon} alt="" aria-hidden="true" />
+                  <img className={styles.ButtonIcon} src={micOn ? micOffIcon : micOnIcon} alt="" aria-hidden="true" />
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
