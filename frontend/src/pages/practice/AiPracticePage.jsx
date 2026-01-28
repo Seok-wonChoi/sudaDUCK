@@ -12,7 +12,7 @@ import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 
 function VoiceWave({ level, enabled }) {
-  const multipliers = useMemo(() => [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35], []);
+  const multipliers = useMemo(() => [0.5, 0.7, 0.85, 1, 0.85, 0.7, 0.5], []);
   const v = Math.max(0, Math.min(1, level));
 
   return (
@@ -21,7 +21,7 @@ function VoiceWave({ level, enabled }) {
       aria-hidden="true"
     >
       {multipliers.map((m, idx) => {
-        const h = enabled ? 6 + v * 20 * m : 6;
+        const h = enabled ? 10 + v * 16 * m : 10;
         return (
           <span
             key={idx}
@@ -38,9 +38,11 @@ export default function AiPracticePage() {
   const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 60_000;
 
-  const [micOn, setMicOn] = useState(false);
+  const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
+  const [aiVoiceLevel, setAiVoiceLevel] = useState(0);
 
   const audioRef = useRef({
     stream: null,
@@ -53,6 +55,10 @@ export default function AiPracticePage() {
     level: 0,
     lastUiAt: 0,
   });
+
+  // AI 연결 시 사용할 ref (현재는 미사용)
+  // const aiTimerRef = useRef(null);
+  // const aiAnimationRef = useRef(null);
 
   const stopAudioAnalysis = useCallback(async () => {
     const a = audioRef.current;
@@ -162,10 +168,16 @@ export default function AiPracticePage() {
   }, []);
 
   useEffect(() => {
+    // 페이지 로드 시 마이크 자동 켜기
+    startAudioAnalysis();
+
     return () => {
       stopAudioAnalysis();
     };
-  }, [stopAudioAnalysis]);
+  }, [startAudioAnalysis, stopAudioAnalysis]);
+
+  // AI 발화 상태는 나중에 실제 AI 연결 시 사용
+  // setIsAiSpeaking(true/false), setAiVoiceLevel(0~1) 로 제어
 
   const toggleMic = useCallback(async () => {
     if (micOn) {
@@ -242,7 +254,11 @@ export default function AiPracticePage() {
                     </div>
                   </div>
 
-                  <div className={`${styles.VideoCard} ${styles.VideoCardAi}`}>
+                  <div
+                    className={`${styles.VideoCard} ${
+                      isAiSpeaking ? styles.VideoCardSpeaking : styles.VideoCardAi
+                    }`}
+                  >
                     <div className={styles.VideoInner}>
                       <div className={styles.AvatarCircle}>
                         <img className={styles.AvatarDuck} src={duckImg} alt="AI 아바타" />
@@ -251,6 +267,7 @@ export default function AiPracticePage() {
 
                     <div className={styles.VideoFooter}>
                       <div className={styles.VideoFooterLeft}>
+                        <VoiceWave level={aiVoiceLevel} enabled={isAiSpeaking} />
                         <span className={styles.AiLabel}>AI</span>
                       </div>
                       <div className={styles.VideoFooterRight} />
@@ -261,7 +278,7 @@ export default function AiPracticePage() {
 
               <div className={styles.BottomActions}>
                 <button type="button" className={styles.PrimaryButton} onClick={toggleMic}>
-                  <img className={styles.ButtonIcon} src={micOn ? micOnIcon : micOffIcon} alt="" aria-hidden="true" />
+                  <img className={styles.ButtonIcon} src={micOn ? micOffIcon : micOnIcon} alt="" aria-hidden="true" />
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 

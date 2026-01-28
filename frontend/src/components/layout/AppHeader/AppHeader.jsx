@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "./AppHeader.module.css";
 import bellIcon from "@/assets/icons/notice_bell.png";
 import gearIcon from "@/assets/icons/gear.png";
+import duckLogo from "@/assets/images/duck_logo.png";
 
 
 export default function AppHeader({
@@ -94,7 +95,9 @@ export default function AppHeader({
           onClick={onLogoClick}
           aria-label="메인으로 이동"
         >
-          <div className={styles.LogoMark} aria-hidden="true" />
+          <div className={styles.LogoMark} aria-hidden="true">
+            <img src={duckLogo} alt="" className={styles.LogoImage} />
+          </div>
           <div className={styles.BrandText}>수다DUCK</div>
         </button>
 

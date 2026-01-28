@@ -12,7 +12,7 @@ import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 
 function VoiceWave({ level, enabled }) {
-  const multipliers = [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35];
+  const multipliers = [0.5, 0.7, 0.85, 1, 0.85, 0.7, 0.5];
   const v = Math.max(0, Math.min(1, level));
 
   return (
@@ -21,7 +21,7 @@ function VoiceWave({ level, enabled }) {
       aria-hidden="true"
     >
       {multipliers.map((m, idx) => {
-        const h = enabled ? 6 + v * 20 * m : 6;
+        const h = enabled ? 10 + v * 16 * m : 10;
         return (
           <span
             key={idx}
@@ -38,7 +38,7 @@ export default function SoloPracticePage() {
   const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 60_000;
 
-  const [micOn, setMicOn] = useState(false);
+  const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
 
@@ -176,6 +176,8 @@ export default function SoloPracticePage() {
           window.clearInterval(id);
           setIsCountdownOpen(false);
           setIsRunning(true);
+          // 카운트다운 종료 시 마이크 자동 켜기
+          startAudioAnalysis();
           return 0;
         }
         return prev - 1;
@@ -183,7 +185,7 @@ export default function SoloPracticePage() {
     }, 1000);
 
     return () => window.clearInterval(id);
-  }, []);
+  }, [startAudioAnalysis]);
 
   useEffect(() => {
     return () => {
@@ -288,7 +290,7 @@ export default function SoloPracticePage() {
                   onClick={toggleMic}
                   disabled={isCountdownOpen}
                 >
-                  <img className={styles.ButtonIcon} src={micOn ? micOnIcon : micOffIcon} alt="" aria-hidden="true" />
+                  <img className={styles.ButtonIcon} src={micOn ? micOffIcon : micOnIcon} alt="" aria-hidden="true" />
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 

@@ -6,6 +6,7 @@ import { Routes, Route } from "react-router-dom";
 >>>>>>> 64a3ae58bfcb108d628f33450292d0cbfc3633b2
 
 import LoginPage from "./pages/auth/LoginPage";
+import OAuth2RedirectHandler from "./pages/auth/OAuth2RedirectHandler";
 import MainPage from "./pages/main/MainPage";
 import PracticePage from "./pages/practice/PracticePage";
 import SoloPracticePage from "./pages/practice/SoloPracticePage";
@@ -50,6 +51,7 @@ export default App
 =======
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
       <Route path="/" element={<MainPage />} />
 
       <Route path="/practice" element={<PracticePage />} />

@@ -110,7 +110,7 @@ export default function MiniGame2Page() {
       <CountdownOverlay
         count={countdown}
         title="준비되셨나요?"
-        subtitle="알맞은 단어로 빈칸을 채우세요!"
+        subtitle="제시된 카드를 영어로 말해보세요!"
       />
     );
   }
@@ -137,7 +137,16 @@ export default function MiniGame2Page() {
             timeLeft={timeLeft}
           />
           <div className="relative flex-1 min-h-[400px]">
-            <CardBoard cards={MOCK_CARDS} removedCards={removedCards} />
+            <CardBoard
+              cards={MOCK_CARDS}
+              removedCards={removedCards}
+              onCardClick={(cardId) => {
+                // TODO: 나중에 STT API로 교체 예정 (임시 테스트용)
+                if (!removedCards.includes(cardId)) {
+                  setRemovedCards([...removedCards, cardId]);
+                }
+              }}
+            />
             <DuckGuide
               message="문장을 읽어서 카드를 없애봐요!!"
               visible={showGuide}

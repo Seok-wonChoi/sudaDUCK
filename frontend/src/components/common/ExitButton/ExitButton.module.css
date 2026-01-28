@@ -2,22 +2,32 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
   height: 36px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.10);
-  color: #ef4444;
-  font-size: 12px;
-  font-weight: 900;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
   cursor: pointer;
   user-select: none;
+  transition: background 0.15s ease;
 }
 
 .Button:hover {
-  background: rgba(239, 68, 68, 0.16);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .Button:active {
-  transform: translateY(1px);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.Button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.Arrow {
+  font-size: 20px;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1;
 }

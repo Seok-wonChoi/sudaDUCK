@@ -42,6 +42,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 14px;
 }
 
 .SmallDuck {
@@ -64,12 +65,43 @@
   text-overflow: ellipsis;
 }
 
+.QuestButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.QuestBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(79, 70, 229, 0.25);
+  background: rgba(79, 70, 229, 0.08);
+  color: #4f46e5;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.QuestBtn:hover {
+  background: rgba(79, 70, 229, 0.14);
+  border-color: rgba(79, 70, 229, 0.35);
+}
+
+.QuestBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .Stage {
   margin-top: 18px;
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 24px;
-  align-items: center;
+  align-items: start;
 }
 
 .LeftStage {
@@ -78,28 +110,21 @@
   align-items: center;
 }
 
-.VideoArea {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  padding: 28px 0 20px;
-}
-
 .CardsGrid {
-  width: min(860px, 100%);
+  width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: 14px;
 }
 
 .VideoCard {
-  height: 220px;
+  height: 180px;
   border-radius: 14px;
   background: #fbfcff;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 18px 18px 14px;
+  padding: 16px 16px 12px;
   border: 2px solid rgba(229, 231, 235, 1);
   position: relative;
 }
@@ -128,33 +153,42 @@
   box-shadow: none;
 }
 
-.VideoCardAi {
-  border-color: rgba(229, 231, 235, 1);
-  background: #fbfcff;
+.VideoCardEmpty {
+  border: 2px dashed rgba(209, 213, 219, 0.8);
+  background: rgba(249, 250, 251, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.EmptyText {
+  font-size: 13px;
+  font-weight: 700;
+  color: #9ca3af;
 }
 
 .VideoInner {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 150px;
+  flex: 1;
 }
 
 .AvatarCircle {
-  width: 92px;
-  height: 92px;
+  width: 105px;
+  height: 105px;
   border-radius: 999px;
   background: #ffffff;
   border: 1px solid #eef2ff;
-  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.10);
+  box-shadow: 0 10px 20px rgba(17, 24, 39, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .AvatarDuck {
-  width: 62px;
-  height: 62px;
+  width: 68px;
+  height: 68px;
   object-fit: contain;
 }
 
@@ -176,13 +210,6 @@
   color: #111827;
 }
 
-.AiLabel {
-  font-size: 13px;
-  font-weight: 900;
-  color: #111827;
-  opacity: 0.95;
-}
-
 .VideoFooterRight {
   display: inline-flex;
   align-items: center;
@@ -196,22 +223,21 @@
   object-fit: contain;
 }
 
+.MicMuted {
+  opacity: 0.4;
+}
+
 .Wave {
   display: inline-flex;
   align-items: flex-end;
-  gap: 3px;
-  height: 22px;
-  overflow: hidden;
+  gap: 4px;
+  height: 28px;
 }
 
 .WaveBar {
-  width: 4px;
-  height: 22px;
-  border-radius: 999px;
-  transform-origin: 50% 100%;
-  transform: scaleY(0.25);
-  transition: transform 120ms ease;
-  will-change: transform;
+  width: 5px;
+  border-radius: 3px;
+  transition: height 80ms ease-out;
 }
 
 .WaveOn .WaveBar {
@@ -232,7 +258,7 @@
 .WaveBar7 { background: rgba(16, 185, 129, 0.95); }
 
 .BottomActions {
-  margin-top: 6px;
+  margin-top: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -363,11 +389,16 @@
 
   .HeaderRow {
     grid-template-columns: 1fr;
-    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .TopicRow {
+    justify-content: center;
   }
 
   .TimerCol {
-    justify-content: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .Stage {
@@ -375,7 +406,7 @@
   }
 
   .CardsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .RightStage {
@@ -388,56 +419,14 @@
     right: 0;
     bottom: 0;
   }
-
-  .QuestWarning {
-  color: #e54b4b;
-  font-weight: 900;
 }
 
-.TimerArea {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+@media (max-width: 600px) {
+  .CardsGrid {
+    grid-template-columns: 1fr;
+  }
 
-.TimerArea {
-  display: flex;
-  align-items: center;
-  gap: 14px; /* TimerGauge와 버튼 그룹 간격 */
-}
-
-.QuestButtons {
-  display: flex;
-  align-items: center;
-  gap: 12px; /* 1/2/3 간격 */
-}
-
-.QuestBtn {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: #ffffff;
-
-  cursor: pointer;
-  font-weight: 900;
-  font-size: 16px;
-
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
-}
-
-.QuestBtn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-
-.QuestBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-
+  .VideoCard {
+    height: 160px;
+  }
 }

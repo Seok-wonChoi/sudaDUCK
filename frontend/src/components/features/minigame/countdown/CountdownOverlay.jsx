@@ -1,5 +1,5 @@
 import styles from './CountdownOverlay.module.css';
-import duckImg from '@/assets/images/duck.png';
+import duckImg from '@/assets/images/duck_minigame_go.png';
 
 export default function CountdownOverlay({
   count = 3,
@@ -17,9 +17,10 @@ export default function CountdownOverlay({
         <div className={styles.countCircle}>
           <span className={styles.countNumber}>{count}</span>
         </div>
-
-        <img src={duckImg} alt="Duck" className={styles.duck} />
       </div>
+
+      <img src={duckImg} alt="Duck" className={styles.duck} />
     </div>
+
   );
 }

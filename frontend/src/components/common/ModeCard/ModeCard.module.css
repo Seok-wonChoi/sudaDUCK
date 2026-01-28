@@ -31,21 +31,11 @@
   margin-bottom: 10px;
 }
 
-/* 1마리 */
 .DuckSingle {
   display: grid;
   place-items: center;
 }
 
-/* 2마리: 나란히 */
-.DuckRow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: -100px;   
-}
-
-/* ✅ 오리 더 크게 */
 .Duck {
   width: 160px;
   height: 160px;
@@ -53,14 +43,6 @@
   display: block;
   user-select: none;
   pointer-events: none;
-}
-
-/* 반짝이 위치 */
-.Sparkles {
-  position: absolute;
-  right: 20px;
-  top: 10px;
-  font-size: 40px;
 }
 
 .Title {

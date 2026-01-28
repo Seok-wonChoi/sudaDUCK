@@ -126,6 +126,15 @@
   flex: 1;
 }
 
+/* 상단 행: 참여자 제목 + 방 정보 + 참여 코드 */
+.TopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
 /* 참여자 제목 영역 */
 .ParticipantsTitle {
   display: inline-flex;
@@ -134,6 +143,7 @@
   font-size: 13px;
   font-weight: 900;
   color: #111827;
+  flex-shrink: 0;
 }
 
 /* 참여자 제목 아이콘 */
@@ -156,6 +166,8 @@
   gap: 6px;
   flex-wrap: wrap;
   font-size: 12px;
+  justify-content: center;
+  flex: 1;
 }
 
 .RoomInfoLabel {
@@ -174,46 +186,83 @@
   margin: 0 4px;
 }
 
-/* 참여 코드 텍스트 영역 */
-.InviteCodeText {
+/* 참여 코드 박스 */
+.InviteCodeBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(99, 102, 241, 0.12) 100%);
+  border: 2px solid rgba(79, 70, 229, 0.25);
+  min-width: 280px;
+}
+
+.InviteCodeHeader {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  font-size: 12px;
+  justify-content: center;
 }
 
 .InviteCodeLabel {
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 11px;
   color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.InviteCodeRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
 .InviteCodeValue {
   font-weight: 900;
+  font-size: 24px;
   color: #4f46e5;
-  letter-spacing: 0.5px;
+  letter-spacing: 3px;
+  font-family: 'Courier New', monospace;
 }
 
-.InviteCodeSeparator {
-  color: #d1d5db;
-  font-weight: 400;
-  margin: 0 4px;
+.InviteCodeActions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
 }
 
-.InviteCodeAction {
+.InviteCodeButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(79, 70, 229, 0.30);
+  background: #ffffff;
+  font-size: 11px;
   font-weight: 800;
   color: #4f46e5;
   cursor: pointer;
-  text-decoration: underline;
-  transition: color 0.2s;
+  transition: all 0.2s;
 }
 
-.InviteCodeAction:hover {
-  color: #4338ca;
+.InviteCodeButton:hover {
+  background: rgba(79, 70, 229, 0.10);
+  border-color: rgba(79, 70, 229, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15);
 }
 
-.InviteCodeAction:active {
-  color: #3730a3;
+.InviteCodeButton:active {
+  transform: translateY(0);
+}
+
+.ButtonIcon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
 }
 
 /* 방 설정 변경 버튼 */
@@ -483,6 +532,34 @@
   color: #9ca3af;
 }
 
+/* Toast 알림 */
+.Toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.95);
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  z-index: 1000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: toastSlideUp 0.3s ease-out;
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 @media (max-width: 768px) {
   /* 모바일 Top 패딩 */
   .Top {
@@ -515,10 +592,22 @@
     width: 100%;
   }
 
+  /* 모바일 상단 행 */
+  .TopRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  /* 모바일 참여자 제목 */
+  .ParticipantsTitle {
+    justify-content: center;
+  }
+
   /* 모바일 방 정보 텍스트 */
   .RoomInfoText {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 4px;
   }
 
@@ -526,9 +615,16 @@
     display: none;
   }
 
-  /* 모바일 참여 코드 텍스트 */
-  .InviteCodeText {
-    flex-wrap: wrap;
+  /* 모바일 참여 코드 박스 */
+  .InviteCodeBox {
+    min-width: auto;
+    width: 100%;
+  }
+
+  /* 모바일 참여 코드 행 */
+  .InviteCodeRow {
+    flex-direction: column;
+    gap: 8px;
   }
 
   /* 모바일 방 설정 변경 버튼 */
