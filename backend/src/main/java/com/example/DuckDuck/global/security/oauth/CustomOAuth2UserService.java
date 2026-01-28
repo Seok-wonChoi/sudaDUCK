@@ -41,7 +41,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new RuntimeException("카카오 이메일 정보를 불러올 수 없습니다.");
         }
 
-        String name = "test";
+        String name = (String) profileMap.get("nickname");
         String nickname = (String) profileMap.get("nickname");
         String profileImageUrl = (String) profileMap.get("profile_image_url");
 
