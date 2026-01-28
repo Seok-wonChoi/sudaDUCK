@@ -33,50 +33,12 @@ public class SecurityConfig {
     private final StringRedisTemplate redisTemplate;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                //CSRF 및 Form Login 비활성화
-                //cors설정
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-
-                //Stateless 설정
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                //요청 권한 설정
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll() //swagger 관련 주소 모두 허용
-                        .requestMatchers(
-                                "/api/v1/auth/**",
-                                "/oauth2/**",
-                                "/login/**",
-                                "/api/v1/gpt/translate",
-                                "/api/v1/topics").permitAll() // 로그인 관련은 모두 허용
-                        .anyRequest().authenticated() // 그 외 나머지는 인증 필요
-                )
-
-                .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .successHandler(oAuth2SuccessHandler)
-                )
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(((request, response, authException) -> {
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "인증이 필요합니다.");
-                        })))
-
-                //jwt 필터 추가
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider,redisTemplate),
-                        UsernamePasswordAuthenticationFilter.class);
-
-
-
+                        .anyRequest().permitAll() // 모든 요청에 대해 인증 없이 접근 허용
+                );
         return http.build();
     }
     //cors설정을 위한 bean

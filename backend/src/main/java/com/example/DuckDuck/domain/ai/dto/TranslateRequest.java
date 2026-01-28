@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.List;
-
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,6 +21,6 @@ public class TranslateRequest {
     @NotNull(message = "turnNo는 필수입니다.")
     private Long turnNo;
 
-    @NotNull(message = "참여자 id는 필수입니다.")
-    private String speakerId;
+    @NotNull(message = "speakerId는 필수입니다.")
+    private Long speakerId;
 }
