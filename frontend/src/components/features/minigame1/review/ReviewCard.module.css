@@ -1,0 +1,94 @@
+.card {
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.correct {
+  border: 2px solid #22c55e;
+  background: #fff;
+}
+
+.wrong {
+  border: 2px solid #ef4444;
+  background: #fff;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.badgeCorrect {
+  background: #22c55e;
+}
+
+.badgeWrong {
+  background: #ef4444;
+}
+
+.questionNum {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.section {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.koreanText {
+  margin: 0;
+  font-size: 15px;
+  color: #111827;
+}
+
+.englishSentence {
+  background: #f9fafb;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #111827;
+  line-height: 1.8;
+}
+
+.blankWord {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 6px;
+  margin: 0 4px;
+  font-weight: 600;
+}
+
+.blankCorrect {
+  background: #dcfce7;
+  color: #22c55e;
+}
+
+.blankWrong {
+  background: #fee2e2;
+  color: #ef4444;
+}

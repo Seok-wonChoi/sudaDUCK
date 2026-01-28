@@ -1,0 +1,46 @@
+.Container {
+  background: #f0fdf4;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.Header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.Icon {
+  font-size: 18px;
+}
+
+.Title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.List {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.Item {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.English {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.Korean {
+  font-size: 13px;
+  color: #6b7280;
+}

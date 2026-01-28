@@ -1,0 +1,18 @@
+.wrapper {
+  padding: 0 24px;
+  margin-bottom: 16px;
+}
+
+.track {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e 0%, #4f46e5 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}

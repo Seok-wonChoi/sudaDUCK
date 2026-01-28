@@ -1,0 +1,386 @@
+.Page {
+  min-height: 100vh;
+  background: #f6f8ff;
+  padding: 28px 0;
+}
+
+.Shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.10);
+  overflow: hidden;
+  position: relative;
+}
+
+.Content {
+  padding: 20px 34px 28px;
+}
+
+.HeaderRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 10px;
+}
+
+.ExitCol {
+  display: flex;
+  align-items: center;
+}
+
+.TopicRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.TimerCol {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.SmallDuck {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.TopicBubble {
+  background: #ffffff;
+  border: 1px solid #e8edf6;
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.10);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.Stage {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: center;
+}
+
+.LeftStage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.VideoArea {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 28px 0 20px;
+}
+
+.CardsGrid {
+  width: min(860px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.VideoCard {
+  height: 220px;
+  border-radius: 14px;
+  background: #fbfcff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 18px 14px;
+  border: 2px solid rgba(229, 231, 235, 1);
+  position: relative;
+}
+
+.VideoCardSpeaking {
+  border-color: rgba(34, 197, 94, 0.95);
+  box-shadow:
+    0 0 0 3px rgba(34, 197, 94, 0.18),
+    0 0 22px rgba(34, 197, 94, 0.30),
+    0 18px 34px rgba(17, 24, 39, 0.12);
+}
+
+.VideoCardSpeaking::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 16px;
+  pointer-events: none;
+  box-shadow:
+    0 0 28px rgba(34, 197, 94, 0.28),
+    0 0 10px rgba(34, 197, 94, 0.18);
+}
+
+.VideoCardIdle {
+  border-color: rgba(229, 231, 235, 1);
+  box-shadow: none;
+}
+
+.VideoCardAi {
+  border-color: rgba(229, 231, 235, 1);
+  background: #fbfcff;
+}
+
+.VideoInner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 150px;
+}
+
+.AvatarCircle {
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #eef2ff;
+  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.AvatarDuck {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+}
+
+.VideoFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.VideoFooterLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.MeLabel {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.AiLabel {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+  opacity: 0.95;
+}
+
+.VideoFooterRight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 18px;
+}
+
+.MicMini {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.Wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+
+.WaveBar {
+  width: 4px;
+  border-radius: 999px;
+  transition: height 120ms ease;
+}
+
+.WaveOn .WaveBar {
+  opacity: 0.95;
+}
+
+.WaveOff .WaveBar {
+  background: rgba(209, 213, 219, 1);
+  opacity: 1;
+}
+
+.WaveBar1 { background: rgba(34, 197, 94, 0.95); }
+.WaveBar2 { background: rgba(16, 185, 129, 0.95); }
+.WaveBar3 { background: rgba(59, 130, 246, 0.95); }
+.WaveBar4 { background: rgba(99, 102, 241, 0.95); }
+.WaveBar5 { background: rgba(158, 67, 242, 0.95); }
+.WaveBar6 { background: rgba(59, 130, 246, 0.95); }
+.WaveBar7 { background: rgba(16, 185, 129, 0.95); }
+
+.BottomActions {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.ButtonIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.PrimaryButton {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #4f46e5;
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.SecondaryButton {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.RightStage {
+  position: relative;
+  height: 100%;
+  min-height: 440px;
+}
+
+.AiBubble {
+  position: relative;
+  background: #ffffff;
+  border: 2px solid rgba(79, 70, 229, 0.25);
+  border-radius: 16px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 18px 40px rgba(17, 24, 39, 0.14);
+  z-index: 2;
+}
+
+.AiHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #4f46e5;
+}
+
+.AiDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.65);
+}
+
+.AiTitle {
+  color: #4f46e5;
+}
+
+.AiFace {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 22px;
+}
+
+.AiMainText {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #111827;
+  line-height: 1.35;
+}
+
+.AiSubText {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.AiPointer {
+  position: absolute;
+  left: 52%;
+  bottom: -10px;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border-left: 2px solid rgba(79, 70, 229, 0.25);
+  border-bottom: 2px solid rgba(79, 70, 229, 0.25);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.BigDuck {
+  position: absolute;
+  right: -6px;
+  bottom: -8px;
+  width: 280px;
+  height: 280px;
+  object-fit: contain;
+  z-index: 1;
+  filter: drop-shadow(0 18px 30px rgba(17, 24, 39, 0.12));
+}
+
+@media (max-width: 980px) {
+  .Content {
+    padding: 18px 16px 22px;
+  }
+
+  .HeaderRow {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .TimerCol {
+    justify-content: flex-start;
+  }
+
+  .Stage {
+    grid-template-columns: 1fr;
+  }
+
+  .CardsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .RightStage {
+    min-height: 360px;
+  }
+
+  .BigDuck {
+    width: 220px;
+    height: 220px;
+    right: 0;
+    bottom: 0;
+  }
+}
