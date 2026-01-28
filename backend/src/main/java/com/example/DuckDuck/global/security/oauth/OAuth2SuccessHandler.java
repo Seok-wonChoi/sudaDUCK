@@ -48,10 +48,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 true
         );
 
+        // getRedirectStrategy().sendRedirect(
+        //         request,
+        //         response,
+        //         "http://localhost:5173/oauth2/redirect"
+        // );
         getRedirectStrategy().sendRedirect(
                 request,
                 response,
-                "http://localhost:5173/oauth2/redirect"
+                "https://i14e104.p.ssafy.io/dev/oauth2/redirect"
         );
 
     }
