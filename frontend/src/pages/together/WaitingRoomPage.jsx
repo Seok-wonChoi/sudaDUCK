@@ -13,6 +13,10 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
+import { leaveRoom } from "@/api/rooms";
+
+const ROOM_INFO_KEY = "together_room_info";
+
 function PlayIcon() {
   return (
     <svg
@@ -38,13 +42,13 @@ export default function WaitingRoomPage() {
   const roomTitle = roomInfo.roomTitle ?? "수다방";
   const topic = roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식";
   const turnCount = roomInfo.turnCount ?? 3;
+
+  // 방 코드는 joinCode / inviteCode 둘 중 하나로 넘어오므로 여기서 통일
   const inviteCode = roomInfo.joinCode ?? roomInfo.inviteCode ?? "000000";
 
   const [participants, setParticipants] = useState(() => {
     if (isHost) {
-      return [
-        { id: "me", name: "나", isHost: true, isReady: true },
-      ];
+      return [{ id: "me", name: "나", isHost: true, isReady: true }];
     }
 
     return [
@@ -93,7 +97,6 @@ export default function WaitingRoomPage() {
   }, [inviteCode, showToast]);
 
   const handleKakaoShare = useCallback(async () => {
-    // 웹 공유 API 지원 확인
     if (navigator.share) {
       try {
         await navigator.share({
@@ -108,7 +111,6 @@ export default function WaitingRoomPage() {
         }
       }
     } else {
-      // 웹 공유 API를 지원하지 않는 경우 복사
       try {
         await navigator.clipboard.writeText(
           `참여 코드: ${inviteCode}\n방 제목: ${roomTitle}\n주제: ${topic}`
@@ -123,7 +125,6 @@ export default function WaitingRoomPage() {
   const handleEditRoomInfo = useCallback(() => {
     if (!isHost) return;
     console.log("방 정보 수정");
-    // TODO: 방 정보 수정 모달 또는 페이지로 이동
   }, [isHost]);
 
   const handleStart = useCallback(() => {
@@ -153,22 +154,48 @@ export default function WaitingRoomPage() {
   const primaryLabel = isHost ? "대화 시작하기" : myReady ? "준비 취소" : "준비하기";
   const primaryDisabled = isHost ? !canStart : false;
 
+  /**
+   * 방 퇴장: POST /api/v1/rooms/leave
+   * Request: { roomCode }
+   */
+  const handleExit = useCallback(async () => {
+    const roomCode = inviteCode;
+
+    if (!roomCode || roomCode === "000000") {
+      // 코드가 없으면 서버 퇴장 처리 불가 → 일단 로컬 정리만
+      sessionStorage.removeItem(ROOM_INFO_KEY);
+      return;
+    }
+
+    await leaveRoom({ roomCode });
+
+    // 로컬 상태 정리(선택)
+    sessionStorage.removeItem(ROOM_INFO_KEY);
+
+    // WS 연결 붙이면 여기서 disconnect도 같이 호출(나중에 추가)
+    // roomSocket.disconnect?.();
+  }, [inviteCode]);
+
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Top}>
-          <ExitButton to="/" label="나가기" confirmMessage="메인 화면으로 나가시겠습니까?"
-          replace
+          <ExitButton
+            to="/"
+            label="나가기"
+            message="메인 화면으로 나가시겠습니까?"
+            confirmText="나가기"
+            cancelText="취소"
+            onExit={handleExit}
+            replace
           />
 
           <div className={styles.SpeechRow}>
             <div className={styles.SpeechLeft}>
               <img className={styles.Duck} src={duckImg} alt="오리" />
-              <div className={styles.SpeechBubbleLeft}>
-                첫 번째 대화 주제는 {topic}입니다!
-              </div>
+              <div className={styles.SpeechBubbleLeft}>첫 번째 대화 주제는 {topic}입니다!</div>
             </div>
           </div>
 
@@ -245,7 +272,6 @@ export default function WaitingRoomPage() {
                 const p = participants[index];
 
                 if (!p) {
-                  // 빈 슬롯
                   return (
                     <div key={`empty-${index}`} className={styles.ParticipantRowEmpty}>
                       <div className={styles.EmptySlotText}>빈 자리</div>
@@ -343,11 +369,7 @@ export default function WaitingRoomPage() {
         </div>
       </div>
 
-      {toastMessage && (
-        <div className={styles.Toast}>
-          {toastMessage}
-        </div>
-      )}
+      {toastMessage && <div className={styles.Toast}>{toastMessage}</div>}
     </div>
   );
 }
