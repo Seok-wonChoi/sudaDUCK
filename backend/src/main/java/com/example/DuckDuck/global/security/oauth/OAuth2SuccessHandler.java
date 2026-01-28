@@ -42,7 +42,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // HttpOnly 쿠키
         CookieUtil.addCookie(
                 response,
-                "refresh_token",
+                "refreshToken",
                 refreshToken,
                 60 * 60 * 24 * 14,
                 true

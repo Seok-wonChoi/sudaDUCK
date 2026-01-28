@@ -59,6 +59,12 @@ public class AuthService {
             throw new RuntimeException("이메일 정보가 일치하지 않습니다.");
         }
 
+        // 1. Access Token 생성
+        String accessToken = jwtTokenProvider.createAccessToken(
+                member.getId(),
+                member.getEmail()
+        );
+
         String refreshToken = jwtTokenProvider.createRefreshToken(
                 member.getId(),
                 member.getEmail()
@@ -72,7 +78,7 @@ public class AuthService {
                 Duration.ofDays(14)
         );
 
-        return new TokenDto(null, refreshToken);
+        return new TokenDto(accessToken, refreshToken);
     }
 
     @Transactional

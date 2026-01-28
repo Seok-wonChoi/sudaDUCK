@@ -15,30 +15,43 @@ import java.util.List;
 @Configuration
 public class SwaggerConfig {
 
-    // ★ 핵심: 콜론(:)을 붙여서 값이 없을 경우 빈 문자열("")을 기본값으로 쓰게 합니다.
     @Value("${custom.api-prefix:}")
     private String apiPrefix;
 
     @Bean
     public OpenAPI openAPI() {
+        // 1. 보안 스키마 이름 정의
+        String jwtAuth = "bearerAuth";
         String cookieAuth = "accessTokenCookie";
-        SecurityRequirement securityRequirement = new SecurityRequirement().addList(cookieAuth);
-        SecurityScheme securityScheme = new SecurityScheme()
-                .name("access_token")
+
+        // 2. 보안 요구사항 설정 (헤더와 쿠키 모두 등록)
+        SecurityRequirement securityRequirement = new SecurityRequirement()
+                .addList(jwtAuth)
+                .addList(cookieAuth);
+
+        // 3. 보안 스키마 정의 (Header 기반 JWT Bearer 추가)
+        SecurityScheme jwtScheme = new SecurityScheme()
+                .name(jwtAuth)
+                .type(SecurityScheme.Type.HTTP)
+                .scheme("bearer")
+                .bearerFormat("JWT");
+
+        SecurityScheme cookieScheme = new SecurityScheme()
+                .name("accessToken")
                 .type(SecurityScheme.Type.APIKEY)
                 .in(SecurityScheme.In.COOKIE);
 
-        // ★ 서버 URL 결정 로직
-        // apiPrefix가 비어있으면 로컬("/")로, 값이 있으면 해당 값("/dev-api")으로 설정
         String serverUrl = (apiPrefix == null || apiPrefix.isBlank()) ? "/" : apiPrefix;
 
         return new OpenAPI()
                 .servers(List.of(new Server().url(serverUrl).description("DuckDuck Server")))
                 .info(new Info()
                         .title("DuckDuck API 명세서")
-                        .description("환경별 API 프리픽스를 자동 적용하는 명세서입니다.")
+                        .description("JWT 인증이 추가된 숙덕숙덕 API 명세서입니다.")
                         .version("v1.0.0"))
                 .addSecurityItem(securityRequirement)
-                .components(new Components().addSecuritySchemes(cookieAuth, securityScheme));
+                .components(new Components()
+                        .addSecuritySchemes(jwtAuth, jwtScheme)
+                        .addSecuritySchemes(cookieAuth, cookieScheme));
     }
 }

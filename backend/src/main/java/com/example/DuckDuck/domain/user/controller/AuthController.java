@@ -43,21 +43,28 @@ public class AuthController {
 
     @Operation(summary = "테스트 로그인", description = "특정 유저로 강제 로그인하여 쿠키를 발급받습니다.")
     @PostMapping("/test-login")
-    public ResponseEntity<String> testLogin(@RequestBody TestLoginRequest request,
+    public ResponseEntity<TokenDto> testLogin(@RequestBody TestLoginRequest request,
                                             HttpServletResponse response){
 
         TokenDto tokens = authService.login(request.getUserId(), request.getEmail());
 
         CookieUtil.addCookie(
                 response,
-                "refresh_token",
+                "accessToken",
+                tokens.accessToken(),
+                3600, // 1시간
+                false
+        );
+
+        CookieUtil.addCookie(
+                response,
+                "refreshToken",
                 tokens.refreshToken(),
                 60 * 60 * 24 * 14,
                 true
         );
 
-        return ResponseEntity.ok("DB 유저 기반 테스트 로그인 성공! (유저 ID: " + request.getUserId() + ", 이메일: " + request.getEmail() + ") " +
-                "이제 Postman에서 다른 API를 호출하면 자동으로 인증됩니다.");
+        return ResponseEntity.ok(tokens);
     }
 
 
