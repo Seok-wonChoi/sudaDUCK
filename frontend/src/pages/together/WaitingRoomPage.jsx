@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
@@ -13,7 +13,7 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
-import { leaveRoom } from "@/api/rooms";
+import { leaveRoom, getLobby } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
@@ -47,51 +47,118 @@ export default function WaitingRoomPage() {
   // 방 코드는 joinCode / inviteCode 둘 중 하나로 넘어오므로 여기서 통일
   const inviteCode = roomInfo.joinCode ?? roomInfo.inviteCode ?? "000000";
 
-  const [participants, setParticipants] = useState(() => {
-    if (isHost) {
-      return [{ id: "me", name: "나", isHost: true, isReady: true }];
-    }
-
-    return [
-      { id: "host", name: "방장", isHost: true, isReady: true },
-      { id: "me", name: "나", isHost: false, isReady: false },
-    ];
-  });
+  // 참여자 목록: email 기반으로 관리
+  // { email, nickname, isHost, isReady, micOn }
+  const [participants, setParticipants] = useState([]);
+  const [myEmail, setMyEmail] = useState(""); // 내 이메일 (lobby 응답에서 받음)
+  const [readyCount, setReadyCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [myMicOn, setMyMicOn] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
 
-  const currentCount = participants.length;
+  // 재연결 시 lobby 다시 호출하기 위한 ref
+  const fetchLobbyRef = useRef(null);
 
   const showToast = useCallback((message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(""), 2000);
   }, []);
 
-  // WebSocket 이벤트 핸들러
-  const handleReadyChanged = useCallback((payload) => {
-    console.log("READY_CHANGED 수신:", payload);
+  // lobby API 호출: 참여자 목록 + 상태 가져오기
+  const fetchLobby = useCallback(async () => {
+    if (!inviteCode || inviteCode === "000000") return;
 
-    // TODO: GET /lobby API를 먼저 호출해서 참여자 목록을 이메일 기반으로 관리해야 함
-    // 현재는 임시로 myReadyStatus만 사용
-    if (payload.myReadyStatus !== undefined) {
-      const newReadyStatus = payload.myReadyStatus === "READY";
-      setParticipants((prev) =>
-        prev.map((p) => (p.id === "me" ? { ...p, isReady: newReadyStatus } : p))
-      );
+    try {
+      setIsLoading(true);
+      const data = await getLobby({ roomCode: inviteCode });
+
+      // 서버 응답 형태에 맞게 파싱 (백엔드 응답 구조에 따라 조정 필요)
+      // 예상 응답: { members: [...], myEmail: "...", readyCount: 2, totalCount: 4 }
+      const members = data.members ?? data.participants ?? [];
+      const myEmailFromServer = data.myEmail ?? data.email ?? "";
+
+      setMyEmail(myEmailFromServer);
+      setReadyCount(data.readyCount ?? 0);
+      setTotalCount(data.totalCount ?? members.length);
+
+      // 참여자 목록 변환
+      const mappedParticipants = members.map((m) => ({
+        email: m.email ?? m.memberEmail ?? "",
+        nickname: m.nickname ?? m.name ?? "참여자",
+        isHost: m.isHost ?? m.host ?? false,
+        isReady: m.readyStatus === "READY" || m.isReady === true,
+        micOn: m.micOn ?? true, // 기본값 true
+      }));
+
+      setParticipants(mappedParticipants);
+    } catch (e) {
+      console.error("lobby API 호출 실패:", e);
+      showToast("참여자 목록을 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
     }
+  }, [inviteCode, showToast]);
 
-    // readyCount, totalCount는 서버에서 계산된 값 사용 (프론트에서 계산 금지)
-    // 나중에 UI에 표시 가능
-  }, []);
+  // ref에 저장 (재연결 시 호출용)
+  fetchLobbyRef.current = fetchLobby;
 
-  const handleMicChanged = useCallback((payload) => {
-    console.log("MIC_CHANGED 수신:", payload);
+  // 초기 진입 시 lobby API 호출
+  useEffect(() => {
+    fetchLobby();
+  }, [fetchLobby]);
 
-    // TODO: senderKey(이메일)로 참여자를 찾아서 마이크 상태 업데이트
-    // 현재는 임시 구현
-    // 실제로는 GET /lobby로 받은 참여자 목록에서 senderKey로 매칭
-  }, []);
+  const currentCount = totalCount || participants.length;
+
+  // WebSocket 이벤트 핸들러: READY_CHANGED
+  // senderKey(이메일)로 해당 참여자를 찾아서 준비 상태 업데이트
+  const handleReadyChanged = useCallback(
+    (payload, senderKey) => {
+      console.log("READY_CHANGED 수신:", { payload, senderKey });
+
+      // 서버에서 받은 readyCount, totalCount 업데이트 (프론트에서 계산 금지!)
+      if (payload.readyCount !== undefined) {
+        setReadyCount(payload.readyCount);
+      }
+      if (payload.totalCount !== undefined) {
+        setTotalCount(payload.totalCount);
+      }
+
+      // senderKey(이메일)로 해당 참여자의 준비 상태 업데이트
+      if (senderKey) {
+        // myReadyStatus가 있으면 해당 유저의 새 상태
+        const newReadyStatus =
+          payload.myReadyStatus === "READY" || payload.ready === true;
+
+        setParticipants((prev) =>
+          prev.map((p) =>
+            p.email === senderKey ? { ...p, isReady: newReadyStatus } : p
+          )
+        );
+      }
+    },
+    []
+  );
+
+  // WebSocket 이벤트 핸들러: MIC_CHANGED
+  // senderKey(이메일)로 해당 참여자의 마이크 상태 업데이트
+  const handleMicChanged = useCallback(
+    (payload, senderKey) => {
+      console.log("MIC_CHANGED 수신:", { payload, senderKey });
+
+      if (!senderKey) return;
+
+      // 내 마이크 상태는 로컬에서 관리하므로, 다른 사람만 업데이트
+      // (내 이메일이면 무시해도 되지만, 서버 응답과 동기화하고 싶으면 반영)
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.email === senderKey ? { ...p, micOn: payload.micOn } : p
+        )
+      );
+    },
+    []
+  );
 
   const handleWebSocketError = useCallback(
     (errorMessage) => {
@@ -101,16 +168,27 @@ export default function WaitingRoomPage() {
     [showToast]
   );
 
+  // WebSocket 재연결 시 lobby 다시 호출해서 상태 동기화
+  const handleConnected = useCallback(() => {
+    console.log("WebSocket 연결됨");
+    // 재연결 시 상태 동기화
+    fetchLobbyRef.current?.();
+  }, []);
+
   // WebSocket 연결
   const { sendReady, sendMic } = useRoomWebSocket(inviteCode, {
     onReadyChanged: handleReadyChanged,
     onMicChanged: handleMicChanged,
     onError: handleWebSocketError,
-    onConnected: () => console.log("WebSocket 연결됨"),
+    onConnected: handleConnected,
     onDisconnected: () => console.log("WebSocket 연결 해제됨"),
   });
 
-  const me = useMemo(() => participants.find((p) => p.id === "me"), [participants]);
+  // 내 정보 찾기: email 기반
+  const me = useMemo(
+    () => participants.find((p) => p.email === myEmail),
+    [participants, myEmail]
+  );
   const myReady = me?.isReady ?? false;
 
   const nonHostAllReady = useMemo(
@@ -187,15 +265,16 @@ export default function WaitingRoomPage() {
         isHost,
         maxCount,
         participants: participants.map((p) => ({
-          id: p.id,
-          name: p.name,
-          isMe: p.id === "me",
-          micOn: p.id === "me" ? myMicOn : false,
+          id: p.email,
+          name: p.nickname,
+          isMe: p.email === myEmail,
+          micOn: p.email === myEmail ? myMicOn : (p.micOn ?? false),
           voiceLevel: 0,
         })),
+        myEmail,
       },
     });
-  }, [canStart, navigate, roomInfo, isHost, maxCount, participants, myMicOn]);
+  }, [canStart, navigate, roomInfo, isHost, maxCount, participants, myMicOn, myEmail]);
 
   const handlePrimary = useCallback(() => {
     if (isHost) handleStart();
@@ -319,66 +398,77 @@ export default function WaitingRoomPage() {
             </div>
 
             <div className={styles.ParticipantsBody}>
-              {Array.from({ length: maxCount }).map((_, index) => {
-                const p = participants[index];
+              {isLoading ? (
+                <div className={styles.ParticipantRowEmpty}>
+                  <div className={styles.EmptySlotText}>참여자 목록 로딩 중...</div>
+                </div>
+              ) : (
+                Array.from({ length: maxCount }).map((_, index) => {
+                  const p = participants[index];
 
-                if (!p) {
+                  if (!p) {
+                    return (
+                      <div key={`empty-${index}`} className={styles.ParticipantRowEmpty}>
+                        <div className={styles.EmptySlotText}>빈 자리</div>
+                      </div>
+                    );
+                  }
+
+                  // email로 나인지 판별
+                  const isMe = p.email === myEmail;
+                  // 내 마이크는 로컬 상태(myMicOn), 다른 사람은 서버에서 받은 micOn
+                  const micOn = isMe ? myMicOn : (p.micOn ?? false);
+
                   return (
-                    <div key={`empty-${index}`} className={styles.ParticipantRowEmpty}>
-                      <div className={styles.EmptySlotText}>빈 자리</div>
+                    <div key={p.email || index} className={styles.ParticipantRow}>
+                      <div className={styles.ParticipantLeft}>
+                        <div className={styles.UserIconWrap} aria-hidden="true">
+                          <img className={styles.UserIconImg} src={usersIcon} alt="" />
+                        </div>
+
+                        <div className={styles.InfoColumn}>
+                          <div className={styles.NameRow}>
+                            <div className={styles.ParticipantName}>
+                              {p.nickname}
+                              {isMe && " (나)"}
+                            </div>
+
+                            {!p.isHost ? (
+                              <span
+                                className={`${styles.ReadyTag} ${
+                                  p.isReady ? styles.ReadyTagOn : styles.ReadyTagOff
+                                }`}
+                              >
+                                {p.isReady ? "준비 완료" : "대기"}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div className={styles.ActionRow}>
+                            <button
+                              type="button"
+                              className={styles.MicButton}
+                              onClick={isMe ? toggleMyMic : undefined}
+                              disabled={!isMe}
+                              aria-label={micOn ? "마이크 끄기" : "마이크 켜기"}
+                            >
+                              <img
+                                className={styles.MicIconImg}
+                                src={micOn ? micOnIcon : micOffIcon}
+                                alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
+                              />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.ParticipantRight}>
+                        {p.isHost ? <span className={styles.HostTag}>방장</span> : null}
+                      </div>
                     </div>
                   );
-                }
-
-                const isMe = p.id === "me";
-                const micOn = isMe ? myMicOn : false;
-
-                return (
-                  <div key={p.id} className={styles.ParticipantRow}>
-                    <div className={styles.ParticipantLeft}>
-                      <div className={styles.UserIconWrap} aria-hidden="true">
-                        <img className={styles.UserIconImg} src={usersIcon} alt="" />
-                      </div>
-
-                      <div className={styles.InfoColumn}>
-                        <div className={styles.NameRow}>
-                          <div className={styles.ParticipantName}>{p.name}</div>
-
-                          {!p.isHost ? (
-                            <span
-                              className={`${styles.ReadyTag} ${
-                                p.isReady ? styles.ReadyTagOn : styles.ReadyTagOff
-                              }`}
-                            >
-                              {p.isReady ? "준비 완료" : "대기"}
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <div className={styles.ActionRow}>
-                          <button
-                            type="button"
-                            className={styles.MicButton}
-                            onClick={isMe ? toggleMyMic : undefined}
-                            disabled={!isMe}
-                            aria-label={micOn ? "마이크 끄기" : "마이크 켜기"}
-                          >
-                            <img
-                              className={styles.MicIconImg}
-                              src={micOn ? micOnIcon : micOffIcon}
-                              alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
-                            />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={styles.ParticipantRight}>
-                      {p.isHost ? <span className={styles.HostTag}>방장</span> : null}
-                    </div>
-                  </div>
-                );
-              })}
+                })
+              )}
             </div>
 
             <button

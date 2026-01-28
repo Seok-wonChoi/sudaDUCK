@@ -65,14 +65,15 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
       subRef.current = client.subscribe(`/topic/rooms/${roomCode}`, (message) => {
         try {
           const data = JSON.parse(message.body);
-          const { type, payload } = data;
+          const { type, payload, senderKey } = data;
 
           switch (type) {
             case "READY_CHANGED":
-              onReadyChanged?.(payload);
+              // senderKey(이메일)도 함께 전달하여 누가 상태를 변경했는지 식별
+              onReadyChanged?.(payload, senderKey);
               break;
             case "MIC_CHANGED":
-              onMicChanged?.(payload);
+              onMicChanged?.(payload, senderKey);
               break;
             case "ERROR":
               onError?.(payload);
