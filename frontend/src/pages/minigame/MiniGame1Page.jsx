@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styles from './MiniGame1Page.module.css';
+// import styles from './MiniGame1Page.module.css';
 
 import MiniGameLayout from '@/components/features/minigame/layout/MiniGameLayout';
 import CountdownOverlay from '@/components/features/minigame/countdown/CountdownOverlay';
@@ -8,6 +8,7 @@ import QuestionPanel from '@/components/features/minigame1/question/QuestionPane
 import WaitingPanel from '@/components/features/minigame1/waiting/WaitingPanel';
 import ResultPanel from '@/components/features/minigame1/result/ResultPanel';
 import ReviewPanel from '@/components/features/minigame1/review/ReviewPanel';
+import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
 
 const MOCK_PARTICIPANTS = [
   { id: 1, name: '장가은', isActive: true },
@@ -66,19 +67,33 @@ export default function MiniGame1Page() {
   const [inputValue, setInputValue] = useState('');
   const [blanksState, setBlanksState] = useState([]);
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
+  const [showGuide, setShowGuide] = useState(false);
 
   const currentUserId = 1;
 
+  const initQuestion = useCallback((qIdx) => {
+    const q = MOCK_QUESTIONS[qIdx];
+    if (q) {
+      setBlanksState(q.blanks.map(() => ({ value: '', status: 'empty' })));
+      setCurrentBlank(0);
+    }
+  }, []);
+
   useEffect(() => {
-    if (phase === GAME_PHASE.COUNTDOWN && countdown > 0) {
-      const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-    if (phase === GAME_PHASE.COUNTDOWN && countdown === 0) {
-      setPhase(GAME_PHASE.PLAYING);
-      initQuestion(0);
-    }
-  }, [phase, countdown]);
+    if (phase !== GAME_PHASE.COUNTDOWN || countdown <= 0) return;
+    const id = setTimeout(() => {
+      setCountdown((prev) => {
+        const next = prev - 1;
+        if (next === 0) {
+          setPhase(GAME_PHASE.PLAYING);
+          setShowGuide(true);
+          initQuestion(0);
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [phase, countdown, initQuestion]);
 
   useEffect(() => {
     if (phase === GAME_PHASE.PLAYING) {
@@ -87,13 +102,12 @@ export default function MiniGame1Page() {
     }
   }, [phase]);
 
-  const initQuestion = (qIdx) => {
-    const q = MOCK_QUESTIONS[qIdx];
-    if (q) {
-      setBlanksState(q.blanks.map(() => ({ value: '', status: 'empty' })));
-      setCurrentBlank(0);
+  useEffect(() => {
+    if (phase === GAME_PHASE.PLAYING && showGuide) {
+      const id = setTimeout(() => setShowGuide(false), 3000);
+      return () => clearTimeout(id);
     }
-  };
+  }, [phase, showGuide]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -151,7 +165,7 @@ export default function MiniGame1Page() {
         setTimeout(() => setPhase(GAME_PHASE.RESULT), 2000);
       }
     }
-  }, [inputValue, currentQuestion, currentBlank, blanksState]);
+  }, [inputValue, currentQuestion, currentBlank, blanksState, initQuestion]);
 
   const handleReview = () => setPhase(GAME_PHASE.REVIEW);
   const handleComplete = () => navigate('/minigame2');
@@ -172,17 +186,23 @@ export default function MiniGame1Page() {
       participants={MOCK_PARTICIPANTS}
     >
       {phase === GAME_PHASE.PLAYING && (
-        <QuestionPanel
-          current={currentQuestion + 1}
-          total={MOCK_QUESTIONS.length}
-          score={score}
-          koreanSentence={q.korean}
-          englishParts={q.englishParts}
-          blanks={blanksState}
-          inputValue={inputValue}
-          onInputChange={setInputValue}
-          onSubmit={handleSubmit}
-        />
+        <div style={{ position: 'relative' }}>
+          <QuestionPanel
+            current={currentQuestion + 1}
+            total={MOCK_QUESTIONS.length}
+            score={score}
+            koreanSentence={q.korean}
+            englishParts={q.englishParts}
+            blanks={blanksState}
+            inputValue={inputValue}
+            onInputChange={setInputValue}
+            onSubmit={handleSubmit}
+          />
+          <DuckGuide
+            message="빈칸에 알맞는 단어를 빠르게 입력해보아요!!"
+            visible={showGuide}
+          />
+        </div>
       )}
 
       {phase === GAME_PHASE.WAITING && <WaitingPanel />}
