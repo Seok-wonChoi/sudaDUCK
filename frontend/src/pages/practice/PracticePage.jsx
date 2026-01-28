@@ -35,7 +35,7 @@ export default function PracticePage() {
             onClick={handleBack}
             aria-label="뒤로 가기"
           >
-            &lt; 뒤로가기
+            <span aria-hidden="true">&lt;</span>
           </button>
 
           <PracticeHero />

@@ -18,7 +18,7 @@ import UnexpectedQuestOverlay from "@/components/features/unexpected-quest/Unexp
 import UnexpectedQuestFillBlankModal from "@/components/features/unexpected-quest/UnexpectedQuestFillBlankModal";
 
 function VoiceWave({ level, enabled }) {
-  const multipliers = useMemo(() => [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35], []);
+  const multipliers = useMemo(() => [0.5, 0.7, 0.85, 1, 0.85, 0.7, 0.5], []);
   const v = Math.max(0, Math.min(1, level));
 
   return (
@@ -27,7 +27,7 @@ function VoiceWave({ level, enabled }) {
       aria-hidden="true"
     >
       {multipliers.map((m, idx) => {
-        const h = enabled ? 6 + v * 20 * m : 6;
+        const h = enabled ? 10 + v * 16 * m : 10;
         return (
           <span
             key={idx}
@@ -354,64 +354,64 @@ export default function TogetherTalkPage() {
 
         <AppHeader userName="user" notifications={[]} />
 
-        <div className={styles.TopRow}>
-          <ExitButton
-            to="/"
-            replace
-            label="나가기"
-            confirmMessage="메인 화면으로 나가시겠습니까?"
-            onExit={() => {
-              stopAudioAnalysis();
-            }}
-          />
+        <div className={styles.Content}>
+          <div className={styles.HeaderRow}>
+            <div className={styles.ExitCol}>
+              <ExitButton
+                to="/"
+                replace
+                label="나가기"
+                confirmMessage="메인 화면으로 나가시겠습니까?"
+                onExit={() => {
+                  stopAudioAnalysis();
+                }}
+              />
+            </div>
 
-          <div className={styles.TopicInline}>
-            <img className={styles.SmallDuck} src={duckImg} alt="오리" />
-            <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다!</div>
-          </div>
+            <div className={styles.TopicRow}>
+              <img className={styles.SmallDuck} src={duckImg} alt="오리" />
+              <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다!</div>
+            </div>
 
-          <div className={styles.TimerArea}>
-            <div className={styles.TimerWrap}>
+            <div className={styles.TimerCol}>
               <TimerGauge
                 durationMs={60_000}
                 isRunning={isRoomTimerRunning}
                 onDone={handleDone}
               />
-            </div>
-
-            <div className={styles.QuestButtons} aria-label="돌발 퀘스트 시작 버튼">
-              <button
-                type="button"
-                className={styles.QuestBtn}
-                onClick={() => startQuest(1)}
-                disabled={questRunning}
-                aria-label="돌발 퀘스트 1 시작"
-              >
-                1
-              </button>
-              <button
-                type="button"
-                className={styles.QuestBtn}
-                onClick={() => startQuest(2)}
-                disabled={questRunning}
-                aria-label="돌발 퀘스트 2 시작"
-              >
-                2
-              </button>
-              <button
-                type="button"
-                className={styles.QuestBtn}
-                onClick={() => startQuest(3)}
-                disabled={questRunning}
-                aria-label="돌발 퀘스트 3 시작"
-              >
-                3
-              </button>
+              <div className={styles.QuestButtons} aria-label="돌발 퀘스트 시작 버튼">
+                <button
+                  type="button"
+                  className={styles.QuestBtn}
+                  onClick={() => startQuest(1)}
+                  disabled={questRunning}
+                  aria-label="돌발 퀘스트 1 시작"
+                >
+                  1
+                </button>
+                <button
+                  type="button"
+                  className={styles.QuestBtn}
+                  onClick={() => startQuest(2)}
+                  disabled={questRunning}
+                  aria-label="돌발 퀘스트 2 시작"
+                >
+                  2
+                </button>
+                <button
+                  type="button"
+                  className={styles.QuestBtn}
+                  onClick={() => startQuest(3)}
+                  disabled={questRunning}
+                  aria-label="돌발 퀘스트 3 시작"
+                >
+                  3
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className={styles.Stage}>
+          <div className={styles.Stage}>
           <div className={styles.LeftStage}>
             <section className={styles.CardsGrid} aria-label="참여자 영상 영역">
               {slots.map((slot) => {
@@ -449,7 +449,7 @@ export default function TogetherTalkPage() {
                     <div className={styles.VideoFooter}>
                       <div className={styles.VideoFooterLeft}>
                         {isMe ? <VoiceWave level={voiceLevel} enabled={micOn} /> : null}
-                        <span className={styles.NameLabel}>{p.name}</span>
+                        <span className={styles.MeLabel}>{p.name}</span>
                       </div>
 
                       <div className={styles.VideoFooterRight} aria-label="마이크 상태">
@@ -512,6 +512,7 @@ export default function TogetherTalkPage() {
 
             <img className={styles.BigDuck} src={duckHappyImg} alt="AI 오리" />
           </aside>
+        </div>
         </div>
 
         {/* 1/2번 인트로 오버레이: 클릭으로 다음 */}

@@ -43,8 +43,9 @@ export default function ExitButton({
         className={`${styles.Button} ${className}`}
         onClick={handleOpen}
         disabled={disabled}
+        aria-label={label}
       >
-        {label}
+        <span className={styles.Arrow} aria-hidden="true">&lt;</span>
       </button>
 
       <ConfirmModal

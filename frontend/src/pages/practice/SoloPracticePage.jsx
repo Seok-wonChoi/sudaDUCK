@@ -12,7 +12,7 @@ import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 
 function VoiceWave({ level, enabled }) {
-  const multipliers = [0.35, 0.55, 0.8, 1, 0.8, 0.55, 0.35];
+  const multipliers = [0.5, 0.7, 0.85, 1, 0.85, 0.7, 0.5];
   const v = Math.max(0, Math.min(1, level));
 
   return (
@@ -21,7 +21,7 @@ function VoiceWave({ level, enabled }) {
       aria-hidden="true"
     >
       {multipliers.map((m, idx) => {
-        const h = enabled ? 6 + v * 20 * m : 6;
+        const h = enabled ? 10 + v * 16 * m : 10;
         return (
           <span
             key={idx}

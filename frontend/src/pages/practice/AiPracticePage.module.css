@@ -137,12 +137,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 150px;
+  flex: 1;
 }
 
 .AvatarCircle {
-  width: 92px;
-  height: 92px;
+  width: 130px;
+  height: 130px;
   border-radius: 999px;
   background: #ffffff;
   border: 1px solid #eef2ff;
@@ -153,8 +153,8 @@
 }
 
 .AvatarDuck {
-  width: 62px;
-  height: 62px;
+  width: 84px;
+  height: 84px;
   object-fit: contain;
 }
 
@@ -199,14 +199,14 @@
 .Wave {
   display: inline-flex;
   align-items: flex-end;
-  gap: 3px;
-  height: 22px;
+  gap: 4px;
+  height: 28px;
 }
 
 .WaveBar {
-  width: 4px;
-  border-radius: 999px;
-  transition: height 120ms ease;
+  width: 5px;
+  border-radius: 3px;
+  transition: height 80ms ease-out;
 }
 
 .WaveOn .WaveBar {
