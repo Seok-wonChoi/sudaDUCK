@@ -13,7 +13,7 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
-import { leaveRoom, getLobby } from "@/api/rooms";
+import { leaveRoom, getRoomLobby } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
@@ -72,7 +72,7 @@ export default function WaitingRoomPage() {
 
     try {
       setIsLoading(true);
-      const data = await getLobby({ roomCode: inviteCode });
+      const data = await getRoomLobby();
 
       // 서버 응답 형태에 맞게 파싱 (백엔드 응답 구조에 따라 조정 필요)
       // 예상 응답: { members: [...], myEmail: "...", readyCount: 2, totalCount: 4 }
