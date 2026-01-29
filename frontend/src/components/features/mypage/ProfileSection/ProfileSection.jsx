@@ -28,6 +28,7 @@ export default function ProfileSection({
   onEditProfile,
   onEditNickname,
   onEditDuckBot,
+  onLogout,
 }) {
   return (
     <div className={styles.Section}>
@@ -77,18 +78,30 @@ export default function ProfileSection({
 
       <div className={styles.InfoCard}>
         <div className={styles.InfoContent}>
-          <NicknameBadge
-            nickname={nickname}
-            style={nicknameStyle}
-          />
-          <button
-            type="button"
-            className={styles.NicknameEditButton}
-            onClick={onEditNickname}
-            aria-label="닉네임 스타일 변경"
-          >
-            <span>✏️</span>
-          </button>
+          <div className={styles.NicknameWrapper}>
+            <NicknameBadge
+              nickname={nickname}
+              style={nicknameStyle}
+            />
+            <button
+              type="button"
+              className={styles.NicknameEditButton}
+              onClick={onEditNickname}
+              aria-label="닉네임 스타일 변경"
+            >
+              <span>✏️</span>
+            </button>
+          </div>
+          {onLogout && (
+            <button
+              type="button"
+              className={styles.LogoutButton}
+              onClick={onLogout}
+              aria-label="로그아웃"
+            >
+              로그아웃
+            </button>
+          )}
         </div>
         <div className={styles.Email}>{email}</div>
       </div>

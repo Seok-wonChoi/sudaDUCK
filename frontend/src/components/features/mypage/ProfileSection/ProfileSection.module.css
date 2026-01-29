@@ -96,6 +96,13 @@
 .InfoContent {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.NicknameWrapper {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -112,6 +119,23 @@
 
 .NicknameEditButton:hover {
   opacity: 1;
+}
+
+.LogoutButton {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.LogoutButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .Email {

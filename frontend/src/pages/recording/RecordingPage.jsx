@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Recordinglayout from '@/components/features/recording/layout/RecordingLayout';
+import { saveAssessment, toggleScriptLike } from '@/api/shadowing';
 
 import BottomIdle from '@/components/features/recording/bottom/BottomIdle';
 import BottomAITimer from '@/components/features/recording/bottom/BottomAITimer';
@@ -140,14 +141,32 @@ export default function RecordingPage() {
     setStep(STEP.AI_TIMER);
   };
 
-  const stopRecording = () => {
-    // 녹음 완료 시 임시 점수 부여 (실제로는 발음 평가 API 호출)
-    const randomScore = Math.floor(Math.random() * 40) + 60; // 60-100점
+  const stopRecording = async () => {
     if (currentSentence) {
-      setSentenceScores((prev) => ({
-        ...prev,
-        [currentSentence.id]: randomScore,
-      }));
+      try {
+        // 발음 평가 API 호출
+        const result = await saveAssessment({
+          sentenceId: currentSentence.id,
+          // TODO: 실제 녹음 데이터 추가 필요
+          // audioData: recordedAudio,
+          // text: currentSentence.english,
+        });
+
+        // API 응답에서 점수 받아오기
+        const score = result.score || Math.floor(Math.random() * 40) + 60; // fallback: 랜덤 점수
+        setSentenceScores((prev) => ({
+          ...prev,
+          [currentSentence.id]: score,
+        }));
+      } catch (error) {
+        console.error('발음 평가 저장 실패:', error);
+        // 실패 시 임시 점수 부여
+        const randomScore = Math.floor(Math.random() * 40) + 60;
+        setSentenceScores((prev) => ({
+          ...prev,
+          [currentSentence.id]: randomScore,
+        }));
+      }
     }
     setStep(STEP.RECORD_DONE);
   };
@@ -161,30 +180,39 @@ export default function RecordingPage() {
     setSentenceScores({});
   };
 
-  const handleBookmarkToggle = useCallback((sentenceId, isBookmarked) => {
-    setBookmarkedSentences((prev) => {
-      let newBookmarks;
-      if (isBookmarked) {
-        // 북마크 추가
-        if (!prev.includes(sentenceId)) {
-          newBookmarks = [...prev, sentenceId];
+  const handleBookmarkToggle = useCallback(async (sentenceId, isBookmarked) => {
+    try {
+      // API 호출 - 스크립트 저장/취소
+      await toggleScriptLike(sentenceId);
+
+      // API 호출 성공 시 로컬 state 업데이트
+      setBookmarkedSentences((prev) => {
+        let newBookmarks;
+        if (isBookmarked) {
+          // 북마크 추가
+          if (!prev.includes(sentenceId)) {
+            newBookmarks = [...prev, sentenceId];
+          } else {
+            newBookmarks = prev;
+          }
         } else {
-          newBookmarks = prev;
+          // 북마크 제거
+          newBookmarks = prev.filter((id) => id !== sentenceId);
         }
-      } else {
-        // 북마크 제거
-        newBookmarks = prev.filter((id) => id !== sentenceId);
-      }
 
-      // localStorage에 저장
-      try {
-        localStorage.setItem('bookmarkedSentences', JSON.stringify(newBookmarks));
-      } catch (error) {
-        console.error('북마크 저장 실패:', error);
-      }
+        // localStorage에도 저장
+        try {
+          localStorage.setItem('bookmarkedSentences', JSON.stringify(newBookmarks));
+        } catch (error) {
+          console.error('북마크 localStorage 저장 실패:', error);
+        }
 
-      return newBookmarks;
-    });
+        return newBookmarks;
+      });
+    } catch (error) {
+      console.error('북마크 API 호출 실패:', error);
+      alert('북마크 저장에 실패했습니다.');
+    }
   }, []);
 
   // 컴포넌트 마운트 시 localStorage에서 북마크 불러오기

@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./MyPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import { getMyScripts, updateAvatarCustom, updateDuckCustom } from "@/api/mypage";
+import { logout } from "@/api/auth";
 
 import ProfileSection from "@/components/features/mypage/ProfileSection/ProfileSection";
 import StatsCard from "@/components/features/mypage/StatsCard/StatsCard";
@@ -139,7 +141,7 @@ const MOCK_SENTENCES = [
 ];
 
 export default function MyPage() {
-  const [sentences, setSentences] = useState(MOCK_SENTENCES);
+  const [sentences, setSentences] = useState([]);
   const [selectedSentence, setSelectedSentence] = useState(null);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [showDuckModal, setShowDuckModal] = useState(false);
@@ -157,6 +159,21 @@ export default function MyPage() {
   });
   const [duckBotId, setDuckBotId] = useState("cyan");
 
+  // 저장된 스크립트 조회
+  useEffect(() => {
+    const fetchMyScripts = async () => {
+      try {
+        const data = await getMyScripts();
+        setSentences(data);
+      } catch (error) {
+        console.error("스크립트 조회 실패:", error);
+        // 실패 시 MOCK 데이터 사용
+        setSentences(MOCK_SENTENCES);
+      }
+    };
+    fetchMyScripts();
+  }, []);
+
   const stats = [
     { value: 0, label: "총 플레이 타임", unit: "" },
     { value: 0, label: "연속 학습", unit: "일" },
@@ -173,18 +190,55 @@ export default function MyPage() {
     }
   };
 
-  const handleSaveNicknameStyle = ({ nickname: newNickname, ...style }) => {
-    if (newNickname) setNickname(newNickname);
-    setNicknameStyle(style);
+  const handleSaveNicknameStyle = async ({ nickname: newNickname, ...style }) => {
+    try {
+      // API 호출
+      await updateAvatarCustom({
+        nickname: newNickname,
+        ...style,
+      });
+
+      // 성공 시 로컬 state 업데이트
+      if (newNickname) setNickname(newNickname);
+      setNicknameStyle(style);
+    } catch (error) {
+      console.error("닉네임 커스터마이징 저장 실패:", error);
+      alert("닉네임 저장에 실패했습니다.");
+    }
   };
 
-  const handleSaveDuckStyle = ({ profileId, ...style }) => {
-    if (profileId) setDuckProfileId(profileId);
-    setDuckStyle(style);
+  const handleSaveDuckStyle = async ({ profileId, ...style }) => {
+    try {
+      // API 호출
+      await updateDuckCustom({
+        profileId,
+        ...style,
+      });
+
+      // 성공 시 로컬 state 업데이트
+      if (profileId) setDuckProfileId(profileId);
+      setDuckStyle(style);
+    } catch (error) {
+      console.error("오리 커스터마이징 저장 실패:", error);
+      alert("오리 커스터마이징 저장에 실패했습니다.");
+    }
   };
 
   const handleSaveDuckBot = (id) => {
     setDuckBotId(id);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // 로컬 스토리지에서 토큰 제거
+      localStorage.removeItem('accessToken');
+      // 로그인 페이지로 이동
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('로그아웃 실패:', error);
+      alert('로그아웃에 실패했습니다.');
+    }
   };
 
   return (
@@ -204,6 +258,7 @@ export default function MyPage() {
             onEditProfile={() => setShowDuckModal(true)}
             onEditNickname={() => setShowNicknameModal(true)}
             onEditDuckBot={() => setShowDuckBotModal(true)}
+            onLogout={handleLogout}
           />
 
           <StatsCard stats={stats} />
