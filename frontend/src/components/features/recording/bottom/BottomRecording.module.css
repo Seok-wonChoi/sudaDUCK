@@ -2,16 +2,16 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   align-items: center;
   text-align: center;
-  padding: 24px;
+  padding: 32px;
 }
 
 .title {
   margin: 0;
   font-weight: 900;
-  font-size: 16px;
+  font-size: 20px;
   color: #ef4444;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -19,7 +19,7 @@
 
 .sub {
   margin: 0;
-  font-size: 14px;
+  font-size: 18px;
   color: #6b7280;
   font-weight: 500;
 }
@@ -55,10 +55,10 @@
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
   font-weight: 800;
-  padding: 12px 24px;
+  padding: 14px 28px;
   border-radius: 12px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   transition: all 0.2s ease;
   box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
 }

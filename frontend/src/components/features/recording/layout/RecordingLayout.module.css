@@ -57,10 +57,18 @@
 /* Content */
 .content {
   flex: 1;
-  padding: 20px 34px 28px;
-  max-width: 1120px;
+  padding: 20px 40px 28px;
+  max-width: 1800px;
   margin: 0 auto;
   width: 100%;
+}
+
+/* Cards List */
+.cardsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 /* Bottom Section */

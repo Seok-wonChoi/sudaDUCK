@@ -2,10 +2,10 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   align-items: center;
   text-align: center;
-  padding: 24px;
+  padding: 32px;
 }
 
 .row {
@@ -42,14 +42,14 @@
 .title {
   margin: 0;
   font-weight: 800;
-  font-size: 16px;
+  font-size: 20px;
   color: #1e2939;
   letter-spacing: 0.02em;
 }
 
 .sub {
   margin: 0;
-  font-size: 14px;
+  font-size: 18px;
   color: #6b7280;
   font-weight: 500;
 }
@@ -65,10 +65,10 @@
   background: white;
   color: #1e2939;
   font-weight: 700;
-  padding: 12px 20px;
+  padding: 14px 28px;
   border-radius: 12px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   transition: all 0.2s ease;
 }
 

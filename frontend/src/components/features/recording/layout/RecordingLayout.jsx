@@ -6,9 +6,11 @@ import styles from './RecordingLayout.module.css';
 
 export default function RecordingLayout({
   currentTurn,
-  currentSentence,
+  sentenceCards = [],
+  activeCardState = 'idle',
+  countdown = 3,
   bottomContent,
-  cardProps = {}
+  onBookmarkToggle = null,
 }) {
   return (
     <div className={styles.recordingLayout}>
@@ -17,11 +19,29 @@ export default function RecordingLayout({
       <main className={styles.content}>
         <ScriptHeader />
         <TurnTabs currentTurn={currentTurn} />
-        <SentenceCard 
-          currentSentence={currentSentence} 
-          totalSentences={3}
-          {...cardProps}
-        />
+
+        <div className={styles.cardsList}>
+          {sentenceCards
+            .filter((card) => card.isActive)
+            .map((card) => (
+              <SentenceCard
+                key={card.id}
+                sentenceId={card.id}
+                speaker={card.speaker}
+                currentSentence={card.currentSentence}
+                totalSentences={card.totalSentences}
+                korean={card.korean}
+                english={card.english}
+                blankWords={card.blankWords}
+                score={card.score}
+                isActive={card.isActive}
+                cardState={activeCardState}
+                countdown={countdown}
+                initialBookmarked={card.isBookmarked}
+                onBookmarkToggle={onBookmarkToggle}
+              />
+            ))}
+        </div>
       </main>
 
       <div className={styles.bottomSection}>{bottomContent}</div>
