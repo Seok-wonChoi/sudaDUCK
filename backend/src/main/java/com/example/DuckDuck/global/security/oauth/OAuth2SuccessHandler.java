@@ -5,8 +5,6 @@ import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // 로그 확인용
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -18,17 +16,12 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
-
-    // ★ 1. yml에서 설정한 주소를 자동으로 가져옵니다.
-    @Value("${custom.oauth2.redirect-url}")
-    private String redirectUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -42,35 +35,28 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String accessToken = jwtTokenProvider.createAccessToken(userId, email);
         String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
-        // ★ 2. 환경 구분 로직 (하드코딩 제거)
-        // redirectUrl에 "localhost"가 포함되어 있으면 로컬 환경으로 간주합니다.
-        // (또는 Environment 빈을 주입받아 activeProfile을 확인하는 방법도 있지만 이게 가장 직관적입니다)
-        boolean isLocal = redirectUrl.contains("localhost");
-
-        log.info("OAuth2 Login Success. Target URL: {}, Environment: {}", redirectUrl, isLocal ? "Local" : "Server");
-
+        boolean isLocalDev = true; // 개발 중엔 true로 설정
         String targetUrl;
 
-        if (isLocal) {
-            // 로컬 개발 시: 쿼리 파라미터로 전달
-            targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
-                    .queryParam("accessToken", accessToken)
+        if (isLocalDev) {
+            // 로컬 개발 시: localhost로 토큰을 실어서 리다이렉트
+            targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth2/redirect")
+                    .queryParam("accessToken", accessToken) // 쿠키 대신 URL로 전달하는 것이 확실함
                     .queryParam("refreshToken", refreshToken)
                     .build().toUriString();
         } else {
-            // 배포 환경 시: 쿠키에 담고, 주소는 yml에 적힌 대로 이동
-            targetUrl = redirectUrl;
+            // 배포 환경 시: 기존 도메인 유지
+            targetUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect";
             CookieUtil.addCookie(response, "accessToken", accessToken, 60, false);
         }
 
-        // RT:{email} 저장
+        //RT:{email} 저장 (중복 로그인 기준)
         redisTemplate.opsForValue().set(
                 "RT:" + email,
                 refreshToken,
                 Duration.ofDays(14)
         );
-        
-        // Refresh Token은 항상 HttpOnly 쿠키로 (보안)
+        // HttpOnly 쿠키
         CookieUtil.addCookie(
                 response,
                 "refreshToken",
@@ -79,10 +65,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 true
         );
 
+
         getRedirectStrategy().sendRedirect(
                 request,
                 response,
                 targetUrl
         );
+
     }
 }
