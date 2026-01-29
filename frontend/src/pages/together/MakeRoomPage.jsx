@@ -114,10 +114,7 @@ export default function MakeRoomPage() {
             aria-label="뒤로 가기"
             disabled={loading}
           >
-            <span className={styles.BackIcon} aria-hidden="true">
-              &lt;
-            </span>
-            <span className={styles.BackText}>뒤로가기</span>
+            &lt;
           </button>
 
           <h1 className={styles.Title}>방 만들기</h1>

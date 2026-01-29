@@ -43,10 +43,7 @@ export default function TogetherPage() {
             onClick={handleBack}
             aria-label="뒤로 가기"
           >
-            <span className={styles.BackIcon} aria-hidden="true">
-              &lt;
-            </span>
-            <span className={styles.BackText}>뒤로가기</span>
+            &lt;
           </button>
 
           <h1 className={styles.Title}>함께 하기</h1>

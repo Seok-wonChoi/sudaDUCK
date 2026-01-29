@@ -63,12 +63,14 @@ export default function WaitingRoomPage() {
   const roomInfo = state ?? {};
   const isHost = roomInfo.isHost ?? true;
   const maxCount = roomInfo.maxCount ?? 4;
-  const roomTitle = roomInfo.roomTitle ?? "수다방";
-  const topic = roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식";
-  const turnCount = roomInfo.turnCount ?? 3;
 
   // 방 코드는 joinCode / inviteCode 둘 중 하나로 넘어오므로 여기서 통일
   const inviteCode = roomInfo.joinCode ?? roomInfo.inviteCode ?? "000000";
+
+  // 방 정보 상태 관리 (수정 가능하도록 useState 사용)
+  const [roomTitle, setRoomTitle] = useState(roomInfo.roomTitle ?? "수다방");
+  const [topic, setTopic] = useState(roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식");
+  const [turnCount, setTurnCount] = useState(roomInfo.turnCount ?? 3);
 
   // 참여자 목록: email 기반으로 관리
   // { email, nickname, isHost, isReady, micOn }
@@ -82,6 +84,24 @@ export default function WaitingRoomPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
+
+  // 방 설정 변경 팝업 상태
+  const [editPopupOpen, setEditPopupOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState(roomTitle);
+  const [editTopic, setEditTopic] = useState(topic);
+  const [editTurn, setEditTurn] = useState(turnCount);
+
+  const hotTopics = useMemo(
+    () => [
+      "첫 아르바이트 추억",
+      "최악의 데이트",
+      "나만의 취미생활",
+      "학창시절 이야기",
+      "여행 경험담",
+      "좋아하는 음식",
+    ],
+    []
+  );
 
   // 재연결 시 lobby 다시 호출하기 위한 ref
   const fetchLobbyRef = useRef(null);
@@ -472,8 +492,79 @@ export default function WaitingRoomPage() {
 
   const handleEditRoomInfo = useCallback(() => {
     if (!isHost) return;
-    console.log("방 정보 수정");
-  }, [isHost]);
+    setEditTitle(roomTitle);
+    setEditTopic(topic);
+    setEditTurn(turnCount);
+    setEditPopupOpen(true);
+  }, [isHost, roomTitle, topic, turnCount]);
+
+  const handleCloseEditPopup = useCallback(() => {
+    setEditPopupOpen(false);
+  }, []);
+
+  const handleEditTitleChange = useCallback((e) => {
+    const next = e.target.value.slice(0, 30);
+    setEditTitle(next);
+  }, []);
+
+  const handleEditTopicChange = useCallback((e) => {
+    setEditTopic(e.target.value);
+  }, []);
+
+  const handlePickEditTopic = useCallback((t) => {
+    setEditTopic(t);
+  }, []);
+
+  const handleAiRecommend = useCallback(() => {
+    if (hotTopics.length === 0) return;
+    const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+    setEditTopic(next);
+  }, [hotTopics]);
+
+  const handleSaveEditRoomInfo = useCallback(() => {
+    if (!editTitle.trim()) {
+      showToast("방 제목을 입력해주세요.");
+      return;
+    }
+    if (!editTopic.trim()) {
+      showToast("수다 주제를 입력하거나 선택해주세요.");
+      return;
+    }
+
+    // TODO: API 호출로 방 설정 업데이트
+    // await updateRoom({ roomCode: inviteCode, title: editTitle, topic: editTopic, turnCnt: editTurn });
+
+    console.log("방 정보 업데이트:", {
+      title: editTitle,
+      topic: editTopic,
+      turn: editTurn,
+    });
+
+    // 방 정보 상태 업데이트
+    setRoomTitle(editTitle.trim());
+    setTopic(editTopic.trim());
+    setTurnCount(editTurn);
+
+    // sessionStorage에 저장된 roomInfo도 업데이트
+    try {
+      const storedRoomInfo = sessionStorage.getItem("together_room_info");
+      if (storedRoomInfo) {
+        const parsedInfo = JSON.parse(storedRoomInfo);
+        const updatedInfo = {
+          ...parsedInfo,
+          roomTitle: editTitle.trim(),
+          topic: editTopic.trim(),
+          turnCount: editTurn,
+        };
+        sessionStorage.setItem("together_room_info", JSON.stringify(updatedInfo));
+      }
+    } catch (e) {
+      console.error("sessionStorage 업데이트 실패:", e);
+    }
+
+    showToast("방 설정이 변경되었습니다!");
+    setEditPopupOpen(false);
+  }, [editTitle, editTopic, editTurn, showToast]);
 
   const handleStart = useCallback(() => {
     if (!canStart) return;
@@ -531,20 +622,20 @@ export default function WaitingRoomPage() {
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Top}>
-          <ExitButton
-            to="/"
-            label="나가기"
-            message="메인 화면으로 나가시겠습니까?"
-            confirmText="나가기"
-            cancelText="취소"
-            onExit={handleExit}
-            replace
-          />
+          <div className={styles.TopHeaderRow}>
+            <ExitButton
+              to="/"
+              label="나가기"
+              message="메인 화면으로 나가시겠습니까?"
+              confirmText="나가기"
+              cancelText="취소"
+              onExit={handleExit}
+              replace
+            />
 
-          <div className={styles.SpeechRow}>
-            <div className={styles.SpeechLeft}>
+            <div className={styles.SpeechRight}>
+              <div className={styles.SpeechBubbleRight}>첫 번째 대화 주제는 {topic}입니다!</div>
               <img className={styles.Duck} src={duckImg} alt="오리" />
-              <div className={styles.SpeechBubbleLeft}>첫 번째 대화 주제는 {topic}입니다!</div>
             </div>
           </div>
 
@@ -742,6 +833,128 @@ export default function WaitingRoomPage() {
       </div>
 
       {toastMessage && <div className={styles.Toast}>{toastMessage}</div>}
+
+      {editPopupOpen && (
+        <div className={styles.PopupOverlay}>
+          <div className={styles.PopupContainer}>
+            <div className={styles.PopupHeader}>
+              <h2 className={styles.PopupTitle}>방 설정 변경</h2>
+              <button
+                type="button"
+                className={styles.PopupCloseButton}
+                onClick={handleCloseEditPopup}
+                aria-label="닫기"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.PopupBody}>
+              <div className={styles.PopupField}>
+                <div className={styles.PopupLabelRow}>
+                  <span className={styles.PopupLabel}>방 제목</span>
+                  <span className={styles.PopupRequired}>*</span>
+                </div>
+                <input
+                  className={`${styles.PopupInput} ${styles.PopupTitleInput}`}
+                  value={editTitle}
+                  onChange={handleEditTitleChange}
+                  placeholder="예: 친구들과 수다타임"
+                />
+                <div className={styles.PopupCounter}>{editTitle.length}/30</div>
+              </div>
+
+              <div className={styles.PopupField}>
+                <div className={styles.PopupLabelRow}>
+                  <span className={styles.PopupLabel}>수다 주제</span>
+                  <span className={styles.PopupRequired}>*</span>
+                </div>
+                <div className={styles.PopupTopicInputRow}>
+                  <input
+                    className={styles.PopupInput}
+                    value={editTopic}
+                    onChange={handleEditTopicChange}
+                    placeholder="직접 입력하거나 아래에서 선택하세요"
+                  />
+                  <button
+                    type="button"
+                    className={styles.PopupAiButton}
+                    onClick={handleAiRecommend}
+                  >
+                    AI 추천
+                  </button>
+                </div>
+
+                <div className={styles.PopupHotRow}>
+                  <span className={styles.PopupHotDot} aria-hidden="true" />
+                  <span className={styles.PopupHotText}>인기 주제</span>
+                </div>
+
+                <div className={styles.PopupTopicRow}>
+                  {hotTopics.map((t) => {
+                    const active = editTopic === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        className={`${styles.PopupTopicChip} ${
+                          active ? styles.PopupTopicChipActive : ""
+                        }`}
+                        onClick={() => handlePickEditTopic(t)}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className={styles.PopupField}>
+                <div className={styles.PopupLabelRow}>
+                  <span className={styles.PopupLabel}>턴 수</span>
+                </div>
+                <div className={styles.PopupTurnRow}>
+                  {[3, 4, 5].map((n) => {
+                    const active = editTurn === n;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`${styles.PopupTurnCard} ${
+                          active ? styles.PopupTurnCardActive : ""
+                        }`}
+                        onClick={() => setEditTurn(n)}
+                      >
+                        <span className={styles.PopupTurnIcon} aria-hidden="true">
+                          ↻
+                        </span>
+                        <span className={styles.PopupTurnText}>{n}턴</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.PopupFooter}>
+              <button
+                type="button"
+                className={styles.PopupCancelButton}
+                onClick={handleCloseEditPopup}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className={styles.PopupSaveButton}
+                onClick={handleSaveEditRoomInfo}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

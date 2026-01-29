@@ -8,8 +8,8 @@
 
 /* Header */
 .header {
-  height: 72px;
-  padding: 0 34px;
+  height: clamp(64px, 8vh, 72px);
+  padding: 0 clamp(16px, 2.5vw, 34px);
   background: #ffffff;
   display: flex;
   align-items: center;
@@ -23,13 +23,13 @@
 
 .logo {
   font-weight: 700;
-  font-size: 20px;
+  font-size: clamp(18px, 2vw, 20px);
   color: #1e2939;
   letter-spacing: -0.02em;
 }
 
 .greeting {
-  font-size: 15px;
+  font-size: clamp(14px, 1.5vw, 15px);
   font-weight: 600;
   color: #6b7280;
 }
@@ -37,9 +37,9 @@
 .iconButton {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: clamp(18px, 2vw, 20px);
   cursor: pointer;
-  padding: 8px;
+  padding: clamp(6px, 1vw, 8px);
   border-radius: 8px;
   transition: all 0.2s ease;
   color: #6b7280;
@@ -57,8 +57,8 @@
 /* Content */
 .content {
   flex: 1;
-  padding: 20px 40px 28px;
-  max-width: 1800px;
+  padding: clamp(16px, 2vh, 20px) clamp(20px, 3vw, 40px) clamp(20px, 2.5vh, 28px);
+  max-width: min(1800px, 96vw);
   margin: 0 auto;
   width: 100%;
 }
@@ -67,19 +67,38 @@
 .cardsList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
+  gap: clamp(12px, 1.5vw, 16px);
+  margin-top: clamp(16px, 2vh, 20px);
 }
 
 /* Bottom Section */
 .bottomSection {
-  padding: 24px 32px;
+  padding: clamp(20px, 2.5vh, 24px) clamp(20px, 2.5vw, 32px);
   border-top: 1px solid #e5e7eb;
   background: #ffffff;
   box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-/* Responsive Design */
+/* 중형 화면 (1024px ~ 1440px) */
+@media (max-width: 1440px) {
+  .content {
+    max-width: min(1600px, 94vw);
+  }
+}
+
+/* 태블릿 화면 (768px ~ 1024px) */
+@media (max-width: 1024px) {
+  .content {
+    max-width: min(1200px, 92vw);
+    padding: clamp(14px, 1.8vh, 18px) clamp(18px, 2.5vw, 32px) clamp(18px, 2.2vh, 24px);
+  }
+
+  .bottomSection {
+    padding: clamp(18px, 2.2vh, 22px) clamp(18px, 2.2vw, 28px);
+  }
+}
+
+/* 작은 태블릿 (600px ~ 768px) */
 @media (max-width: 768px) {
   .header {
     height: 64px;
@@ -96,6 +115,11 @@
 
   .content {
     padding: 18px 16px 22px;
+    max-width: 100%;
+  }
+
+  .cardsList {
+    gap: 14px;
   }
 
   .bottomSection {
@@ -103,6 +127,36 @@
   }
 }
 
+/* 모바일 화면 (480px ~ 600px) */
+@media (max-width: 600px) {
+  .header {
+    height: 60px;
+    padding: 0 14px;
+  }
+
+  .logo {
+    font-size: 17px;
+  }
+
+  .greeting {
+    font-size: 13px;
+  }
+
+  .content {
+    padding: 16px 14px 20px;
+  }
+
+  .cardsList {
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .bottomSection {
+    padding: 18px;
+  }
+}
+
+/* 작은 모바일 (~ 480px) */
 @media (max-width: 480px) {
   .header {
     height: 56px;
@@ -117,8 +171,18 @@
     display: none;
   }
 
+  .iconButton {
+    font-size: 18px;
+    padding: 6px;
+  }
+
   .content {
     padding: 16px 12px 18px;
+  }
+
+  .cardsList {
+    gap: 12px;
+    margin-top: 14px;
   }
 
   .bottomSection {
