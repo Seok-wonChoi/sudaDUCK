@@ -13,7 +13,12 @@ import api, { API_BASE_URL } from "./api";
  */
 export const loginWithKakao = () => {
   const base = (API_BASE_URL || "").trim().replace(/\/$/, "");
-  console.log("[카카오 로그인] 백엔드 OAuth 엔드포인트로 이동:", `${base}/oauth2/authorization/kakao`);
+
+  // 2. [수정됨] 로컬일 때만 "나 로컬이야" 표식 남기기
+  if (window.location.hostname === "localhost") {
+    // 헷갈리지 않게 키 이름도 client_env로 명확하게!
+    document.cookie = "client_env=local; path=/; max-age=300";
+  }
   window.location.href = `${base}/oauth2/authorization/kakao`;
 };
 
