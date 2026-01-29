@@ -8,14 +8,14 @@ export default function PracticeModeSelectSection({ onClickSolo, onClickAi }) {
         title="혼자 연습하기"
         description="1분간 문장을 자유롭게 이야기하기"
         onClick={onClickSolo}
-        duckCount={1}
+        variant="solo"
       />
 
       <ModeCard
         title="AI와 대화하기"
         description="AI친구와 대화하며 연습하기"
         onClick={onClickAi}
-        duckCount={1}
+        variant="ai"
       />
     </section>
   );

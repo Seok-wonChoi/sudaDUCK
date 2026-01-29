@@ -45,6 +45,11 @@
   pointer-events: none;
 }
 
+.DuckTogether {
+  width: 200px;
+  height: 200px;
+}
+
 .Title {
   margin-top: 10px;
   font-weight: 900;
