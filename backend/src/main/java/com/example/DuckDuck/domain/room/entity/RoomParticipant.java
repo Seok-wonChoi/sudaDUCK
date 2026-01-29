@@ -1,8 +1,7 @@
 package com.example.DuckDuck.domain.room.entity;
+import com.example.DuckDuck.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
-import temp.Room;
-import temp.User;
 
 @Entity
 @Table(
