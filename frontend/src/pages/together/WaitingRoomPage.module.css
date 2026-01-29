@@ -384,6 +384,7 @@
 .ActionRow {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 /* 마이크 토글 버튼 */
@@ -689,3 +690,37 @@
     letter-spacing: 2px;
   }
 }
+
+/* 웨이브 바 컨테이너 */
+.Wave {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+.WaveOff {
+  opacity: 0.3;
+}
+
+.WaveOn {
+  opacity: 1;
+}
+
+/* 웨이브 바 개별 막대 */
+.WaveBar {
+  width: 2px;
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+  border-radius: 1px;
+  transition: height 0.08s ease-out;
+}
+
+.WaveBar1 { animation-delay: 0ms; }
+.WaveBar2 { animation-delay: 60ms; }
+.WaveBar3 { animation-delay: 120ms; }
+.WaveBar4 { animation-delay: 180ms; }
+.WaveBar5 { animation-delay: 120ms; }
+.WaveBar6 { animation-delay: 60ms; }
+.WaveBar7 { animation-delay: 0ms; }

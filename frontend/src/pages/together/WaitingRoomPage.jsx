@@ -33,6 +33,29 @@ function PlayIcon() {
   );
 }
 
+function VoiceWave({ level, enabled }) {
+  const multipliers = useMemo(() => [0.5, 0.7, 0.85, 1, 0.85, 0.7, 0.5], []);
+  const v = Math.max(0, Math.min(1, level));
+
+  return (
+    <span
+      className={`${styles.Wave} ${enabled ? styles.WaveOn : styles.WaveOff}`}
+      aria-hidden="true"
+    >
+      {multipliers.map((m, idx) => {
+        const h = enabled ? 6 + v * 10 * m : 6;
+        return (
+          <span
+            key={idx}
+            className={`${styles.WaveBar} ${styles[`WaveBar${idx + 1}`]}`}
+            style={{ height: `${h}px` }}
+          />
+        );
+      })}
+    </span>
+  );
+}
+
 export default function WaitingRoomPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -57,18 +80,151 @@ export default function WaitingRoomPage() {
 
   const [myMicOn, setMyMicOn] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceLevel, setVoiceLevel] = useState(0);
 
   // 재연결 시 lobby 다시 호출하기 위한 ref
   const fetchLobbyRef = useRef(null);
+
+  const audioRef = useRef({
+    stream: null,
+    ctx: null,
+    analyser: null,
+    source: null,
+    rafId: null,
+    lastVoiceAt: 0,
+    speakingNow: false,
+    level: 0,
+    lastUiAt: 0,
+  });
 
   const showToast = useCallback((message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(""), 2000);
   }, []);
 
+  const stopAudioAnalysis = useCallback(async () => {
+    const a = audioRef.current;
+
+    if (a.rafId) {
+      cancelAnimationFrame(a.rafId);
+      a.rafId = null;
+    }
+
+    if (a.stream) {
+      a.stream.getTracks().forEach((t) => t.stop());
+      a.stream = null;
+    }
+
+    if (a.ctx) {
+      try {
+        await a.ctx.close();
+      } catch (e) {
+        // ignore
+      }
+      a.ctx = null;
+    }
+
+    a.analyser = null;
+    a.source = null;
+    a.lastVoiceAt = 0;
+    a.speakingNow = false;
+    a.level = 0;
+    a.lastUiAt = 0;
+
+    setIsSpeaking(false);
+    setVoiceLevel(0);
+  }, []);
+
+  const startAudioAnalysis = useCallback(async () => {
+    const a = audioRef.current;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      a.stream = stream;
+
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      a.ctx = ctx;
+
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.85;
+      a.analyser = analyser;
+
+      const source = ctx.createMediaStreamSource(stream);
+      a.source = source;
+      source.connect(analyser);
+
+      const data = new Float32Array(analyser.fftSize);
+
+      const THRESHOLD = 0.03;
+      const HOLD_MS = 220;
+      const UI_INTERVAL_MS = 60;
+
+      const tick = () => {
+        if (!a.analyser) return;
+
+        if (typeof a.analyser.getFloatTimeDomainData === "function") {
+          a.analyser.getFloatTimeDomainData(data);
+
+          let sum = 0;
+          for (let i = 0; i < data.length; i += 1) {
+            const v = data[i];
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / data.length);
+
+          const now = performance.now();
+
+          if (rms > THRESHOLD) a.lastVoiceAt = now;
+          const speaking = now - a.lastVoiceAt < HOLD_MS;
+
+          if (speaking !== a.speakingNow) {
+            a.speakingNow = speaking;
+            setIsSpeaking(speaking);
+          }
+
+          const raw = Math.max(0, Math.min(1, (rms - 0.005) / 0.08));
+          a.level = a.level * 0.82 + raw * 0.18;
+
+          if (now - a.lastUiAt > UI_INTERVAL_MS) {
+            a.lastUiAt = now;
+            setVoiceLevel(a.level);
+          }
+        }
+
+        a.rafId = requestAnimationFrame(tick);
+      };
+
+      try {
+        await ctx.resume();
+      } catch (e) {
+        // ignore
+      }
+
+      tick();
+    } catch (e) {
+      setIsSpeaking(false);
+      setVoiceLevel(0);
+    }
+  }, []);
+
+  // 페이지 로드 시 마이크 자동 켜기
+  useEffect(() => {
+    startAudioAnalysis();
+
+    return () => {
+      stopAudioAnalysis();
+    };
+  }, [startAudioAnalysis, stopAudioAnalysis]);
+
   // lobby API 호출: 참여자 목록 + 상태 가져오기
   const fetchLobby = useCallback(async () => {
-    if (!inviteCode || inviteCode === "000000") return;
+    if (!inviteCode || inviteCode === "000000") {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -199,14 +355,20 @@ export default function WaitingRoomPage() {
   const canStart = isHost && nonHostAllReady;
 
   // 마이크 토글: 로컬 상태 즉시 변경 + WebSocket 전송
-  const toggleMyMic = useCallback(() => {
-    setMyMicOn((prev) => {
-      const newMicOn = !prev;
+  const toggleMyMic = useCallback(async () => {
+    if (myMicOn) {
+      setMyMicOn(false);
+      await stopAudioAnalysis();
       // WebSocket으로 마이크 상태 전송
-      sendMic(newMicOn);
-      return newMicOn;
-    });
-  }, [sendMic]);
+      sendMic(false);
+      return;
+    }
+
+    setMyMicOn(true);
+    await startAudioAnalysis();
+    // WebSocket으로 마이크 상태 전송
+    sendMic(true);
+  }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
   // 준비 상태 토글: WebSocket으로 전송 (상태는 READY_CHANGED 이벤트로 받아서 업데이트)
   const toggleMyReady = useCallback(() => {
@@ -454,10 +616,11 @@ export default function WaitingRoomPage() {
                             >
                               <img
                                 className={styles.MicIconImg}
-                                src={micOn ? micOnIcon : micOffIcon}
+                                src={micOn ? micOffIcon : micOnIcon}
                                 alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                               />
                             </button>
+                            {isMe && <VoiceWave level={voiceLevel} enabled={myMicOn} />}
                           </div>
                         </div>
                       </div>

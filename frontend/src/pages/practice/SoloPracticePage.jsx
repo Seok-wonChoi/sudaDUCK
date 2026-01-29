@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./SoloPracticePage.module.css";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
@@ -35,6 +36,7 @@ function VoiceWave({ level, enabled }) {
 }
 
 export default function SoloPracticePage() {
+  const navigate = useNavigate();
   const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 60_000;
 
@@ -208,15 +210,31 @@ export default function SoloPracticePage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
-    console.log("대화 종료");
-  }, [stopAudioAnalysis]);
+    // 대화 종료 후 녹음 페이지로 이동
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "solo",
+        topic,
+      }
+    });
+  }, [stopAudioAnalysis, navigate, topic]);
 
   const handleDone = useCallback(async () => {
     await stopAudioAnalysis();
     setMicOn(false);
     setIsRunning(false);
     console.log("시간 종료");
-  }, [stopAudioAnalysis]);
+
+    // 대화 종료 후 녹음 페이지로 이동
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "solo",
+        topic,
+      }
+    });
+  }, [stopAudioAnalysis, navigate, topic]);
 
   return (
     <div className={styles.Page}>

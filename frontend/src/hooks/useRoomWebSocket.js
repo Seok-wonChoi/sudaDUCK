@@ -4,8 +4,8 @@ import { Client } from "@stomp/stompjs";
 
 const getWsUrl = () => {
   const wsBase = (import.meta.env.VITE_WS_BASE_URL || "").trim();
-  if (wsBase) return `${wsBase}/ws`;
-  return "/ws";
+  if (wsBase) return `${wsBase}/dev-api/ws`;
+  return "/dev-api/ws";
 };
 
 export default function useRoomWebSocket(roomCode, handlers = {}) {
@@ -48,9 +48,19 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
     if (!roomCode) return;
 
     const wsUrl = getWsUrl();
+    console.log(getWsUrl())
+
+    // localStorage에서 액세스 토큰 가져오기
+    const token = localStorage.getItem("accessToken");
 
     const client = new Client({
+      // withCredentials: true로 쿠키 전송
       webSocketFactory: () => new SockJS(wsUrl, null, { withCredentials: true }),
+
+      // STOMP 연결 시 Authorization 헤더 추가
+      connectHeaders: token ? {
+        Authorization: `Bearer ${token}`
+      } : {},
 
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,

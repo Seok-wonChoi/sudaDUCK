@@ -7,6 +7,8 @@ import ExitGuard from "@/components/common/ExitGuard/ExitGuard";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
 
+import { leaveRoom } from "@/api/rooms";
+
 import duckImg from "@/assets/images/duck.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
 import duckHappyImg from "@/assets/images/duck_happy.png";
@@ -55,21 +57,15 @@ export default function TogetherTalkPage() {
   const topic = roomInfo.topic ?? "좋아하는 음식";
   const maxCount = roomInfo.maxCount ?? 4;
 
+  // WaitingRoomPage에서 전달받은 참여자 목록 (순서대로)
   const participants = useMemo(() => {
     const raw = Array.isArray(roomInfo.participants) ? roomInfo.participants : [];
-    if (raw.length > 0) {
-      return raw.map((p, idx) => ({
-        id: p.id ?? `u${idx + 1}`,
-        name: p.name ?? `참여자 ${idx + 1}`,
-        isMe: p.id === "me" || p.isMe === true,
-      }));
-    }
-    return [
-      { id: "me", name: "나", isMe: true },
-      { id: "u2", name: "참여자 1", isMe: false },
-      { id: "u3", name: "참여자 2", isMe: false },
-      { id: "u4", name: "참여자 3", isMe: false },
-    ];
+    return raw.map((p) => ({
+      id: p.id ?? p.email ?? "unknown",
+      name: p.name ?? p.nickname ?? "참여자",
+      isMe: p.isMe === true,
+      micOn: p.micOn ?? false,
+    }));
   }, [roomInfo.participants]);
 
   const slots = useMemo(() => {
@@ -226,12 +222,41 @@ export default function TogetherTalkPage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
-    navigate("/", { replace: true });
-  }, [navigate, stopAudioAnalysis]);
+    // 대화 종료 후 녹음 페이지로 이동
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "together",
+        roomInfo,
+        participants,
+      }
+    });
+  }, [navigate, stopAudioAnalysis, roomInfo, participants]);
 
-  const handleDone = useCallback(() => {
+  const handleDone = useCallback(async () => {
     console.log("시간 종료");
-  }, []);
+    await stopAudioAnalysis();
+
+    // 방 퇴장 API 호출
+    const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
+    if (roomCode) {
+      try {
+        await leaveRoom({ roomCode });
+      } catch (e) {
+        console.error("방 퇴장 API 호출 실패:", e);
+      }
+    }
+
+    // 대화 종료 후 녹음 페이지로 이동
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "together",
+        roomInfo,
+        participants,
+      }
+    });
+  }, [stopAudioAnalysis, roomInfo, participants, navigate]);
 
   /* =========================
      돌발 퀘스트 (수동 시작 1/2/3)
@@ -365,8 +390,18 @@ export default function TogetherTalkPage() {
                 replace
                 label="나가기"
                 confirmMessage="메인 화면으로 나가시겠습니까?"
-                onExit={() => {
-                  stopAudioAnalysis();
+                onExit={async () => {
+                  await stopAudioAnalysis();
+
+                  // 방 퇴장 API 호출
+                  const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
+                  if (roomCode) {
+                    try {
+                      await leaveRoom({ roomCode });
+                    } catch (e) {
+                      console.error("방 퇴장 API 호출 실패:", e);
+                    }
+                  }
                 }}
               />
             </div>
@@ -431,6 +466,8 @@ export default function TogetherTalkPage() {
 
                 const p = slot.p;
                 const isMe = p.isMe === true;
+                // 내 마이크는 로컬 상태, 다른 사람은 전달받은 상태
+                const participantMicOn = isMe ? micOn : (p.micOn ?? false);
 
                 return (
                   <div
@@ -456,19 +493,11 @@ export default function TogetherTalkPage() {
                       </div>
 
                       <div className={styles.VideoFooterRight} aria-label="마이크 상태">
-                        {isMe ? (
-                          <img
-                            className={styles.MicMini}
-                            src={micOn ? micOffIcon : micOnIcon}
-                            alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
-                          />
-                        ) : (
-                          <img
-                            className={`${styles.MicMini} ${styles.MicMuted}`}
-                            src={micOffIcon}
-                            alt="마이크 꺼짐"
-                          />
-                        )}
+                        <img
+                          className={styles.MicMini}
+                          src={participantMicOn ? micOffIcon : micOnIcon}
+                          alt={participantMicOn ? "마이크 켜짐" : "마이크 꺼짐"}
+                        />
                       </div>
                     </div>
                   </div>
