@@ -6,6 +6,9 @@ export default function OAuth2RedirectHandler() {
   const location = useLocation();
   const isProcessed = useRef(false); // 중복 실행 및 무한 루프 방지
 
+  // ✅ StrictMode/리렌더에도 유지되는 "1회 처리" 플래그
+  const processedRef = useRef(false);
+
   useEffect(() => {
     if (isProcessed.current) return;
     isProcessed.current = true;

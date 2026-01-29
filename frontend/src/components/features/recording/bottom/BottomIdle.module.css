@@ -1,41 +1,92 @@
-/* Bottom Idle State */
-.bottomIdle {
+/* Idle State Container */
+.container {
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 48px 20px;
+  justify-content: center;
+  gap: 20px;
+  padding: 28px 48px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 16px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.statusMessage {
-  text-align: center;
+.iconCircle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #0ea5e9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
 }
 
-.messageText {
-  font-family: 'Arimo', 'Noto Sans KR', sans-serif;
-  font-weight: 500;
-  font-size: 16px;
-  line-height: 1.6;
-  color: #9ca3af;
+.iconCircle:hover {
+  background: #0284c7;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.4);
+}
+
+.iconCircle:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+.message {
   margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #075985;
+  flex: 1;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .bottomIdle {
-    padding: 36px 16px;
+  .container {
+    padding: 20px 32px;
+    gap: 16px;
   }
 
-  .messageText {
-    font-size: 15px;
+  .iconCircle {
+    width: 64px;
+    height: 64px;
+  }
+
+  .iconCircle svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .message {
+    font-size: 18px;
   }
 }
 
 @media (max-width: 480px) {
-  .bottomIdle {
-    padding: 24px 12px;
+  .container {
+    padding: 16px 24px;
+    gap: 12px;
+    flex-direction: column;
+    text-align: center;
   }
 
-  .messageText {
-    font-size: 14px;
+  .iconCircle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .iconCircle svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .message {
+    font-size: 16px;
   }
 }
