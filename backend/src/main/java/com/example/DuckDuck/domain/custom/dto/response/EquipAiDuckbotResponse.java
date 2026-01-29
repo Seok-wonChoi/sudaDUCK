@@ -7,11 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 @Builder
-public class MyProfileCustomResponse {
-
-    private Integer coins;
-
-    private String duckCustomJson;
-    private String avatarCustomJson;
+public class EquipAiDuckbotResponse {
+    private String message;
     private String aiDuckbotCustomJson;
 }

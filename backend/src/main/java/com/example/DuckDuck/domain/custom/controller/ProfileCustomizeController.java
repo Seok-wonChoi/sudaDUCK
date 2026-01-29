@@ -1,7 +1,9 @@
 package com.example.DuckDuck.domain.custom.controller;
 
+import com.example.DuckDuck.domain.custom.dto.request.EquipAiDuckbotRequest;
 import com.example.DuckDuck.domain.custom.dto.request.EquipAvatarRequest;
 import com.example.DuckDuck.domain.custom.dto.request.EquipDuckRequest;
+import com.example.DuckDuck.domain.custom.dto.response.EquipAiDuckbotResponse;
 import com.example.DuckDuck.domain.custom.dto.response.EquipAvatarResponse;
 import com.example.DuckDuck.domain.custom.dto.response.EquipDuckResponse;
 import com.example.DuckDuck.domain.custom.dto.response.MyProfileCustomResponse;
@@ -58,4 +60,20 @@ public class ProfileCustomizeController {
         return ResponseEntity.ok(profileCustomizeService.getMyProfileCustom(email));
     }
 
+    @Operation(
+            summary = "AI 오리봇 장착",
+            description = "AI 오리봇 모델을 변경합니다. 기본 무료 또는 구매한 모델만 장착 가능합니다."
+    )
+    @PatchMapping("/ai-duckbot")
+    public ResponseEntity<EquipAiDuckbotResponse> equipAiDuckbot(
+            @RequestBody EquipAiDuckbotRequest request,
+            Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String email = authentication.getName();
+        return ResponseEntity.ok(profileCustomizeService.equipAiDuckbot(email, request));
+    }
 }
