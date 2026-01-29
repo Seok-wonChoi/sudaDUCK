@@ -18,8 +18,11 @@ export default defineConfig({
       "/dev-api": {
         target: "https://i14e104.p.ssafy.io",
         changeOrigin: true,
-        // 필요 시 경로 수정(보통은 그대로 둬도 됨):
-        // rewrite: (path) => path.replace(/^\/dev-api/, ""),
+      },
+      "/ws": {
+        target: "https://i14e104.p.ssafy.io",
+        changeOrigin: true,
+        ws: true,
       },
     },
   },

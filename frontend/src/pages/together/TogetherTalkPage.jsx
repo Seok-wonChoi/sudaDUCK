@@ -8,6 +8,7 @@ import ExitButton from "@/components/common/ExitButton/ExitButton";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
 
 import duckImg from "@/assets/images/duck.png";
+import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
 import duckHappyImg from "@/assets/images/duck_happy.png";
 import duckBombImg from "@/assets/images/duck_bomb.png";
 import duckSadImg from "@/assets/images/duck_sad.png";
@@ -243,6 +244,8 @@ export default function TogetherTalkPage() {
   const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | 3 | null
   // idle | intro | q2game | q3intro | q3meaning | resultFail | resultSuccess
   const [questStep, setQuestStep] = useState("idle");
+  // 정답 여부 (테스트 버전: 랜덤으로 설정)
+  const [isCorrect, setIsCorrect] = useState(false);
 
   const questRunning = questStep !== "idle";
 
@@ -272,10 +275,17 @@ export default function TogetherTalkPage() {
   );
 
   const handleOverlayClickNext = useCallback(() => {
-    // 1/2번 인트로
-    if (questStep === "intro") {
-      if (activeQuest === 1) setQuestStep("resultFail");
-      if (activeQuest === 2) setQuestStep("q2game");
+    // 1번 인트로 -> 바로 결과 (테스트: 랜덤)
+    if (questStep === "intro" && activeQuest === 1) {
+      const correct = Math.random() > 0.5; // 테스트: 50% 확률로 성공/실패
+      setIsCorrect(correct);
+      setQuestStep(correct ? "resultSuccess" : "resultFail");
+      return;
+    }
+
+    // 2번 인트로 -> 게임 화면
+    if (questStep === "intro" && activeQuest === 2) {
+      setQuestStep("q2game");
       return;
     }
 
@@ -285,26 +295,25 @@ export default function TogetherTalkPage() {
       return;
     }
 
-    // 3번 문장/뜻 화면 -> 결과 실패
+    // 3번 문장/뜻 화면 -> 결과 (테스트: 랜덤)
     if (questStep === "q3meaning") {
-      setQuestStep("resultFail");
+      const correct = Math.random() > 0.5; // 테스트: 50% 확률
+      setIsCorrect(correct);
+      setQuestStep(correct ? "resultSuccess" : "resultFail");
       return;
     }
 
-    // 결과 실패 -> 결과 성공
-    if (questStep === "resultFail") {
-      setQuestStep("resultSuccess");
-      return;
-    }
-
-    // 결과 성공 -> 복귀
-    if (questStep === "resultSuccess") {
+    // 결과 화면 (성공 또는 실패) -> 복귀
+    if (questStep === "resultFail" || questStep === "resultSuccess") {
       endQuestAndResume();
     }
   }, [questStep, activeQuest, endQuestAndResume]);
 
   const handleSubmitQuest2 = useCallback(() => {
-    setQuestStep("resultFail");
+    // 2번 퀘스트 제출 시 정답 여부 판단 (테스트: 랜덤)
+    const correct = Math.random() > 0.5; // 테스트: 50% 확률
+    setIsCorrect(correct);
+    setQuestStep(correct ? "resultSuccess" : "resultFail");
   }, []);
 
   // 1번 인트로(영어 문장 하드코딩)
@@ -322,17 +331,11 @@ export default function TogetherTalkPage() {
   const quest3EnglishSentence = "I couldn't agree with you more on that point.";
   const quest3KoreanMeaning = "그 점에 대해서 당신의 말에 전적으로 동의합니다.";
 
-  // 결과 텍스트: 2번(랭킹), 1/3번(점수)
-  const isQuest2 = activeQuest === 2;
+  // 결과 텍스트
   const isSuccess = questStep === "resultSuccess";
 
-  const failText = isQuest2
-    ? "아쉽게도 1등 하지 못했어요\n다음 번 기회를 노려봐요!"
-    : "아쉽게도 성공하지 못했어요\n다음 번 기회를 노려봐요!";
-
-  const successText = isQuest2
-    ? "대단해요!! 1등이에요!!"
-    : "대단해요!! 점수를 획득했어요!!";
+  const failText = "아쉽게도 성공하지 못했어요\n다음 번 기회를 노려봐요!";
+  const successText = "대단해요!! 점수를 획득했어요!!";
 
   const resultBubbleText = isSuccess ? successText : failText;
   const resultDuckSrc = isSuccess ? duckHappyImg : duckSadImg;
@@ -510,7 +513,7 @@ export default function TogetherTalkPage() {
               <div className={styles.AiPointer} aria-hidden="true" />
             </div>
 
-            <img className={styles.BigDuck} src={duckHappyImg} alt="AI 오리" />
+            <img className={styles.BigDuck} src={duckBotCyanImg} alt="AI 오리" />
           </aside>
         </div>
         </div>

@@ -2,15 +2,16 @@
 .Page {
   min-height: 100vh;
   background: #f6f8ff;
-  padding: 28px 0;
+  padding: clamp(12px, 3vw, 28px) clamp(8px, 2vw, 16px);
 }
 
 /* 중앙 카드형 레이아웃 */
 .Shell {
   max-width: 1120px;
+  width: 100%;
   margin: 0 auto;
   background: #ffffff;
-  border-radius: 28px;
+  border-radius: clamp(16px, 3vw, 28px);
   box-shadow: 0 18px 50px rgba(17, 24, 39, 0.10);
   overflow: hidden;
 }
@@ -18,10 +19,14 @@
 /* 상단 흰 영역 */
 .Top {
   padding: 34px 34px 26px;
+  position: relative;
 }
 
 /* 뒤로가기 버튼 */
 .BackButton {
+  position: absolute;
+  top: 34px;
+  left: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -35,6 +40,7 @@
   color: #374151;
   cursor: pointer;
   transition: background 0.15s ease;
+  z-index: 10;
 }
 
 .BackButton:hover {
@@ -60,6 +66,12 @@
   /* 모바일 상단 여백 */
   .Top {
     padding: 22px 16px 18px;
+  }
+
+  /* 모바일 뒤로가기 버튼 위치 조정 */
+  .BackButton {
+    top: 22px;
+    left: 16px;
   }
 
   /* 모바일 하단 여백 */

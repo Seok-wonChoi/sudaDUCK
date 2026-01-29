@@ -1,14 +1,15 @@
 .Page {
   min-height: 100vh;
   background: #f6f8ff;
-  padding: 28px 0;
+  padding: clamp(12px, 3vw, 28px) clamp(8px, 2vw, 16px);
 }
 
 .Shell {
   max-width: 1120px;
+  width: 100%;
   margin: 0 auto;
   background: #ffffff;
-  border-radius: 28px;
+  border-radius: clamp(16px, 3vw, 28px);
   box-shadow: 0 18px 50px rgba(17, 24, 39, 0.10);
   overflow: hidden;
   position: relative;
@@ -422,11 +423,45 @@
 }
 
 @media (max-width: 600px) {
+  .Page {
+    padding: 8px;
+  }
+
+  .Shell {
+    border-radius: 12px;
+  }
+
+  .Content {
+    padding: 12px;
+  }
+
   .CardsGrid {
     grid-template-columns: 1fr;
   }
 
   .VideoCard {
     height: 160px;
+  }
+
+  .TopicBubble {
+    font-size: 12px;
+    padding: 10px 14px;
+  }
+
+  .QuestBtn {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .BottomActions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .PrimaryButton,
+  .SecondaryButton {
+    width: 100%;
+    justify-content: center;
   }
 }
