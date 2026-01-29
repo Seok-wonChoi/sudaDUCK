@@ -7,6 +7,8 @@ pipeline {
         IMG_BACK = 'my-backend'
         PROFILE = 'dev'
         MM_URL = 'https://meeting.ssafy.com/hooks/3xiyay1rgpygiqgcbh8t9iqnnh'
+        // 포테이너 및 젠킨스 로그 주소 (팀 환경에 맞게 수정)
+        PORTAINER_URL = 'https://i14e104.p.ssafy.io/portainer/#!/1/docker/containers'
     }
 
     stages {
@@ -29,31 +31,33 @@ pipeline {
             steps {
                 dir('backend') {
                     script {
-                        // ★ [업그레이드] 상세 정보 추출
+                        // 정보 추출
                         def buildUser = sh(script: "git log -1 --pretty=format:'%an'", returnStdout: true).trim()
                         def commitMsg = sh(script: "git log -1 --pretty=format:'%s'", returnStdout: true).trim()
-                        def branchName = env.BRANCH_NAME ?: "알 수 없는 브랜치"
+                        def branchName = env.BRANCH_NAME ?: "unknown"
 
-                        // 배포 시작 알림 (노란색)
-                        def startMsg = "🚀 **배포 시작 (Dev)**\n- **담당자**: `${buildUser}`\n- **브랜치**: `${branchName}`\n- **메시지**: `${commitMsg}`\n- **상태**: 무중단 배포 진행 중..."
-                        sendMM(startMsg, "#FFFF00")
+                        // [START] 배포 시작 알림 (고급형)
+                        def startMsg = """
+### 🚀 배포 프로세스 시작
+---
+* **구분**: `Backend-Dev`
+* **브랜치**: `${branchName}`
+* **작업자**: `${buildUser}`
+* **메시지**: `${commitMsg}`
+* **상태**: `빌드 완료 후 컨테이너 교체 진행 중...`
+---
+"""
+                        sendMM(startMsg, "#FFD700") // 금색(Gold)
 
-                        echo ">>> [Deploy] ${branchName} 브랜치 배포 진행 중..."
-                        
-                        // 1) 이미지 빌드
+                        // 배포 로직 시작
                         sh "docker build -t ${IMG_BACK}:latest ."
-
-                        // 2) 현재 컬러 확인
                         def confFile = "service-url-dev.inc"
                         def currentUrl = sh(script: "docker exec main-nginx cat /etc/nginx/conf.d/${confFile} || echo 'blue'", returnStdout: true).trim()
                         def targetColor = currentUrl.contains("blue") ? "green" : "blue"
                         def targetName = "dev-backend-${targetColor}"
                         def targetPort = (targetColor == "blue" ? "8081" : "8082")
 
-                        // 3) 기존 컨테이너 청소
                         sh "docker rm -f ${targetName} || true"
-
-                        // 4) 새 컨테이너 실행
                         sh """
                             docker run -d --name ${targetName} \
                             --network ${NET_DEV} \
@@ -65,7 +69,7 @@ pipeline {
                             --spring.config.location=/config/application-${PROFILE}.yml
                         """
 
-                        // 5) 검증 로직 (승엽님 원본)
+                        // 검증
                         def isBooted = false
                         for(int i=0; i<15; i++) {
                             sleep 3
@@ -74,19 +78,17 @@ pipeline {
                                 if (status.isInteger() && [200, 401, 404].contains(status.toInteger())) {
                                     isBooted = true; break
                                 }
-                            } catch (e) { echo "부팅 대기 중..." }
+                            } catch (e) { echo "부팅 대기..." }
                         }
-                        if (!isBooted) error("1차 검증 실패")
+                        if (!isBooted) error("서버 부팅 검증 실패")
 
-                        // 6) Nginx 스위칭
+                        // 스위칭
                         sh "echo 'set \$service_url http://${targetName}:8080;' > switch.tmp"
                         sh "docker cp switch.tmp main-nginx:/etc/nginx/conf.d/${confFile}"
                         sh "docker exec main-nginx nginx -s reload"
 
-                        // 7) 이전 버전 정리
                         sleep 10
-                        def oldColor = (targetColor == 'blue') ? 'green' : 'blue'
-                        sh "docker rm -f dev-backend-${oldColor} || true"
+                        sh "docker rm -f dev-backend-${currentUrl.contains('blue') ? 'blue' : 'green'} || true"
                     }
                 }
             }
@@ -95,25 +97,43 @@ pipeline {
 
     post {
         always {
-            script {
-                echo ">>> [Cleanup] 이미지 설거지 중..."
-                sh "docker image prune -f"
-            }
+            script { sh "docker image prune -f" }
         }
         success {
             script {
                 def buildUser = sh(script: "git log -1 --pretty=format:'%an'", returnStdout: true).trim()
-                def branchName = env.BRANCH_NAME ?: "알 수 없는 브랜치"
-                def msg = "✅ **배포 성공 (Dev)**\n- **담당자**: `${buildUser}`\n- **브랜치**: `${branchName}`\n- **상태**: 배포 완료!\n- [로그 확인](https://i14e104.p.ssafy.io/portainer/)"
-                sendMM(msg, "#00FF00")
+                def branchName = env.BRANCH_NAME ?: "unknown"
+                
+                def msg = """
+### ✅ 배포 완료
+---
+* **대상**: `Backend-Dev`
+* **브랜치**: `${branchName}`
+* **배포자**: `${buildUser}`
+* **결과**: `무중단 전환 성공 (Blue/Green)`
+---
+> [🛠 포테이너 확인](${PORTAINER_URL}) | [🔗 서비스 접속](https://i14e104.p.ssafy.io/)
+"""
+                sendMM(msg, "#228B22") // Forest Green
             }
         }
         failure {
             script {
                 def buildUser = sh(script: "git log -1 --pretty=format:'%an'", returnStdout: true).trim()
-                def branchName = env.BRANCH_NAME ?: "알 수 없는 브랜치"
-                def msg = "🚨 **배포 실패 (Dev)**\n- **담당자**: `${buildUser}`\n- **브랜치**: `${branchName}`\n- **상태**: 에러 발생 (로그 확인 요망)"
-                sendMM(msg, "#FF0000")
+                def branchName = env.BRANCH_NAME ?: "unknown"
+
+                def msg = """
+### 🚨 배포 실패
+---
+* **대상**: `Backend-Dev`
+* **브랜치**: `${branchName}`
+* **담당자**: `${buildUser}`
+* **상태**: `에러 발생 (자동 롤백 유지)`
+---
+**❗ 즉시 젠킨스 빌드 로그를 확인해 주세요.**
+[👉 젠킨스 빌드 결과 보러가기](${env.BUILD_URL})
+"""
+                sendMM(msg, "#DC143C") // Crimson Red
             }
         }
     }
