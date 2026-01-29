@@ -2,7 +2,7 @@ package com.example.DuckDuck.global.security.oauth;
 
 import com.example.DuckDuck.global.security.jwt.CookieUtil;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
-import jakarta.servlet.http.Cookie; // ★ 이거 꼭 있어야 합니다!
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -37,17 +37,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
         // =================================================================
-        // ★ [수정됨] 쿠키 확인 후 -> URL 및 토큰 전달 방식 결정
+        // ★ [수정됨] 로컬/Dev 모두 URL 파라미터로 통일
         // =================================================================
         
         boolean isLocal = false;
-        String targetUrl;
 
         // 1. 요청에 'client_env=local' 쿠키가 있는지 확인
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("client_env".equals(cookie.getName()) && "local".equals(cookie.getValue())) {
-                    isLocal = true; // 로컬임이 확인됨
+                    isLocal = true;
                     
                     // 확인한 쿠키는 삭제 (청소)
                     cookie.setMaxAge(0);
@@ -58,27 +57,30 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             }
         }
 
-        // 2. 로컬 vs 배포 분기 처리 (기존 로직 유지)
+        // 2. 기본 주소(Base URL)만 다르게 설정
+        String baseUrl;
         if (isLocal) {
-            // [Local] localhost로 이동 + URL 쿼리 파라미터로 토큰 전달
-            targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth2/redirect")
-                    .queryParam("accessToken", accessToken)
-                    .queryParam("refreshToken", refreshToken)
-                    .build().toUriString();
+            baseUrl = "http://localhost:5173/oauth2/redirect"; // 로컬
         } else {
-            // [Prod/Dev] 배포 주소로 이동 + 쿠키로 토큰 전달
-            targetUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect";
-            CookieUtil.addCookie(response, "accessToken", accessToken, 60, false);
+            baseUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect"; // 배포(Dev)
         }
+
+        // 3. [핵심] 로컬이든 배포든 "무조건" URL 뒤에 토큰을 붙임 (통일!)
+        String targetUrl = UriComponentsBuilder.fromUriString(baseUrl)
+                .queryParam("accessToken", accessToken)
+                .queryParam("refreshToken", refreshToken)
+                .build().toUriString();
+
         // =================================================================
 
-        // RT:{email} 저장 (중복 로그인 기준)
+        // RT:{email} 저장 (Redis)
         redisTemplate.opsForValue().set(
                 "RT:" + email,
                 refreshToken,
                 Duration.ofDays(14)
         );
-        // HttpOnly 쿠키 (RefreshToken)
+        
+        // HttpOnly 쿠키 (RefreshToken) - 이건 보안상 백업용으로 유지
         CookieUtil.addCookie(
                 response,
                 "refreshToken",
@@ -87,11 +89,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 true
         );
 
-        getRedirectStrategy().sendRedirect(
-                request,
-                response,
-                targetUrl
-        );
-
+        // 리다이렉트 실행
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }
