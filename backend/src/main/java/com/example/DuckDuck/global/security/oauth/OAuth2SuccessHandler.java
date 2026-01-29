@@ -5,6 +5,8 @@ import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -14,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 
 @Component
@@ -22,6 +25,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
+    private final Environment env; // 현재 프로파일 확인용
+
+    // ★ 1. yml에서 설정한 주소를 가져옴
+    @Value("${custom.oauth2.redirect-url}")
+    private String redirectUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -31,32 +39,35 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String email = (String) kakaoAccount.get("email");
         Long userId = (Long) oAuth2User.getAttribute("id");
 
-        // 1. 토큰 생성
         String accessToken = jwtTokenProvider.createAccessToken(userId, email);
         String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
-        boolean isLocalDev = true; // 개발 중엔 true로 설정
+        // ★ 2. 현재 환경이 로컬인지 확인 (dev나 prod가 아니면 로컬로 간주)
+        boolean isLocal = Arrays.stream(env.getActiveProfiles())
+                .noneMatch(profile -> profile.equals("dev") || profile.equals("prod"));
+
         String targetUrl;
 
-        if (isLocalDev) {
-            // 로컬 개발 시: localhost로 토큰을 실어서 리다이렉트
-            targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth2/redirect")
-                    .queryParam("accessToken", accessToken) // 쿠키 대신 URL로 전달하는 것이 확실함
+        // ★ 3. 로직 분기: 주소는 yml에서 가져온 redirectUrl 사용
+        if (isLocal) {
+            // 로컬: 쿼리 파라미터로 전달
+            targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
+                    .queryParam("accessToken", accessToken)
                     .queryParam("refreshToken", refreshToken)
                     .build().toUriString();
         } else {
-            // 배포 환경 시: 기존 도메인 유지
-            targetUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect";
+            // 배포(Dev/Prod): 쿠키로 전달하고, 리다이렉트 주소만 yml 값 사용
+            targetUrl = redirectUrl; 
             CookieUtil.addCookie(response, "accessToken", accessToken, 60, false);
         }
 
-        //RT:{email} 저장 (중복 로그인 기준)
+        // RT 저장 로직 (기존 동일)
         redisTemplate.opsForValue().set(
                 "RT:" + email,
                 refreshToken,
                 Duration.ofDays(14)
         );
-        // HttpOnly 쿠키
+        
         CookieUtil.addCookie(
                 response,
                 "refreshToken",
@@ -65,12 +76,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 true
         );
 
-
-        getRedirectStrategy().sendRedirect(
-                request,
-                response,
-                targetUrl
-        );
-
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }
