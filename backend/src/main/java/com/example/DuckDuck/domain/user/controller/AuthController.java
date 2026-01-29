@@ -26,7 +26,7 @@ import java.util.Map;
 
 @Tag(name = "Auth", description = "인증 관련 API (카카오/테스트 로그인)")
 @RestController
-@RequestMapping("api/v1/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
