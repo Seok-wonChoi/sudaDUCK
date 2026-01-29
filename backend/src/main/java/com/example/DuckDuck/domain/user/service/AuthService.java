@@ -50,7 +50,7 @@ public class AuthService {
 
         memberRepository.save(newMember);
 
-        ensureProfile(newMember);
+        ensureProfile(newMember.getId());
 
         return newMember;
     }
@@ -65,7 +65,7 @@ public class AuthService {
             throw new RuntimeException("이메일 정보가 일치하지 않습니다.");
         }
 
-        ensureProfile(member);
+        ensureProfile(member.getId());
 
         // 1. Access Token 생성
         String accessToken = jwtTokenProvider.createAccessToken(
@@ -119,23 +119,19 @@ public class AuthService {
     }
 
     @Transactional
-    public void ensureProfile(Member member) {
-        Long userId = member.getId();
+    public void ensureProfile(Long userId) {
+        if (profileRepository.existsById(userId)) return;
 
-        if (profileRepository.existsById(userId)) {
-            return;
-        }
+        Member memberRef = memberRepository.getReferenceById(userId);
 
         Profile profile = Profile.builder()
-                .user(member)
+                .user(memberRef)
                 .coins(DEFAULT_COINS)
                 .attendanceDays(0)
                 .duckCustomJson(DEFAULT_DUCK_JSON)
                 .avatarCustomJson(DEFAULT_AVATAR_JSON)
                 .lastLoginAt(LocalDateTime.now())
                 .totalTime(0)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
 
         profileRepository.save(profile);
