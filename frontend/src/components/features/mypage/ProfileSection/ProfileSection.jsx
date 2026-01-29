@@ -1,7 +1,9 @@
 import styles from "./ProfileSection.module.css";
 import NicknameBadge from "./NicknameBadge";
+import coinImage from "@/assets/images/coin.png";
 
 const COLOR_MAP = {
+  white: "#ffffff",
   yellow: "#fef08a",
   blue: "#93c5fd",
   pink: "#f9a8d4",
@@ -25,9 +27,11 @@ export default function ProfileSection({
   email = "example@test.com",
   nicknameStyle = { background: "gradient", effect: null },
   duckBotImage,
+  coins = 0,
   onEditProfile,
   onEditNickname,
   onEditDuckBot,
+  onLogout,
 }) {
   return (
     <div className={styles.Section}>
@@ -77,20 +81,38 @@ export default function ProfileSection({
 
       <div className={styles.InfoCard}>
         <div className={styles.InfoContent}>
-          <NicknameBadge
-            nickname={nickname}
-            style={nicknameStyle}
-          />
-          <button
-            type="button"
-            className={styles.NicknameEditButton}
-            onClick={onEditNickname}
-            aria-label="닉네임 스타일 변경"
-          >
-            <span>✏️</span>
-          </button>
+          <div className={styles.NicknameWrapper}>
+            <NicknameBadge
+              nickname={nickname}
+              style={nicknameStyle}
+            />
+            <button
+              type="button"
+              className={styles.NicknameEditButton}
+              onClick={onEditNickname}
+              aria-label="닉네임 스타일 변경"
+            >
+              <span>✏️</span>
+            </button>
+          </div>
+          {onLogout && (
+            <button
+              type="button"
+              className={styles.LogoutButton}
+              onClick={onLogout}
+              aria-label="로그아웃"
+            >
+              로그아웃
+            </button>
+          )}
         </div>
-        <div className={styles.Email}>{email}</div>
+        <div className={styles.BottomRow}>
+          <div className={styles.Email}>{email}</div>
+          <div className={styles.CoinBadge}>
+            <img src={coinImage} alt="코인" className={styles.CoinIcon} />
+            <span className={styles.CoinAmount}>{coins}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./api";
+import api, { API_BASE_URL } from "./api";
 
 /**
  * 카카오 OAuth2 로그인
@@ -16,3 +16,12 @@ export const loginWithKakao = () => {
   console.log("[카카오 로그인] 백엔드 OAuth 엔드포인트로 이동:", `${base}/oauth2/authorization/kakao`);
   window.location.href = `${base}/oauth2/authorization/kakao`;
 };
+
+/**
+ * 로그아웃
+ * POST /api/v1/auth/logout
+ */
+export async function logout() {
+  const { data } = await api.post("/api/v1/auth/logout");
+  return data;
+}

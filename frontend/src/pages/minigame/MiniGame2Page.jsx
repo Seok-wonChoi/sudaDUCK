@@ -7,12 +7,21 @@ import CardBoard from '@/components/features/minigame2/game/CardBoard';
 import GameStats from '@/components/features/minigame2/game/GameStats';
 import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
 import ResultPanel from '@/components/features/minigame2/result/ResultPanel';
+import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
 
 const MOCK_PARTICIPANTS = [
   { id: 1, name: '장가은', isActive: true },
   { id: 2, name: '이승엽', isActive: true },
   { id: 3, name: '최현웅', isActive: false },
   { id: 4, name: '김가민', isActive: true },
+];
+
+// 참여자별 제거한 카드 수 순위 (나중에 백엔드에서 받아올 데이터)
+const MOCK_RANKINGS = [
+  { id: 1, name: '장가은', cardsRemoved: 10 },
+  { id: 4, name: '김가민', cardsRemoved: 8 },
+  { id: 2, name: '이승엽', cardsRemoved: 6 },
+  { id: 3, name: '최현웅', cardsRemoved: 3 },
 ];
 
 const MOCK_CARDS = [
@@ -39,12 +48,15 @@ const GAME_TIME = 30;
 export default function MiniGame2Page() {
   const navigate = useNavigate();
 
+  const currentUserId = 1; // 현재 사용자 ID
+
   // ✅ phase를 state로 두지 않고, 아래 상태들로 "계산"해서 사용
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME);
   const [removedCards, setRemovedCards] = useState([]);
   const [showGuide, setShowGuide] = useState(true);
+  const [showCoinReward, setShowCoinReward] = useState(false);
 
   const isCleared = removedCards.length >= MOCK_CARDS.length;
   const isTimeOver = timeLeft <= 0;
@@ -86,6 +98,20 @@ export default function MiniGame2Page() {
       return () => clearTimeout(id);
     }
   }, [phase, showGuide]);
+
+  // 4) 결과 화면에서 1등이면 코인 지급
+  useEffect(() => {
+    if (phase === GAME_PHASE.RESULT) {
+      // 1등 확인 (가장 많은 카드를 제거한 사람)
+      const firstPlace = MOCK_RANKINGS[0];
+      if (firstPlace && firstPlace.id === currentUserId) {
+        const timer = setTimeout(() => {
+          setShowCoinReward(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [phase, currentUserId]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -163,6 +189,12 @@ export default function MiniGame2Page() {
           onComplete={handleComplete}
         />
       )}
+
+      <CoinRewardNotification
+        show={showCoinReward}
+        onComplete={() => setShowCoinReward(false)}
+        coins={100}
+      />
     </MiniGameLayout>
   );
 }
