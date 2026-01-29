@@ -14,9 +14,9 @@ public class CookieUtil {
         // ResponseCookie를 사용하면 sameSite 메서드를 바로 쓸 수 있습니다.
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .path("/")
-                .httpOnly(false)    // JavaScript 접근 방지
-                .secure(false)      // SameSite("None") 설정 시 필수 (HTTPS 필요)
-                .sameSite("Lax")  // Cross-Site 간 쿠키 전송 허용
+                .httpOnly(httpOnly)
+                .secure(true)       // ✅ HTTPS 환경에서는 true여야 합니다.
+                .sameSite("None")   // ✅ 프론트/백 도메인이 다르면 "None"이 필수입니다.
                 .maxAge(maxAge)
                 .build();
 

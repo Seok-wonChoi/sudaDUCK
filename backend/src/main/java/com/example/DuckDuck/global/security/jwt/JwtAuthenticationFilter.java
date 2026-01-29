@@ -40,13 +40,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String saveRefreshToken = redisTemplate.opsForValue().get("RT:"+email);
 
             //클라이언트의 리프레시 토큰과 redis의 토큰이 다르면 다른 기기에서 로그인한 것
-            if (saveRefreshToken != null && !saveRefreshToken.equals(refreshToken)){
-                //인증 거부 및 쿠키 삭제 처리 기능
+//            if (saveRefreshToken != null && !saveRefreshToken.equals(refreshToken)){
+//                //인증 거부 및 쿠키 삭제 처리 기능
+//                SecurityContextHolder.clearContext();
+//
+//                CookieUtil.addCookie(response, "refreshToken", null, 0,true);
+//
+//                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "다른 기기에서 로그인되어 로그아웃되었습니다.");
+//                return;
+//            }
+            // ✅ 수정: 리프레시 토큰이 '존재할 때만' 비교 로직을 수행합니다.
+            // 혹은 AccessToken이 유효하다면 이 검사를 건너뛰도록 설계해야 합니다.
+            if (refreshToken != null && saveRefreshToken != null && !saveRefreshToken.equals(refreshToken)) {
                 SecurityContextHolder.clearContext();
-
-                CookieUtil.addCookie(response, "refreshToken", null, 0,true);
-
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "다른 기기에서 로그인되어 로그아웃되었습니다.");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "다른 기기에서 로그인되었습니다.");
                 return;
             }
             //인증 객체 생성
