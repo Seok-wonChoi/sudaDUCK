@@ -2,6 +2,7 @@ package com.example.DuckDuck.global.security.oauth;
 
 import com.example.DuckDuck.global.security.jwt.CookieUtil;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
+import jakarta.servlet.http.Cookie; // ★ 이거 꼭 있어야 합니다!
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -35,28 +36,49 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String accessToken = jwtTokenProvider.createAccessToken(userId, email);
         String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
-        boolean isLocalDev = true; // 개발 중엔 true로 설정
+        // =================================================================
+        // ★ [수정됨] 쿠키 확인 후 -> URL 및 토큰 전달 방식 결정
+        // =================================================================
+        
+        boolean isLocal = false;
         String targetUrl;
 
-        if (isLocalDev) {
-            // 로컬 개발 시: localhost로 토큰을 실어서 리다이렉트
+        // 1. 요청에 'client_env=local' 쿠키가 있는지 확인
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("client_env".equals(cookie.getName()) && "local".equals(cookie.getValue())) {
+                    isLocal = true; // 로컬임이 확인됨
+                    
+                    // 확인한 쿠키는 삭제 (청소)
+                    cookie.setMaxAge(0);
+                    cookie.setPath("/");
+                    response.addCookie(cookie);
+                    break;
+                }
+            }
+        }
+
+        // 2. 로컬 vs 배포 분기 처리 (기존 로직 유지)
+        if (isLocal) {
+            // [Local] localhost로 이동 + URL 쿼리 파라미터로 토큰 전달
             targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth2/redirect")
-                    .queryParam("accessToken", accessToken) // 쿠키 대신 URL로 전달하는 것이 확실함
+                    .queryParam("accessToken", accessToken)
                     .queryParam("refreshToken", refreshToken)
                     .build().toUriString();
         } else {
-            // 배포 환경 시: 기존 도메인 유지
+            // [Prod/Dev] 배포 주소로 이동 + 쿠키로 토큰 전달
             targetUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect";
             CookieUtil.addCookie(response, "accessToken", accessToken, 60, false);
         }
+        // =================================================================
 
-        //RT:{email} 저장 (중복 로그인 기준)
+        // RT:{email} 저장 (중복 로그인 기준)
         redisTemplate.opsForValue().set(
                 "RT:" + email,
                 refreshToken,
                 Duration.ofDays(14)
         );
-        // HttpOnly 쿠키
+        // HttpOnly 쿠키 (RefreshToken)
         CookieUtil.addCookie(
                 response,
                 "refreshToken",
@@ -64,7 +86,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 60 * 60 * 24 * 14,
                 true
         );
-
 
         getRedirectStrategy().sendRedirect(
                 request,
