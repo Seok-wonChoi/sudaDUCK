@@ -58,7 +58,8 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/login/**",
                                 "/api/v1/gpt/translate",
-                                "/api/v1/topics").permitAll() // 로그인 관련은 모두 허용
+                                "/api/v1/topics",
+                                "/ws/**").permitAll() // 로그인 관련은 모두 허용
                         .anyRequest().authenticated() // 그 외 나머지는 인증 필요
                 )
 
