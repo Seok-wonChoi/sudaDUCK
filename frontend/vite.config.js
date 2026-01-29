@@ -44,14 +44,18 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/dev-api": {
-        target: "https://i14e104.p.ssafy.io",
-        changeOrigin: true,
-        ws: true,              // 중요: /dev-api/ws 업그레이드 처리
-        secure: true,          // 인증서 문제 있으면 false로
-        // 아래는 “백엔드가 Domain=i14e104... 로 쿠키를 굽는 경우” 로컬에서 쿠키 저장을 살리는 옵션
-        // cookieDomainRewrite: "localhost",
-      },
-    },
+  // 웹소켓 전용 (경로가 /dev-api/ws 로 올 경우)
+  "/dev-api/ws": {
+    target: "https://i14e104.p.ssafy.io",
+    changeOrigin: true,
+    ws: true,
+    rewrite: (path) => path.replace(/^\/dev-api/, ""),
   },
+  // 일반 API 전용
+  "/dev-api": {
+    target: "https://i14e104.p.ssafy.io",
+    changeOrigin: true,
+  },
+  },
+}
 });

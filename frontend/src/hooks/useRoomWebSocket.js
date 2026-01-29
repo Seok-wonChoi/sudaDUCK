@@ -2,136 +2,105 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import SockJS from "sockjs-client/dist/sockjs";
 import { Client } from "@stomp/stompjs";
 
-const getWsUrl = () => {
-  const wsBase = (import.meta.env.VITE_WS_BASE_URL || "").trim();
-  if (wsBase) return `${wsBase}/dev-api/ws`;
-  return "/dev-api/ws";
-};
-
 export default function useRoomWebSocket(roomCode, handlers = {}) {
   const clientRef = useRef(null);
   const subRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  const { onReadyChanged, onMicChanged, onError, onConnected, onDisconnected } =
-    handlers;
+  // 1. 핸들러들을 ref에 담아 useEffect의 의존성 배열에서 제거합니다.
+  // 이렇게 하면 WaitingRoomPage가 리렌더링되어도 소켓이 끊기지 않습니다.
+  const handlersRef = useRef(handlers);
+  useEffect(() => {
+    handlersRef.current = handlers;
+  }, [handlers]);
 
-  // READY 메시지 전송: /app/rooms/{roomCode}/ready
-  const sendReady = useCallback(
-    (ready) => {
-      const client = clientRef.current;
-      if (!client?.connected) return;
+  const sendReady = useCallback((ready) => {
+    const client = clientRef.current;
+    if (!client?.connected) return;
+    client.publish({
+      destination: `/app/rooms/${roomCode}/ready`,
+      body: JSON.stringify({ ready }),
+    });
+  }, [roomCode]);
 
-      client.publish({
-        destination: `/app/rooms/${roomCode}/ready`,
-        body: JSON.stringify({ ready }),
-      });
-    },
-    [roomCode]
-  );
-
-  // MIC 메시지 전송: /app/rooms/{roomCode}/mic
-  const sendMic = useCallback(
-    (micOn) => {
-      const client = clientRef.current;
-      if (!client?.connected) return;
-
-      client.publish({
-        destination: `/app/rooms/${roomCode}/mic`,
-        body: JSON.stringify({ micOn }),
-      });
-    },
-    [roomCode]
-  );
+  const sendMic = useCallback((micOn) => {
+    const client = clientRef.current;
+    if (!client?.connected) return;
+    client.publish({
+      destination: `/app/rooms/${roomCode}/mic`,
+      body: JSON.stringify({ micOn }),
+    });
+  }, [roomCode]);
 
   useEffect(() => {
     if (!roomCode) return;
 
-    const wsUrl = getWsUrl();
-    console.log(getWsUrl())
-
-    // localStorage에서 액세스 토큰 가져오기
     const token = localStorage.getItem("accessToken");
+    const apiBase = import.meta.env.VITE_API_BASE_URL || "";
+    const socketUrl = apiBase.startsWith("http") 
+      ? `${apiBase}/ws` 
+      : `${window.location.origin}${apiBase}/ws`;
 
     const client = new Client({
-      // withCredentials: true로 쿠키 전송
-      webSocketFactory: () => new SockJS(wsUrl, null, { withCredentials: true }),
-
-      // STOMP 연결 시 Authorization 헤더 추가
-      connectHeaders: token ? {
-        Authorization: `Bearer ${token}`
-      } : {},
-
+      webSocketFactory: () => new SockJS(socketUrl),
+      connectHeaders: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-
-      debug: () => {},
+      debug: (str) => console.log("[STOMP Debug]: ", str),
     });
 
     client.onConnect = () => {
       setIsConnected(true);
-
+      console.log("✅ STOMP Connected to Server");
+      
       subRef.current = client.subscribe(`/topic/rooms/${roomCode}`, (message) => {
         try {
           const data = JSON.parse(message.body);
           const { type, payload, senderKey } = data;
-
+          
+          // ref를 통해 최신 핸들러 호출
+          const { onReadyChanged, onMicChanged, onError } = handlersRef.current;
           switch (type) {
-            case "READY_CHANGED":
-              // senderKey(이메일)도 함께 전달하여 누가 상태를 변경했는지 식별
-              onReadyChanged?.(payload, senderKey);
-              break;
-            case "MIC_CHANGED":
-              onMicChanged?.(payload, senderKey);
-              break;
-            case "ERROR":
-              onError?.(payload);
-              break;
-            default:
-              break;
+            case "READY_CHANGED": onReadyChanged?.(payload, senderKey); break;
+            case "MIC_CHANGED": onMicChanged?.(payload, senderKey); break;
+            case "ERROR": onError?.(payload); break;
           }
         } catch (e) {
-          onError?.("WebSocket 메시지 파싱에 실패했습니다.");
+          console.error("Msg Parsing Error", e);
         }
       });
+      handlersRef.current.onConnected?.();
+    };
 
-      onConnected?.();
+    client.onStompError = (frame) => {
+      setIsConnected(false);
+      handlersRef.current.onError?.("STOMP 인증 에러");
     };
 
     client.onWebSocketError = () => {
       setIsConnected(false);
-      onError?.("WebSocket 소켓 에러가 발생했습니다.");
-    };
-
-    client.onStompError = () => {
-      setIsConnected(false);
-      onError?.("WebSocket STOMP 에러가 발생했습니다.");
+      handlersRef.current.onError?.("서버와 연결할 수 없습니다.");
     };
 
     client.onDisconnect = () => {
       setIsConnected(false);
-      onDisconnected?.();
+      handlersRef.current.onDisconnected?.();
     };
 
     clientRef.current = client;
     client.activate();
 
     return () => {
-      try {
-        subRef.current?.unsubscribe?.();
-      } finally {
-        subRef.current = null;
-      }
-
-      try {
-        client.deactivate();
-      } finally {
-        clientRef.current = null;
-        setIsConnected(false);
-      }
+      console.log("Cleanup: Deactivating Client");
+      if (subRef.current) subRef.current.unsubscribe();
+      if (client) client.deactivate();
+      clientRef.current = null;
     };
-  }, [roomCode, onReadyChanged, onMicChanged, onError, onConnected, onDisconnected]);
+    // 의존성 배열에서 handlers를 제거하여 무한 루프를 방지합니다.
+  }, [roomCode]); 
 
   return { sendReady, sendMic, isConnected };
 }
