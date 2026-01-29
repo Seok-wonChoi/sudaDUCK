@@ -49,9 +49,15 @@
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
-.DuckThumb {
+.DuckImageWrapper {
+  position: relative;
   width: 64px;
   height: 64px;
+}
+
+.DuckThumb {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
@@ -93,4 +99,46 @@
 
 .SaveBtn:hover {
   filter: brightness(1.05);
+}
+
+/* 잠금 시스템 스타일 */
+.Locked {
+  opacity: 0.7;
+}
+
+.LockOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.LockIcon {
+  font-size: 18px;
+}
+
+.CoinBadge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #000;
+}
+
+.CoinIconSmall {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
 }

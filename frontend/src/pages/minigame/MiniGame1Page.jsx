@@ -9,6 +9,7 @@ import WaitingPanel from '@/components/features/minigame1/waiting/WaitingPanel';
 import ResultPanel from '@/components/features/minigame1/result/ResultPanel';
 import ReviewPanel from '@/components/features/minigame1/review/ReviewPanel';
 import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
+import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
 
 const MOCK_PARTICIPANTS = [
   { id: 1, name: '장가은', isActive: true },
@@ -42,8 +43,8 @@ const MOCK_QUESTIONS = [
 ];
 
 const MOCK_RANKINGS = [
-  { id: 4, name: '김가민', score: 4, total: 4 },
-  { id: 1, name: '장가은', score: 3, total: 4 },
+  { id: 1, name: '장가은', score: 4, total: 4 },
+  { id: 4, name: '김가민', score: 3, total: 4 },
   { id: 3, name: '최현웅', score: 2, total: 4 },
   { id: 2, name: '이승엽', score: 1, total: 4 },
 ];
@@ -68,6 +69,7 @@ export default function MiniGame1Page() {
   const [blanksState, setBlanksState] = useState([]);
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [showGuide, setShowGuide] = useState(false);
+  const [showCoinReward, setShowCoinReward] = useState(false);
 
   const currentUserId = 1;
 
@@ -162,7 +164,14 @@ export default function MiniGame1Page() {
         initQuestion(currentQuestion + 1);
       } else {
         setPhase(GAME_PHASE.WAITING);
-        setTimeout(() => setPhase(GAME_PHASE.RESULT), 2000);
+        setTimeout(() => {
+          setPhase(GAME_PHASE.RESULT);
+          // 1등이면 코인 지급 알림 표시
+          const firstPlace = MOCK_RANKINGS[0];
+          if (firstPlace && firstPlace.id === currentUserId) {
+            setTimeout(() => setShowCoinReward(true), 500);
+          }
+        }, 2000);
       }
     }
   }, [inputValue, currentQuestion, currentBlank, blanksState, initQuestion]);
@@ -219,6 +228,12 @@ export default function MiniGame1Page() {
       {phase === GAME_PHASE.REVIEW && (
         <ReviewPanel questions={answeredQuestions} onComplete={handleComplete} />
       )}
+
+      <CoinRewardNotification
+        show={showCoinReward}
+        onComplete={() => setShowCoinReward(false)}
+        coins={100}
+      />
     </MiniGameLayout>
   );
 }

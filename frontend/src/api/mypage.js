@@ -18,3 +18,15 @@ export async function getMyScripts() {
   return data;
 }
 
+// 사용자 프로필 커스터마이징 정보 조회: GET /api/v1/me/profile/custom
+export async function getMyProfileCustom() {
+  const { data } = await api.get("/api/v1/me/profile/custom");
+  return data;
+}
+
+// 아이템 구매: POST /api/v1/shop/custom-items/{itemId}/purchase
+export async function purchaseItem(itemId, purchaseData) {
+  const { data } = await api.post(`/api/v1/shop/custom-items/${itemId}/purchase`, purchaseData);
+  return data;
+}
+
