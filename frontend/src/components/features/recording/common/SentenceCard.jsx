@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import styles from './SentenceCard.module.css';
 
 export default function SentenceCard({
@@ -6,12 +7,118 @@ export default function SentenceCard({
   totalSentences = 3,
   korean = '나는 카페에서 아르바이트를 했는데, 정말 힘들었어요.',
   english = 'I worked at a coffee shop, and it was really tough.',
-  showRecordingBox = false,
-  recordingContent = null,
-  isAIPlaying = false
+  blankWords = [],
+  score = null,
+  isActive = false,
+  cardState = 'idle',
+  countdown = 3,
+  sentenceId = null,
+  initialBookmarked = false,
+  onBookmarkToggle = null,
 }) {
+  const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
+
+  useEffect(() => {
+    setIsBookmarked(initialBookmarked);
+  }, [initialBookmarked]);
+
+  const handleBookmark = () => {
+    const newBookmarkedState = !isBookmarked;
+    setIsBookmarked(newBookmarkedState);
+
+    if (onBookmarkToggle) {
+      onBookmarkToggle(sentenceId, newBookmarkedState);
+    }
+
+    // TODO: API 호출하여 서버에 북마크 저장
+    console.log('북마크 토글:', sentenceId, newBookmarkedState);
+  };
+
+  // 영어 문장을 빈칸 처리하는 함수
+  const getDisplayEnglish = () => {
+    // AI가 읽어줄 때나 평가 결과 볼 때는 전체 문장 표시
+    const showFullSentence =
+      cardState === 'ai_playing' ||
+      cardState === 'record_done' ||
+      cardState === 'idle' ||
+      !isActive;
+
+    if (showFullSentence || blankWords.length === 0) {
+      return <>{english}</>;
+    }
+
+    // 녹음 대기 중이거나 녹음 중일 때는 빈칸 처리
+    let parts = [english];
+    blankWords.forEach((word) => {
+      const newParts = [];
+      parts.forEach((part) => {
+        if (typeof part === 'string') {
+          // 대소문자 구분 없이 단어 찾기
+          const regex = new RegExp(`\\b(${word})\\b`, 'gi');
+          const splits = part.split(regex);
+
+          splits.forEach((split, idx) => {
+            if (split.toLowerCase() === word.toLowerCase()) {
+              // 빈칸으로 처리
+              newParts.push(
+                <span key={`blank-${word}-${idx}`} className={styles.blank}>
+                  {'_'.repeat(split.length)}
+                </span>
+              );
+            } else if (split) {
+              newParts.push(split);
+            }
+          });
+        } else {
+          newParts.push(part);
+        }
+      });
+      parts = newParts;
+    });
+
+    return <>{parts}</>;
+  };
+  const getRecordingBoxContent = () => {
+    if (!isActive) {
+      return null;
+    }
+
+    switch (cardState) {
+      case 'record_timer':
+        return (
+          <div className={styles.recordingStatus}>
+            <span className={styles.statusText}>녹음 대기 중...</span>
+          </div>
+        );
+
+      case 'recording':
+        return (
+          <div className={styles.recordingActive}>
+            <div className={styles.recordingCircle}>
+              <span className={styles.countdownNumber}>{countdown}</span>
+            </div>
+            <p className={styles.recordingHint}>자동으로 다음 음성으로 넘어갑니다</p>
+          </div>
+        );
+
+      case 'record_done':
+        return (
+          <div className={styles.recordingStatus}>
+            <span className={`${styles.statusText} ${styles.statusSuccess}`}>
+              녹음이 끝났습니다
+            </span>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const showRecordingBox = isActive && (cardState === 'record_timer' || cardState === 'recording' || cardState === 'record_done');
+
   return (
-    <div className={styles.sentenceCard}>
+    <div className={`${styles.sentenceCard} ${isActive ? styles.active : ''}`}>
       <div className={styles.header}>
         <div className={styles.speakerInfo}>
           <div className={styles.speakerIcon}>
@@ -21,7 +128,34 @@ export default function SentenceCard({
           </div>
           <span className={styles.speakerName}>{speaker}</span>
         </div>
-        <span className={styles.progress}>{currentSentence} / {totalSentences}</span>
+        <div className={styles.headerRight}>
+          {score !== null && (
+            <span className={styles.score}>
+              개인 점수: <strong className={styles.scoreValue}>{score}점</strong> / 평균 78점
+            </span>
+          )}
+          <span className={styles.progress}>{currentSentence} / {totalSentences}</span>
+          <button
+            className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}
+            onClick={handleBookmark}
+            aria-label={isBookmarked ? "저장 해제" : "저장하기"}
+            title={isBookmarked ? "저장 해제" : "저장하기"}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M19 3H5C4.20435 3 3.44129 3.31607 2.87868 3.87868C2.31607 4.44129 2 5.20435 2 6V21L12 16.5L22 21V6C22 5.20435 21.6839 4.44129 21.1213 3.87868C20.5587 3.31607 19.7956 3 19 3Z"
+                stroke={isBookmarked ? "#2b7fff" : "#9CA3AF"}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill={isBookmarked ? "#2b7fff" : "none"}
+              />
+            </svg>
+            <span className={styles.bookmarkText}>
+              {isBookmarked ? "저장됨" : "저장하기"}
+            </span>
+          </button>
+        </div>
       </div>
 
       <div className={styles.content}>
@@ -33,7 +167,7 @@ export default function SentenceCard({
         <div className={`${styles.section} ${styles.englishSection}`}>
           <div className={styles.englishHeader}>
             <span className={styles.label}>English</span>
-            {isAIPlaying && (
+            {isActive && cardState === 'ai_playing' && (
               <span className={styles.aiStatus}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M2 8h4l3-6 3 12 3-6h3" stroke="#2B7FFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -42,14 +176,14 @@ export default function SentenceCard({
               </span>
             )}
           </div>
-          <p className={styles.text}>{english}</p>
+          <p className={styles.text}>{getDisplayEnglish()}</p>
         </div>
 
         {showRecordingBox && (
           <div className={styles.recordingBox}>
             <span className={styles.label}>내 발음 녹음하기</span>
             <div className={styles.recordingContent}>
-              {recordingContent}
+              {getRecordingBoxContent()}
             </div>
           </div>
         )}

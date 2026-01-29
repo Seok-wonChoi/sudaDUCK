@@ -9,12 +9,8 @@ import BottomRecording from '@/components/features/recording/bottom/BottomRecord
 import BottomRecordDone from '@/components/features/recording/bottom/BottomRecordDone';
 import BottomAllDone from '@/components/features/recording/bottom/BottomAllDone';
 
-// 개발용 패널 켜기/끄기
-const DEBUG_PANEL = true;
-
 // 서비스 설정
 const TURNS = 3;
-const SENTENCES_PER_TURN = 3;
 
 // 임시 재생/녹음 시간
 const AI_PLAYING_MS = 2500;
@@ -30,18 +26,90 @@ const STEP = {
   ALL_DONE: 'all_done',
 };
 
+// 임시 더미 데이터 - 실제로는 API나 state로부터 받아올 데이터
+const DUMMY_CONVERSATIONS = {
+  1: [
+    {
+      id: 1,
+      speaker: '장가은',
+      korean: '나는 카페에서 아르바이트를 했는데, 정말 힘들었어요.',
+      english: 'I worked at a coffee shop, and it was really tough.',
+      blankWords: ['worked', 'really'],
+      score: null,
+    },
+    {
+      id: 2,
+      speaker: '이승엽',
+      korean: '무엇이 가장 힘들었어요?',
+      english: 'What was the most difficult part?',
+      blankWords: ['most', 'difficult'],
+      score: null,
+    },
+    {
+      id: 3,
+      speaker: '장가은',
+      korean: '손님들이 많아서 바빴어요.',
+      english: 'It was busy because there were many customers.',
+      blankWords: ['busy', 'many'],
+      score: null,
+    },
+  ],
+  2: [
+    {
+      id: 4,
+      speaker: '김민수',
+      korean: '저는 주말에 영화를 봤어요.',
+      english: 'I watched a movie on the weekend.',
+      blankWords: ['watched', 'weekend'],
+      score: null,
+    },
+    {
+      id: 5,
+      speaker: '박지영',
+      korean: '무슨 영화를 봤어요?',
+      english: 'What movie did you watch?',
+      blankWords: ['movie', 'watch'],
+      score: null,
+    },
+  ],
+  3: [
+    {
+      id: 6,
+      speaker: '최수진',
+      korean: '오늘 날씨가 정말 좋네요.',
+      english: 'The weather is really nice today.',
+      blankWords: ['weather', 'nice'],
+      score: null,
+    },
+  ],
+};
+
 export default function RecordingPage() {
   const [step, setStep] = useState(STEP.IDLE);
   const [currentTurn, setCurrentTurn] = useState(1);
-  const [currentSentence, setCurrentSentence] = useState(1);
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [countdown, setCountdown] = useState(3);
+  const [sentenceScores, setSentenceScores] = useState({});
+  const [bookmarkedSentences, setBookmarkedSentences] = useState([]);
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
 
+  const currentTurnSentences = useMemo(() => {
+    return DUMMY_CONVERSATIONS[currentTurn] || [];
+  }, [currentTurn]);
+
+  const currentSentence = useMemo(() => {
+    return currentTurnSentences[currentSentenceIndex];
+  }, [currentTurnSentences, currentSentenceIndex]);
+
   const isLastSentence = useMemo(() => {
-    return currentTurn === TURNS && currentSentence === SENTENCES_PER_TURN;
-  }, [currentTurn, currentSentence]);
+    if (currentTurn === TURNS) {
+      const lastTurnSentences = DUMMY_CONVERSATIONS[TURNS] || [];
+      return currentSentenceIndex === lastTurnSentences.length - 1;
+    }
+    return false;
+  }, [currentTurn, currentSentenceIndex]);
 
   const clearAllTimers = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -56,14 +124,16 @@ export default function RecordingPage() {
       return;
     }
 
-    if (currentSentence < SENTENCES_PER_TURN) {
-      setCurrentSentence((s) => s + 1);
+    // 현재 턴의 다음 문장으로 이동
+    if (currentSentenceIndex < currentTurnSentences.length - 1) {
+      setCurrentSentenceIndex((idx) => idx + 1);
+      setStep(STEP.AI_TIMER);
     } else {
+      // 다음 턴으로 이동
       setCurrentTurn((t) => t + 1);
-      setCurrentSentence(1);
+      setCurrentSentenceIndex(0);
+      setStep(STEP.AI_TIMER);
     }
-
-    setStep(STEP.AI_TIMER);
   };
 
   const startFlow = () => {
@@ -71,16 +141,63 @@ export default function RecordingPage() {
   };
 
   const stopRecording = () => {
+    // 녹음 완료 시 임시 점수 부여 (실제로는 발음 평가 API 호출)
+    const randomScore = Math.floor(Math.random() * 40) + 60; // 60-100점
+    if (currentSentence) {
+      setSentenceScores((prev) => ({
+        ...prev,
+        [currentSentence.id]: randomScore,
+      }));
+    }
     setStep(STEP.RECORD_DONE);
   };
 
   const restart = () => {
     clearAllTimers();
     setCurrentTurn(1);
-    setCurrentSentence(1);
+    setCurrentSentenceIndex(0);
     setCountdown(3);
     setStep(STEP.IDLE);
+    setSentenceScores({});
   };
+
+  const handleBookmarkToggle = useCallback((sentenceId, isBookmarked) => {
+    setBookmarkedSentences((prev) => {
+      let newBookmarks;
+      if (isBookmarked) {
+        // 북마크 추가
+        if (!prev.includes(sentenceId)) {
+          newBookmarks = [...prev, sentenceId];
+        } else {
+          newBookmarks = prev;
+        }
+      } else {
+        // 북마크 제거
+        newBookmarks = prev.filter((id) => id !== sentenceId);
+      }
+
+      // localStorage에 저장
+      try {
+        localStorage.setItem('bookmarkedSentences', JSON.stringify(newBookmarks));
+      } catch (error) {
+        console.error('북마크 저장 실패:', error);
+      }
+
+      return newBookmarks;
+    });
+  }, []);
+
+  // 컴포넌트 마운트 시 localStorage에서 북마크 불러오기
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('bookmarkedSentences');
+      if (saved) {
+        setBookmarkedSentences(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error('북마크 불러오기 실패:', error);
+    }
+  }, []);
 
   // countdown 초기화 (타이머 단계 진입 시)
   useEffect(() => {
@@ -137,65 +254,31 @@ export default function RecordingPage() {
     }
   }, [step, clearAllTimers]);
 
-  // 카드에 전달할 props 결정
-  const getCardProps = () => {
-    const baseProps = {
-      currentSentence,
-      totalSentences: SENTENCES_PER_TURN,
-    };
+  // 카드 리스트에 전달할 데이터
+  const sentenceCardsData = useMemo(() => {
+    return currentTurnSentences.map((sentence, index) => ({
+      ...sentence,
+      score: sentenceScores[sentence.id],
+      isActive: index === currentSentenceIndex,
+      currentSentence: index + 1,
+      totalSentences: currentTurnSentences.length,
+      isBookmarked: bookmarkedSentences.includes(sentence.id),
+    }));
+  }, [currentTurnSentences, currentSentenceIndex, sentenceScores, bookmarkedSentences]);
 
+  // 현재 활성 카드의 상태
+  const getActiveCardState = () => {
     switch (step) {
       case STEP.AI_PLAYING:
-        return { ...baseProps, isAIPlaying: true };
-      
+        return 'ai_playing';
       case STEP.RECORD_TIMER:
+        return 'record_timer';
       case STEP.RECORDING:
+        return 'recording';
       case STEP.RECORD_DONE:
-        return {
-          ...baseProps,
-          showRecordingBox: true,
-          recordingContent: getRecordingContent(),
-        };
-      
+        return 'record_done';
       default:
-        return baseProps;
-    }
-  };
-
-  const getRecordingContent = () => {
-    switch (step) {
-      case STEP.RECORD_TIMER:
-        return <span style={{ color: '#6b7280', fontSize: '14px' }}>녹음 대기 중...</span>;
-      
-      case STEP.RECORDING:
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ 
-              width: '48px', 
-              height: '48px', 
-              borderRadius: '50%', 
-              backgroundColor: '#ef4444', 
-              margin: '0 auto 12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '24px',
-              fontWeight: 'bold'
-            }}>
-              {countdown}
-            </div>
-            <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
-              자동으로 다음 음성으로 넘어갑니다
-            </p>
-          </div>
-        );
-      
-      case STEP.RECORD_DONE:
-        return <span style={{ color: '#10b981', fontSize: '14px' }}>녹음이 완료되었습니다</span>;
-      
-      default:
-        return null;
+        return 'idle';
     }
   };
 
@@ -233,52 +316,13 @@ export default function RecordingPage() {
   };
 
   return (
-    <>
-      <Recordinglayout
-        currentTurn={currentTurn}
-        currentSentence={currentSentence}
-        bottomContent={bottomContent()}
-        cardProps={getCardProps()}
-      />
-
-      {DEBUG_PANEL && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 110,
-            right: 16,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            zIndex: 9999,
-            background: '#fff',
-            border: '1px solid #e5e7eb',
-            padding: 12,
-            borderRadius: 12,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-            width: 170,
-          }}
-        >
-          <div style={{ fontSize: 12, fontWeight: 700 }}>
-            step: {step}
-          </div>
-          <div style={{ fontSize: 12 }}>
-            turn {currentTurn} / sentence {currentSentence}
-          </div>
-
-          <button onClick={() => setStep(STEP.IDLE)}>1 Idle</button>
-          <button onClick={() => setStep(STEP.AI_TIMER)}>2 AI Timer</button>
-          <button onClick={() => setStep(STEP.AI_PLAYING)}>3 AI Playing</button>
-          <button onClick={() => setStep(STEP.RECORD_TIMER)}>4 Record Timer</button>
-          <button onClick={() => setStep(STEP.RECORDING)}>5 Recording</button>
-          <button onClick={() => setStep(STEP.RECORD_DONE)}>6 Record Done</button>
-          <button onClick={() => setStep(STEP.ALL_DONE)}>7 All Done</button>
-
-          <button onClick={restart} style={{ marginTop: 8 }}>
-            Restart
-          </button>
-        </div>
-      )}
-    </>
+    <Recordinglayout
+      currentTurn={currentTurn}
+      sentenceCards={sentenceCardsData}
+      activeCardState={getActiveCardState()}
+      countdown={countdown}
+      bottomContent={bottomContent()}
+      onBookmarkToggle={handleBookmarkToggle}
+    />
   );
 }
