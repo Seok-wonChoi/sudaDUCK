@@ -1,6 +1,5 @@
 package com.example.DuckDuck.domain.ai.service;
 
-import com.example.DuckDuck.domain.room.entity.Room;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +43,7 @@ public class TranslateService {
      * @param roomId 방 ID
      * @param text 한국어 텍스트
      * @param turnNo 턴 번호
-     * @param speakerId 발화자 이름
+     * @param speakerId 발화자 ID
      * @return 성공 여부
      */
     @Async("chatTaskExecutor")
@@ -53,26 +51,16 @@ public class TranslateService {
             String roomId,
             String text,
             Long turnNo,
-            String speakerId) {
+            Long speakerId) {
 
         // API 호출 순서대로 sequence 생성
         Long sequence = generateSequence(roomId);
 
-        log.info("[ASYNC-{}] 처리 시작 - roomId: {}, turn: {}, speaker_id: {}",
+        log.info("[ASYNC-{}] 처리 시작 - roomId: {}, turn: {}, speaker: {}",
                 sequence, roomId, turnNo, speakerId);
 
         try {
             Long roomIdLong = Long.parseLong(roomId);
-            //발화자 id로 이름 찾기
-            String topic = redisTemplate.opsForValue().get("room:" + roomId + ":topic");
-            String speakerName = (String) redisTemplate.opsForHash().get("room:" + roomId + ":member", speakerId);
-            //참여자 전체 명단
-            String participantsJson = redisTemplate.opsForValue().get("room:" + roomId + ":participants");
-            //방 정보가 없으면 에러
-            if (topic == null || speakerName == null){
-                log.error("[ASYNC-{}] Redis 세션 정보 누락 - roomId: {}, topic: {}, speakerName: {}",sequence, roomId, topic, speakerName);
-                return CompletableFuture.completedFuture(false);
-            }
 
             // 1. GPT 번역
             GptScriptResponse script = gptService.generateScript(text);
@@ -86,7 +74,7 @@ public class TranslateService {
             String scriptId = System.currentTimeMillis() + "_" + sequence;
 
             // 4. Redis에 저장 (명세서 형식)
-            saveToRedis(roomIdLong, turnNo, scriptId, sequence, topic, speakerName, text, script,ttsUrl, participantsJson);
+            saveToRedis(roomIdLong, turnNo, scriptId, sequence, speakerId, text, script, ttsUrl);
             log.info("[ASYNC-{}] Redis 저장 완료 - scriptId: {}", sequence, scriptId);
 
             return CompletableFuture.completedFuture(true);
@@ -107,16 +95,14 @@ public class TranslateService {
      * 3. Set: room:{roomId}:scripts (Cleanup용)
      */
     private void saveToRedis(Long roomId, Long turnNo, String scriptId, Long orderNo,
-                             String topic, String speakerName, String korean, GptScriptResponse script, String ttsUrl, String participantsJson) {
+                             Long speakerId, String korean, GptScriptResponse script, String ttsUrl) {
         try {
             // 1. Script Detail
             String detailKey = String.format("room:%d:turn:%d:script:%s", roomId, turnNo, scriptId);
 
             Map<String, String> scriptData = new HashMap<>();
             scriptData.put("order_no", orderNo.toString());
-            scriptData.put("speaker_name", speakerName);
-            scriptData.put("topic", topic);
-            scriptData.put("participants", participantsJson);
+            scriptData.put("speaker_id", speakerId.toString());
             scriptData.put("english", script.getEn());
             scriptData.put("korean", korean);
             scriptData.put("score", "0");

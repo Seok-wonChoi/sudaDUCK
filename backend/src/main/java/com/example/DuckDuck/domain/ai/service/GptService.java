@@ -23,6 +23,10 @@ public class GptService {
 
     private final String GMS_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1/chat/completions";
 
+    // ============================================
+    // 기존 메서드들 (변경 없음)
+    // ============================================
+
     /**
      * 방 생성 시 주제 추천 (1차원 배열!)
      * @return 주제 리스트 ["주제1", "주제2", "주제3"]
@@ -30,7 +34,7 @@ public class GptService {
     public List<String> getRecommendedTopics() {
         String prompt = "보고 바로 고를 수 있게 '아주 짧고 간결한 구어체'로 주제 3가지를 추천해줘.\n\n" +
                 "선정 및 말투 가이드:\n" +
-                "1. 길이 제한: 반드시 10자 내외의 아주 짧은 구어체로 작성할 것.\n" +
+                "1. 길이 제한: 반드시 10자 내외의 짧은 구어체로 작성할 것.\n" +
                 "2. 구성: 아주 평범한 일상 대화 3개.\n\n" +
                 "응답 구조 (반드시 JSON 배열만, 다른 텍스트 없이!):\n" +
                 "[\n" +
@@ -92,6 +96,43 @@ public class GptService {
         }
     }
 
+    // ============================================
+    // 🆕 AI 기능용 추가 메서드
+    // ============================================
+
+    /**
+     * JSON 응답을 요청하는 범용 GPT 호출
+     * 
+     * @param prompt 프롬프트 (JSON 응답 요청 포함)
+     * @return JSON 문자열 (추출된 JSON만)
+     */
+    public String callGptForJson(String prompt) {
+        log.info("GPT JSON 호출 - prompt length: {}", prompt.length());
+        return callGptRaw(prompt);
+    }
+
+    /**
+     * JSON 문자열을 Map으로 파싱
+     * 
+     * @param json JSON 문자열
+     * @return Map 객체
+     * @throws RuntimeException 파싱 실패 시
+     */
+    public Map<String, Object> parseJsonResponse(String json) {
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = objectMapper.readValue(json, Map.class);
+            return result;
+        } catch (Exception e) {
+            log.error("JSON 파싱 실패 - json: {}", json, e);
+            throw new RuntimeException("GPT 응답 파싱 실패", e);
+        }
+    }
+
+    // ============================================
+    // Private 메서드
+    // ============================================
+
     /**
      * GPT 호출 (JSON 문자열 반환)
      */
@@ -117,6 +158,12 @@ public class GptService {
         // JSON 시작/끝 추출
         int startIndex = content.indexOf("{");
         int endIndex = content.lastIndexOf("}");
+        
+        if (startIndex == -1 || endIndex == -1) {
+            // JSON이 아닌 경우 배열일 수도 있음
+            startIndex = content.indexOf("[");
+            endIndex = content.lastIndexOf("]");
+        }
         
         return content.substring(startIndex, endIndex + 1);
     }
