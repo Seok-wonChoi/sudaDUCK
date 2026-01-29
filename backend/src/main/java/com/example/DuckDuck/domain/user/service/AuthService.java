@@ -5,6 +5,7 @@ import com.example.DuckDuck.domain.user.dto.request.TokenDto;
 import com.example.DuckDuck.domain.user.entity.Member;
 import com.example.DuckDuck.domain.user.entity.Profile;
 import com.example.DuckDuck.domain.user.repository.MemberRepository;
+import com.example.DuckDuck.domain.user.repository.ProfileRepository;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -22,6 +23,16 @@ public class AuthService {
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
+    private final ProfileRepository profileRepository;
+
+    private static final String DEFAULT_DUCK_JSON =
+            "{\"v\":1,\"color\":\"YELLOW\",\"accessory\":\"NONE\"}";
+
+    private static final String DEFAULT_AVATAR_JSON =
+            "{\"v\":1,\"bgStyle\":\"BASIC_WHITE\",\"effect\":\"NONE\"}";
+
+    private static final int DEFAULT_COINS = 0;
+
 
     @Transactional
     public Member testSignup(TestSignupRequest request){
@@ -37,16 +48,11 @@ public class AuthService {
                 .isActive(true)
                 .build();
 
+        memberRepository.save(newMember);
 
-        Profile newProfile = Profile.builder()
-                .user(newMember)
-                .coins(0)
-                .attendanceDays(0)
-                .lastLoginAt(LocalDateTime.now())
-                .build();
+        ensureProfile(newMember);
 
-        newMember.setProfile(newProfile);
-        return memberRepository.save(newMember);
+        return newMember;
     }
 
 
@@ -58,6 +64,8 @@ public class AuthService {
         if(!member.getEmail().equals(email)){
             throw new RuntimeException("이메일 정보가 일치하지 않습니다.");
         }
+
+        ensureProfile(member);
 
         // 1. Access Token 생성
         String accessToken = jwtTokenProvider.createAccessToken(
@@ -108,5 +116,28 @@ public class AuthService {
 
         return jwtTokenProvider.createAccessToken(member.getId(), member.getEmail());
 
+    }
+
+    @Transactional
+    public void ensureProfile(Member member) {
+        Long userId = member.getId();
+
+        if (profileRepository.existsById(userId)) {
+            return;
+        }
+
+        Profile profile = Profile.builder()
+                .user(member)
+                .coins(DEFAULT_COINS)
+                .attendanceDays(0)
+                .duckCustomJson(DEFAULT_DUCK_JSON)
+                .avatarCustomJson(DEFAULT_AVATAR_JSON)
+                .lastLoginAt(LocalDateTime.now())
+                .totalTime(0)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        profileRepository.save(profile);
     }
 }
