@@ -60,12 +60,13 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
         try {
           const data = JSON.parse(message.body);
           const { type, payload, senderKey } = data;
-          
+
           // ref를 통해 최신 핸들러 호출
-          const { onReadyChanged, onMicChanged, onError } = handlersRef.current;
+          const { onReadyChanged, onMicChanged, onMemberJoined, onError } = handlersRef.current;
           switch (type) {
             case "READY_CHANGED": onReadyChanged?.(payload, senderKey); break;
             case "MIC_CHANGED": onMicChanged?.(payload, senderKey); break;
+            case "MEMBER_JOINED": onMemberJoined?.(payload, senderKey); break;
             case "ERROR": onError?.(payload); break;
           }
         } catch (e) {

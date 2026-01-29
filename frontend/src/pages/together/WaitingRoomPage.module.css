@@ -463,6 +463,13 @@
   cursor: not-allowed;
 }
 
+/* 준비 완료 상태 버튼 스타일 */
+.StartButtonReady {
+  background: #818cf8;
+  opacity: 0.85;
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.18);
+}
+
 /* 시작 버튼 아이콘 */
 .PlayIcon {
   display: inline-block;

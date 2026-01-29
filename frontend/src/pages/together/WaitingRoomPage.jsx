@@ -265,7 +265,34 @@ export default function WaitingRoomPage() {
     fetchLobby();
   }, [fetchLobby]);
 
+  // 디버깅: participants와 myEmail 변경 시 로그 출력
+  useEffect(() => {
+    console.log("[디버깅] 참여자 상태 변경:", {
+      myEmail,
+      participantsCount: participants.length,
+      participants: participants.map(p => ({
+        email: p.email,
+        nickname: p.nickname,
+        isMe: p.email === myEmail,
+        micOn: p.micOn,
+        isReady: p.isReady
+      })),
+      myMicOn
+    });
+  }, [participants, myEmail, myMicOn]);
+
   const currentCount = totalCount || participants.length;
+
+  // WebSocket 이벤트 핸들러: 멤버 참여
+  const handleMemberJoined = useCallback((payload, senderKey) => {
+    console.log("[handleMemberJoined] 새로운 멤버가 참여했습니다!", {
+      payload,
+      senderKey,
+      currentParticipants: participants.length
+    });
+    // 참여자 목록 다시 가져오기
+    fetchLobbyRef.current?.();
+  }, [participants.length]);
 
   // WebSocket 이벤트 핸들러: READY_CHANGED
   // senderKey(이메일)로 해당 참여자를 찾아서 준비 상태 업데이트
@@ -301,19 +328,34 @@ export default function WaitingRoomPage() {
   // senderKey(이메일)로 해당 참여자의 마이크 상태 업데이트
   const handleMicChanged = useCallback(
     (payload, senderKey) => {
-      console.log("MIC_CHANGED 수신:", { payload, senderKey });
+      console.log("[handleMicChanged] MIC_CHANGED 수신:", {
+        payload,
+        senderKey,
+        myEmail,
+        isMyChange: senderKey === myEmail
+      });
 
-      if (!senderKey) return;
+      if (!senderKey) {
+        console.warn("[handleMicChanged] senderKey가 없습니다.");
+        return;
+      }
 
-      // 내 마이크 상태는 로컬에서 관리하므로, 다른 사람만 업데이트
-      // (내 이메일이면 무시해도 되지만, 서버 응답과 동기화하고 싶으면 반영)
+      // 내 마이크는 로컬 상태(myMicOn)로만 관리, 다른 사람의 마이크만 업데이트
+      if (senderKey === myEmail) {
+        console.log("[handleMicChanged] 내 마이크 상태 변경은 로컬에서 이미 관리 중입니다. 무시합니다.");
+        return;
+      }
+
+      console.log(`[handleMicChanged] ${senderKey}의 마이크 상태를 ${payload.micOn}으로 업데이트합니다.`);
+
+      // 다른 사람의 마이크 상태만 업데이트
       setParticipants((prev) =>
         prev.map((p) =>
           p.email === senderKey ? { ...p, micOn: payload.micOn } : p
         )
       );
     },
-    []
+    [myEmail]
   );
 
   const handleWebSocketError = useCallback(
@@ -335,6 +377,7 @@ export default function WaitingRoomPage() {
   const { sendReady, sendMic } = useRoomWebSocket(inviteCode, {
     onReadyChanged: handleReadyChanged,
     onMicChanged: handleMicChanged,
+    onMemberJoined: handleMemberJoined,
     onError: handleWebSocketError,
     onConnected: handleConnected,
     onDisconnected: () => console.log("WebSocket 연결 해제됨"),
@@ -356,11 +399,15 @@ export default function WaitingRoomPage() {
 
   // 마이크 토글: 로컬 상태 즉시 변경 + WebSocket 전송
   const toggleMyMic = useCallback(async () => {
+    const newMicState = !myMicOn;
+    console.log(`[toggleMyMic] 내 마이크 상태 변경: ${myMicOn} -> ${newMicState}, myEmail: ${myEmail}`);
+
     if (myMicOn) {
       setMyMicOn(false);
       await stopAudioAnalysis();
       // WebSocket으로 마이크 상태 전송
       sendMic(false);
+      console.log("[toggleMyMic] 마이크 OFF 전송 완료");
       return;
     }
 
@@ -368,15 +415,25 @@ export default function WaitingRoomPage() {
     await startAudioAnalysis();
     // WebSocket으로 마이크 상태 전송
     sendMic(true);
-  }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
+    console.log("[toggleMyMic] 마이크 ON 전송 완료");
+  }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic, myEmail]);
 
-  // 준비 상태 토글: WebSocket으로 전송 (상태는 READY_CHANGED 이벤트로 받아서 업데이트)
+  // 준비 상태 토글: 즉시 로컬 상태 업데이트 + WebSocket으로 전송
   const toggleMyReady = useCallback(() => {
     const newReadyState = !myReady;
+
+    console.log(`[toggleMyReady] 준비 상태 변경: ${myReady} -> ${newReadyState}`);
+
+    // 즉시 로컬 상태 업데이트 (낙관적 업데이트)
+    setParticipants((prev) =>
+      prev.map((p) =>
+        p.email === myEmail ? { ...p, isReady: newReadyState } : p
+      )
+    );
+
     // WebSocket으로 준비 상태 전송
     sendReady(newReadyState);
-    // 실제 상태 업데이트는 handleReadyChanged에서 처리
-  }, [myReady, sendReady]);
+  }, [myReady, sendReady, myEmail]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -581,6 +638,17 @@ export default function WaitingRoomPage() {
                   // 내 마이크는 로컬 상태(myMicOn), 다른 사람은 서버에서 받은 micOn
                   const micOn = isMe ? myMicOn : (p.micOn ?? false);
 
+                  // 디버깅: 각 참여자 렌더링 시 상태 출력
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log(`[렌더링] ${p.nickname}:`, {
+                      email: p.email,
+                      isMe,
+                      micOn,
+                      myMicOn,
+                      'p.micOn': p.micOn
+                    });
+                  }
+
                   return (
                     <div key={p.email || index} className={styles.ParticipantRow}>
                       <div className={styles.ParticipantLeft}>
@@ -638,7 +706,7 @@ export default function WaitingRoomPage() {
               type="button"
               className={`${styles.StartButton} ${
                 primaryDisabled ? styles.StartButtonDisabled : ""
-              }`}
+              } ${!isHost && myReady ? styles.StartButtonReady : ""}`}
               onClick={handlePrimary}
               disabled={primaryDisabled}
               aria-disabled={primaryDisabled}
