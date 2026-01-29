@@ -7,7 +7,6 @@
     "dev": "vite",
     "build:dev": "vite build --base=/dev/",
     "build": "vite build",
-    "build:dev": "vite build --base=/dev/",
     "lint": "eslint .",
     "preview": "vite preview"
   },
