@@ -30,25 +30,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
   font-size: 20px;
   font-weight: 700;
   color: #374151;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   z-index: 10;
 }
 
 .BackButton:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .BackButton:active {
-  background: rgba(0, 0, 0, 0.08);
+  background: #f3f4f6;
+  transform: scale(0.96);
 }
 
 /* 하단 연보라 영역 */

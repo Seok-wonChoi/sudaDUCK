@@ -5,12 +5,12 @@
   border: 1px solid rgba(229, 231, 235, 1);
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(17, 24, 39, 0.10);
-  padding: 14px 18px;
+  padding: 10px 16px;
   text-align: center;
 }
 
 .Text {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   color: #374151;
 }

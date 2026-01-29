@@ -1,11 +1,11 @@
 /* src/components/Main/StatsSection/StatsSection.module.css */
 
 .Section {
-  margin-top: 22px;
+  margin-top: 0;
 
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: 16px;
 
   max-width: 980px;
   margin-left: auto;

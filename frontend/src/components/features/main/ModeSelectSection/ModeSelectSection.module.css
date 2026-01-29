@@ -1,7 +1,7 @@
 .Section {
-  margin-top: 18px;
+  margin-top: 12px;
   display: flex;
   justify-content: center;
-  gap: 34px;
+  gap: 28px;
   flex-wrap: wrap;
 }
