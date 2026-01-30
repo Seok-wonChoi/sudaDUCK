@@ -26,4 +26,14 @@ public interface RoomParticipantsRepository extends JpaRepository<RoomParticipan
 
     // 대기방에 남아있는 참가자만 조회
     List<RoomParticipants> findByRoom_RoomIdAndIsLeftFalse(Long roomId);
+
+    //사용자가 해당 방의 참여자이고, 아직 나가지 않았는지 확인
+    @Query(value =
+            "SELECT COUNT(*) > 0 " +
+                    "FROM room_participants rp " +
+                    "WHERE rp.room_id = :roomId " +
+                    "AND rp.user_id = :userId " +
+                    "AND rp.is_left = false",
+            nativeQuery = true)
+    boolean isUserActiveParticipant(@Param("roomId") Long roomId, @Param("userId") Long userId);
 }
