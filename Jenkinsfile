@@ -16,7 +16,7 @@ pipeline {
         // [Frontend 환경변수]
         IMG_FRONT = 'my-frontend-prod'
         API_URL_FRONT = 'https://i14e104.p.ssafy.io/prod-api'
-        FRONT_PATH = "/home/ubuntu/frontend" // 승엽님이 docker-compose.yml을 만들어둔 폴더
+        // FRONT_PATH 변수는 이제 사용하지 않으므로 삭제해도 되지만, 일단 둡니다.
     }
 
     stages {
@@ -84,7 +84,7 @@ pipeline {
         }
 
         // =================================================================
-        // [STAGE 2] FRONTEND 빌드 및 독립 배포 (Docker Compose)
+        // [STAGE 2] FRONTEND 빌드 및 독립 배포 (명령어 직접 실행 방식)
         // =================================================================
         stage('Deploy Frontend') {
             when { branch 'master' }
@@ -98,18 +98,22 @@ pipeline {
 ---
 * **브랜치**: `master`
 * **작업자**: `${buildUser}`
-* **상태**: `Frontend 이미지 빌드 (Node 24) 및 Compose 재기동 중...`
+* **상태**: `Frontend 이미지 빌드 및 컨테이너 교체 중...`
 ---
 """
                         sendMM(startMsg, "#FFD700")
 
-                        // 1. 이미지 빌드 (build:prod 파라미터 전달)
+                        // 1. 이미지 빌드
                         sh "docker build --build-arg BUILD_CMD='build:prod' --build-arg VITE_API_URL=${API_URL_FRONT} -t ${IMG_FRONT}:latest ."
                         
-                        // 2. 홈 디렉토리의 docker-compose.yml을 사용하여 독립적 실행
-                        dir("${FRONT_PATH}") {
-                            sh "docker compose up -d --force-recreate"
-                        }
+                        // 2. 기존 컨테이너 삭제 (파일 의존성 없이 이름으로 삭제)
+                        sh "docker rm -f prod-frontend || true"
+
+                        // 3. 새 컨테이너 실행 (백엔드처럼 명령어로 직접 실행)
+                        // - 포트: 3001:80
+                        // - 네트워크: prod-net
+                        // - 재시작: always
+                        sh "docker run -d --name prod-frontend --network ${NET_PROD} -p 3001:80 --restart always ${IMG_FRONT}:latest"
                     }
                 }
             }
