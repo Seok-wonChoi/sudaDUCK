@@ -71,4 +71,12 @@ public class JwtTokenProvider {
         }
     }
 
+    public Long getUserId(String token){
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("userId", Long.class);
+    }
 }

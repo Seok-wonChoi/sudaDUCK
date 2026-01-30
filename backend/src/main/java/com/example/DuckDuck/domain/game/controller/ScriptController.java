@@ -39,7 +39,8 @@ public class ScriptController {
                                        @RequestParam int turnNo,
                                        @PathVariable String scriptId){
 
-        Map<String, Object> result = scriptService.likeSentence(email, roomId, turnNo, scriptId);
+        Map<String, Object> result = scriptService.
+                likeSentence(email, roomId, turnNo, scriptId);
 
         return ResponseEntity.ok(result);
     }
