@@ -37,17 +37,20 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
         // =================================================================
-        // ★ [최종 전략] 배포 환경(쿠키 있음) vs 로컬(쿠키 없음) 판별
+        // ★ [여기가 문제였습니다!] 논리를 완전히 뒤집습니다.
         // =================================================================
         
-        boolean isProd = false;
+        // 기본값(default)을 "로컬(Local)"로 잡습니다.
+        // 왜냐? 로컬은 도메인 문제로 쿠키를 못 보내니까, "아무것도 안 가져오면 로컬놈이다"라고 간주하는 겁니다.
+        String baseUrl = "http://localhost:5173/oauth2/redirect"; 
 
-        // 1. 요청에 'client_env=production' 쿠키가 있는지 확인
-        // (로컬에서는 이 쿠키가 서버로 안 넘어오므로, 이 쿠키가 있다는 건 배포 환경이라는 뜻)
+        // 1. 요청에 'client_env=production' (배포용) 쿠키가 있는지 확인
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
+                // 배포 환경에서 심은 쿠키가 발견되면?
                 if ("client_env".equals(cookie.getName()) && "production".equals(cookie.getValue())) {
-                    isProd = true;
+                    // "아! 너 배포환경에서 왔구나!" -> 주소를 Dev로 변경
+                    baseUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect";
                     
                     // 확인한 쿠키는 삭제 (청소)
                     cookie.setMaxAge(0);
@@ -58,17 +61,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             }
         }
 
-        // 2. 목적지(Base URL) 설정
-        String baseUrl;
-        if (isProd) {
-            // [배포 환경] 쿠키가 발견됨 -> Dev 서버 리다이렉트 주소
-            baseUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect"; 
-        } else {
-            // [로컬 환경] 쿠키가 없음 -> Localhost 리다이렉트 주소
-            baseUrl = "http://localhost:5173/oauth2/redirect"; 
-        }
-
-        // 3. [통일] 로컬이든 배포든 "무조건" URL 뒤에 토큰을 붙여서 보냄
+        // 2. 결정된 주소(baseUrl)로 토큰 싣고 발사
         String targetUrl = UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)
@@ -77,20 +70,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // =================================================================
 
         // RT:{email} 저장 (Redis)
-        redisTemplate.opsForValue().set(
-                "RT:" + email,
-                refreshToken,
-                Duration.ofDays(14)
-        );
+        redisTemplate.opsForValue().set("RT:" + email, refreshToken, Duration.ofDays(14));
         
-        // HttpOnly 쿠키 (RefreshToken) - 보안 백업용
-        CookieUtil.addCookie(
-                response,
-                "refreshToken",
-                refreshToken,
-                60 * 60 * 24 * 14,
-                true
-        );
+        // HttpOnly 쿠키 (RefreshToken)
+        CookieUtil.addCookie(response, "refreshToken", refreshToken, 60 * 60 * 24 * 14, true);
 
         // 리다이렉트 실행
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
