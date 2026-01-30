@@ -121,7 +121,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
       // AI 대화 추천 구독 (정적 감지)
       const suggestionSub = client.subscribe(`/topic/room/${roomCode}/suggestion`, (message) => {
         try {
-          const data = JSON.parse(message.body);
+          const dagitta = JSON.parse(message.body);
           const { type, question } = data;
 
           if (type === "CONVERSATION_SUGGESTION") {
