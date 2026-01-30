@@ -24,6 +24,7 @@ public class TranslateService {
     private final AzureSpeechService azureSpeechService;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
+    private final TextPreprocessingService preprocessingService;
 
     private static final long TTL_MINUTES = 120;
 
@@ -75,6 +76,14 @@ public class TranslateService {
 
         try {
             Long roomIdLong = Long.parseLong(roomId);
+
+            text = preprocessingService.preprocess(text);
+
+            if (text == null) {
+                log.warn("[ASYNC-{}] 전처리 필터링됨 - 원본: '{}'",
+                        orderNo, text);
+                return CompletableFuture.completedFuture(false);
+            }
 
             // 1. GPT 번역
             GptScriptResponse script = gptService.generateScript(text);
