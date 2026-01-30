@@ -1,5 +1,6 @@
 import api, { API_BASE_URL } from "./api";
 
+<<<<<<< HEAD
 /**
  * 카카오 OAuth2 로그인
  * * 변경점:
@@ -7,22 +8,34 @@ import api, { API_BASE_URL } from "./api";
  * 2. 바로 카카오로 안 가고, 백엔드 AuthController(/api/v1/auth/login)를 거쳐감
  * 3. URL 뒤에 ?env=local 파라미터를 붙여서 환경을 알림
  */
+=======
+
+
+export async function login(data) {
+  const res = await api.post("/api/v1/auth/login", data);
+
+  const accessToken = res?.data?.accessToken;
+  const refreshToken = res?.data?.refreshToken;
+
+  if (accessToken) {
+    localStorage.setItem("accessToken", accessToken);
+    // WS가 쿠키 access_token 필요 - cross-site 요청을 위해 SameSite=None; Secure 설정
+    document.cookie = `access_token=${accessToken}; Path=/; SameSite=None; Secure`;
+  }
+  if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+
+  return res.data;
+}
+
+
+
+
+>>>>>>> e66372c65b49bc62fd20c7fc4ec3e5b2b2b0ec1c
 export const loginWithKakao = () => {
-  // 1. API 주소 다듬기 (끝에 / 제거)
   const base = (API_BASE_URL || "").trim().replace(/\/$/, "");
-  
-  // 2. 현재 브라우저가 로컬인지 확인
-  const isLocal = window.location.hostname === "localhost";
-
-  // 3. 보낼 파라미터 결정 (로컬이면 'local', 아니면 'prod')
-  const envParam = isLocal ? "local" : "prod";
-
-  console.log(`[카카오 로그인] 환경: ${envParam}, AuthController로 이동합니다.`);
-
-  // ★ [핵심] 우리가 만든 백엔드 컨트롤러로 이동! (?env=... 붙임)
-  // 예: https://i14e104.../dev-api/api/v1/auth/login?env=local
-  window.location.href = `${base}/api/v1/auth/login?env=${envParam}`;
+  window.location.href = `${base}/oauth2/authorization/kakao`;
 };
+
 
 /**
  * 로그아웃
