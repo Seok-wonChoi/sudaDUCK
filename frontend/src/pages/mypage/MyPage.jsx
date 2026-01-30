@@ -147,15 +147,35 @@ export default function MyPage() {
   const [showDuckModal, setShowDuckModal] = useState(false);
   const [showDuckBotModal, setShowDuckBotModal] = useState(false);
 
+  // localStorage에서 프로필 정보 읽어오기 (초기 렌더링 플래시 방지)
+  const getInitialProfile = () => {
+    try {
+      const savedProfile = localStorage.getItem('userProfile');
+      if (savedProfile) {
+        const profile = JSON.parse(savedProfile);
+        return {
+          profileId: profile.profileId || "profile1",
+          color: profile.color || "white",
+          accessory: profile.accessory || "none",
+        };
+      }
+    } catch (e) {
+      console.error("localStorage 프로필 읽기 실패:", e);
+    }
+    return { profileId: "profile1", color: "white", accessory: "none" };
+  };
+
+  const initialProfile = getInitialProfile();
+
   const [nickname, setNickname] = useState("영어 마스터");
   const [nicknameStyle, setNicknameStyle] = useState({
     background: "gradient",
     effect: "none",
   });
-  const [duckProfileId, setDuckProfileId] = useState("profile1");
+  const [duckProfileId, setDuckProfileId] = useState(initialProfile.profileId);
   const [duckStyle, setDuckStyle] = useState({
-    color: "white",
-    accessory: "none",
+    color: initialProfile.color,
+    accessory: initialProfile.accessory,
   });
   const [duckBotId, setDuckBotId] = useState("cyan");
 
