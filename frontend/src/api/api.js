@@ -1,6 +1,8 @@
 import axios from "axios";
 
-export const API_BASE_URL = "https://i14e104.p.ssafy.io/prod-api";
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/prod-api")
+.trim()
+.replace(/\/$/, "");;
 const REFRESH_URL = "/api/v1/auth/refresh";
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -76,7 +76,7 @@ pipeline {
 
                         // 2. 이미지 빌드 (API 주소 확실하게 주입)
                         // build:prod 스크립트 실행
-                        sh "docker build --build-arg BUILD_CMD='build:prod' --build-arg VITE_API_URL=${API_URL_FRONT} -t ${IMG_FRONT}:latest ."
+                        sh "docker build --build-arg BUILD_CMD='build:prod' --build-arg VITE_API_BASE_URL=${API_URL_FRONT} -t ${IMG_FRONT}:latest ."
                         
                         // 3. Docker Run으로 직접 실행 (포트 3001)
                         // 볼륨 마운트(-v)를 뺐습니다. 그래야 방금 빌드한 새 파일만 씁니다.

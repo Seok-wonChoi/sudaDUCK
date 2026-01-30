@@ -22,8 +22,8 @@ FROM nginx:stable-alpine
 
 # [핵심] /dev 경로 대응을 위한 폴더 생성 및 빌드 결과물 복사
 # Vite의 base 설정을 /dev/로 맞췄기 때문에 Nginx도 해당 경로에 파일을 둡니다.
-RUN mkdir -p /usr/share/nginx/html/dev
-COPY --from=build /app/dist /usr/share/nginx/html/dev
+
+COPY --from=build /app/dist /usr/share/nginx/html
 
 # ★ 중요: 작성한 nginx.conf를 Nginx 설정으로 교체
 COPY nginx.conf /etc/nginx/conf.d/default.conf
