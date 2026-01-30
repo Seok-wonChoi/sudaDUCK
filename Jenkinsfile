@@ -44,7 +44,7 @@ pipeline {
                         sendMM(startMsg, "#FFD700")
 
                         // 1. 이미지 빌드 (build:dev 사용 + Dev API 주소 주입)
-                        sh "docker build --build-arg BUILD_CMD='build:dev' --build-arg VITE_API_URL=${API_URL_FRONT} -t ${IMG_FRONT}:latest ."
+                        sh "docker build --build-arg BUILD_CMD='build:dev' --build-arg VITE_API_BASE_URL=${API_URL_FRONT} -t ${IMG_FRONT}:latest ."
                         
                         // 2. 기존 컨테이너 삭제 (이름: dev-frontend)
                         sh "docker rm -f dev-frontend || true"
