@@ -1,6 +1,7 @@
 package com.example.DuckDuck.domain.game.service;
 
 import com.example.DuckDuck.domain.game.dto.response.ScriptResponse;
+import com.example.DuckDuck.domain.game.dto.response.SessionResultResponse;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -58,5 +59,49 @@ public class SessionService {
                 .sorted(Comparator.comparing(ScriptResponse::getOrder_no))
                 .collect(Collectors.toList());
 
+    }
+
+    //세션 별 report 화면 결과 내용 조회
+    public List<SessionResultResponse> getSessionResults(Long roomId, Integer turnNo) {
+
+        //방 맴버 정보 가져오기
+        String memberKey = "room:" + roomId + ":member";
+        Map<Object, Object> memberMap = redisTemplate.opsForHash().entries(memberKey);
+        int participantCount = memberMap.isEmpty() ? 1 : memberMap.size();
+
+        //해당 세션의 스크립트 키들 검색
+        String pattern = "room:" + roomId + ":turn:" + turnNo + ":script:*";
+        Set<String> scriptKeys = redisTemplate.keys(pattern);
+
+        if (scriptKeys == null || scriptKeys.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<SessionResultResponse> results = new ArrayList<>();
+
+        for (String key : scriptKeys) {
+            Map<Object, Object> data = redisTemplate.opsForHash().entries(key);
+
+            if (!data.isEmpty()) {
+                String speakId = data.getOrDefault("speaker_id", "").toString();
+                String speakerName = (String) memberMap.getOrDefault(speakId, "Unknown");
+
+                double totalScore = Double.parseDouble(data.getOrDefault("score", "0").toString());
+                double avgScore = totalScore / participantCount;
+
+                results.add(SessionResultResponse.builder()
+                        .order_no(Integer.parseInt(data.get("order_no").toString()))
+                        .speakerName(speakerName)
+                        .english((String) data.get("english"))
+                        .korean((String) data.get("korean"))
+                        .blank_script((String) data.get("blank_script"))
+                        .averageScore(Math.round(avgScore * 10.0) / 10.0)
+                        .build());
+            }
+        }
+
+        return results.stream()
+                .sorted(Comparator.comparing(SessionResultResponse::getOrder_no))
+                .collect(Collectors.toList());
     }
 }
