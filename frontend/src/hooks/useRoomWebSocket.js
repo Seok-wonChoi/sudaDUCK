@@ -114,6 +114,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
               break;
             case "SETTINGS_CHANGED":
             case "ROOM_SETTINGS_CHANGED":
+            case "ROOM_UPDATED":
               console.log("→ SETTINGS_CHANGED 핸들러 호출");
               onSettingsChanged?.(payload, senderKey);
               break;
