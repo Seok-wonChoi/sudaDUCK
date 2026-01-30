@@ -5,58 +5,61 @@ import { Client } from "@stomp/stompjs";
 export default function useRoomWebSocket(roomCode, handlers = {}) {
   const clientRef = useRef(null);
   const subRef = useRef(null);
+  const suggestionSubRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  // 1. 핸들러들을 ref에 담아 useEffect의 의존성 배열에서 제거합니다.
-  // 이렇게 하면 WaitingRoomPage가 리렌더링되어도 소켓이 끊기지 않습니다.
+  // 핸들러를 ref로 보관해서 리렌더링 시에도 최신 핸들러를 사용
   const handlersRef = useRef(handlers);
   useEffect(() => {
     handlersRef.current = handlers;
   }, [handlers]);
 
-  const sendReady = useCallback((ready) => {
-    const client = clientRef.current;
-    if (!client?.connected) return;
-    client.publish({
-      destination: `/app/rooms/${roomCode}/ready`,
-      body: JSON.stringify({ ready }),
-    });
-  }, [roomCode]);
+  const sendReady = useCallback(
+    (ready) => {
+      const client = clientRef.current;
+      if (!client?.connected) return;
 
-  const sendMic = useCallback((micOn) => {
-    const client = clientRef.current;
-    console.log("[sendMic] 호출됨:", { micOn, connected: client?.connected, roomCode });
-    if (!client?.connected) {
-      console.warn("[sendMic] WebSocket이 연결되지 않음!");
-      return;
-    }
-    client.publish({
-      destination: `/app/rooms/${roomCode}/mic`,
-      body: JSON.stringify({ micOn }),
-    });
-    console.log("[sendMic] WebSocket 메시지 전송 완료:", { micOn, destination: `/app/rooms/${roomCode}/mic` });
-  }, [roomCode]);
+      client.publish({
+        destination: `/app/rooms/${roomCode}/ready`,
+        body: JSON.stringify({ ready }),
+      });
+    },
+    [roomCode],
+  );
 
-  const sendVoiceLevel = useCallback((level) => {
-    const client = clientRef.current;
-    if (!client?.connected) return;
-    // 너무 많은 로그를 방지하기 위해 10% 확률로만 로그 출력
-    if (Math.random() < 0.1) {
-      console.log("[sendVoiceLevel] 음성 레벨 전송:", { level, roomCode });
-    }
-    client.publish({
-      destination: `/app/rooms/${roomCode}/voice-level`,
-      body: JSON.stringify({ level }),
-    });
-  }, [roomCode]);
+  const sendMic = useCallback(
+    (micOn) => {
+      const client = clientRef.current;
+      if (!client?.connected) return;
+
+      client.publish({
+        destination: `/app/rooms/${roomCode}/mic`,
+        body: JSON.stringify({ micOn }),
+      });
+    },
+    [roomCode],
+  );
+
+  const sendVoiceLevel = useCallback(
+    (level) => {
+      const client = clientRef.current;
+      if (!client?.connected) return;
+
+      client.publish({
+        destination: `/app/rooms/${roomCode}/voice-level`,
+        body: JSON.stringify({ level }),
+      });
+    },
+    [roomCode],
+  );
 
   useEffect(() => {
     if (!roomCode) return;
 
     const token = localStorage.getItem("accessToken");
     const apiBase = import.meta.env.VITE_API_BASE_URL || "";
-    const socketUrl = apiBase.startsWith("http") 
-      ? `${apiBase}/ws` 
+    const socketUrl = apiBase.startsWith("http")
+      ? `${apiBase}/ws`
       : `${window.location.origin}${apiBase}/ws`;
 
     const client = new Client({
@@ -72,82 +75,105 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
     client.onConnect = () => {
       setIsConnected(true);
-      console.log("✅ STOMP Connected to Server");
 
-      // 방 상태 구독
-      subRef.current = client.subscribe(`/topic/rooms/${roomCode}`, (message) => {
-        try {
-          const data = JSON.parse(message.body);
-          const { type, payload, senderKey } = data;
+      // 방 이벤트 구독
+      subRef.current = client.subscribe(
+        `/topic/rooms/${roomCode}`,
+        (message) => {
+          try {
+            const data = JSON.parse(message.body);
+            const { type, payload, senderKey } = data;
 
-          // 🔍 모든 WebSocket 메시지 로깅
-          console.log("📨 [WebSocket 메시지 수신]", {
-            type,
-            payload,
-            senderKey,
-            rawMessage: message.body
-          });
+            const {
+              onReadyChanged,
+              onMicChanged,
+              onMemberJoined,
+              onMemberLeft,
+              onVoiceLevelChanged,
+              onSettingsChanged,
+              onRoomStarted,
+              onError,
+            } = handlersRef.current;
 
-          // ref를 통해 최신 핸들러 호출
-          const { onReadyChanged, onMicChanged, onMemberJoined, onMemberLeft, onVoiceLevelChanged, onSettingsChanged, onError } = handlersRef.current;
-          switch (type) {
-            case "READY_CHANGED":
-              console.log("→ READY_CHANGED 핸들러 호출");
-              onReadyChanged?.(payload, senderKey);
-              break;
-            case "MIC_CHANGED":
-              console.log("→ MIC_CHANGED 핸들러 호출");
-              onMicChanged?.(payload, senderKey);
-              break;
-            case "MEMBER_JOINED":
-            case "PARTICIPANT_JOINED":
-              console.log("→ MEMBER_JOINED 핸들러 호출");
-              onMemberJoined?.(payload, senderKey);
-              break;
-            case "MEMBER_LEFT":
-            case "PARTICIPANT_LEFT":
-              console.log("→ MEMBER_LEFT 핸들러 호출");
-              onMemberLeft?.(payload, senderKey);
-              break;
-            case "VOICE_LEVEL_CHANGED":
-              onVoiceLevelChanged?.(payload, senderKey);
-              break;
-            case "SETTINGS_CHANGED":
-            case "ROOM_SETTINGS_CHANGED":
-            case "ROOM_UPDATED":
-              console.log("→ SETTINGS_CHANGED 핸들러 호출");
-              onSettingsChanged?.(payload, senderKey);
-              break;
-            case "ERROR":
-              console.log("→ ERROR 핸들러 호출");
-              onError?.(payload);
-              break;
-            default:
-              console.warn("⚠️ 알 수 없는 메시지 타입:", type);
+            // 어떤 메시지든 isOpen:true가 포함되면 시작 이벤트로 간주 가능
+            const openFlag =
+              payload?.isOpen === true ||
+              data?.isOpen === true ||
+              payload?.open === true;
+
+            switch (type) {
+              case "READY_CHANGED":
+                onReadyChanged?.(payload, senderKey);
+                break;
+
+              case "MIC_CHANGED":
+                onMicChanged?.(payload, senderKey);
+                break;
+
+              case "MEMBER_JOINED":
+              case "PARTICIPANT_JOINED":
+                onMemberJoined?.(payload, senderKey);
+                break;
+
+              case "MEMBER_LEFT":
+              case "PARTICIPANT_LEFT":
+                onMemberLeft?.(payload, senderKey);
+                break;
+
+              case "VOICE_LEVEL_CHANGED":
+                onVoiceLevelChanged?.(payload, senderKey);
+                break;
+
+              case "SETTINGS_CHANGED":
+              case "ROOM_SETTINGS_CHANGED":
+              case "ROOM_UPDATED":
+                onSettingsChanged?.(payload, senderKey);
+                break;
+
+              case "ROOM_STARTED":
+              case "ROOM_OPENED":
+              case "ROOM_START":
+                onRoomStarted?.(payload ?? data, senderKey);
+                break;
+
+              case "ERROR":
+                onError?.(payload);
+                break;
+
+              default:
+                // 타입이 없거나 모르는 타입이어도 isOpen:true면 시작 처리
+                if (openFlag) {
+                  onRoomStarted?.(payload ?? data, senderKey);
+                }
+                break;
+            }
+          } catch (e) {
+            console.error("Msg Parsing Error", e);
           }
-        } catch (e) {
-          console.error("Msg Parsing Error", e);
-        }
-      });
+        },
+      );
 
-      // AI 대화 추천 구독 (정적 감지)
-      const suggestionSub = client.subscribe(`/topic/room/${roomCode}/suggestion`, (message) => {
-        try {
-          const dagitta = JSON.parse(message.body);
-          const { type, question } = data;
+      // AI 대화 추천 구독
+      suggestionSubRef.current = client.subscribe(
+        `/topic/room/${roomCode}/suggestion`,
+        (message) => {
+          try {
+            const data = JSON.parse(message.body);
+            const { type, question } = data;
 
-          if (type === "CONVERSATION_SUGGESTION") {
-            handlersRef.current.onConversationSuggestion?.(question);
+            if (type === "CONVERSATION_SUGGESTION") {
+              handlersRef.current.onConversationSuggestion?.(question);
+            }
+          } catch (e) {
+            console.error("Suggestion Msg Parsing Error", e);
           }
-        } catch (e) {
-          console.error("Suggestion Msg Parsing Error", e);
-        }
-      });
+        },
+      );
 
       handlersRef.current.onConnected?.();
     };
 
-    client.onStompError = (frame) => {
+    client.onStompError = () => {
       setIsConnected(false);
       handlersRef.current.onError?.("STOMP 인증 에러");
     };
@@ -166,13 +192,12 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
     client.activate();
 
     return () => {
-      console.log("Cleanup: Deactivating Client");
       if (subRef.current) subRef.current.unsubscribe();
+      if (suggestionSubRef.current) suggestionSubRef.current.unsubscribe();
       if (client) client.deactivate();
       clientRef.current = null;
     };
-    // 의존성 배열에서 handlers를 제거하여 무한 루프를 방지합니다.
-  }, [roomCode]); 
+  }, [roomCode]);
 
   return { sendReady, sendMic, sendVoiceLevel, isConnected };
 }
