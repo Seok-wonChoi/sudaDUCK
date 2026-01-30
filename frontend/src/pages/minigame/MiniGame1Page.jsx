@@ -94,8 +94,8 @@ export default function MiniGame1Page() {
 
         // API 응답 데이터를 questions 형식으로 변환
         const formattedQuestions = data.map((item) => {
-          // blank_scripts에서 빈칸과 텍스트 분리 (예: "I _____ every morning." -> ["I ", "_____", " every morning."])
-          const parts = item.blank_scripts.split(/(_+)/);
+          // blank_script에서 빈칸과 텍스트 분리 (예: "I _____ every morning." -> ["I ", "_____", " every morning."])
+          const parts = item.blank_script.split(/(_+)/);
           const englishParts = [];
           const blanks = [];
 
