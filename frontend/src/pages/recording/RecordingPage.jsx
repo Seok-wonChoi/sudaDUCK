@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Recordinglayout from '@/components/features/recording/layout/RecordingLayout';
-import { saveAssessment, toggleScriptLike } from '@/api/shadowing';
+import { saveAssessment, toggleScriptLike, getTurnScripts } from '@/api/shadowing';
 import { endRoom } from '@/api/rooms';
 
 import BottomIdle from '@/components/features/recording/bottom/BottomIdle';
@@ -97,14 +97,18 @@ export default function RecordingPage() {
   const [countdown, setCountdown] = useState(3);
   const [sentenceScores, setSentenceScores] = useState({});
   const [bookmarkedSentences, setBookmarkedSentences] = useState([]);
+  const [conversations, setConversations] = useState({}); // 턴별 스크립트 저장
+  const [isLoading, setIsLoading] = useState(false);
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
   const endRoomCalledRef = useRef(false); // endRoom 중복 호출 방지
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
 
   const currentTurnSentences = useMemo(() => {
-    return DUMMY_CONVERSATIONS[currentTurn] || [];
-  }, [currentTurn]);
+    return conversations[currentTurn] || DUMMY_CONVERSATIONS[currentTurn] || [];
+  }, [currentTurn, conversations]);
 
   const currentSentence = useMemo(() => {
     return currentTurnSentences[currentSentenceIndex];
@@ -124,6 +128,36 @@ export default function RecordingPage() {
     timerRef.current = null;
     intervalRef.current = null;
   }, []);
+
+  // 녹음 시작
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      recordedChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start();
+    } catch (error) {
+      console.error('녹음 시작 실패:', error);
+    }
+  }, []);
+
+  // Blob을 base64로 변환
+  const blobToBase64 = (blob) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
 
   const goNextSentence = () => {
     if (isLastSentence) {
@@ -148,14 +182,26 @@ export default function RecordingPage() {
   };
 
   const stopRecording = async () => {
+    // 녹음 중지
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+
+      // 녹음 스트림 정리
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+
     if (currentSentence) {
       try {
+        // 녹음된 오디오 데이터 처리
+        let audioBase64 = null;
+        if (recordedChunksRef.current.length > 0) {
+          const audioBlob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+          audioBase64 = await blobToBase64(audioBlob);
+        }
+
         // 발음 평가 API 호출
         const result = await saveAssessment({
-          sentenceId: currentSentence.id,
-          // TODO: 실제 녹음 데이터 추가 필요
-          // audioData: recordedAudio,
-          // text: currentSentence.english,
+          audio: audioBase64 || '',
         });
 
         // API 응답에서 점수 받아오기
@@ -233,6 +279,54 @@ export default function RecordingPage() {
     }
   }, []);
 
+  // 턴별 스크립트 조회
+  useEffect(() => {
+    const fetchTurnScripts = async () => {
+      // roomInfo에서 roomId 추출 (inviteCode, joinCode, roomCode, id 등 다양한 형태 가능)
+      const roomId = roomInfo.id || roomInfo.roomId || roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
+
+      if (!roomId) {
+        console.warn('roomId를 찾을 수 없습니다. DUMMY_CONVERSATIONS를 사용합니다.');
+        return;
+      }
+
+      // 이미 해당 턴의 데이터가 있으면 스킵
+      if (conversations[currentTurn]) {
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const response = await getTurnScripts(roomId, currentTurn);
+
+        // API 응답을 컴포넌트에서 사용하는 형식으로 변환
+        const scripts = Array.isArray(response) ? response : [response];
+        const formattedScripts = scripts.map((script, index) => ({
+          id: script.order_no ?? index + 1,
+          speaker: script.speakerName || '참여자',
+          korean: script.korean || '',
+          english: script.english || '',
+          // blank_script에서 빈칸 단어 추출 (추후 백엔드 형식에 맞게 수정 필요)
+          blankWords: script.blank_script ? script.blank_script.split(',').map(w => w.trim()) : [],
+          score: null,
+          tts_url: script.tts_url || null,
+        }));
+
+        setConversations(prev => ({
+          ...prev,
+          [currentTurn]: formattedScripts,
+        }));
+      } catch (error) {
+        console.error('스크립트 조회 실패:', error);
+        // 실패 시 DUMMY_CONVERSATIONS 사용
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTurnScripts();
+  }, [currentTurn, roomInfo, conversations]);
+
   // 복습 게임 완료 시 endRoom API 자동 호출
   useEffect(() => {
     if (step === STEP.ALL_DONE && !endRoomCalledRef.current) {
@@ -300,12 +394,15 @@ export default function RecordingPage() {
     }
 
     if (step === STEP.RECORDING) {
+      // 녹음 시작
+      startRecording();
+
       timerRef.current = setTimeout(() => {
-        setStep(STEP.RECORD_DONE);
+        stopRecording();
       }, MAX_RECORDING_MS);
       return;
     }
-  }, [step, clearAllTimers]);
+  }, [step, clearAllTimers, startRecording, stopRecording]);
 
   // 카드 리스트에 전달할 데이터
   const sentenceCardsData = useMemo(() => {

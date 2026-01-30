@@ -303,7 +303,22 @@ export default function MyPage() {
     const fetchMyScripts = async () => {
       try {
         const data = await getMyScripts();
-        setSentences(data);
+
+        // 백엔드 응답을 컴포넌트 형식으로 변환
+        const formattedSentences = Array.isArray(data) ? data.map(item => ({
+          id: item.sentenceId || item.id,
+          english: item.englishSentence || item.english || '',
+          korean: item.koreanSentence || item.korean || '',
+          topic: item.topic || '',
+          score: item.score,
+          date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
+          bookmarked: true,
+          // 추가 정보
+          speakerName: item.speakerName,
+          participants: item.participants,
+        })) : [];
+
+        setSentences(formattedSentences);
       } catch (error) {
         console.error("스크립트 조회 실패:", error);
         // 실패 시 MOCK 데이터 사용
