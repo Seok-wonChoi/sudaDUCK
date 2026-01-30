@@ -13,7 +13,7 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
-import { leaveRoom, getRoomLobby, toggleReady, startRoom, updateRoomSettings } from "@/api/rooms";
+import { leaveRoom, getRoomLobby, toggleReady, startRoom, updateRoomSettings, getTopics } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
@@ -96,7 +96,7 @@ export default function WaitingRoomPage() {
   const { state } = useLocation();
 
   const roomInfo = state ?? {};
-  const isHost = roomInfo.isHost ?? true;
+  const isHost = roomInfo.isHost ?? false;
   const maxCount = roomInfo.maxCount ?? 4;
 
   // 방 코드는 joinCode / inviteCode 둘 중 하나로 넘어오므로 여기서 통일
@@ -283,25 +283,53 @@ export default function WaitingRoomPage() {
 
     try {
       setIsLoading(true);
-      const data = await getRoomLobby();
+      const data = await getRoomLobby(inviteCode);
 
-      // 서버 응답 형태에 맞게 파싱 (백엔드 응답 구조에 따라 조정 필요)
-      // 예상 응답: { members: [...], myEmail: "...", readyCount: 2, totalCount: 4 }
-      const members = data.members ?? data.participants ?? [];
-      const myEmailFromServer = data.myEmail ?? data.email ?? "";
+      console.log("lobby API 응답:", data);
 
-      setMyEmail(myEmailFromServer);
-      setReadyCount(data.readyCount ?? 0);
-      setTotalCount(data.totalCount ?? members.length);
+      // 실제 API 응답 구조: { roomId, roomCode, isOpen, participants: [...] }
+      const members = data.participants ?? [];
 
-      // 참여자 목록 변환
+      // localStorage에서 현재 사용자 정보 가져오기
+      const userInfoStr = localStorage.getItem("userInfo");
+      let myUserId = null;
+      if (userInfoStr) {
+        try {
+          const userInfo = JSON.parse(userInfoStr);
+          myUserId = userInfo.userId ?? userInfo.id;
+        } catch (e) {
+          console.error("userInfo 파싱 실패:", e);
+        }
+      }
+
+      // myUserId가 없으면 방장을 찾아서 설정 (방장이면 자기 자신)
+      if (!myUserId && isHost) {
+        const hostMember = members.find((m) => m.isHost === true);
+        if (hostMember) {
+          myUserId = hostMember.userId;
+        }
+      }
+
+      // email 대신 userId를 문자열로 변환해서 사용
+      const myEmailStr = myUserId ? String(myUserId) : "";
+      setMyEmail(myEmailStr);
+
+      // 준비 완료한 참여자 수 계산 (방장 제외)
+      const readyMembers = members.filter((m) => !m.isHost && m.readyStatus === "READY");
+      setReadyCount(readyMembers.length);
+      setTotalCount(members.length);
+
+      // 참여자 목록 변환 (userId를 email 필드로 사용)
       const mappedParticipants = members.map((m) => ({
-        email: m.email ?? m.memberEmail ?? "",
-        nickname: m.nickname ?? m.name ?? "참여자",
-        isHost: m.isHost ?? m.host ?? false,
-        isReady: m.readyStatus === "READY" || m.isReady === true,
+        email: String(m.userId ?? ""), // userId를 문자열로 변환
+        nickname: m.nickname ?? "참여자",
+        isHost: m.isHost ?? false,
+        isReady: m.readyStatus === "READY",
         micOn: m.micOn ?? true, // 기본값 true
       }));
+
+      console.log("매핑된 참여자 목록:", mappedParticipants);
+      console.log("현재 사용자 ID:", myEmailStr);
 
       setParticipants(mappedParticipants);
     } catch (e) {
@@ -310,7 +338,7 @@ export default function WaitingRoomPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [inviteCode, showToast]);
+  }, [inviteCode, showToast, isHost]);
 
   // ref에 저장 (재연결 시 호출용)
   fetchLobbyRef.current = fetchLobby;
@@ -565,10 +593,27 @@ export default function WaitingRoomPage() {
     setEditTopic(t);
   }, []);
 
-  const handleAiRecommend = useCallback(() => {
-    if (hotTopics.length === 0) return;
-    const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
-    setEditTopic(next);
+  const handleAiRecommend = useCallback(async () => {
+    // API 호출: AI 주제 추천받기
+    try {
+      const data = await getTopics();
+      const topics = data.topics || [];
+      if (topics.length > 0) {
+        // 서버에서 받은 주제 중 랜덤 선택
+        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+        setEditTopic(randomTopic);
+        return;
+      }
+    } catch (e) {
+      console.error("AI 주제 추천 API 호출 실패:", e);
+      // API 실패 시 로컬 hotTopics로 폴백
+    }
+
+    // 폴백: 로컬 주제 목록 사용
+    if (hotTopics.length > 0) {
+      const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+      setEditTopic(next);
+    }
   }, [hotTopics]);
 
   const handleSaveEditRoomInfo = useCallback(async () => {
@@ -763,7 +808,7 @@ export default function WaitingRoomPage() {
                           className={styles.InviteCodeButton}
                           onClick={handleKakaoShare}
                         >
-                          <img src={shareIcon} alt="공유" className={styles.ButtonIcon} />
+                          <ShareIcon />
                           공유
                         </button>
                         <button
@@ -863,7 +908,11 @@ export default function WaitingRoomPage() {
                                 alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                               />
                             </button>
-                            {isMe && <VoiceWave level={voiceLevel} enabled={myMicOn} />}
+                            {/* 모든 참여자에게 웨이브바 표시 */}
+                            <VoiceWave
+                              level={isMe ? voiceLevel : (p.voiceLevel ?? 0)}
+                              enabled={micOn}
+                            />
                           </div>
                         </div>
                       </div>

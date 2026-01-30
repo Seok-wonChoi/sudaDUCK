@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Recordinglayout from '@/components/features/recording/layout/RecordingLayout';
 import { saveAssessment, toggleScriptLike } from '@/api/shadowing';
+import { endRoom } from '@/api/rooms';
 
 import BottomIdle from '@/components/features/recording/bottom/BottomIdle';
 import BottomAITimer from '@/components/features/recording/bottom/BottomAITimer';
@@ -86,6 +88,9 @@ const DUMMY_CONVERSATIONS = {
 };
 
 export default function RecordingPage() {
+  const { state } = useLocation();
+  const roomInfo = state?.roomInfo || {};
+
   const [step, setStep] = useState(STEP.IDLE);
   const [currentTurn, setCurrentTurn] = useState(1);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
@@ -95,6 +100,7 @@ export default function RecordingPage() {
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
+  const endRoomCalledRef = useRef(false); // endRoom 중복 호출 방지
 
   const currentTurnSentences = useMemo(() => {
     return DUMMY_CONVERSATIONS[currentTurn] || [];
@@ -226,6 +232,25 @@ export default function RecordingPage() {
       console.error('북마크 불러오기 실패:', error);
     }
   }, []);
+
+  // 복습 게임 완료 시 endRoom API 자동 호출
+  useEffect(() => {
+    if (step === STEP.ALL_DONE && !endRoomCalledRef.current) {
+      endRoomCalledRef.current = true;
+
+      const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
+      if (roomCode && state?.mode === 'together') {
+        endRoom(roomCode)
+          .then(() => {
+            console.log('복습 완료 - 방 상태를 대기방으로 자동 전환 완료');
+          })
+          .catch((e) => {
+            console.error('방 종료 API 호출 실패:', e);
+            // 실패해도 사용자 경험에는 영향 없음 (복습은 이미 완료됨)
+          });
+      }
+    }
+  }, [step, roomInfo, state?.mode]);
 
   // countdown 초기화 (타이머 단계 진입 시)
   useEffect(() => {
