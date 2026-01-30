@@ -1,5 +1,6 @@
 import api from "./api";
 
+
 // 방 만들기: POST /api/v1/rooms
 export async function createRoom({ title, topic, turnCnt }) {
   const { data } = await api.post("/api/v1/rooms", {

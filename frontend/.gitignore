@@ -5,6 +5,9 @@
 .env.*.local
 .env.development
 
+# docker-compose.yml
+**/docker-compose.yml
+
 
 # Claude Code
 .claude

@@ -5,7 +5,7 @@ import styles from "./MakeRoomPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 
-import { createRoom } from "@/api/rooms";
+import { createRoom, getTopics } from "@/api/rooms";
 
 const ROOM_INFO_KEY = "together_room_info";
 
@@ -49,10 +49,23 @@ export default function MakeRoomPage() {
     setTopic(t);
   };
 
-  const handleAiRecommend = () => {
-    if (hotTopics.length === 0) return;
-    const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
-    setTopic(next);
+  const handleAiRecommend = async () => {
+    try {
+      const data = await getTopics();
+      const topics = data.topics || [];
+      if (topics.length > 0) {
+        // 서버에서 받은 주제 중 랜덤으로 하나 선택
+        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+        setTopic(randomTopic);
+      }
+    } catch (e) {
+      console.error("AI 주제 추천 API 호출 실패:", e);
+      // API 실패 시 로컬 hotTopics에서 선택 (fallback)
+      if (hotTopics.length > 0) {
+        const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+        setTopic(next);
+      }
+    }
   };
 
   const handleSubmit = async () => {
@@ -114,10 +127,7 @@ export default function MakeRoomPage() {
             aria-label="뒤로 가기"
             disabled={loading}
           >
-            <span className={styles.BackIcon} aria-hidden="true">
-              &lt;
-            </span>
-            <span className={styles.BackText}>뒤로가기</span>
+            &lt;
           </button>
 
           <h1 className={styles.Title}>방 만들기</h1>

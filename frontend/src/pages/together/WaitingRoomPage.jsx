@@ -13,7 +13,7 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
-import { leaveRoom, getRoomLobby } from "@/api/rooms";
+import { leaveRoom, getRoomLobby, toggleReady, startRoom, updateRoomSettings } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
@@ -33,6 +33,64 @@ function PlayIcon() {
   );
 }
 
+function CopyIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke="currentColor" strokeWidth="2" fill="none"/>
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 6.65685 16.3431 8 18 8Z" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M6 15C7.65685 15 9 13.6569 9 12C9 10.3431 7.65685 9 6 9C4.34315 9 3 10.3431 3 12C3 13.6569 4.34315 15 6 15Z" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M18 22C19.6569 22 21 20.6569 21 19C21 17.3431 19.6569 16 18 16C16.3431 16 15 17.3431 15 19C15 20.6569 16.3431 22 18 22Z" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M8.59 13.51L15.42 17.49" stroke="currentColor" strokeWidth="2"/>
+      <path d="M15.41 6.51L8.59 10.49" stroke="currentColor" strokeWidth="2"/>
+    </svg>
+  );
+}
+
+function VoiceWave({ level, enabled }) {
+  const multipliers = useMemo(() => [0.5, 0.7, 0.85, 1, 0.85, 0.7, 0.5], []);
+  const v = Math.max(0, Math.min(1, level));
+
+  return (
+    <span
+      className={`${styles.Wave} ${enabled ? styles.WaveOn : styles.WaveOff}`}
+      aria-hidden="true"
+    >
+      {multipliers.map((m, idx) => {
+        const h = enabled ? 6 + v * 10 * m : 6;
+        return (
+          <span
+            key={idx}
+            className={`${styles.WaveBar} ${styles[`WaveBar${idx + 1}`]}`}
+            style={{ height: `${h}px` }}
+          />
+        );
+      })}
+    </span>
+  );
+}
+
 export default function WaitingRoomPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -40,12 +98,14 @@ export default function WaitingRoomPage() {
   const roomInfo = state ?? {};
   const isHost = roomInfo.isHost ?? true;
   const maxCount = roomInfo.maxCount ?? 4;
-  const roomTitle = roomInfo.roomTitle ?? "수다방";
-  const topic = roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식";
-  const turnCount = roomInfo.turnCount ?? 3;
 
   // 방 코드는 joinCode / inviteCode 둘 중 하나로 넘어오므로 여기서 통일
   const inviteCode = roomInfo.joinCode ?? roomInfo.inviteCode ?? "000000";
+
+  // 방 정보 상태 관리 (수정 가능하도록 useState 사용)
+  const [roomTitle, setRoomTitle] = useState(roomInfo.roomTitle ?? "수다방");
+  const [topic, setTopic] = useState(roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식");
+  const [turnCount, setTurnCount] = useState(roomInfo.turnCount ?? 3);
 
   // 참여자 목록: email 기반으로 관리
   // { email, nickname, isHost, isReady, micOn }
@@ -57,18 +117,169 @@ export default function WaitingRoomPage() {
 
   const [myMicOn, setMyMicOn] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceLevel, setVoiceLevel] = useState(0);
+
+  // 방 설정 변경 팝업 상태
+  const [editPopupOpen, setEditPopupOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState(roomTitle);
+  const [editTopic, setEditTopic] = useState(topic);
+  const [editTurn, setEditTurn] = useState(turnCount);
+
+  const hotTopics = useMemo(
+    () => [
+      "첫 아르바이트 추억",
+      "최악의 데이트",
+      "나만의 취미생활",
+      "학창시절 이야기",
+      "여행 경험담",
+      "좋아하는 음식",
+    ],
+    []
+  );
 
   // 재연결 시 lobby 다시 호출하기 위한 ref
   const fetchLobbyRef = useRef(null);
+
+  const audioRef = useRef({
+    stream: null,
+    ctx: null,
+    analyser: null,
+    source: null,
+    rafId: null,
+    lastVoiceAt: 0,
+    speakingNow: false,
+    level: 0,
+    lastUiAt: 0,
+  });
 
   const showToast = useCallback((message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(""), 2000);
   }, []);
 
+  const stopAudioAnalysis = useCallback(async () => {
+    const a = audioRef.current;
+
+    if (a.rafId) {
+      cancelAnimationFrame(a.rafId);
+      a.rafId = null;
+    }
+
+    if (a.stream) {
+      a.stream.getTracks().forEach((t) => t.stop());
+      a.stream = null;
+    }
+
+    if (a.ctx) {
+      try {
+        await a.ctx.close();
+      } catch (e) {
+        // ignore
+      }
+      a.ctx = null;
+    }
+
+    a.analyser = null;
+    a.source = null;
+    a.lastVoiceAt = 0;
+    a.speakingNow = false;
+    a.level = 0;
+    a.lastUiAt = 0;
+
+    setIsSpeaking(false);
+    setVoiceLevel(0);
+  }, []);
+
+  const startAudioAnalysis = useCallback(async () => {
+    const a = audioRef.current;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      a.stream = stream;
+
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      a.ctx = ctx;
+
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.85;
+      a.analyser = analyser;
+
+      const source = ctx.createMediaStreamSource(stream);
+      a.source = source;
+      source.connect(analyser);
+
+      const data = new Float32Array(analyser.fftSize);
+
+      const THRESHOLD = 0.03;
+      const HOLD_MS = 220;
+      const UI_INTERVAL_MS = 60;
+
+      const tick = () => {
+        if (!a.analyser) return;
+
+        if (typeof a.analyser.getFloatTimeDomainData === "function") {
+          a.analyser.getFloatTimeDomainData(data);
+
+          let sum = 0;
+          for (let i = 0; i < data.length; i += 1) {
+            const v = data[i];
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / data.length);
+
+          const now = performance.now();
+
+          if (rms > THRESHOLD) a.lastVoiceAt = now;
+          const speaking = now - a.lastVoiceAt < HOLD_MS;
+
+          if (speaking !== a.speakingNow) {
+            a.speakingNow = speaking;
+            setIsSpeaking(speaking);
+          }
+
+          const raw = Math.max(0, Math.min(1, (rms - 0.005) / 0.08));
+          a.level = a.level * 0.82 + raw * 0.18;
+
+          if (now - a.lastUiAt > UI_INTERVAL_MS) {
+            a.lastUiAt = now;
+            setVoiceLevel(a.level);
+          }
+        }
+
+        a.rafId = requestAnimationFrame(tick);
+      };
+
+      try {
+        await ctx.resume();
+      } catch (e) {
+        // ignore
+      }
+
+      tick();
+    } catch (e) {
+      setIsSpeaking(false);
+      setVoiceLevel(0);
+    }
+  }, []);
+
+  // 페이지 로드 시 마이크 자동 켜기
+  useEffect(() => {
+    startAudioAnalysis();
+
+    return () => {
+      stopAudioAnalysis();
+    };
+  }, [startAudioAnalysis, stopAudioAnalysis]);
+
   // lobby API 호출: 참여자 목록 + 상태 가져오기
   const fetchLobby = useCallback(async () => {
-    if (!inviteCode || inviteCode === "000000") return;
+    if (!inviteCode || inviteCode === "000000") {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -109,7 +320,34 @@ export default function WaitingRoomPage() {
     fetchLobby();
   }, [fetchLobby]);
 
+  // 디버깅: participants와 myEmail 변경 시 로그 출력
+  useEffect(() => {
+    console.log("[디버깅] 참여자 상태 변경:", {
+      myEmail,
+      participantsCount: participants.length,
+      participants: participants.map(p => ({
+        email: p.email,
+        nickname: p.nickname,
+        isMe: p.email === myEmail,
+        micOn: p.micOn,
+        isReady: p.isReady
+      })),
+      myMicOn
+    });
+  }, [participants, myEmail, myMicOn]);
+
   const currentCount = totalCount || participants.length;
+
+  // WebSocket 이벤트 핸들러: 멤버 참여
+  const handleMemberJoined = useCallback((payload, senderKey) => {
+    console.log("[handleMemberJoined] 새로운 멤버가 참여했습니다!", {
+      payload,
+      senderKey,
+      currentParticipants: participants.length
+    });
+    // 참여자 목록 다시 가져오기
+    fetchLobbyRef.current?.();
+  }, [participants.length]);
 
   // WebSocket 이벤트 핸들러: READY_CHANGED
   // senderKey(이메일)로 해당 참여자를 찾아서 준비 상태 업데이트
@@ -145,19 +383,34 @@ export default function WaitingRoomPage() {
   // senderKey(이메일)로 해당 참여자의 마이크 상태 업데이트
   const handleMicChanged = useCallback(
     (payload, senderKey) => {
-      console.log("MIC_CHANGED 수신:", { payload, senderKey });
+      console.log("[handleMicChanged] MIC_CHANGED 수신:", {
+        payload,
+        senderKey,
+        myEmail,
+        isMyChange: senderKey === myEmail
+      });
 
-      if (!senderKey) return;
+      if (!senderKey) {
+        console.warn("[handleMicChanged] senderKey가 없습니다.");
+        return;
+      }
 
-      // 내 마이크 상태는 로컬에서 관리하므로, 다른 사람만 업데이트
-      // (내 이메일이면 무시해도 되지만, 서버 응답과 동기화하고 싶으면 반영)
+      // 내 마이크는 로컬 상태(myMicOn)로만 관리, 다른 사람의 마이크만 업데이트
+      if (senderKey === myEmail) {
+        console.log("[handleMicChanged] 내 마이크 상태 변경은 로컬에서 이미 관리 중입니다. 무시합니다.");
+        return;
+      }
+
+      console.log(`[handleMicChanged] ${senderKey}의 마이크 상태를 ${payload.micOn}으로 업데이트합니다.`);
+
+      // 다른 사람의 마이크 상태만 업데이트
       setParticipants((prev) =>
         prev.map((p) =>
           p.email === senderKey ? { ...p, micOn: payload.micOn } : p
         )
       );
     },
-    []
+    [myEmail]
   );
 
   const handleWebSocketError = useCallback(
@@ -179,6 +432,7 @@ export default function WaitingRoomPage() {
   const { sendReady, sendMic } = useRoomWebSocket(inviteCode, {
     onReadyChanged: handleReadyChanged,
     onMicChanged: handleMicChanged,
+    onMemberJoined: handleMemberJoined,
     onError: handleWebSocketError,
     onConnected: handleConnected,
     onDisconnected: () => console.log("WebSocket 연결 해제됨"),
@@ -199,22 +453,57 @@ export default function WaitingRoomPage() {
   const canStart = isHost && nonHostAllReady;
 
   // 마이크 토글: 로컬 상태 즉시 변경 + WebSocket 전송
-  const toggleMyMic = useCallback(() => {
-    setMyMicOn((prev) => {
-      const newMicOn = !prev;
-      // WebSocket으로 마이크 상태 전송
-      sendMic(newMicOn);
-      return newMicOn;
-    });
-  }, [sendMic]);
+  const toggleMyMic = useCallback(async () => {
+    const newMicState = !myMicOn;
+    console.log(`[toggleMyMic] 내 마이크 상태 변경: ${myMicOn} -> ${newMicState}, myEmail: ${myEmail}`);
 
-  // 준비 상태 토글: WebSocket으로 전송 (상태는 READY_CHANGED 이벤트로 받아서 업데이트)
-  const toggleMyReady = useCallback(() => {
+    if (myMicOn) {
+      setMyMicOn(false);
+      await stopAudioAnalysis();
+      // WebSocket으로 마이크 상태 전송
+      sendMic(false);
+      console.log("[toggleMyMic] 마이크 OFF 전송 완료");
+      return;
+    }
+
+    setMyMicOn(true);
+    await startAudioAnalysis();
+    // WebSocket으로 마이크 상태 전송
+    sendMic(true);
+    console.log("[toggleMyMic] 마이크 ON 전송 완료");
+  }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic, myEmail]);
+
+  // 준비 상태 토글: 즉시 로컬 상태 업데이트 + API 호출 + WebSocket으로 전송
+  const toggleMyReady = useCallback(async () => {
     const newReadyState = !myReady;
+
+    console.log(`[toggleMyReady] 준비 상태 변경: ${myReady} -> ${newReadyState}`);
+
+    // 즉시 로컬 상태 업데이트 (낙관적 업데이트)
+    setParticipants((prev) =>
+      prev.map((p) =>
+        p.email === myEmail ? { ...p, isReady: newReadyState } : p
+      )
+    );
+
+    // API 호출: 준비 상태 토글
+    try {
+      await toggleReady(inviteCode);
+    } catch (e) {
+      console.error("준비 상태 변경 API 호출 실패:", e);
+      // API 실패 시 롤백
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.email === myEmail ? { ...p, isReady: !newReadyState } : p
+        )
+      );
+      showToast("준비 상태 변경에 실패했습니다.");
+      return;
+    }
+
     // WebSocket으로 준비 상태 전송
     sendReady(newReadyState);
-    // 실제 상태 업데이트는 handleReadyChanged에서 처리
-  }, [myReady, sendReady]);
+  }, [myReady, sendReady, myEmail, inviteCode, showToast]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -253,11 +542,97 @@ export default function WaitingRoomPage() {
 
   const handleEditRoomInfo = useCallback(() => {
     if (!isHost) return;
-    console.log("방 정보 수정");
-  }, [isHost]);
+    setEditTitle(roomTitle);
+    setEditTopic(topic);
+    setEditTurn(turnCount);
+    setEditPopupOpen(true);
+  }, [isHost, roomTitle, topic, turnCount]);
 
-  const handleStart = useCallback(() => {
+  const handleCloseEditPopup = useCallback(() => {
+    setEditPopupOpen(false);
+  }, []);
+
+  const handleEditTitleChange = useCallback((e) => {
+    const next = e.target.value.slice(0, 30);
+    setEditTitle(next);
+  }, []);
+
+  const handleEditTopicChange = useCallback((e) => {
+    setEditTopic(e.target.value);
+  }, []);
+
+  const handlePickEditTopic = useCallback((t) => {
+    setEditTopic(t);
+  }, []);
+
+  const handleAiRecommend = useCallback(() => {
+    if (hotTopics.length === 0) return;
+    const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+    setEditTopic(next);
+  }, [hotTopics]);
+
+  const handleSaveEditRoomInfo = useCallback(async () => {
+    if (!editTitle.trim()) {
+      showToast("방 제목을 입력해주세요.");
+      return;
+    }
+    if (!editTopic.trim()) {
+      showToast("수다 주제를 입력하거나 선택해주세요.");
+      return;
+    }
+
+    // API 호출: 방 설정 업데이트
+    try {
+      await updateRoomSettings(inviteCode, {
+        title: editTitle.trim(),
+        topic: editTopic.trim(),
+        turnCnt: editTurn,
+      });
+      console.log("방 설정 업데이트 API 호출 성공");
+    } catch (e) {
+      console.error("방 설정 업데이트 API 호출 실패:", e);
+      showToast("방 설정 변경에 실패했습니다.");
+      return;
+    }
+
+    // 방 정보 상태 업데이트
+    setRoomTitle(editTitle.trim());
+    setTopic(editTopic.trim());
+    setTurnCount(editTurn);
+
+    // sessionStorage에 저장된 roomInfo도 업데이트
+    try {
+      const storedRoomInfo = sessionStorage.getItem("together_room_info");
+      if (storedRoomInfo) {
+        const parsedInfo = JSON.parse(storedRoomInfo);
+        const updatedInfo = {
+          ...parsedInfo,
+          roomTitle: editTitle.trim(),
+          topic: editTopic.trim(),
+          turnCount: editTurn,
+        };
+        sessionStorage.setItem("together_room_info", JSON.stringify(updatedInfo));
+      }
+    } catch (e) {
+      console.error("sessionStorage 업데이트 실패:", e);
+    }
+
+    showToast("방 설정이 변경되었습니다!");
+    setEditPopupOpen(false);
+  }, [editTitle, editTopic, editTurn, showToast, inviteCode]);
+
+  const handleStart = useCallback(async () => {
     if (!canStart) return;
+
+    // API 호출: 방 시작하기
+    try {
+      await startRoom(inviteCode);
+      console.log("방 시작 API 호출 성공");
+    } catch (e) {
+      console.error("방 시작 API 호출 실패:", e);
+      showToast("방을 시작하는데 실패했습니다.");
+      return;
+    }
 
     navigate("/together/talk", {
       state: {
@@ -274,7 +649,7 @@ export default function WaitingRoomPage() {
         myEmail,
       },
     });
-  }, [canStart, navigate, roomInfo, isHost, maxCount, participants, myMicOn, myEmail]);
+  }, [canStart, navigate, roomInfo, isHost, maxCount, participants, myMicOn, myEmail, inviteCode, showToast]);
 
   const handlePrimary = useCallback(() => {
     if (isHost) handleStart();
@@ -288,6 +663,10 @@ export default function WaitingRoomPage() {
    * 방 퇴장: POST /api/v1/rooms/leave
    * Request: { roomCode }
    */
+  const handleBack = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
   const handleExit = useCallback(async () => {
     const roomCode = inviteCode;
 
@@ -304,28 +683,43 @@ export default function WaitingRoomPage() {
 
     // WS 연결 붙이면 여기서 disconnect도 같이 호출(나중에 추가)
     // roomSocket.disconnect?.();
-  }, [inviteCode]);
+  }, [inviteCode, navigate]);
 
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        <AppHeader userName="user" notifications={[]} />
+        <AppHeader
+          userName="user"
+          notifications={[]}
+          logoExitMessage="메인 화면으로 나가시겠습니까?"
+          logoExitConfirmText="나가기"
+          logoExitCancelText="취소"
+          onLogoExit={handleExit}
+        />
 
         <div className={styles.Top}>
-          <ExitButton
-            to="/"
-            label="나가기"
-            message="메인 화면으로 나가시겠습니까?"
-            confirmText="나가기"
-            cancelText="취소"
-            onExit={handleExit}
-            replace
-          />
+          <button
+            className={styles.BackButton}
+            onClick={handleBack}
+            aria-label="뒤로 가기"
+          >
+            &lt;
+          </button>
 
-          <div className={styles.SpeechRow}>
-            <div className={styles.SpeechLeft}>
+          <div className={styles.TopHeaderRow}>
+            <ExitButton
+              to="/"
+              label="나가기"
+              message="메인 화면으로 나가시겠습니까?"
+              confirmText="나가기"
+              cancelText="취소"
+              onExit={handleExit}
+              replace
+            />
+
+            <div className={styles.SpeechRight}>
+              <div className={styles.SpeechBubbleRight}>첫 번째 대화 주제는 {topic}입니다!</div>
               <img className={styles.Duck} src={duckImg} alt="오리" />
-              <div className={styles.SpeechBubbleLeft}>첫 번째 대화 주제는 {topic}입니다!</div>
             </div>
           </div>
 
@@ -369,7 +763,7 @@ export default function WaitingRoomPage() {
                           className={styles.InviteCodeButton}
                           onClick={handleKakaoShare}
                         >
-                          <img src={shareIcon} alt="" className={styles.ButtonIcon} />
+                          <img src={shareIcon} alt="공유" className={styles.ButtonIcon} />
                           공유
                         </button>
                         <button
@@ -377,7 +771,7 @@ export default function WaitingRoomPage() {
                           className={styles.InviteCodeButton}
                           onClick={handleCopy}
                         >
-                          <img src={copyIcon} alt="" className={styles.ButtonIcon} />
+                          <CopyIcon />
                           복사
                         </button>
                       </div>
@@ -419,6 +813,17 @@ export default function WaitingRoomPage() {
                   // 내 마이크는 로컬 상태(myMicOn), 다른 사람은 서버에서 받은 micOn
                   const micOn = isMe ? myMicOn : (p.micOn ?? false);
 
+                  // 디버깅: 각 참여자 렌더링 시 상태 출력
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log(`[렌더링] ${p.nickname}:`, {
+                      email: p.email,
+                      isMe,
+                      micOn,
+                      myMicOn,
+                      'p.micOn': p.micOn
+                    });
+                  }
+
                   return (
                     <div key={p.email || index} className={styles.ParticipantRow}>
                       <div className={styles.ParticipantLeft}>
@@ -454,10 +859,11 @@ export default function WaitingRoomPage() {
                             >
                               <img
                                 className={styles.MicIconImg}
-                                src={micOn ? micOnIcon : micOffIcon}
+                                src={micOn ? micOffIcon : micOnIcon}
                                 alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                               />
                             </button>
+                            {isMe && <VoiceWave level={voiceLevel} enabled={myMicOn} />}
                           </div>
                         </div>
                       </div>
@@ -475,7 +881,7 @@ export default function WaitingRoomPage() {
               type="button"
               className={`${styles.StartButton} ${
                 primaryDisabled ? styles.StartButtonDisabled : ""
-              }`}
+              } ${!isHost && myReady ? styles.StartButtonReady : ""}`}
               onClick={handlePrimary}
               disabled={primaryDisabled}
               aria-disabled={primaryDisabled}
@@ -511,6 +917,128 @@ export default function WaitingRoomPage() {
       </div>
 
       {toastMessage && <div className={styles.Toast}>{toastMessage}</div>}
+
+      {editPopupOpen && (
+        <div className={styles.PopupOverlay}>
+          <div className={styles.PopupContainer}>
+            <div className={styles.PopupHeader}>
+              <h2 className={styles.PopupTitle}>방 설정 변경</h2>
+              <button
+                type="button"
+                className={styles.PopupCloseButton}
+                onClick={handleCloseEditPopup}
+                aria-label="닫기"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.PopupBody}>
+              <div className={styles.PopupField}>
+                <div className={styles.PopupLabelRow}>
+                  <span className={styles.PopupLabel}>방 제목</span>
+                  <span className={styles.PopupRequired}>*</span>
+                </div>
+                <input
+                  className={`${styles.PopupInput} ${styles.PopupTitleInput}`}
+                  value={editTitle}
+                  onChange={handleEditTitleChange}
+                  placeholder="예: 친구들과 수다타임"
+                />
+                <div className={styles.PopupCounter}>{editTitle.length}/30</div>
+              </div>
+
+              <div className={styles.PopupField}>
+                <div className={styles.PopupLabelRow}>
+                  <span className={styles.PopupLabel}>수다 주제</span>
+                  <span className={styles.PopupRequired}>*</span>
+                </div>
+                <div className={styles.PopupTopicInputRow}>
+                  <input
+                    className={styles.PopupInput}
+                    value={editTopic}
+                    onChange={handleEditTopicChange}
+                    placeholder="직접 입력하거나 아래에서 선택하세요"
+                  />
+                  <button
+                    type="button"
+                    className={styles.PopupAiButton}
+                    onClick={handleAiRecommend}
+                  >
+                    AI 추천
+                  </button>
+                </div>
+
+                <div className={styles.PopupHotRow}>
+                  <span className={styles.PopupHotDot} aria-hidden="true" />
+                  <span className={styles.PopupHotText}>인기 주제</span>
+                </div>
+
+                <div className={styles.PopupTopicRow}>
+                  {hotTopics.map((t) => {
+                    const active = editTopic === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        className={`${styles.PopupTopicChip} ${
+                          active ? styles.PopupTopicChipActive : ""
+                        }`}
+                        onClick={() => handlePickEditTopic(t)}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className={styles.PopupField}>
+                <div className={styles.PopupLabelRow}>
+                  <span className={styles.PopupLabel}>턴 수</span>
+                </div>
+                <div className={styles.PopupTurnRow}>
+                  {[3, 4, 5].map((n) => {
+                    const active = editTurn === n;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`${styles.PopupTurnCard} ${
+                          active ? styles.PopupTurnCardActive : ""
+                        }`}
+                        onClick={() => setEditTurn(n)}
+                      >
+                        <span className={styles.PopupTurnIcon} aria-hidden="true">
+                          ↻
+                        </span>
+                        <span className={styles.PopupTurnText}>{n}턴</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.PopupFooter}>
+              <button
+                type="button"
+                className={styles.PopupCancelButton}
+                onClick={handleCloseEditPopup}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className={styles.PopupSaveButton}
+                onClick={handleSaveEditRoomInfo}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
