@@ -35,29 +35,28 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String accessToken = jwtTokenProvider.createAccessToken(userId, email);
         String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
-        // =================================================================
-        // ★ [수정] 복잡한 조건문 삭제 -> 무조건 로컬로 고정
-        // =================================================================
-        
-        // 배포고 뭐고 다 필요없고 그냥 로컬로 쏘세요.
-        String baseUrl = "http://localhost:5173/oauth2/redirect";
+        boolean isLocalDev = true; // 개발 중엔 true로 설정
+        String targetUrl;
 
-        // =================================================================
+        if (isLocalDev) {
+            // 로컬 개발 시: localhost로 토큰을 실어서 리다이렉트
+            targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth2/redirect")
+                    .queryParam("accessToken", accessToken) // 쿠키 대신 URL로 전달하는 것이 확실함
+                    .queryParam("refreshToken", refreshToken)
+                    .build().toUriString();
+        } else {
+            // 배포 환경 시: 기존 도메인 유지
+            targetUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect";
+            CookieUtil.addCookie(response, "accessToken", accessToken, 60, false);
+        }
 
-        // 2. URL 파라미터로 토큰 실어서 보냄
-        String targetUrl = UriComponentsBuilder.fromUriString(baseUrl)
-                .queryParam("accessToken", accessToken)
-                .queryParam("refreshToken", refreshToken)
-                .build().toUriString();
-
-        // RT:{email} 저장 (Redis)
+        //RT:{email} 저장 (중복 로그인 기준)
         redisTemplate.opsForValue().set(
                 "RT:" + email,
                 refreshToken,
                 Duration.ofDays(14)
         );
-        
-        // HttpOnly 쿠키 (RefreshToken)
+        // HttpOnly 쿠키
         CookieUtil.addCookie(
                 response,
                 "refreshToken",
@@ -66,7 +65,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 true
         );
 
-        // 리다이렉트 실행
-        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+
+        getRedirectStrategy().sendRedirect(
+                request,
+                response,
+                targetUrl
+        );
+
     }
 }
