@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import styles from "./MyPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
-import { getMyScripts, updateAvatarCustom, updateDuckCustom, getMyProfileCustom, purchaseItem } from "@/api/mypage";
+import { getMyScripts, updateAvatarCustom, updateDuckCustom, getMyProfileCustom, purchaseItem, updateNickname, updateAiDuckBot, getCustomItems } from "@/api/mypage";
 import { logout } from "@/api/auth";
 
 import ProfileSection from "@/components/features/mypage/ProfileSection/ProfileSection";
@@ -147,52 +147,155 @@ export default function MyPage() {
   const [showDuckModal, setShowDuckModal] = useState(false);
   const [showDuckBotModal, setShowDuckBotModal] = useState(false);
 
+  // localStorage에서 프로필 정보 읽어오기 (초기 렌더링 플래시 방지)
+  const getInitialProfile = () => {
+    try {
+      const savedProfile = localStorage.getItem('userProfile');
+      if (savedProfile) {
+        const profile = JSON.parse(savedProfile);
+        return {
+          profileId: profile.profileId || "profile1",
+          color: profile.color || "white",
+          accessory: profile.accessory || "none",
+        };
+      }
+    } catch (e) {
+      console.error("localStorage 프로필 읽기 실패:", e);
+    }
+    return { profileId: "profile1", color: "white", accessory: "none" };
+  };
+
+  const initialProfile = getInitialProfile();
+
   const [nickname, setNickname] = useState("영어 마스터");
   const [nicknameStyle, setNicknameStyle] = useState({
     background: "gradient",
-    effect: null,
+    effect: "none",
   });
-  const [duckProfileId, setDuckProfileId] = useState("profile1");
+  const [duckProfileId, setDuckProfileId] = useState(initialProfile.profileId);
   const [duckStyle, setDuckStyle] = useState({
-    color: "white",
-    accessory: null,
+    color: initialProfile.color,
+    accessory: initialProfile.accessory,
   });
   const [duckBotId, setDuckBotId] = useState("cyan");
 
   // 코인 시스템
   const [coins, setCoins] = useState(200); // 초기 코인 (테스트용 200코인)
+  const [unlockedProfiles, setUnlockedProfiles] = useState(["profile1"]); // 기본 프로필 (profile1)
   const [unlockedColors, setUnlockedColors] = useState(["white"]); // 기본 색상 (흰색)
-  const [unlockedAccessories, setUnlockedAccessories] = useState([null]); // 기본 악세사리 없음
+  const [unlockedAccessories, setUnlockedAccessories] = useState(["none"]); // 기본 악세사리 없음
   const [unlockedDuckBots, setUnlockedDuckBots] = useState(["cyan"]); // 기본 오리봇
+  const [unlockedBackgrounds, setUnlockedBackgrounds] = useState(["default"]); // 기본 배경 (기본)
+  const [unlockedEffects, setUnlockedEffects] = useState(["none"]); // 기본 효과 (없음)
 
-  // 사용자 프로필 정보 조회
+  // itemKey -> itemId 매핑 (아이템 구매용)
+  const [itemKeyToIdMap, setItemKeyToIdMap] = useState({});
+
+  // 아이템 목록 로드 및 itemKey -> itemId 매핑 생성
   useEffect(() => {
-    const fetchProfileData = async () => {
+    const fetchItemsAndProfile = async () => {
       try {
-        const data = await getMyProfileCustom();
-        // 백엔드에서 받은 데이터로 상태 업데이트
-        if (data.nickname) setNickname(data.nickname);
-        if (data.nicknameStyle) setNicknameStyle(data.nicknameStyle);
-        if (data.duckProfile) {
-          setDuckProfileId(data.duckProfile.profileId);
-          setDuckStyle({
-            color: data.duckProfile.color,
-            accessory: data.duckProfile.accessory,
-          });
+        // 1. 모든 카테고리의 아이템 목록 조회
+        const categories = ["DUCK_STYLE", "DUCK_COLOR", "DUCK_ACCESSORY", "AVATAR_BG", "AVATAR_EFFECT", "AI_DUCKBOT_MODEL"];
+        const itemsPromises = categories.map(category => getCustomItems(category));
+        const itemsResults = await Promise.all(itemsPromises);
+
+        // 2. itemKey -> itemId 매핑 생성 및 unlocked 아이템 추출
+        const keyToIdMap = {};
+        const ownedProfiles = [];
+        const ownedColors = [];
+        const ownedAccessories = [];
+        const ownedBackgrounds = [];
+        const ownedEffects = [];
+        const ownedDuckBots = [];
+
+        itemsResults.forEach((result) => {
+          if (result && result.items) {
+            result.items.forEach((item) => {
+              // itemKey -> itemId 매핑
+              keyToIdMap[item.itemKey] = item.itemId;
+
+              // owned 아이템 분류
+              if (item.owned) {
+                switch (result.category) {
+                  case "DUCK_STYLE":
+                    ownedProfiles.push(item.itemKey);
+                    break;
+                  case "DUCK_COLOR":
+                    ownedColors.push(item.itemKey);
+                    break;
+                  case "DUCK_ACCESSORY":
+                    ownedAccessories.push(item.itemKey);
+                    break;
+                  case "AVATAR_BG":
+                    ownedBackgrounds.push(item.itemKey);
+                    break;
+                  case "AVATAR_EFFECT":
+                    ownedEffects.push(item.itemKey);
+                    break;
+                  case "AI_DUCKBOT_MODEL":
+                    ownedDuckBots.push(item.itemKey);
+                    break;
+                }
+              }
+            });
+          }
+        });
+
+        setItemKeyToIdMap(keyToIdMap);
+        setUnlockedProfiles(ownedProfiles.length > 0 ? ownedProfiles : ["profile1"]);
+        setUnlockedColors(ownedColors.length > 0 ? ownedColors : ["white"]);
+        setUnlockedAccessories(ownedAccessories.length > 0 ? ownedAccessories : ["none"]);
+        setUnlockedBackgrounds(ownedBackgrounds.length > 0 ? ownedBackgrounds : ["default"]);
+        setUnlockedEffects(ownedEffects.length > 0 ? ownedEffects : ["none"]);
+        setUnlockedDuckBots(ownedDuckBots.length > 0 ? ownedDuckBots : ["cyan"]);
+
+        // 3. 프로필 정보 조회
+        const profileData = await getMyProfileCustom();
+
+        if (profileData.nickname) setNickname(profileData.nickname);
+        if (profileData.coins !== undefined) setCoins(profileData.coins);
+
+        // JSON 문자열 파싱
+        if (profileData.duckCustomJson) {
+          try {
+            const duckCustom = JSON.parse(profileData.duckCustomJson);
+            if (duckCustom.style) setDuckProfileId(duckCustom.style);
+            setDuckStyle({
+              color: duckCustom.color || "white",
+              accessory: duckCustom.accessory || "none",
+            });
+          } catch (e) {
+            console.error("duckCustomJson 파싱 실패:", e);
+          }
         }
-        if (data.duckBotId) setDuckBotId(data.duckBotId);
-        if (data.coins !== undefined) setCoins(data.coins);
-        if (data.unlockedItems) {
-          setUnlockedColors(data.unlockedItems.colors || ["white"]);
-          setUnlockedAccessories(data.unlockedItems.accessories || [null]);
-          setUnlockedDuckBots(data.unlockedItems.duckBots || ["cyan"]);
+
+        if (profileData.avatarCustomJson) {
+          try {
+            const avatarCustom = JSON.parse(profileData.avatarCustomJson);
+            setNicknameStyle({
+              background: avatarCustom.bgStyle || "default",
+              effect: avatarCustom.effect || "none",
+            });
+          } catch (e) {
+            console.error("avatarCustomJson 파싱 실패:", e);
+          }
         }
+
+        if (profileData.aiDuckbotCustomJson) {
+          try {
+            const aiDuckbotCustom = JSON.parse(profileData.aiDuckbotCustomJson);
+            if (aiDuckbotCustom.model) setDuckBotId(aiDuckbotCustom.model);
+          } catch (e) {
+            console.error("aiDuckbotCustomJson 파싱 실패:", e);
+          }
+        }
+
       } catch (error) {
-        console.error("프로필 정보 조회 실패:", error);
-        // 실패 시 기본값 사용 (이미 초기 state로 설정됨)
+        console.error("데이터 로드 실패:", error);
       }
     };
-    fetchProfileData();
+    fetchItemsAndProfile();
   }, []);
 
   // 저장된 스크립트 조회
@@ -226,40 +329,43 @@ export default function MyPage() {
     }
   };
 
-  const handleSaveNicknameStyle = async ({ nickname: newNickname, ...style }) => {
+  const handleSaveNicknameStyle = async ({ nickname: newNickname, background, effect }) => {
     try {
-      // API 호출
-      await updateAvatarCustom({
-        nickname: newNickname,
-        ...style,
-      });
+      // 닉네임 변경 API 호출
+      if (newNickname && newNickname !== nickname) {
+        await updateNickname({ nickname: newNickname });
+      }
+
+      // 닉네임 스타일(배경, 효과) 변경 API 호출 - bgStyle 필드 사용
+      await updateAvatarCustom({ bgStyle: background, effect });
 
       // 성공 시 로컬 state 업데이트
       if (newNickname) setNickname(newNickname);
-      setNicknameStyle(style);
+      setNicknameStyle({ background, effect });
     } catch (error) {
       console.error("닉네임 커스터마이징 저장 실패:", error);
       alert("닉네임 저장에 실패했습니다.");
     }
   };
 
-  const handleSaveDuckStyle = async ({ profileId, ...style }) => {
+  const handleSaveDuckStyle = async ({ profileId, color, accessory }) => {
     try {
-      // API 호출
+      // API 호출 - style 필드 사용
       await updateDuckCustom({
-        profileId,
-        ...style,
+        style: profileId,
+        color,
+        accessory,
       });
 
       // 성공 시 로컬 state 업데이트
       if (profileId) setDuckProfileId(profileId);
-      setDuckStyle(style);
+      setDuckStyle({ color, accessory });
 
       // localStorage에 프로필 정보 저장 (AppHeader 연동)
       const profileInfo = {
         profileId: profileId || duckProfileId,
-        color: style.color || duckStyle.color,
-        accessory: style.accessory !== undefined ? style.accessory : duckStyle.accessory,
+        color: color || duckStyle.color,
+        accessory: accessory !== undefined ? accessory : duckStyle.accessory,
       };
       localStorage.setItem('userProfile', JSON.stringify(profileInfo));
 
@@ -271,9 +377,17 @@ export default function MyPage() {
     }
   };
 
-  const handleSaveDuckBot = (id) => {
-    // AI 오리봇 API는 아직 백엔드와 협의 중
-    setDuckBotId(id);
+  const handleSaveDuckBot = async (id) => {
+    try {
+      // AI 오리봇 변경 API 호출 - model 필드 사용
+      await updateAiDuckBot({ model: id });
+
+      // 성공 시 로컬 state 업데이트
+      setDuckBotId(id);
+    } catch (error) {
+      console.error('AI 오리봇 변경 실패:', error);
+      alert('AI 오리봇 변경에 실패했습니다.');
+    }
   };
 
   const handleLogout = async () => {
@@ -290,28 +404,41 @@ export default function MyPage() {
   };
 
   // 아이템 구매 함수
-  const handlePurchase = async (itemType, itemId, cost) => {
+  const handlePurchase = async (itemType, itemKey, cost) => {
     if (coins < cost) {
       alert('코인이 부족합니다!');
       return false;
     }
 
+    // itemKey를 itemId로 변환
+    const numericItemId = itemKeyToIdMap[itemKey];
+    if (!numericItemId) {
+      console.error('아이템 ID를 찾을 수 없습니다:', itemKey);
+      alert('아이템 정보를 찾을 수 없습니다.');
+      return false;
+    }
+
     try {
-      // API 호출
-      await purchaseItem(itemId, {
-        itemType,
-        cost
-      });
+      // API 호출 (숫자 itemId 사용, request body 없음)
+      const response = await purchaseItem(numericItemId);
 
       // 성공 시 로컬 state 업데이트
-      setCoins((prev) => prev - cost);
+      if (response.remainingCoins !== undefined) {
+        setCoins(response.remainingCoins);
+      }
 
-      if (itemType === 'color') {
-        setUnlockedColors((prev) => [...prev, itemId]);
+      if (itemType === 'profile') {
+        setUnlockedProfiles((prev) => [...prev, itemKey]);
+      } else if (itemType === 'color') {
+        setUnlockedColors((prev) => [...prev, itemKey]);
       } else if (itemType === 'accessory') {
-        setUnlockedAccessories((prev) => [...prev, itemId]);
+        setUnlockedAccessories((prev) => [...prev, itemKey]);
       } else if (itemType === 'duckBot') {
-        setUnlockedDuckBots((prev) => [...prev, itemId]);
+        setUnlockedDuckBots((prev) => [...prev, itemKey]);
+      } else if (itemType === 'background') {
+        setUnlockedBackgrounds((prev) => [...prev, itemKey]);
+      } else if (itemType === 'effect') {
+        setUnlockedEffects((prev) => [...prev, itemKey]);
       }
 
       return true;
@@ -364,6 +491,10 @@ export default function MyPage() {
         <NicknameStyleModal
           nickname={nickname}
           currentStyle={nicknameStyle}
+          coins={coins}
+          unlockedBackgrounds={unlockedBackgrounds}
+          unlockedEffects={unlockedEffects}
+          onPurchase={handlePurchase}
           onSave={handleSaveNicknameStyle}
           onClose={() => setShowNicknameModal(false)}
         />
@@ -375,6 +506,7 @@ export default function MyPage() {
           currentColor={duckStyle.color}
           currentAccessory={duckStyle.accessory}
           coins={coins}
+          unlockedProfiles={unlockedProfiles}
           unlockedColors={unlockedColors}
           unlockedAccessories={unlockedAccessories}
           onPurchase={handlePurchase}
