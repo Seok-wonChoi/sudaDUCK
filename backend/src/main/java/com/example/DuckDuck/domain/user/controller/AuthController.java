@@ -3,9 +3,6 @@ package com.example.DuckDuck.domain.user.controller;
 import com.example.DuckDuck.domain.user.dto.request.TestLoginRequest;
 import com.example.DuckDuck.domain.user.dto.request.TestSignupRequest;
 import com.example.DuckDuck.domain.user.dto.request.TokenDto;
-import com.example.DuckDuck.domain.user.entity.Member;
-import com.example.DuckDuck.domain.user.entity.Profile;
-import com.example.DuckDuck.domain.user.repository.MemberRepository;
 import com.example.DuckDuck.domain.user.service.AuthService;
 import com.example.DuckDuck.global.security.jwt.CookieUtil;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
@@ -14,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.io.IOException;
 import java.util.Map;
 
 @Tag(name = "Auth", description = "인증 관련 API (카카오/테스트 로그인)")
@@ -32,6 +30,24 @@ public class AuthController {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthService authService;
+
+    // =================================================================
+    // ★ [추가됨] 프론트에서 제일 먼저 들어오는 곳
+    // 요청 예시: /api/v1/auth/login?env=local
+    // =================================================================
+    @Operation(summary = "로그인 시작", description = "환경 정보(local/prod)를 받아서 세션에 저장 후 카카오로 리다이렉트합니다.")
+    @GetMapping("/login")
+    public void login(@RequestParam("env") String env,
+                      HttpSession session,
+                      HttpServletResponse response) throws IOException {
+
+        // 1. "local"인지 "prod"인지 서버 메모리(세션)에 저장
+        // 쿠키가 아니므로 도메인 상관없이 안전하게 저장됨
+        session.setAttribute("client_env", env);
+
+        // 2. 저장했으면 카카오 로그인 페이지로 이동
+        response.sendRedirect("/oauth2/authorization/kakao");
+    }
 
     @Operation(summary = "내 정보 조회", description = "쿠키의 토큰을 확인하여 내 정보를 반환합니다.")
     @GetMapping("/me")
@@ -45,7 +61,7 @@ public class AuthController {
     @Operation(summary = "테스트 로그인", description = "특정 유저로 강제 로그인하여 쿠키를 발급받습니다.")
     @PostMapping("/test-login")
     public ResponseEntity<TokenDto> testLogin(@RequestBody TestLoginRequest request,
-                                            HttpServletResponse response){
+                                              HttpServletResponse response){
 
         TokenDto tokens = authService.login(request.getUserId(), request.getEmail());
 
@@ -68,8 +84,6 @@ public class AuthController {
         return ResponseEntity.ok(tokens);
     }
 
-
-
     @Operation(summary = "로그아웃", description = "액세스 및 리프레시 토큰 쿠키를 삭제합니다.")
     @PostMapping("/logout")
     public ResponseEntity<String> logout(Authentication authentication,HttpServletResponse response){
@@ -87,7 +101,7 @@ public class AuthController {
     @Operation(summary = "토큰 재발급", description = "리프레시 토큰을 확인하여 새 액세스 토큰을 발급합니다.")
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response,
-                                            @RequestBody(required = false) Map<String, String> body) {
+                                     @RequestBody(required = false) Map<String, String> body) {
         // 1. 쿠키에서 리프레시 토큰 추출
         String refreshToken = CookieUtil.getCookie(request, "refreshToken")
                 .map(Cookie::getValue)
@@ -108,7 +122,6 @@ public class AuthController {
 
     }
 
-
     @Operation(summary = "테스트 회원가입", description = "테스트용 멤버와 프로필을 동시에 생성합니다.")
     @Transactional // 두 엔티티를 저장하므로 트랜잭션 보장 필수
     @PostMapping("/test-signup")
@@ -118,4 +131,3 @@ public class AuthController {
         return ResponseEntity.ok("테스트 회원가입 완료! ID: " + request.getUserId());
     }
 }
-
