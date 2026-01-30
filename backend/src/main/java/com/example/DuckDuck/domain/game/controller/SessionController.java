@@ -35,10 +35,10 @@ public class SessionController {
         return ResponseEntity.ok(scripts);
     }
 
-    @Operation(
-            summary = "session별 스크립트, 개인점수, 평균 점수를 조회합니다.",
-            description = "한 게임에서 나온 모든 스크립트와 점수를 모두 조회합니다."
-    )
-    @GetMapping("/report/{roomId}/turns/{turnNo}/scripts")
-    public ResponseEntity<List<SessionResultResponse>> get
+//    @Operation(
+//            summary = "session별 스크립트, 개인점수, 평균 점수를 조회합니다.",
+//            description = "한 게임에서 나온 모든 스크립트와 점수를 모두 조회합니다."
+//    )
+//    @GetMapping("/report/{roomId}/turns/{turnNo}/scripts")
+//    public ResponseEntity<List<SessionResultResponse>> get
 }
