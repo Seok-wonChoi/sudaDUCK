@@ -539,16 +539,18 @@ export default function WaitingRoomPage() {
       setMyMicOn(false);
       await stopAudioAnalysis();
       // WebSocket으로 마이크 상태 전송
+      console.log("[toggleMyMic] sendMic(false) 호출 시작");
       sendMic(false);
-      console.log("[toggleMyMic] 마이크 OFF 전송 완료");
+      console.log("[toggleMyMic] sendMic(false) 호출 완료");
       return;
     }
 
     setMyMicOn(true);
     await startAudioAnalysis();
+    console.log("[toggleMyMic] sendMic(true) 호출 시작");
     // WebSocket으로 마이크 상태 전송
     sendMic(true);
-    console.log("[toggleMyMic] 마이크 ON 전송 완료");
+    console.log("[toggleMyMic] sendMic(true) 호출 완료");
   }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic, myEmail]);
 
   // 준비 상태 토글: 즉시 로컬 상태 업데이트 + API 호출 + WebSocket으로 전송

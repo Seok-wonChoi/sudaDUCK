@@ -25,16 +25,25 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
   const sendMic = useCallback((micOn) => {
     const client = clientRef.current;
-    if (!client?.connected) return;
+    console.log("[sendMic] 호출됨:", { micOn, connected: client?.connected, roomCode });
+    if (!client?.connected) {
+      console.warn("[sendMic] WebSocket이 연결되지 않음!");
+      return;
+    }
     client.publish({
       destination: `/app/rooms/${roomCode}/mic`,
       body: JSON.stringify({ micOn }),
     });
+    console.log("[sendMic] WebSocket 메시지 전송 완료:", { micOn, destination: `/app/rooms/${roomCode}/mic` });
   }, [roomCode]);
 
   const sendVoiceLevel = useCallback((level) => {
     const client = clientRef.current;
     if (!client?.connected) return;
+    // 너무 많은 로그를 방지하기 위해 10% 확률로만 로그 출력
+    if (Math.random() < 0.1) {
+      console.log("[sendVoiceLevel] 음성 레벨 전송:", { level, roomCode });
+    }
     client.publish({
       destination: `/app/rooms/${roomCode}/voice-level`,
       body: JSON.stringify({ level }),
