@@ -23,13 +23,8 @@ public class GptService {
 
     private final String GMS_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1/chat/completions";
 
-    // ============================================
-    // 기존 메서드들 (변경 없음)
-    // ============================================
-
     /**
-     * 방 생성 시 주제 추천 (1차원 배열!)
-     * @return 주제 리스트 ["주제1", "주제2", "주제3"]
+     * 방 생성 시 주제 추천
      */
     public List<String> getRecommendedTopics() {
         String prompt = "보고 바로 고를 수 있게 '아주 짧고 간결한 구어체'로 주제 3가지를 추천해줘.\n\n" +
@@ -44,10 +39,7 @@ public class GptService {
                 "]";
 
         try {
-            // GPT 호출
             String jsonResponse = callGptRaw(prompt);
-
-            // JSON 배열 직접 파싱
             @SuppressWarnings("unchecked")
             List<String> topics = objectMapper.readValue(jsonResponse, List.class);
 
@@ -60,7 +52,6 @@ public class GptService {
             log.error("주제 추천 파싱 실패: {}", e.getMessage(), e);
         }
 
-        // 기본값 반환 (파싱 실패 또는 빈 결과)
         return List.of(
                 "오늘 뭐 했어?",
                 "좋아하는 음식은?",
@@ -73,18 +64,59 @@ public class GptService {
      */
     public GptScriptResponse generateScript(String koreanText) {
         String prompt = String.format(
-                "너는 영어 회화 학습 콘텐츠 생성기야. 아래 한국어 문장을 분석해서 반드시 JSON 형식으로만 응답해.\n" +
+                "# Role\n" +
+                        "당신은 영어 회화 학습 콘텐츠 생성 전문가입니다.\n\n" +
+
+                        "# Context\n" +
+                        "사용자가 음성으로 말한 한국어를 영어로 번역하고, 학습 자료를 만들어야 합니다.\n" +
+                        "입력된 한국어는 이미 전처리된 자연스러운 구어체입니다.\n\n" +
+
+                        "# Input\n" +
                         "한국어 문장: \"%s\"\n\n" +
-                        "조건:\n" +
-                        "1. 'en': 자연스러운 영어 번역문을 작성할 것.\n" +
-                        "2. 'blank_script': 위에서 만든 'en' 문장에서 핵심 단어(명사, 동사, 형용사 등) 2~3개를 골라 각각 [ ]로 치환할 것.\n" +
-                        "3. 'similarity_phrases': 'en' 문장과 의미가 같은 다른 형태의 '영어 문장' 2개를 작성할 것 (한국어 금지).\n\n" +
-                        "응답 예시 (반드시 이 구조로 JSON만 출력):\n" +
+
+                        "# Task\n" +
+                        "위 한국어 문장을 분석하여 다음 JSON 형식으로 응답하세요:\n\n" +
+
+                        "# Output Requirements\n" +
+                        "1. **en** (영어 번역문)\n" +
+                        "   - 구어체 특성을 살려 자연스럽게 번역\n" +
+                        "   - 실제 원어민이 일상에서 사용하는 표현 우선\n" +
+                        "   - 문법적으로 완벽하되 너무 격식적이지 않게\n\n" +
+
+                        "2. **blank_script** (빈칸 학습지)\n" +
+                        "   - 'en'에서 핵심 단어 2-3개를 [ ]로 치환\n" +
+                        "   - 선택 기준: 명사 > 동사 > 형용사 순\n" +
+                        "   - 학습 난이도를 고려하여 선택\n\n" +
+
+                        "3. **similarity_phrases** (유사 표현 2개)\n" +
+                        "   - 'en'과 완전히 같은 의미의 다른 영어 문장\n" +
+                        "   - 다양한 표현 방식 제시 (격식/비격식, 직접/간접 등)\n" +
+                        "   - 한국어 절대 금지, 순수 영어만\n\n" +
+
+                        "# Output Format (JSON only, no extra text)\n" +
                         "{\n" +
-                        "  \"en\": \"The weather is so beautiful that I want to take a stroll.\",\n" +
-                        "  \"blank_script\": \"The [weather] is so [beautiful] that I want to take a [stroll].\",\n" +
-                        "  \"similarity_phrases\": [\"It's such a nice day to go outside.\", \"I feel like walking because the weather is great.\"]\n" +
-                        "}", koreanText);
+                        "  \"en\": \"자연스러운 영어 번역\",\n" +
+                        "  \"blank_script\": \"The [weather] is so [beautiful].\",\n" +
+                        "  \"similarity_phrases\": [\n" +
+                        "    \"첫 번째 유사 표현\",\n" +
+                        "    \"두 번째 유사 표현\"\n" +
+                        "  ]\n" +
+                        "}\n\n" +
+
+                        "# Examples\n" +
+                        "입력: \"오늘 날씨 진짜 좋다\"\n" +
+                        "출력:\n" +
+                        "{\n" +
+                        "  \"en\": \"The weather is really nice today.\",\n" +
+                        "  \"blank_script\": \"The [weather] is really [nice] today.\",\n" +
+                        "  \"similarity_phrases\": [\n" +
+                        "    \"It's such a beautiful day today.\",\n" +
+                        "    \"Today's weather is awesome.\"\n" +
+                        "  ]\n" +
+                        "}\n\n" +
+
+                        "이제 위 한국어 문장을 처리해주세요.", koreanText
+        );
 
         String jsonResponse = callGptRaw(prompt);
         
@@ -96,15 +128,8 @@ public class GptService {
         }
     }
 
-    // ============================================
-    // 🆕 AI 기능용 추가 메서드
-    // ============================================
-
     /**
      * JSON 응답을 요청하는 범용 GPT 호출
-     * 
-     * @param prompt 프롬프트 (JSON 응답 요청 포함)
-     * @return JSON 문자열 (추출된 JSON만)
      */
     public String callGptForJson(String prompt) {
         log.info("GPT JSON 호출 - prompt length: {}", prompt.length());
@@ -113,10 +138,6 @@ public class GptService {
 
     /**
      * JSON 문자열을 Map으로 파싱
-     * 
-     * @param json JSON 문자열
-     * @return Map 객체
-     * @throws RuntimeException 파싱 실패 시
      */
     public Map<String, Object> parseJsonResponse(String json) {
         try {
@@ -129,14 +150,11 @@ public class GptService {
         }
     }
 
-    // ============================================
-    // Private 메서드
-    // ============================================
-
     /**
      * GPT 호출 (JSON 문자열 반환)
+     * ✅ 에러 처리 강화
      */
-    private String callGptRaw(String prompt) {
+    public String callGptRaw(String prompt) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + gmsToken);
@@ -155,16 +173,24 @@ public class GptService {
         Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
         String content = (String) message.get("content");
 
-        // JSON 시작/끝 추출
+        // ✅ JSON 추출 개선 (에러 처리 강화)
         int startIndex = content.indexOf("{");
         int endIndex = content.lastIndexOf("}");
         
+        // JSON 객체가 없으면 배열 확인
         if (startIndex == -1 || endIndex == -1) {
-            // JSON이 아닌 경우 배열일 수도 있음
             startIndex = content.indexOf("[");
             endIndex = content.lastIndexOf("]");
         }
         
-        return content.substring(startIndex, endIndex + 1);
+        // ✅ 여전히 JSON이 없으면 원본 반환
+        if (startIndex == -1 || endIndex == -1 || startIndex > endIndex) {
+            log.warn("JSON을 찾을 수 없음. 원본 반환: {}", content);
+            return content;  // 원본 그대로 반환
+        }
+        
+        String extracted = content.substring(startIndex, endIndex + 1);
+        log.debug("JSON 추출 완료: {}", extracted);
+        return extracted;
     }
 }
