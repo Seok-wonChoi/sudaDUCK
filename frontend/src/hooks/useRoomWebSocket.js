@@ -89,7 +89,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
           });
 
           // ref를 통해 최신 핸들러 호출
-          const { onReadyChanged, onMicChanged, onMemberJoined, onVoiceLevelChanged, onError } = handlersRef.current;
+          const { onReadyChanged, onMicChanged, onMemberJoined, onMemberLeft, onVoiceLevelChanged, onSettingsChanged, onError } = handlersRef.current;
           switch (type) {
             case "READY_CHANGED":
               console.log("→ READY_CHANGED 핸들러 호출");
@@ -100,11 +100,22 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
               onMicChanged?.(payload, senderKey);
               break;
             case "MEMBER_JOINED":
+            case "PARTICIPANT_JOINED":
               console.log("→ MEMBER_JOINED 핸들러 호출");
               onMemberJoined?.(payload, senderKey);
               break;
+            case "MEMBER_LEFT":
+            case "PARTICIPANT_LEFT":
+              console.log("→ MEMBER_LEFT 핸들러 호출");
+              onMemberLeft?.(payload, senderKey);
+              break;
             case "VOICE_LEVEL_CHANGED":
               onVoiceLevelChanged?.(payload, senderKey);
+              break;
+            case "SETTINGS_CHANGED":
+            case "ROOM_SETTINGS_CHANGED":
+              console.log("→ SETTINGS_CHANGED 핸들러 호출");
+              onSettingsChanged?.(payload, senderKey);
               break;
             case "ERROR":
               console.log("→ ERROR 핸들러 호출");

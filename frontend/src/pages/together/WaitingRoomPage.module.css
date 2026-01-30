@@ -28,7 +28,7 @@
 .TopHeaderRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: clamp(10px, 1.5vw, 14px);
   margin-bottom: clamp(12px, 1.5vw, 14px);
 }
