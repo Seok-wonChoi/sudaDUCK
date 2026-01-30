@@ -39,5 +39,5 @@ out/
 # ===============================
 # Secrets (API Key, DB Password)
 # ===============================
-src/main/resources/application-secret.yml
-.env
+src/main/resources/application.yaml
+.envdb/
