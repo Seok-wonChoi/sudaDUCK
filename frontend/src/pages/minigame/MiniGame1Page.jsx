@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 // import styles from './MiniGame1Page.module.css';
 
 import MiniGameLayout from '@/components/features/minigame/layout/MiniGameLayout';
@@ -10,6 +10,7 @@ import ResultPanel from '@/components/features/minigame1/result/ResultPanel';
 import ReviewPanel from '@/components/features/minigame1/review/ReviewPanel';
 import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
 import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
+import { getReviewQuestions } from '@/api/miniGame';
 
 const MOCK_PARTICIPANTS = [
   { id: 1, name: '장가은', isActive: true },
@@ -59,6 +60,7 @@ const GAME_PHASE = {
 
 export default function MiniGame1Page() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [phase, setPhase] = useState(GAME_PHASE.COUNTDOWN);
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState(0);
@@ -70,16 +72,70 @@ export default function MiniGame1Page() {
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [showGuide, setShowGuide] = useState(false);
   const [showCoinReward, setShowCoinReward] = useState(false);
+  const [questions, setQuestions] = useState(MOCK_QUESTIONS);
+  const [isLoading, setIsLoading] = useState(true);
 
   const currentUserId = 1;
+  const roomId = location.state?.roomId;
+
+  // API에서 문제 데이터 가져오기
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      if (!roomId) {
+        console.log('roomId가 없어서 MOCK 데이터 사용');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const data = await getReviewQuestions(roomId);
+        console.log('미니게임 문제 조회 성공:', data);
+
+        // API 응답 데이터를 questions 형식으로 변환
+        const formattedQuestions = data.map((item) => {
+          // blank_script에서 빈칸과 텍스트 분리 (예: "I _____ every morning." -> ["I ", "_____", " every morning."])
+          const parts = item.blank_script.split(/(_+)/);
+          const englishParts = [];
+          const blanks = [];
+
+          parts.forEach((part) => {
+            if (part.match(/^_+$/)) {
+              // 빈칸인 경우 - 정답은 실제 데이터에서 파싱 필요 (임시로 빈 문자열)
+              blanks.push({ answer: '', userAnswer: '' });
+              englishParts.push(' ');
+            } else if (part) {
+              englishParts.push(part);
+            }
+          });
+
+          return {
+            scriptId: item.scriptId,
+            korean: item.korean,
+            english: item.english,
+            englishParts,
+            blanks,
+          };
+        });
+
+        setQuestions(formattedQuestions);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('미니게임 문제 조회 실패:', error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuestions();
+  }, [roomId]);
 
   const initQuestion = useCallback((qIdx) => {
-    const q = MOCK_QUESTIONS[qIdx];
+    const q = questions[qIdx];
     if (q) {
       setBlanksState(q.blanks.map(() => ({ value: '', status: 'empty' })));
       setCurrentBlank(0);
     }
-  }, []);
+  }, [questions]);
 
   useEffect(() => {
     if (phase !== GAME_PHASE.COUNTDOWN || countdown <= 0) return;
@@ -120,7 +176,7 @@ export default function MiniGame1Page() {
   const handleSubmit = useCallback(() => {
     if (!inputValue.trim()) return;
 
-    const q = MOCK_QUESTIONS[currentQuestion];
+    const q = questions[currentQuestion];
     const correctAnswer = q.blanks[currentBlank].answer.toLowerCase();
     const isCorrect = inputValue.trim().toLowerCase() === correctAnswer;
 
@@ -159,7 +215,7 @@ export default function MiniGame1Page() {
 
       setAnsweredQuestions((prev) => [...prev, answered]);
 
-      if (currentQuestion < MOCK_QUESTIONS.length - 1) {
+      if (currentQuestion < questions.length - 1) {
         setCurrentQuestion((c) => c + 1);
         initQuestion(currentQuestion + 1);
       } else {
@@ -174,17 +230,17 @@ export default function MiniGame1Page() {
         }, 2000);
       }
     }
-  }, [inputValue, currentQuestion, currentBlank, blanksState, initQuestion]);
+  }, [inputValue, currentQuestion, currentBlank, blanksState, initQuestion, questions]);
 
   const handleReview = () => setPhase(GAME_PHASE.REVIEW);
   const handleComplete = () => navigate('/minigame2');
 
-  if (phase === GAME_PHASE.COUNTDOWN) {
+  if (isLoading || phase === GAME_PHASE.COUNTDOWN) {
     return <CountdownOverlay count={countdown} />;
   }
 
-  const q = MOCK_QUESTIONS[currentQuestion];
-  const progress = ((currentQuestion + 1) / MOCK_QUESTIONS.length) * 100;
+  const q = questions[currentQuestion];
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   return (
     <MiniGameLayout
@@ -198,7 +254,7 @@ export default function MiniGame1Page() {
         <div style={{ position: 'relative' }}>
           <QuestionPanel
             current={currentQuestion + 1}
-            total={MOCK_QUESTIONS.length}
+            total={questions.length}
             score={score}
             koreanSentence={q.korean}
             englishParts={q.englishParts}
