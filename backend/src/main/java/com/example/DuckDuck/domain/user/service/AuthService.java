@@ -26,10 +26,13 @@ public class AuthService {
     private final ProfileRepository profileRepository;
 
     private static final String DEFAULT_DUCK_JSON =
-            "{\"v\":1,\"color\":\"YELLOW\",\"accessory\":\"NONE\"}";
+            "{\"v\":1,\"style\":\"BASIC_1\",\"color\":\"WHITE\",\"accessory\":\"NONE\"}";
 
     private static final String DEFAULT_AVATAR_JSON =
             "{\"v\":1,\"bgStyle\":\"BASIC_WHITE\",\"effect\":\"NONE\"}";
+
+    private static final String DEFAULT_AI_DUCKBOT_JSON =
+            "{\"v\":1,\"model\":\"MODEL_1\"}";
 
     private static final int DEFAULT_COINS = 0;
 
@@ -130,6 +133,7 @@ public class AuthService {
                 .attendanceDays(0)
                 .duckCustomJson(DEFAULT_DUCK_JSON)
                 .avatarCustomJson(DEFAULT_AVATAR_JSON)
+                .aiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON)
                 .lastLoginAt(LocalDateTime.now())
                 .totalTime(0)
                 .build();

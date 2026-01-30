@@ -113,6 +113,11 @@ public class CustomShopService {
                 return readAvatarField(profile, "effect");
             }
 
+            // ===== AI 오리봇 =====
+            if (category == CustomCategory.AI_DUCKBOT_MODEL) {
+                return readAiDuckbotField(profile, "model");
+            }
+
             return null;
         } catch (Exception e) {
             // JSON 깨져있어도 조회 API는 죽지 않게 방어
@@ -130,6 +135,14 @@ public class CustomShopService {
 
     private String readAvatarField(Profile profile, String field) throws Exception {
         String json = profile.getAvatarCustomJson();
+        if (json == null || json.isBlank()) return null;
+
+        JsonNode node = objectMapper.readTree(json);
+        return getText(node, field);
+    }
+
+    private String readAiDuckbotField(Profile profile, String field) throws Exception {
+        String json = profile.getAiDuckbotCustomJson();
         if (json == null || json.isBlank()) return null;
 
         JsonNode node = objectMapper.readTree(json);
@@ -154,10 +167,11 @@ public class CustomShopService {
         // 기본값 방어
         return switch (category) {
             case DUCK_STYLE -> "BASIC_1".equals(itemKey);
-            case DUCK_COLOR -> "YELLOW".equals(itemKey);
+            case DUCK_COLOR -> "WHITE".equals(itemKey);
             case DUCK_ACCESSORY -> "NONE".equals(itemKey);
             case AVATAR_BG -> "BASIC_WHITE".equals(itemKey);
             case AVATAR_EFFECT -> "NONE".equals(itemKey);
+            case AI_DUCKBOT_MODEL -> "MODEL_1".equals(itemKey);
             default -> false;
         };
     }

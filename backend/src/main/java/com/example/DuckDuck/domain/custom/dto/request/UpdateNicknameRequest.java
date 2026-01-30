@@ -5,6 +5,6 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class EquipAiDuckbotRequest {
-    private String model; // MODEL_1 ~ MODEL_4
+public class UpdateNicknameRequest {
+    private String nickname;
 }

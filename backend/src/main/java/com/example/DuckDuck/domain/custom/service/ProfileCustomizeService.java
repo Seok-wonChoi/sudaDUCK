@@ -37,13 +37,13 @@ public class ProfileCustomizeService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String DEFAULT_DUCK_JSON =
-            "{\"v\":1,\"style\":\"BASIC_1\",\"color\":\"YELLOW\",\"accessory\":\"NONE\"}";
+            "{\"v\":1,\"style\":\"BASIC_1\",\"color\":\"WHITE\",\"accessory\":\"NONE\"}";
 
     private static final String DEFAULT_AVATAR_JSON =
             "{\"v\":1,\"bgStyle\":\"BASIC_WHITE\",\"effect\":\"NONE\"}";
 
     private static final String DEFAULT_AI_DUCKBOT_JSON =
-            "{\"v\":1,\"model\":\"BASIC_1\"}";
+            "{\"v\":1,\"model\":\"MODEL_1\"}";
 
     // ===================== 오리 장착 =====================
     @Transactional
@@ -269,9 +269,10 @@ public class ProfileCustomizeService {
 
         // 2) profile 조회
         Profile profile = profileRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("프로필이 존재하지 않습니다. userId=" + userId));
+                .orElseGet(() -> ensureProfile(member));
 
         return MyProfileCustomResponse.builder()
+                .nickname(member.getNickname())
                 .coins(profile.getCoins() == null ? 0 : profile.getCoins())
                 .duckCustomJson(profile.getDuckCustomJson())
                 .avatarCustomJson(profile.getAvatarCustomJson())
