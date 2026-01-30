@@ -96,6 +96,13 @@
 .InfoContent {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.NicknameWrapper {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -114,10 +121,56 @@
   opacity: 1;
 }
 
-.Email {
+.LogoutButton {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.LogoutButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.BottomRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-top: 4px;
+}
+
+.Email {
   font-size: 14px;
   opacity: 0.9;
+}
+
+.CoinBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.CoinIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.CoinAmount {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fbbf24;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 600px) {

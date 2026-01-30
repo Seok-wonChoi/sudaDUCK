@@ -5,6 +5,35 @@ import bellIcon from "@/assets/icons/notice_bell.png";
 import gearIcon from "@/assets/icons/gear.png";
 import duckLogo from "@/assets/images/duck_logo.png";
 
+import duckProfile1 from "@/assets/images/duck_profile1.png";
+import duckProfile2 from "@/assets/images/duck_profile2.png";
+import duckProfile3 from "@/assets/images/duck_profile3.png";
+import duckProfile4 from "@/assets/images/duck_profile4.png";
+
+const DUCK_PROFILE_IMAGES = {
+  profile1: duckProfile1,
+  profile2: duckProfile2,
+  profile3: duckProfile3,
+  profile4: duckProfile4,
+};
+
+const COLOR_MAP = {
+  white: "#ffffff",
+  yellow: "#fef08a",
+  blue: "#93c5fd",
+  pink: "#f9a8d4",
+  green: "#86efac",
+  purple: "#c4b5fd",
+  orange: "#fdba74",
+};
+
+const ACCESSORY_MAP = {
+  hat: "🎩",
+  sunglasses: "🕶️",
+  ribbon: "🎀",
+  crown: "👑",
+};
+
 
 export default function AppHeader({
   userName = "user",
@@ -22,6 +51,47 @@ export default function AppHeader({
 
   const [muted, setMuted] = useState(initialMuted);
   const [volume, setVolume] = useState(initialVolume);
+
+  // 프로필 정보 (localStorage에서 읽기)
+  const [profileInfo, setProfileInfo] = useState(() => {
+    try {
+      const saved = localStorage.getItem('userProfile');
+      return saved ? JSON.parse(saved) : {
+        profileId: 'profile1',
+        color: 'white',
+        accessory: null,
+      };
+    } catch {
+      return {
+        profileId: 'profile1',
+        color: 'white',
+        accessory: null,
+      };
+    }
+  });
+
+  // localStorage 변경 감지
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const saved = localStorage.getItem('userProfile');
+        if (saved) {
+          setProfileInfo(JSON.parse(saved));
+        }
+      } catch (error) {
+        console.error('프로필 정보 읽기 실패:', error);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // 같은 탭 내에서 변경을 감지하기 위한 커스텀 이벤트
+    window.addEventListener('profileUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('profileUpdated', handleStorageChange);
+    };
+  }, []);
 
   const count =
     typeof notificationCount === "number" ? notificationCount : notifications.length;
@@ -110,7 +180,22 @@ export default function AppHeader({
           onClick={onProfileClick}
           aria-label="마이페이지로 이동"
         >
-          <div className={styles.Avatar} aria-hidden="true" />
+          <div
+            className={styles.Avatar}
+            style={{ backgroundColor: COLOR_MAP[profileInfo.color] || '#ffffff' }}
+            aria-hidden="true"
+          >
+            <img
+              src={DUCK_PROFILE_IMAGES[profileInfo.profileId]}
+              alt="프로필"
+              className={styles.AvatarImage}
+            />
+            {profileInfo.accessory && (
+              <span className={styles.AvatarAccessory}>
+                {ACCESSORY_MAP[profileInfo.accessory]}
+              </span>
+            )}
+          </div>
         </button>
 
         <div className={styles.IconWrap}>

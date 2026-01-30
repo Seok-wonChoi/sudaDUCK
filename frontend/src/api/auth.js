@@ -34,6 +34,23 @@ export async function login(data) {
  */
 export const loginWithKakao = () => {
   const base = (API_BASE_URL || "").trim().replace(/\/$/, "");
-  console.log("[카카오 로그인] 백엔드 OAuth 엔드포인트로 이동:", `${base}/oauth2/authorization/kakao`);
+  const isLocal = window.location.hostname === "localhost";
+
+  // ★ [핵심] 로컬이 아닐 때(배포 환경일 때)만 쿠키를 심습니다!
+  // 로컬에서는 쿠키 심어봤자 서버로 안 날아가니 안 심는 겁니다.
+  if (!isLocal) {
+    document.cookie = "client_env=production; path=/; max-age=300";
+  }
+
+  console.log(`[카카오 로그인] ${isLocal ? '로컬' : '배포'} 환경 감지`);
   window.location.href = `${base}/oauth2/authorization/kakao`;
 };
+
+/**
+ * 로그아웃
+ * POST /api/v1/auth/logout
+ */
+export async function logout() {
+  const { data } = await api.post("/api/v1/auth/logout");
+  return data;
+}

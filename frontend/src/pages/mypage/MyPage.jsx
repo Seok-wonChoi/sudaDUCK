@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./MyPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import { getMyScripts, updateAvatarCustom, updateDuckCustom, getMyProfileCustom, purchaseItem } from "@/api/mypage";
+import { logout } from "@/api/auth";
 
 import ProfileSection from "@/components/features/mypage/ProfileSection/ProfileSection";
 import StatsCard from "@/components/features/mypage/StatsCard/StatsCard";
@@ -139,7 +141,7 @@ const MOCK_SENTENCES = [
 ];
 
 export default function MyPage() {
-  const [sentences, setSentences] = useState(MOCK_SENTENCES);
+  const [sentences, setSentences] = useState([]);
   const [selectedSentence, setSelectedSentence] = useState(null);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [showDuckModal, setShowDuckModal] = useState(false);
@@ -152,10 +154,61 @@ export default function MyPage() {
   });
   const [duckProfileId, setDuckProfileId] = useState("profile1");
   const [duckStyle, setDuckStyle] = useState({
-    color: "yellow",
+    color: "white",
     accessory: null,
   });
   const [duckBotId, setDuckBotId] = useState("cyan");
+
+  // 코인 시스템
+  const [coins, setCoins] = useState(200); // 초기 코인 (테스트용 200코인)
+  const [unlockedColors, setUnlockedColors] = useState(["white"]); // 기본 색상 (흰색)
+  const [unlockedAccessories, setUnlockedAccessories] = useState([null]); // 기본 악세사리 없음
+  const [unlockedDuckBots, setUnlockedDuckBots] = useState(["cyan"]); // 기본 오리봇
+
+  // 사용자 프로필 정보 조회
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const data = await getMyProfileCustom();
+        // 백엔드에서 받은 데이터로 상태 업데이트
+        if (data.nickname) setNickname(data.nickname);
+        if (data.nicknameStyle) setNicknameStyle(data.nicknameStyle);
+        if (data.duckProfile) {
+          setDuckProfileId(data.duckProfile.profileId);
+          setDuckStyle({
+            color: data.duckProfile.color,
+            accessory: data.duckProfile.accessory,
+          });
+        }
+        if (data.duckBotId) setDuckBotId(data.duckBotId);
+        if (data.coins !== undefined) setCoins(data.coins);
+        if (data.unlockedItems) {
+          setUnlockedColors(data.unlockedItems.colors || ["white"]);
+          setUnlockedAccessories(data.unlockedItems.accessories || [null]);
+          setUnlockedDuckBots(data.unlockedItems.duckBots || ["cyan"]);
+        }
+      } catch (error) {
+        console.error("프로필 정보 조회 실패:", error);
+        // 실패 시 기본값 사용 (이미 초기 state로 설정됨)
+      }
+    };
+    fetchProfileData();
+  }, []);
+
+  // 저장된 스크립트 조회
+  useEffect(() => {
+    const fetchMyScripts = async () => {
+      try {
+        const data = await getMyScripts();
+        setSentences(data);
+      } catch (error) {
+        console.error("스크립트 조회 실패:", error);
+        // 실패 시 MOCK 데이터 사용
+        setSentences(MOCK_SENTENCES);
+      }
+    };
+    fetchMyScripts();
+  }, []);
 
   const stats = [
     { value: 0, label: "총 플레이 타임", unit: "" },
@@ -173,18 +226,100 @@ export default function MyPage() {
     }
   };
 
-  const handleSaveNicknameStyle = ({ nickname: newNickname, ...style }) => {
-    if (newNickname) setNickname(newNickname);
-    setNicknameStyle(style);
+  const handleSaveNicknameStyle = async ({ nickname: newNickname, ...style }) => {
+    try {
+      // API 호출
+      await updateAvatarCustom({
+        nickname: newNickname,
+        ...style,
+      });
+
+      // 성공 시 로컬 state 업데이트
+      if (newNickname) setNickname(newNickname);
+      setNicknameStyle(style);
+    } catch (error) {
+      console.error("닉네임 커스터마이징 저장 실패:", error);
+      alert("닉네임 저장에 실패했습니다.");
+    }
   };
 
-  const handleSaveDuckStyle = ({ profileId, ...style }) => {
-    if (profileId) setDuckProfileId(profileId);
-    setDuckStyle(style);
+  const handleSaveDuckStyle = async ({ profileId, ...style }) => {
+    try {
+      // API 호출
+      await updateDuckCustom({
+        profileId,
+        ...style,
+      });
+
+      // 성공 시 로컬 state 업데이트
+      if (profileId) setDuckProfileId(profileId);
+      setDuckStyle(style);
+
+      // localStorage에 프로필 정보 저장 (AppHeader 연동)
+      const profileInfo = {
+        profileId: profileId || duckProfileId,
+        color: style.color || duckStyle.color,
+        accessory: style.accessory !== undefined ? style.accessory : duckStyle.accessory,
+      };
+      localStorage.setItem('userProfile', JSON.stringify(profileInfo));
+
+      // AppHeader 업데이트를 위한 이벤트 발생
+      window.dispatchEvent(new Event('profileUpdated'));
+    } catch (error) {
+      console.error("오리 커스터마이징 저장 실패:", error);
+      alert("오리 커스터마이징 저장에 실패했습니다.");
+    }
   };
 
   const handleSaveDuckBot = (id) => {
+    // AI 오리봇 API는 아직 백엔드와 협의 중
     setDuckBotId(id);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // 로컬 스토리지에서 토큰 제거
+      localStorage.removeItem('accessToken');
+      // 로그인 페이지로 이동
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('로그아웃 실패:', error);
+      alert('로그아웃에 실패했습니다.');
+    }
+  };
+
+  // 아이템 구매 함수
+  const handlePurchase = async (itemType, itemId, cost) => {
+    if (coins < cost) {
+      alert('코인이 부족합니다!');
+      return false;
+    }
+
+    try {
+      // API 호출
+      await purchaseItem(itemId, {
+        itemType,
+        cost
+      });
+
+      // 성공 시 로컬 state 업데이트
+      setCoins((prev) => prev - cost);
+
+      if (itemType === 'color') {
+        setUnlockedColors((prev) => [...prev, itemId]);
+      } else if (itemType === 'accessory') {
+        setUnlockedAccessories((prev) => [...prev, itemId]);
+      } else if (itemType === 'duckBot') {
+        setUnlockedDuckBots((prev) => [...prev, itemId]);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('아이템 구매 실패:', error);
+      alert('아이템 구매에 실패했습니다.');
+      return false;
+    }
   };
 
   return (
@@ -201,9 +336,11 @@ export default function MyPage() {
             email="example@test.com"
             nicknameStyle={nicknameStyle}
             duckBotImage={DUCK_BOT_IMAGES[duckBotId]}
+            coins={coins}
             onEditProfile={() => setShowDuckModal(true)}
             onEditNickname={() => setShowNicknameModal(true)}
             onEditDuckBot={() => setShowDuckBotModal(true)}
+            onLogout={handleLogout}
           />
 
           <StatsCard stats={stats} />
@@ -237,6 +374,10 @@ export default function MyPage() {
           currentProfileId={duckProfileId}
           currentColor={duckStyle.color}
           currentAccessory={duckStyle.accessory}
+          coins={coins}
+          unlockedColors={unlockedColors}
+          unlockedAccessories={unlockedAccessories}
+          onPurchase={handlePurchase}
           onSave={handleSaveDuckStyle}
           onClose={() => setShowDuckModal(false)}
         />
@@ -245,6 +386,9 @@ export default function MyPage() {
       {showDuckBotModal && (
         <DuckBotModal
           currentDuckId={duckBotId}
+          coins={coins}
+          unlockedDuckBots={unlockedDuckBots}
+          onPurchase={handlePurchase}
           onSave={handleSaveDuckBot}
           onClose={() => setShowDuckBotModal(false)}
         />
