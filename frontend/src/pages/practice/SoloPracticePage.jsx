@@ -6,6 +6,7 @@ import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitGuard from "@/components/common/ExitGuard/ExitGuard";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 
 import duckImg from "@/assets/images/duck.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
@@ -40,10 +41,21 @@ export default function SoloPracticePage() {
   const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 60_000;
 
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
+
   const handleBack = () => {
+    setShowBackConfirm(true);
+  };
+
+  const handleBackConfirm = useCallback(() => {
+    setShowBackConfirm(false);
     if (window.history.length > 1) navigate(-1);
     else navigate("/practice");
-  };
+  }, [navigate]);
+
+  const handleBackCancel = useCallback(() => {
+    setShowBackConfirm(false);
+  }, []);
 
   const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -355,6 +367,15 @@ export default function SoloPracticePage() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        open={showBackConfirm}
+        message="연습을 종료하고 나가시겠습니까?"
+        confirmText="나가기"
+        cancelText="취소"
+        onConfirm={handleBackConfirm}
+        onClose={handleBackCancel}
+      />
     </div>
   );
 }
