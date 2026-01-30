@@ -80,14 +80,38 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
           const data = JSON.parse(message.body);
           const { type, payload, senderKey } = data;
 
+          // 🔍 모든 WebSocket 메시지 로깅
+          console.log("📨 [WebSocket 메시지 수신]", {
+            type,
+            payload,
+            senderKey,
+            rawMessage: message.body
+          });
+
           // ref를 통해 최신 핸들러 호출
           const { onReadyChanged, onMicChanged, onMemberJoined, onVoiceLevelChanged, onError } = handlersRef.current;
           switch (type) {
-            case "READY_CHANGED": onReadyChanged?.(payload, senderKey); break;
-            case "MIC_CHANGED": onMicChanged?.(payload, senderKey); break;
-            case "MEMBER_JOINED": onMemberJoined?.(payload, senderKey); break;
-            case "VOICE_LEVEL_CHANGED": onVoiceLevelChanged?.(payload, senderKey); break;
-            case "ERROR": onError?.(payload); break;
+            case "READY_CHANGED":
+              console.log("→ READY_CHANGED 핸들러 호출");
+              onReadyChanged?.(payload, senderKey);
+              break;
+            case "MIC_CHANGED":
+              console.log("→ MIC_CHANGED 핸들러 호출");
+              onMicChanged?.(payload, senderKey);
+              break;
+            case "MEMBER_JOINED":
+              console.log("→ MEMBER_JOINED 핸들러 호출");
+              onMemberJoined?.(payload, senderKey);
+              break;
+            case "VOICE_LEVEL_CHANGED":
+              onVoiceLevelChanged?.(payload, senderKey);
+              break;
+            case "ERROR":
+              console.log("→ ERROR 핸들러 호출");
+              onError?.(payload);
+              break;
+            default:
+              console.warn("⚠️ 알 수 없는 메시지 타입:", type);
           }
         } catch (e) {
           console.error("Msg Parsing Error", e);
