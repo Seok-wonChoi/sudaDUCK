@@ -13,8 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 @Service
 @RequiredArgsConstructor
@@ -28,13 +27,28 @@ public class TranslateService {
 
     private static final long TTL_MINUTES = 120;
 
-    // 방별 sequence 관리를 위한 Map
-    private final Map<String, AtomicLong> roomSequenceMap = new ConcurrentHashMap<>();
+    /**
+     * 🔥 Redis 기반 sequence 생성 (턴별로 관리)
+     *
+     * @param roomId 방 ID
+     * @param turnNo 턴 번호
+     * @return order_no (1부터 시작)
+     */
+    private Long generateSequence(String roomId, Long turnNo) {
+        // Redis key: room:{roomId}:turn:{turnNo}:sequence
+        String sequenceKey = String.format("room:%s:turn:%d:sequence", roomId, turnNo);
 
-    private Long generateSequence(String roomId) {
-        return roomSequenceMap
-                .computeIfAbsent(roomId, k -> new AtomicLong(0))
-                .incrementAndGet();
+        // Redis INCR로 원자적 증가 (1부터 시작)
+        Long sequence = redisTemplate.opsForValue().increment(sequenceKey, 1L);
+
+        // TTL 설정 (처음 생성 시에만)
+        if (sequence == 1L) {
+            redisTemplate.expire(sequenceKey, TTL_MINUTES, TimeUnit.MINUTES);
+        }
+
+        log.info("✅ Sequence 생성 - room:{}, turn:{}, sequence:{}", roomId, turnNo, sequence);
+
+        return sequence;
     }
 
     /**
@@ -53,37 +67,37 @@ public class TranslateService {
             Long turnNo,
             Long speakerId) {
 
-        // API 호출 순서대로 sequence 생성
-        Long sequence = generateSequence(roomId);
+        // 🔥 Redis 기반 sequence 생성 (턴별)
+        Long orderNo = generateSequence(roomId, turnNo);
 
-        log.info("[ASYNC-{}] 처리 시작 - roomId: {}, turn: {}, speaker: {}",
-                sequence, roomId, turnNo, speakerId);
+        log.info("📊 [ORDER-{}] 처리 시작 - roomId: {}, turn: {}, speaker: {}",
+                orderNo, roomId, turnNo, speakerId);
 
         try {
             Long roomIdLong = Long.parseLong(roomId);
 
             // 1. GPT 번역
             GptScriptResponse script = gptService.generateScript(text);
-            log.info("[ASYNC-{}] GPT 완료 - en: {}", sequence, script.getEn());
+            log.info("📊 [ORDER-{}] GPT 완료 - en: {}", orderNo, script.getEn());
 
             // 2. TTS 생성
             String ttsUrl = azureSpeechService.generateTTS(script.getEn(), roomId);
-            log.info("[ASYNC-{}] TTS 완료: {}", sequence, ttsUrl);
+            log.info("📊 [ORDER-{}] TTS 완료: {}", orderNo, ttsUrl);
 
-            // 3. scriptId 생성 (timestamp_sequence)
-            String scriptId = System.currentTimeMillis() + "_" + sequence;
+            // 3. scriptId 생성 (timestamp_orderNo)
+            String scriptId = System.currentTimeMillis() + "_" + orderNo;
 
             // 4. Redis에 저장 (명세서 형식)
-            saveToRedis(roomIdLong, turnNo, scriptId, sequence, speakerId, text, script, ttsUrl);
-            log.info("[ASYNC-{}] Redis 저장 완료 - scriptId: {}", sequence, scriptId);
+            saveToRedis(roomIdLong, turnNo, scriptId, orderNo, speakerId, text, script, ttsUrl);
+            log.info("📊 [ORDER-{}] ✅ Redis 저장 완료 - scriptId: {}", orderNo, scriptId);
 
             return CompletableFuture.completedFuture(true);
 
         } catch (NumberFormatException e) {
-            log.error("[ASYNC-{}] 잘못된 roomId 형식: {}", sequence, roomId, e);
+            log.error("❌ 잘못된 roomId 형식: {}", roomId, e);
             return CompletableFuture.completedFuture(false);
         } catch (Exception e) {
-            log.error("[ASYNC-{}] 처리 실패 - roomId: {}", sequence, roomId, e);
+            log.error("❌ 처리 실패 - roomId: {}, turn: {}", roomId, turnNo, e);
             return CompletableFuture.completedFuture(false);
         }
     }

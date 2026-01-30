@@ -65,7 +65,7 @@ public class SilenceDetectionController {
     }
 
     /**
-     * 모니터링 종료 (방 퇴장 시)
+     * 모니터링 종료
      */
     @PostMapping("/stop-monitoring")
     @Operation(summary = "모니터링 종료", description = "방 퇴장 시 정적 감지 종료")

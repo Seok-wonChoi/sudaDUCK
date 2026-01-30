@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 영어 퀴즈 서비스 (최종 단순화 버전)
@@ -23,6 +24,7 @@ public class EnglishQuizEventService {
     // 공통 서비스
     private final AiContextService contextService;
     private final GptService gptService;
+    private final WhisperService whisperService;
     
     // WebSocket & Scheduler
     private final SimpMessagingTemplate messagingTemplate;
@@ -95,93 +97,43 @@ public class EnglishQuizEventService {
         quizSchedules.put(key, future);
     }
 
-    /**
-     * 답변 제출
-     */
-    public void submitAnswer(String quizId, Long userId, String answer) {
-        
-        log.info("답변 제출 - quizId: {}, userId: {}", quizId, userId);
-        
+    // 답변 제출
+    public void submitAnswer(String quizId, Long userId, MultipartFile audioFile) {
+
+        log.info("음성 답변 제출 - quizId: {}, userId: {}", quizId, userId);
+
         List<UserAnswer> answers = quizAnswers.get(quizId);
         if (answers == null) {
             log.error("퀴즈 없음: {}", quizId);
             return;
         }
-        
+
+        // 음성 → 텍스트 변환
+        String transcribedText = transcribeAudio(audioFile);
+
         UserAnswer ua = new UserAnswer();
         ua.userId = userId;
-        ua.answer = answer;
+        ua.answer = transcribedText;  // 변환된 텍스트 저장
         answers.add(ua);
-        
+
         log.info("답변 저장 - {}/{}", answers.size(), expectedParticipants.get(quizId));
-        
+
         checkAndEvaluate(quizId);
     }
 
-    /**
-     * 활성 퀴즈 조회
-     */
-    public Map<String, Object> getActiveQuiz(Long roomId, Integer turn) {
-        QuizData quiz = activeQuizzes.get(roomId + "_" + turn);
-        
-        if (quiz == null) {
-            return null;
+    //  Whisper API 음성 -> 텍스트 변환
+    private String transcribeAudio(MultipartFile audioFile) {
+        try {
+            // OpenAI Whisper API 호출
+            // 음성 파일을 텍스트로 변환
+            return whisperService.transcribe(audioFile);
+
+        } catch (Exception e) {
+            log.error("음성 변환 실패", e);
+            throw new RuntimeException("음성 파일 처리 중 오류가 발생했습니다");
         }
-        
-        return Map.of(
-                "quizId", quiz.quizId,
-                "question", quiz.question,
-                "expectedAnswer", quiz.expectedAnswer,
-                "hint", quiz.hint
-        );
     }
 
-    /**
-     * 수동 정리 메서드 (필요 시 호출)
-     */
-    public void cleanupQuiz(Long roomId, Integer turn) {
-        String key = roomId + "_" + turn;
-        
-        log.info("퀴즈 정리 시작 - key: {}", key);
-        
-        ScheduledFuture<?> future = quizSchedules.remove(key);
-        if (future != null && !future.isDone()) {
-            future.cancel(false);
-        }
-        
-        activeQuizzes.remove(key);
-        quizAnswers.remove(key);
-        expectedParticipants.remove(key);
-        
-        log.info("퀴즈 정리 완료 - key: {}", key);
-    }
-
-    /**
-     * 방 전체 정리 (게임 종료 시)
-     */
-    public void cleanupRoom(Long roomId) {
-        String prefix = roomId + "_";
-        
-        log.info("방 퀴즈 전체 정리 시작 - roomId: {}", roomId);
-        
-        quizSchedules.entrySet().removeIf(entry -> {
-            String key = entry.getKey();
-            if (key.startsWith(prefix)) {
-                ScheduledFuture<?> future = entry.getValue();
-                if (future != null && !future.isDone()) {
-                    future.cancel(false);
-                }
-                return true;
-            }
-            return false;
-        });
-        
-        activeQuizzes.keySet().removeIf(key -> key.startsWith(prefix));
-        quizAnswers.keySet().removeIf(key -> key.startsWith(prefix));
-        expectedParticipants.keySet().removeIf(key -> key.startsWith(prefix));
-        
-        log.info("방 퀴즈 전체 정리 완료 - roomId: {}", roomId);
-    }
 
     // ============================================
     // Private 메서드
@@ -231,47 +183,68 @@ public class EnglishQuizEventService {
      * 퀴즈 프롬프트 생성
      */
     private String buildQuizPrompt(AiContextService.ConversationContext context) {
-        
+
         if (context.isHasConversation()) {
-            // 대화 맥락 기반 퀴즈
             return String.format("""
-                    Topic: %s
-                    Current Turn: %d
-                    
-                    Conversation:
-                    %s
-                    
-                    Create an English conversation quiz based on this context.
-                    The question should:
-                    - Relate to the conversation
-                    - Be answerable in 1-2 sentences
-                    - Test English speaking ability
-                    
-                    Return JSON only:
-                    {
-                      "question": "English question",
-                      "expectedAnswer": "Sample answer",
-                      "hint": "Korean hint"
-                    }
-                    """,
+                You are teaching English to Korean beginners.
+                
+                Topic: %s
+                Their conversation so far:
+                %s
+                
+                Create a VERY SIMPLE English question that:
+                1. Uses basic vocabulary (elementary level)
+                2. Can be answered in just 3-5 words or one simple sentence
+                3. Relates to their conversation
+                4. Uses present tense mostly
+                
+                Examples of GOOD simple questions:
+                - "What is your favorite color?"
+                - "Do you like pizza?"
+                - "Where do you live?"
+                - "What time do you wake up?"
+                
+                Examples of TOO DIFFICULT questions (avoid these):
+                - "What would you have done if..."
+                - "How has technology affected..."
+                - Complex grammar or rare vocabulary
+                
+                Return JSON only:
+                {
+                  "question": "Very simple English question (elementary level)",
+                  "expectedAnswer": "Simple answer example (3-5 words)",
+                  "hint": "한글로 질문 의미 설명"
+                }
+                """,
                     context.getTopic(),
-                    context.getTurn(),
                     context.getFormattedConversation()
             );
         } else {
-            // 주제 기반 퀴즈
             return String.format("""
-                    Topic: %s
-                    
-                    Create an English conversation question about this topic.
-                    
-                    Return JSON only:
-                    {
-                      "question": "English question",
-                      "expectedAnswer": "Sample answer",
-                      "hint": "Korean hint"
-                    }
-                    """,
+                You are teaching English to Korean beginners.
+                
+                Topic: %s
+                
+                Create a VERY SIMPLE English question about this topic.
+                
+                Requirements:
+                - Use basic, everyday vocabulary
+                - Simple grammar (present tense preferred)
+                - Can be answered in 3-5 words
+                - About personal preference or daily life
+                
+                Good examples:
+                - "What is your hobby?"
+                - "Do you like animals?"
+                - "What food do you like?"
+                
+                Return JSON only:
+                {
+                  "question": "Very simple English question",
+                  "expectedAnswer": "Simple answer (3-5 words)",
+                  "hint": "한글 힌트"
+                }
+                """,
                     context.getTopic()
             );
         }

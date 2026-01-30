@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 영어 퀴즈 API
@@ -44,15 +45,16 @@ public class EnglishQuizEventController {
      * 답변 제출
      */
     @PostMapping("/submit")
-    @Operation(summary = "답변 제출", description = "영어 답변 제출")
+    @Operation(summary = "답변 제출", description = "음성 파일로 영어 답변 제출")
     public ResponseEntity<Void> submit(
             @RequestParam String quizId,
             @RequestParam Long userId,
-            @RequestBody String answer) {
-        
-        log.info("답변 제출 - quizId: {}, userId: {}", quizId, userId);
-        
-        quizService.submitAnswer(quizId, userId, answer);
+            @RequestPart("audioFile") MultipartFile audioFile) {
+
+        log.info("답변 제출 - quizId: {}, userId: {}, fileName: {}",
+                quizId, userId, audioFile.getOriginalFilename());
+
+        quizService.submitAnswer(quizId, userId, audioFile);
         return ResponseEntity.ok().build();
     }
 }
