@@ -55,7 +55,8 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
     client.onConnect = () => {
       setIsConnected(true);
       console.log("✅ STOMP Connected to Server");
-      
+
+      // 방 상태 구독
       subRef.current = client.subscribe(`/topic/rooms/${roomCode}`, (message) => {
         try {
           const data = JSON.parse(message.body);
@@ -73,6 +74,21 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
           console.error("Msg Parsing Error", e);
         }
       });
+
+      // AI 대화 추천 구독 (정적 감지)
+      const suggestionSub = client.subscribe(`/topic/room/${roomCode}/suggestion`, (message) => {
+        try {
+          const data = JSON.parse(message.body);
+          const { type, question } = data;
+
+          if (type === "CONVERSATION_SUGGESTION") {
+            handlersRef.current.onConversationSuggestion?.(question);
+          }
+        } catch (e) {
+          console.error("Suggestion Msg Parsing Error", e);
+        }
+      });
+
       handlersRef.current.onConnected?.();
     };
 

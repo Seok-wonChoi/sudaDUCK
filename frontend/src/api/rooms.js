@@ -60,3 +60,27 @@ export async function endRoom(roomCode) {
   const { data } = await api.post(`/api/v1/rooms/${roomCode}/end`);
   return data;
 }
+
+// 정적 감지 시작: POST /api/v1/silence/central/start-monitoring?roomId={roomId}&turn={turn}
+export async function startSilenceMonitoring(roomId, turn) {
+  const { data } = await api.post("/api/v1/silence/central/start-monitoring", null, {
+    params: { roomId, turn }
+  });
+  return data;
+}
+
+// 정적 감지 중지: POST /api/v1/silence/central/stop-monitoring?roomId={roomId}
+export async function stopSilenceMonitoring(roomId) {
+  const { data } = await api.post("/api/v1/silence/central/stop-monitoring", null, {
+    params: { roomId }
+  });
+  return data;
+}
+
+// 음성 활동 기록: POST /api/v1/silence/central/voice-activity?roomId={roomId}&userId={userId}&turn={turn}
+export async function recordVoiceActivity(roomId, userId, turn) {
+  const { data } = await api.post("/api/v1/silence/central/voice-activity", null, {
+    params: { roomId, userId, turn }
+  });
+  return data;
+}

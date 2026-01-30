@@ -780,7 +780,7 @@ export default function WaitingRoomPage() {
                           className={styles.InviteCodeButton}
                           onClick={handleKakaoShare}
                         >
-                          <img src={shareIcon} alt="공유" className={styles.ButtonIcon} />
+                          <ShareIcon />
                           공유
                         </button>
                         <button
