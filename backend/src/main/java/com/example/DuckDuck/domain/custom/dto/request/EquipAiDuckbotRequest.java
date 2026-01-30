@@ -6,5 +6,5 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class EquipAiDuckbotRequest {
-    private String model; // MODEL_1 ~ MODEL_4
+    private String model; // cyan/orange/digital/mecha
 }

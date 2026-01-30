@@ -166,12 +166,12 @@ public class CustomShopService {
 
         // 기본값 방어
         return switch (category) {
-            case DUCK_STYLE -> "BASIC_1".equals(itemKey);
-            case DUCK_COLOR -> "WHITE".equals(itemKey);
-            case DUCK_ACCESSORY -> "NONE".equals(itemKey);
-            case AVATAR_BG -> "BASIC_WHITE".equals(itemKey);
-            case AVATAR_EFFECT -> "NONE".equals(itemKey);
-            case AI_DUCKBOT_MODEL -> "MODEL_1".equals(itemKey);
+            case DUCK_STYLE -> "profile1".equals(itemKey);
+            case DUCK_COLOR -> "white".equals(itemKey);
+            case DUCK_ACCESSORY -> "none".equals(itemKey);
+            case AVATAR_BG -> "default".equals(itemKey);
+            case AVATAR_EFFECT -> "none".equals(itemKey);
+            case AI_DUCKBOT_MODEL -> "cyan".equals(itemKey);
             default -> false;
         };
     }

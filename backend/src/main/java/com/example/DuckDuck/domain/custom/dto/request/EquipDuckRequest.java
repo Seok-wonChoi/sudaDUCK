@@ -9,7 +9,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class EquipDuckRequest {
     // 셋 중 하나만 보내도 됨 (부분 변경)
-    private String style;      // 예: BASIC_1 ~ BASIC_4
-    private String color;      // 예: "YELLOW"
-    private String accessory;  // 예: "NONE"
+    private String style;      // profile1~profile4
+    private String color;      // white/yellow/blue/...
+    private String accessory;  // none/hat/...
 }

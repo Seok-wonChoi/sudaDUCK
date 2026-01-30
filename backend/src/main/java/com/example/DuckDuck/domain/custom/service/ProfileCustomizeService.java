@@ -37,13 +37,14 @@ public class ProfileCustomizeService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String DEFAULT_DUCK_JSON =
-            "{\"v\":1,\"style\":\"BASIC_1\",\"color\":\"WHITE\",\"accessory\":\"NONE\"}";
+            "{\"v\":1,\"style\":\"profile1\",\"color\":\"white\",\"accessory\":\"none\"}";
 
     private static final String DEFAULT_AVATAR_JSON =
-            "{\"v\":1,\"bgStyle\":\"BASIC_WHITE\",\"effect\":\"NONE\"}";
+            "{\"v\":1,\"bgStyle\":\"default\",\"effect\":\"none\"}";
 
     private static final String DEFAULT_AI_DUCKBOT_JSON =
-            "{\"v\":1,\"model\":\"MODEL_1\"}";
+            "{\"v\":1,\"model\":\"cyan\"}";
+
 
     // ===================== 오리 장착 =====================
     @Transactional
@@ -67,7 +68,7 @@ public class ProfileCustomizeService {
         ObjectNode node = readOrDefaultObjectNode(profile.getDuckCustomJson(), DEFAULT_DUCK_JSON);
 
         // 기존 유저 대비: style 기본 보장
-        if (!node.has("style")) node.put("style", "BASIC_1");
+        if (!node.has("style")) node.put("style", "profile1");
 
         if (!isBlank(request.getStyle())) {
             validateCanEquip(userId, CustomCategory.DUCK_STYLE, request.getStyle());

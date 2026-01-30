@@ -23,13 +23,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final MemberRepository memberRepository;
 
     private static final String DEFAULT_DUCK_JSON =
-            "{\"v\":1,\"style\":\"BASIC_1\",\"color\":\"WHITE\",\"accessory\":\"NONE\"}";
+            "{\"v\":1,\"style\":\"profile1\",\"color\":\"white\",\"accessory\":\"none\"}";
 
     private static final String DEFAULT_AVATAR_JSON =
-            "{\"v\":1,\"bgStyle\":\"BASIC_WHITE\",\"effect\":\"NONE\"}";
+            "{\"v\":1,\"bgStyle\":\"default\",\"effect\":\"none\"}";
 
     private static final String DEFAULT_AI_DUCKBOT_JSON =
-            "{\"v\":1,\"model\":\"MODEL_1\"}";
+            "{\"v\":1,\"model\":\"cyan\"}";
 
     @Override
     @Transactional
