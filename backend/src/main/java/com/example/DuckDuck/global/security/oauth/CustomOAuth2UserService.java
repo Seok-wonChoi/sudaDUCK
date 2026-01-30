@@ -22,6 +22,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final MemberRepository memberRepository;
 
+    private static final String DEFAULT_DUCK_JSON =
+            "{\"v\":1,\"style\":\"BASIC_1\",\"color\":\"WHITE\",\"accessory\":\"NONE\"}";
+
+    private static final String DEFAULT_AVATAR_JSON =
+            "{\"v\":1,\"bgStyle\":\"BASIC_WHITE\",\"effect\":\"NONE\"}";
+
+    private static final String DEFAULT_AI_DUCKBOT_JSON =
+            "{\"v\":1,\"model\":\"MODEL_1\"}";
+
     @Override
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -52,21 +61,45 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private void saveOrUpdateUser(Long kakaoId, String email, String name, String nickname, String imageUrl) {
-        //기존 회원 확인
         Optional<Member> memberOptional = memberRepository.findById(kakaoId);
 
-        if (memberOptional.isPresent()){
-            //기존 회원이면 정보 업데이트
+        if (memberOptional.isPresent()) {
+            // ===== 기존 회원 =====
             Member member = memberOptional.get();
             member.setName(name);
             member.setNickname(nickname);
             member.setProfileImageUrl(imageUrl);
             member.setUpdatedAt(LocalDateTime.now());
 
-            if(member.getProfile() != null){
-                member.getProfile().setLastLoginAt(LocalDateTime.now());
+            Profile profile = member.getProfile();
+
+            if (profile == null) {
+                profile = Profile.builder()
+                        .user(member)
+                        .coins(0)
+                        .attendanceDays(0)
+                        .duckCustomJson(DEFAULT_DUCK_JSON)
+                        .avatarCustomJson(DEFAULT_AVATAR_JSON)
+                        .aiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON)
+                        .lastLoginAt(LocalDateTime.now())
+                        .totalTime(0)
+                        .build();
+                member.setProfile(profile);
+            } else {
+                if (profile.getDuckCustomJson() == null) {
+                    profile.setDuckCustomJson(DEFAULT_DUCK_JSON);
+                }
+                if (profile.getAvatarCustomJson() == null) {
+                    profile.setAvatarCustomJson(DEFAULT_AVATAR_JSON);
+                }
+                if (profile.getAiDuckbotCustomJson() == null) {
+                    profile.setAiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON);
+                }
+                profile.setLastLoginAt(LocalDateTime.now());
             }
+
         } else {
+            // ===== 신규 카카오 회원 =====
             Member newMember = Member.builder()
                     .id(kakaoId)
                     .email(email)
@@ -80,7 +113,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .user(newMember)
                     .coins(0)
                     .attendanceDays(0)
+                    .duckCustomJson(DEFAULT_DUCK_JSON)
+                    .avatarCustomJson(DEFAULT_AVATAR_JSON)
+                    .aiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON)
                     .lastLoginAt(LocalDateTime.now())
+                    .totalTime(0)
                     .build();
 
             newMember.setProfile(newProfile);
