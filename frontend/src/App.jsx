@@ -1,6 +1,7 @@
 
 import { Routes, Route } from "react-router-dom";
 
+import LandingPage from "./pages/landing/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import OAuth2RedirectHandler from "./pages/auth/OAuth2RedirectHandler";
 import MainPage from "./pages/main/MainPage";
@@ -20,9 +21,10 @@ import MiniGame2Page from "./pages/minigame/MiniGame2Page";
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-      <Route path="/" element={<MainPage />} />
+      <Route path="/main" element={<MainPage />} />
 
       <Route path="/practice" element={<PracticePage />} />
       <Route path="/practice/solo" element={<SoloPracticePage />} />
