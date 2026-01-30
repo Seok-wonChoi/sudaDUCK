@@ -5,8 +5,7 @@ import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // 로그용 추가
-import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -18,7 +17,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 
-@Slf4j // 로그 라이브러리 사용
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -26,17 +25,14 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
 
-    // yml에서 못 읽어올 경우를 대비해 기본값(운영주소) 세팅
-    @Value("${custom.oauth2.redirect-url:https://i14e104.p.ssafy.io/oauth2/redirect}")
-    private String redirectUrl;
+    // ✅ 운영 서버 주소로 완전 하드코딩 (프론트엔드 리다이렉트 경로)
+    private final String redirectUrl = "https://i14e104.p.ssafy.io/oauth2/redirect";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         
-        // 1. 진입 로그 (이게 안 찍히면 핸들러 오기도 전에 터진 것)
-        System.out.println("========== [DEBUG] OAuth2SuccessHandler 진입 완료 ==========");
-        log.info("[DEBUG] Authentication User: {}", authentication.getName());
+        log.info("========== [PROD] OAuth2SuccessHandler 실행 ==========");
 
         try {
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
@@ -44,33 +40,27 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String email = (String) kakaoAccount.get("email");
             Long userId = (Long) oAuth2User.getAttribute("id");
 
-            System.out.println("========== [DEBUG] 사용자 정보 획득: " + email + " ==========");
-
             String accessToken = jwtTokenProvider.createAccessToken(userId, email);
-            String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
+            String refreshToken = jwtTokenProvider.createRefreshToken(refreshToken);
 
-            // 2. 리다이렉트 주소 확인 로그
-            System.out.println("========== [DEBUG] 설정된 redirectUrl: " + redirectUrl + " ==========");
-
+            // ✅ 운영 주소 기반으로 타겟 URL 생성
             String targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
                     .queryParam("accessToken", accessToken)
                     .queryParam("refreshToken", refreshToken)
                     .build().toUriString();
 
-            System.out.println("========== [DEBUG] 최종 이동할 targetUrl: " + targetUrl + " ==========");
+            log.info("[PROD] 최종 이동 주소: {}", targetUrl);
 
-            // Redis 저장 및 쿠키 로직
+            // Redis 및 쿠키 설정
             redisTemplate.opsForValue().set("RT:" + email, refreshToken, Duration.ofDays(14));
             CookieUtil.addCookie(response, "refreshToken", refreshToken, 60 * 60 * 24 * 14, true);
 
-            System.out.println("========== [DEBUG] 리다이렉트 실행 직전 ==========");
-            
+            // 리다이렉트 실행
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
         } catch (Exception e) {
-            System.out.println("========== [ERROR] 핸들러 내부에서 에러 발생! ==========");
-            e.printStackTrace(); // 에러 원인 출력
-            log.error("OAuth2SuccessHandler Error: ", e);
+            log.error("[PROD ERROR] OAuth2SuccessHandler 실패: ", e);
+            // 에러 발생 시에도 운영 로그인 페이지로 이동
             response.sendRedirect("https://i14e104.p.ssafy.io/login?error=handler_failed");
         }
     }
