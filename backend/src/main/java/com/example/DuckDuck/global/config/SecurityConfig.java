@@ -60,6 +60,7 @@ public class SecurityConfig {
                                 "/api/v1/gpt/translate",
                                 "/api/v1/topics",
                                 "/ws/**").permitAll() // 로그인 관련은 모두 허용
+                        .requestMatchers("/api/v1/rooms/*/webrtc/token").permitAll() // openvidu 잠깐 설정
                         .anyRequest().authenticated() // 그 외 나머지는 인증 필요
                 )
 
