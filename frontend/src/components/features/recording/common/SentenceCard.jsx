@@ -12,6 +12,7 @@ export default function SentenceCard({
   isActive = false,
   cardState = 'idle',
   countdown = 3,
+  recordingTime = 0, // 녹음 시간 (초)
   sentenceId = null,
   initialBookmarked = false,
   onBookmarkToggle = null,
@@ -91,10 +92,17 @@ export default function SentenceCard({
         );
 
       case 'recording':
+        // 녹음 시간 포맷: 00:03
+        const formatTime = (seconds) => {
+          const mins = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        };
+
         return (
           <div className={styles.recordingActive}>
             <div className={styles.recordingCircle}>
-              <span className={styles.countdownNumber}>{countdown}</span>
+              <span className={styles.countdownNumber}>{formatTime(recordingTime)}</span>
             </div>
             <p className={styles.recordingHint}>자동으로 다음 음성으로 넘어갑니다</p>
           </div>
@@ -128,14 +136,15 @@ export default function SentenceCard({
           <span className={styles.speakerName}>{speaker}</span>
         </div>
         <div className={styles.headerRight}>
-          {score !== null && (
+          {/* 턴 종료 리포트(idle)에서만 점수 표시 */}
+          {score !== null && cardState === 'idle' && (
             <span className={styles.score}>
               개인 점수: <strong className={styles.scoreValue}>{score}점</strong> / 평균 78점
             </span>
           )}
           <span className={styles.progress}>{currentSentence} / {totalSentences}</span>
-          {/* 점수가 있을 때만 저장하기 버튼 표시 (턴 종료 리포트) */}
-          {score !== null && (
+          {/* 턴 종료 리포트(idle)에서만 저장하기 버튼 표시 */}
+          {score !== null && cardState === 'idle' && (
             <button
               className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}
               onClick={handleBookmark}
