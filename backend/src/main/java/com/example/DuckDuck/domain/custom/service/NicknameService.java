@@ -32,7 +32,7 @@ public class NicknameService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. email=" + email));
 
-        // ✅ Member 엔티티에 setNickname / setUpdatedAt 가 있어야 함
+        // Member 엔티티에 setNickname / setUpdatedAt 가 있어야 함
         member.setNickname(nickname);
 
         // updatedAt 필드가 있는 경우에만 (없으면 이 줄 삭제)
