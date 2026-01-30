@@ -1,7 +1,9 @@
 package com.example.DuckDuck.domain.custom.service;
 
+import com.example.DuckDuck.domain.custom.dto.request.EquipAiDuckbotRequest;
 import com.example.DuckDuck.domain.custom.dto.request.EquipAvatarRequest;
 import com.example.DuckDuck.domain.custom.dto.request.EquipDuckRequest;
+import com.example.DuckDuck.domain.custom.dto.response.EquipAiDuckbotResponse;
 import com.example.DuckDuck.domain.custom.dto.response.EquipDuckResponse;
 import com.example.DuckDuck.domain.custom.dto.response.MyProfileCustomResponse;
 import com.example.DuckDuck.domain.custom.entity.CustomItem;
@@ -35,16 +37,25 @@ public class ProfileCustomizeService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String DEFAULT_DUCK_JSON =
-            "{\"v\":1,\"color\":\"YELLOW\",\"accessory\":\"NONE\"}";
+            "{\"v\":1,\"style\":\"BASIC_1\",\"color\":\"WHITE\",\"accessory\":\"NONE\"}";
 
     private static final String DEFAULT_AVATAR_JSON =
             "{\"v\":1,\"bgStyle\":\"BASIC_WHITE\",\"effect\":\"NONE\"}";
 
-    // ===================== 오리 장착(기존) =====================
+    private static final String DEFAULT_AI_DUCKBOT_JSON =
+            "{\"v\":1,\"model\":\"MODEL_1\"}";
+
+    // ===================== 오리 장착 =====================
     @Transactional
     public EquipDuckResponse equipDuck(String email, EquipDuckRequest request) {
-        if (request == null || (isBlank(request.getColor()) && isBlank(request.getAccessory()))) {
-            throw new IllegalArgumentException("color 또는 accessory 중 하나는 필수입니다.");
+        if (request == null ||
+                (isBlank(request.getStyle())
+                        && isBlank(request.getColor())
+                        && isBlank(request.getAccessory()))) {
+
+            throw new IllegalArgumentException(
+                    "style, color, accessory 중 하나는 필수입니다."
+            );
         }
 
         Member member = memberRepository.findByEmail(email)
@@ -55,6 +66,13 @@ public class ProfileCustomizeService {
 
         ObjectNode node = readOrDefaultObjectNode(profile.getDuckCustomJson(), DEFAULT_DUCK_JSON);
 
+        // 기존 유저 대비: style 기본 보장
+        if (!node.has("style")) node.put("style", "BASIC_1");
+
+        if (!isBlank(request.getStyle())) {
+            validateCanEquip(userId, CustomCategory.DUCK_STYLE, request.getStyle());
+            node.put("style", request.getStyle().trim());
+        }
         if (!isBlank(request.getColor())) {
             validateCanEquip(userId, CustomCategory.DUCK_COLOR, request.getColor());
             node.put("color", request.getColor().trim());
@@ -116,19 +134,62 @@ public class ProfileCustomizeService {
                 .build();
     }
 
+
+    // ===================== ai 오리 장착 =====================
+    @Transactional
+    public EquipAiDuckbotResponse equipAiDuckbot(String email, EquipAiDuckbotRequest request) {
+
+        if (request == null || isBlank(request.getModel())) {
+            throw new IllegalArgumentException("model은 필수입니다.");
+        }
+
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. email=" + email));
+
+        Long userId = member.getId();
+
+        Profile profile = ensureProfile(member);
+
+        if (isBlank(profile.getAiDuckbotCustomJson())) {
+            profile.setAiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON);
+        }
+
+        ObjectNode node = readOrDefaultObjectNode(
+                profile.getAiDuckbotCustomJson(),
+                DEFAULT_AI_DUCKBOT_JSON
+        );
+
+        // 구매 여부 검증 (기본 무료 포함)
+        validateCanEquip(userId, CustomCategory.AI_DUCKBOT_MODEL, request.getModel());
+
+        node.put("model", request.getModel().trim());
+        if (!node.has("v")) node.put("v", 1);
+
+        profile.setAiDuckbotCustomJson(write(node));
+        profile.setUpdatedAt(LocalDateTime.now());
+
+        Profile saved = profileRepository.save(profile);
+
+        return EquipAiDuckbotResponse.builder()
+                .message("AI 오리봇 변경 완료")
+                .aiDuckbotCustomJson(saved.getAiDuckbotCustomJson())
+                .build();
+    }
+
     // ===================== 공통 유틸 =====================
 
     /** profile 없으면 생성 + duck 기본값 보장 */
     private Profile ensureProfile(Member member) {
         Profile profile = profileRepository.findById(member.getId()).orElse(null);
+
         if (profile == null) {
-            // Profile 엔티티 builder 필드명은 네 엔티티에 맞춰 조정
             profile = Profile.builder()
                     .user(member)
                     .coins(0)
                     .attendanceDays(0)
                     .duckCustomJson(DEFAULT_DUCK_JSON)
                     .avatarCustomJson(DEFAULT_AVATAR_JSON)
+                    .aiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON)
                     .lastLoginAt(LocalDateTime.now())
                     .totalTime(0)
                     .createdAt(LocalDateTime.now())
@@ -138,9 +199,17 @@ public class ProfileCustomizeService {
             if (isBlank(profile.getDuckCustomJson())) {
                 profile.setDuckCustomJson(DEFAULT_DUCK_JSON);
             }
+            if (isBlank(profile.getAvatarCustomJson())) {
+                profile.setAvatarCustomJson(DEFAULT_AVATAR_JSON);
+            }
+            if (isBlank(profile.getAiDuckbotCustomJson())) {
+                profile.setAiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON);
+            }
         }
+
         return profile;
     }
+
 
     private void validateCanEquip(Long userId, CustomCategory category, String itemKey) {
         String key = itemKey.trim();
@@ -200,12 +269,15 @@ public class ProfileCustomizeService {
 
         // 2) profile 조회
         Profile profile = profileRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("프로필이 존재하지 않습니다. userId=" + userId));
+                .orElseGet(() -> ensureProfile(member));
 
         return MyProfileCustomResponse.builder()
+                .nickname(member.getNickname())
                 .coins(profile.getCoins() == null ? 0 : profile.getCoins())
                 .duckCustomJson(profile.getDuckCustomJson())
                 .avatarCustomJson(profile.getAvatarCustomJson())
+                .aiDuckbotCustomJson(profile.getAiDuckbotCustomJson())
                 .build();
     }
+
 }

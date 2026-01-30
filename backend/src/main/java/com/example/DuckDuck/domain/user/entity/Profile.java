@@ -28,11 +28,14 @@ public class Profile {
 
     private Integer attendanceDays;
 
-    @Column(columnDefinition = "json")
+    @Column(name = "duck_custom_json", columnDefinition = "json")
     private String duckCustomJson;
 
-    @Column(columnDefinition = "json")
+    @Column(name = "avatar_custom_json", columnDefinition = "json")
     private String avatarCustomJson;
+
+    @Column(name = "ai_duckbot_custom_json", columnDefinition = "json")
+    private String aiDuckbotCustomJson;
 
     private LocalDateTime lastLoginAt;
 
