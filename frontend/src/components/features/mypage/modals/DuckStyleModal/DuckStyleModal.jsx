@@ -27,7 +27,7 @@ const COLOR_OPTIONS = [
 ];
 
 const ACCESSORY_OPTIONS = [
-  { id: null, icon: "❌", label: "없음", cost: 0 }, // 기본 무료
+  { id: "none", icon: "❌", label: "없음", cost: 0 }, // 기본 무료
   { id: "hat", icon: "🎩", label: "모자", cost: 20 },
   { id: "sunglasses", icon: "🕶️", label: "선글라스", cost: 20 },
   { id: "ribbon", icon: "🎀", label: "리본", cost: 20 },
@@ -37,7 +37,7 @@ const ACCESSORY_OPTIONS = [
 export default function DuckStyleModal({
   currentProfileId = "profile1",
   currentColor = "yellow",
-  currentAccessory = null,
+  currentAccessory = "none",
   coins = 0,
   unlockedProfiles = [],
   unlockedColors = [],
@@ -151,7 +151,7 @@ export default function DuckStyleModal({
               alt="프로필 오리"
               className={styles.DuckImage}
             />
-            {selectedAccessory && (
+            {selectedAccessory && selectedAccessory !== "none" && (
               <span className={styles.Accessory}>
                 {ACCESSORY_OPTIONS.find((a) => a.id === selectedAccessory)?.icon}
               </span>

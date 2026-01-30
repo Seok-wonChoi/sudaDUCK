@@ -24,9 +24,17 @@ export async function getMyProfileCustom() {
   return data;
 }
 
+// 아이템 목록 조회: GET /api/v1/shop/custom-items?category={category}
+export async function getCustomItems(category) {
+  const { data } = await api.get("/api/v1/shop/custom-items", {
+    params: { category }
+  });
+  return data;
+}
+
 // 아이템 구매: POST /api/v1/shop/custom-items/{itemId}/purchase
-export async function purchaseItem(itemId, purchaseData) {
-  const { data } = await api.post(`/api/v1/shop/custom-items/${itemId}/purchase`, purchaseData);
+export async function purchaseItem(itemId) {
+  const { data } = await api.post(`/api/v1/shop/custom-items/${itemId}/purchase`);
   return data;
 }
 

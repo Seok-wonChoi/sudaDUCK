@@ -15,7 +15,7 @@ const BACKGROUND_OPTIONS = [
 ];
 
 const EFFECT_OPTIONS = [
-  { id: null, icon: "❌", label: "없음", cost: 0 }, // 기본 무료
+  { id: "none", icon: "❌", label: "없음", cost: 0 }, // 기본 무료
   { id: "sparkle", icon: "✨", label: "반짝임", cost: 10 },
   { id: "star", icon: "⭐", label: "별", cost: 10 },
   { id: "fire", icon: "🔥", label: "불꽃", cost: 10 },
@@ -34,7 +34,7 @@ export default function NicknameStyleModal({
 }) {
   const [editedNickname, setEditedNickname] = useState(nickname);
   const [selectedBg, setSelectedBg] = useState(currentStyle.background || "default");
-  const [selectedEffect, setSelectedEffect] = useState(currentStyle.effect || null);
+  const [selectedEffect, setSelectedEffect] = useState(currentStyle.effect || "none");
   const [purchaseModal, setPurchaseModal] = useState(null);
 
   const handleBackgroundClick = (bgId, cost) => {
