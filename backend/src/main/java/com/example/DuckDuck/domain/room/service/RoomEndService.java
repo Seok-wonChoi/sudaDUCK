@@ -1,6 +1,8 @@
 package com.example.DuckDuck.domain.room.service;
 
 import com.example.DuckDuck.domain.room.dto.response.RoomEndResponse;
+import com.example.DuckDuck.domain.room.dto.ws.RoomWsMessage;
+import com.example.DuckDuck.domain.room.dto.ws.WsType;
 import com.example.DuckDuck.domain.room.entity.Room;
 import com.example.DuckDuck.domain.room.repository.RoomParticipantsRepository;
 import com.example.DuckDuck.domain.room.repository.RoomRepository;
@@ -23,6 +25,7 @@ public class RoomEndService {
     private final RoomParticipantsRepository roomParticipantsRepository;
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RoomSocketService roomSocketService;
 
     // ===== Redis Key =====
     private String keyRoomCodeToId(String roomCode) { return "room:code:" + roomCode; }
@@ -110,11 +113,23 @@ public class RoomEndService {
         redisTemplate.delete(keyRoomMemberNames(roomId));
         redisTemplate.delete(keyRoomParticipants(roomId));
 
-        return RoomEndResponse.builder()
+        RoomEndResponse payload = RoomEndResponse.builder()
                 .roomId(roomId)
                 .roomCode(roomCode)
                 .isOpen(false)
                 .message("대기방으로 전환 완료")
                 .build();
+
+        roomSocketService.broadcast(
+                roomCode,
+                RoomWsMessage.of(
+                        WsType.ROOM_ENDED,
+                        roomCode,
+                        String.valueOf(member.getId()), // senderKey (호출자 id)
+                        payload
+                )
+        );
+
+        return payload;
     }
 }

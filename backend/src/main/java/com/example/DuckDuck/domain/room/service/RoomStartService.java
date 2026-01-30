@@ -1,6 +1,8 @@
 package com.example.DuckDuck.domain.room.service;
 
 import com.example.DuckDuck.domain.room.dto.response.RoomStartResponse;
+import com.example.DuckDuck.domain.room.dto.ws.RoomWsMessage;
+import com.example.DuckDuck.domain.room.dto.ws.WsType;
 import com.example.DuckDuck.domain.room.entity.Room;
 import com.example.DuckDuck.domain.room.repository.RoomParticipantsRepository;
 import com.example.DuckDuck.domain.room.repository.RoomRepository;
@@ -28,6 +30,7 @@ public class RoomStartService {
     private final RoomParticipantsRepository roomParticipantsRepository;
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RoomSocketService roomSocketService;
 
     private static final long ROOM_TTL_HOURS = 6;
 
@@ -173,7 +176,7 @@ public class RoomStartService {
         // (선택) OpenVidu 세션 생성/시작 트리거는 여기서 호출
         // openViduService.createSession(roomId) ...
 
-        return RoomStartResponse.builder()
+        RoomStartResponse response = RoomStartResponse.builder()
                 .roomId(roomId)
                 .roomCode(roomCode)
                 .isOpen(true)
@@ -182,5 +185,18 @@ public class RoomStartService {
                 .readyCount(readyCount)
                 .message("대화 시작 성공")
                 .build();
+
+
+        roomSocketService.broadcast(
+                roomCode,
+                RoomWsMessage.of(
+                        WsType.ROOM_STARTED,
+                        roomCode,
+                        String.valueOf(member.getId()),
+                        response
+                )
+        );
+
+        return response;
     }
 }
