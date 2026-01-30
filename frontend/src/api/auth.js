@@ -13,12 +13,15 @@ import api, { API_BASE_URL } from "./api";
  */
 export const loginWithKakao = () => {
   const base = (API_BASE_URL || "").trim().replace(/\/$/, "");
+  const isLocal = window.location.hostname === "localhost";
 
-  // 2. [수정됨] 로컬일 때만 "나 로컬이야" 표식 남기기
-  if (window.location.hostname === "localhost") {
-    // 헷갈리지 않게 키 이름도 client_env로 명확하게!
-    document.cookie = "client_env=local; path=/; max-age=300";
+  // ★ [핵심] 로컬이 아닐 때(배포 환경일 때)만 쿠키를 심습니다!
+  // 로컬에서는 쿠키 심어봤자 서버로 안 날아가니 안 심는 겁니다.
+  if (!isLocal) {
+    document.cookie = "client_env=production; path=/; max-age=300";
   }
+
+  console.log(`[카카오 로그인] ${isLocal ? '로컬' : '배포'} 환경 감지`);
   window.location.href = `${base}/oauth2/authorization/kakao`;
 };
 
