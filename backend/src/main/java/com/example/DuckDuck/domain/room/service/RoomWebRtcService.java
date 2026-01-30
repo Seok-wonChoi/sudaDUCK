@@ -1,7 +1,7 @@
 package com.example.DuckDuck.domain.room.service;
 
 import com.example.DuckDuck.domain.client.openvidu.OpenViduClient;
-import com.example.DuckDuck.domain.client.openvidu.dto.reponse.OpenViduConnectionCreateResponse;
+import com.example.DuckDuck.domain.client.openvidu.dto.response.OpenViduConnectionCreateResponse;
 import com.example.DuckDuck.domain.room.dto.response.RoomWebRtcTokenResponse;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;

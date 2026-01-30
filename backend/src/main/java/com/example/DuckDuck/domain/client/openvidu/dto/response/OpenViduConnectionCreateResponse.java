@@ -1,4 +1,4 @@
-package com.example.DuckDuck.domain.client.openvidu.dto.reponse;
+package com.example.DuckDuck.domain.client.openvidu.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
