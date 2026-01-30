@@ -10,10 +10,10 @@ import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
 
 const PROFILE_OPTIONS = [
-  { id: "profile1", image: duckProfile1 },
-  { id: "profile2", image: duckProfile2 },
-  { id: "profile3", image: duckProfile3 },
-  { id: "profile4", image: duckProfile4 },
+  { id: "profile1", image: duckProfile1, cost: 0 }, // 기본 무료
+  { id: "profile2", image: duckProfile2, cost: 10 },
+  { id: "profile3", image: duckProfile3, cost: 10 },
+  { id: "profile4", image: duckProfile4, cost: 10 },
 ];
 
 const COLOR_OPTIONS = [
@@ -39,6 +39,7 @@ export default function DuckStyleModal({
   currentColor = "yellow",
   currentAccessory = null,
   coins = 0,
+  unlockedProfiles = [],
   unlockedColors = [],
   unlockedAccessories = [],
   onPurchase,
@@ -49,6 +50,20 @@ export default function DuckStyleModal({
   const [selectedColor, setSelectedColor] = useState(currentColor);
   const [selectedAccessory, setSelectedAccessory] = useState(currentAccessory);
   const [purchaseModal, setPurchaseModal] = useState(null);
+
+  const handleProfileClick = (profileId, cost) => {
+    if (unlockedProfiles.includes(profileId)) {
+      setSelectedProfileId(profileId);
+    } else {
+      // 잠긴 프로필 - 구매 확인 모달 표시
+      setPurchaseModal({
+        type: 'profile',
+        id: profileId,
+        name: `오리 프로필 ${profileId.slice(-1)}`,
+        cost,
+      });
+    }
+  };
 
   const handleColorClick = (colorId, cost) => {
     if (unlockedColors.includes(colorId)) {
@@ -82,7 +97,9 @@ export default function DuckStyleModal({
 
   const handlePurchaseConfirm = () => {
     if (purchaseModal && onPurchase?.(purchaseModal.type, purchaseModal.id, purchaseModal.cost)) {
-      if (purchaseModal.type === 'color') {
+      if (purchaseModal.type === 'profile') {
+        setSelectedProfileId(purchaseModal.id);
+      } else if (purchaseModal.type === 'color') {
         setSelectedColor(purchaseModal.id);
       } else if (purchaseModal.type === 'accessory') {
         setSelectedAccessory(purchaseModal.id);
@@ -145,22 +162,34 @@ export default function DuckStyleModal({
         <div className={styles.Section}>
           <h3 className={styles.SectionTitle}>프로필</h3>
           <div className={styles.ProfileGrid}>
-            {PROFILE_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                className={`${styles.ProfileCard} ${
-                  selectedProfileId === option.id ? styles.Selected : ""
-                }`}
-                onClick={() => setSelectedProfileId(option.id)}
-              >
-                <img
-                  src={option.image}
-                  alt={option.id}
-                  className={styles.ProfileThumb}
-                />
-              </button>
-            ))}
+            {PROFILE_OPTIONS.map((option) => {
+              const isUnlocked = unlockedProfiles.includes(option.id);
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`${styles.ProfileCard} ${
+                    selectedProfileId === option.id ? styles.Selected : ""
+                  } ${!isUnlocked ? styles.Locked : ""}`}
+                  onClick={() => handleProfileClick(option.id, option.cost)}
+                >
+                  <img
+                    src={option.image}
+                    alt={option.id}
+                    className={styles.ProfileThumb}
+                  />
+                  {!isUnlocked && (
+                    <div className={styles.ProfileLockOverlay}>
+                      <span className={styles.LockIcon}>🔒</span>
+                      <div className={styles.CoinPrice}>
+                        <img src={coinImage} alt="코인" className={styles.CoinIconSmall} />
+                        <span>{option.cost}</span>
+                      </div>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 

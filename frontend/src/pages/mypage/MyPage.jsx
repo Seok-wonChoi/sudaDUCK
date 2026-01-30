@@ -161,9 +161,12 @@ export default function MyPage() {
 
   // 코인 시스템
   const [coins, setCoins] = useState(200); // 초기 코인 (테스트용 200코인)
+  const [unlockedProfiles, setUnlockedProfiles] = useState(["profile1"]); // 기본 프로필 (profile1)
   const [unlockedColors, setUnlockedColors] = useState(["white"]); // 기본 색상 (흰색)
   const [unlockedAccessories, setUnlockedAccessories] = useState([null]); // 기본 악세사리 없음
   const [unlockedDuckBots, setUnlockedDuckBots] = useState(["cyan"]); // 기본 오리봇
+  const [unlockedBackgrounds, setUnlockedBackgrounds] = useState(["default"]); // 기본 배경 (기본)
+  const [unlockedEffects, setUnlockedEffects] = useState([null]); // 기본 효과 (없음)
 
   // 사용자 프로필 정보 조회
   useEffect(() => {
@@ -183,9 +186,12 @@ export default function MyPage() {
         if (data.duckBotId) setDuckBotId(data.duckBotId);
         if (data.coins !== undefined) setCoins(data.coins);
         if (data.unlockedItems) {
+          setUnlockedProfiles(data.unlockedItems.profiles || ["profile1"]);
           setUnlockedColors(data.unlockedItems.colors || ["white"]);
           setUnlockedAccessories(data.unlockedItems.accessories || [null]);
           setUnlockedDuckBots(data.unlockedItems.duckBots || ["cyan"]);
+          setUnlockedBackgrounds(data.unlockedItems.backgrounds || ["default"]);
+          setUnlockedEffects(data.unlockedItems.effects || [null]);
         }
       } catch (error) {
         console.error("프로필 정보 조회 실패:", error);
@@ -306,12 +312,18 @@ export default function MyPage() {
       // 성공 시 로컬 state 업데이트
       setCoins((prev) => prev - cost);
 
-      if (itemType === 'color') {
+      if (itemType === 'profile') {
+        setUnlockedProfiles((prev) => [...prev, itemId]);
+      } else if (itemType === 'color') {
         setUnlockedColors((prev) => [...prev, itemId]);
       } else if (itemType === 'accessory') {
         setUnlockedAccessories((prev) => [...prev, itemId]);
       } else if (itemType === 'duckBot') {
         setUnlockedDuckBots((prev) => [...prev, itemId]);
+      } else if (itemType === 'background') {
+        setUnlockedBackgrounds((prev) => [...prev, itemId]);
+      } else if (itemType === 'effect') {
+        setUnlockedEffects((prev) => [...prev, itemId]);
       }
 
       return true;
@@ -364,6 +376,10 @@ export default function MyPage() {
         <NicknameStyleModal
           nickname={nickname}
           currentStyle={nicknameStyle}
+          coins={coins}
+          unlockedBackgrounds={unlockedBackgrounds}
+          unlockedEffects={unlockedEffects}
+          onPurchase={handlePurchase}
           onSave={handleSaveNicknameStyle}
           onClose={() => setShowNicknameModal(false)}
         />
@@ -375,6 +391,7 @@ export default function MyPage() {
           currentColor={duckStyle.color}
           currentAccessory={duckStyle.accessory}
           coins={coins}
+          unlockedProfiles={unlockedProfiles}
           unlockedColors={unlockedColors}
           unlockedAccessories={unlockedAccessories}
           onPurchase={handlePurchase}
