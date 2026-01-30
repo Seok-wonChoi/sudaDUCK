@@ -1,0 +1,127 @@
+.Card {
+  width: 300px;
+  height: 300px;
+
+  border: 1px solid #eef0f6;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 24px 20px;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 18px 36px rgba(17, 24, 39, 0.08);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.Card:hover {
+  border-color: #dbe3ff;
+  box-shadow: 0 22px 44px rgba(17, 24, 39, 0.10);
+}
+
+.ImageWrap {
+  position: relative;
+  width: 50;
+  height: 160px;
+  display: grid;
+  place-items: center;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+.DuckSingle {
+  display: grid;
+  place-items: center;
+}
+
+.Duck {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+.DuckTogether {
+  width: 200px;
+  height: 200px;
+}
+
+.Title {
+  margin-top: 10px;
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: -0.3px;
+}
+
+.Description {
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 240px;
+}
+
+/* 작은 태블릿 이하 */
+@media (max-width: 768px) {
+  .Card {
+    width: 280px;
+    height: 280px;
+    padding: 20px 16px;
+  }
+
+  .ImageWrap {
+    height: 140px;
+  }
+
+  .Duck {
+    width: 140px;
+    height: 140px;
+  }
+
+  .DuckTogether {
+    width: 180px;
+    height: 180px;
+  }
+
+  .Title {
+    font-size: 20px;
+  }
+
+  .Description {
+    font-size: 12px;
+  }
+}
+
+/* 작은 모바일 */
+@media (max-width: 480px) {
+  .Card {
+    width: 260px;
+    height: 260px;
+    padding: 18px 14px;
+  }
+
+  .ImageWrap {
+    height: 130px;
+  }
+
+  .Duck {
+    width: 130px;
+    height: 130px;
+  }
+
+  .DuckTogether {
+    width: 170px;
+    height: 170px;
+  }
+
+  .Title {
+    font-size: 19px;
+  }
+
+  .Description {
+    font-size: 11px;
+  }
+}

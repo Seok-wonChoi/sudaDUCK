@@ -1,0 +1,201 @@
+.Overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.Modal {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.Header {
+  background: linear-gradient(135deg, #7c3aed 0%, #c026d3 100%);
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.Title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.Content {
+  padding: 24px;
+}
+
+.ItemName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f3e8ff 0%, #fce7f3 100%);
+  border-radius: 12px;
+}
+
+.CoinInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.CoinRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.Label {
+  font-size: 15px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.LabelBold {
+  font-size: 16px;
+  color: #111827;
+  font-weight: 700;
+}
+
+.CoinAmount {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.CoinAmount.Insufficient {
+  color: #ef4444;
+}
+
+.CoinIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.Amount {
+  font-size: 18px;
+}
+
+.Divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+  margin: 8px 0;
+}
+
+.Warning {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.Footer {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.CancelBtn {
+  flex: 1;
+  padding: 12px 24px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.CancelBtn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.ConfirmBtn {
+  flex: 1;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7c3aed 0%, #c026d3 100%);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.ConfirmBtn:hover:not(.Disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+}
+
+.ConfirmBtn.Disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 480px) {
+  .Modal {
+    width: 95%;
+  }
+
+  .Content {
+    padding: 20px;
+  }
+
+  .Footer {
+    padding: 16px 20px;
+  }
+}

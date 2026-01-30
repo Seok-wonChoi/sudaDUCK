@@ -1,0 +1,23 @@
+.Section {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+/* 태블릿 이하 */
+@media (max-width: 768px) {
+  .Section {
+    margin-top: 16px;
+    gap: 24px;
+  }
+}
+
+/* 모바일 */
+@media (max-width: 600px) {
+  .Section {
+    margin-top: 12px;
+    gap: 20px;
+  }
+}

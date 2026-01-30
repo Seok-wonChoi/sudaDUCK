@@ -1,0 +1,158 @@
+.Overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.FadeIn {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.FadeOut {
+  animation: fadeOut 0.5s ease-in-out;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+.Content {
+  text-align: center;
+  color: #ffffff;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.CoinContainer {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 24px;
+}
+
+.CoinImage {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  animation: bounce 1s ease-in-out infinite, rotate 3s linear infinite;
+  filter: drop-shadow(0 8px 16px rgba(255, 193, 7, 0.5));
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+.CoinGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(255, 193, 7, 0.4) 0%, transparent 70%);
+  animation: pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.3;
+  }
+}
+
+.Title {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  color: #fbbf24;
+  text-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
+}
+
+.Message {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.CoinAmount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+}
+
+@media (max-width: 600px) {
+  .CoinImage {
+    width: 100px;
+    height: 100px;
+  }
+
+  .Title {
+    font-size: 24px;
+  }
+
+  .Message {
+    font-size: 16px;
+    padding: 0 20px;
+  }
+
+  .CoinAmount {
+    font-size: 20px;
+  }
+}
