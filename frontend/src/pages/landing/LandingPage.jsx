@@ -89,7 +89,7 @@ const LandingPage = () => {
           <h1 className={styles.title}>
             <span className={styles.char} style={{ animationDelay: '0.1s' }}>수</span>
             <span className={styles.char} style={{ animationDelay: '0.6s' }}>다</span>
-            <span className={styles.char} style={{ animationDelay: '1.1s' }}>덕</span>
+            <span className={`${styles.char} ${styles.duckText}`} style={{ animationDelay: '1.1s' }}>DUCK</span>
           </h1>
           
           <div className={`${styles.fadeWrapper} ${showContent ? styles.visible : ''}`}>
@@ -183,7 +183,7 @@ const LandingPage = () => {
                 나만의 영어 실력을 완성해보세요.
               </p>
               <button onClick={handleStart} className={styles.ctaButton}>
-                수다덕 시작하기
+                수다DUCK 시작하기
               </button>
             </div>
           </section>
