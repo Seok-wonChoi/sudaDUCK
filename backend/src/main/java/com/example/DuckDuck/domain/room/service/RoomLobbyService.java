@@ -75,6 +75,10 @@ public class RoomLobbyService {
                 .roomId(roomId)
                 .roomCode(roomCode)
                 .isOpen(room.getIsOpen())
+                .title(room.getTitle())
+                .topic(room.getTopic())
+                .turnCnt(room.getTurnCnt())
+                .hostId(room.getCreator().getId())
                 .participants(participantInfos)
                 .build();
     }
