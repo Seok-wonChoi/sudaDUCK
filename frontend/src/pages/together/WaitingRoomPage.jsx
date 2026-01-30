@@ -13,7 +13,7 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
-import { leaveRoom, getRoomLobby, toggleReady, startRoom } from "@/api/rooms";
+import { leaveRoom, getRoomLobby, toggleReady, startRoom, updateRoomSettings } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
@@ -571,7 +571,7 @@ export default function WaitingRoomPage() {
     setEditTopic(next);
   }, [hotTopics]);
 
-  const handleSaveEditRoomInfo = useCallback(() => {
+  const handleSaveEditRoomInfo = useCallback(async () => {
     if (!editTitle.trim()) {
       showToast("방 제목을 입력해주세요.");
       return;
@@ -581,14 +581,19 @@ export default function WaitingRoomPage() {
       return;
     }
 
-    // TODO: API 호출로 방 설정 업데이트
-    // await updateRoom({ roomCode: inviteCode, title: editTitle, topic: editTopic, turnCnt: editTurn });
-
-    console.log("방 정보 업데이트:", {
-      title: editTitle,
-      topic: editTopic,
-      turn: editTurn,
-    });
+    // API 호출: 방 설정 업데이트
+    try {
+      await updateRoomSettings(inviteCode, {
+        title: editTitle.trim(),
+        topic: editTopic.trim(),
+        turnCnt: editTurn,
+      });
+      console.log("방 설정 업데이트 API 호출 성공");
+    } catch (e) {
+      console.error("방 설정 업데이트 API 호출 실패:", e);
+      showToast("방 설정 변경에 실패했습니다.");
+      return;
+    }
 
     // 방 정보 상태 업데이트
     setRoomTitle(editTitle.trim());
@@ -614,7 +619,7 @@ export default function WaitingRoomPage() {
 
     showToast("방 설정이 변경되었습니다!");
     setEditPopupOpen(false);
-  }, [editTitle, editTopic, editTurn, showToast]);
+  }, [editTitle, editTopic, editTurn, showToast, inviteCode]);
 
   const handleStart = useCallback(async () => {
     if (!canStart) return;
@@ -683,7 +688,14 @@ export default function WaitingRoomPage() {
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        <AppHeader userName="user" notifications={[]} />
+        <AppHeader
+          userName="user"
+          notifications={[]}
+          logoExitMessage="메인 화면으로 나가시겠습니까?"
+          logoExitConfirmText="나가기"
+          logoExitCancelText="취소"
+          onLogoExit={handleExit}
+        />
 
         <div className={styles.Top}>
           <button
