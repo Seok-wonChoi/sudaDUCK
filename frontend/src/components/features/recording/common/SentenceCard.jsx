@@ -36,10 +36,9 @@ export default function SentenceCard({
 
   // 영어 문장을 빈칸 처리하는 함수
   const getDisplayEnglish = () => {
-    // AI가 읽어줄 때나 평가 결과 볼 때는 전체 문장 표시
+    // AI가 읽어줄 때나 idle 상태(턴 종료 리포트)에서는 전체 문장 표시
     const showFullSentence =
       cardState === 'ai_playing' ||
-      cardState === 'record_done' ||
       cardState === 'idle' ||
       !isActive;
 
@@ -47,7 +46,7 @@ export default function SentenceCard({
       return <>{english}</>;
     }
 
-    // 녹음 대기 중이거나 녹음 중일 때는 빈칸 처리
+    // 녹음 대기 중, 녹음 중, 녹음 완료 시에는 빈칸 처리
     let parts = [english];
     blankWords.forEach((word) => {
       const newParts = [];
@@ -135,26 +134,29 @@ export default function SentenceCard({
             </span>
           )}
           <span className={styles.progress}>{currentSentence} / {totalSentences}</span>
-          <button
-            className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}
-            onClick={handleBookmark}
-            aria-label={isBookmarked ? "저장 해제" : "저장하기"}
-            title={isBookmarked ? "저장 해제" : "저장하기"}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M19 3H5C4.20435 3 3.44129 3.31607 2.87868 3.87868C2.31607 4.44129 2 5.20435 2 6V21L12 16.5L22 21V6C22 5.20435 21.6839 4.44129 21.1213 3.87868C20.5587 3.31607 19.7956 3 19 3Z"
-                stroke={isBookmarked ? "#2b7fff" : "#9CA3AF"}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill={isBookmarked ? "#2b7fff" : "none"}
-              />
-            </svg>
-            <span className={styles.bookmarkText}>
-              {isBookmarked ? "저장됨" : "저장하기"}
-            </span>
-          </button>
+          {/* 점수가 있을 때만 저장하기 버튼 표시 (턴 종료 리포트) */}
+          {score !== null && (
+            <button
+              className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}
+              onClick={handleBookmark}
+              aria-label={isBookmarked ? "저장 해제" : "저장하기"}
+              title={isBookmarked ? "저장 해제" : "저장하기"}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M19 3H5C4.20435 3 3.44129 3.31607 2.87868 3.87868C2.31607 4.44129 2 5.20435 2 6V21L12 16.5L22 21V6C22 5.20435 21.6839 4.44129 21.1213 3.87868C20.5587 3.31607 19.7956 3 19 3Z"
+                  stroke={isBookmarked ? "#2b7fff" : "#9CA3AF"}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill={isBookmarked ? "#2b7fff" : "none"}
+                />
+              </svg>
+              <span className={styles.bookmarkText}>
+                {isBookmarked ? "저장됨" : "저장하기"}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
