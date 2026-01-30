@@ -39,7 +39,7 @@ export default function OAuth2RedirectHandler() {
       console.log("[OAuth2] 토큰 저장 완료. 메인 페이지로 이동합니다.");
       
       // ✅ replace: true를 사용하여 뒤로가기 스택에서 이 핸들러를 제거합니다.
-      navigate("/", { replace: true });
+      navigate("/mainpage", { replace: true });
     } else {
       // 4. 토큰이 없는 경우 (잘못된 접근 등)
       console.warn("[OAuth2] 토큰이 없습니다. 로그인 페이지로 보냅니다.");
