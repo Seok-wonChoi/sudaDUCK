@@ -296,7 +296,9 @@ export default function WaitingRoomPage() {
       if (userInfoStr) {
         try {
           const userInfo = JSON.parse(userInfoStr);
-          myUserId = userInfo.userId ?? userInfo.id;
+          myUserId = userInfo.userId ?? userInfo.id ?? userInfo.memberId;
+          console.log("[fetchLobby] localStorage userInfo:", userInfo);
+          console.log("[fetchLobby] myUserId:", myUserId);
         } catch (e) {
           console.error("userInfo 파싱 실패:", e);
         }
@@ -307,6 +309,17 @@ export default function WaitingRoomPage() {
         const hostMember = members.find((m) => m.isHost === true);
         if (hostMember) {
           myUserId = hostMember.userId;
+          console.log("[fetchLobby] 방장으로부터 myUserId 설정:", myUserId);
+        }
+      }
+
+      // 여전히 myUserId가 없으면, API 응답에서 현재 사용자 찾기 시도
+      // (서버가 현재 사용자를 특별히 표시하는 경우 - 예: isMe 필드)
+      if (!myUserId) {
+        const meInResponse = members.find((m) => m.isMe === true);
+        if (meInResponse) {
+          myUserId = meInResponse.userId;
+          console.log("[fetchLobby] API 응답에서 현재 사용자 찾음:", myUserId);
         }
       }
 
@@ -326,6 +339,7 @@ export default function WaitingRoomPage() {
         isHost: m.isHost ?? false,
         isReady: m.readyStatus === "READY",
         micOn: m.micOn ?? true, // 기본값 true
+        voiceLevel: 0, // 초기 음성 레벨
       }));
 
       console.log("매핑된 참여자 목록:", mappedParticipants);
@@ -370,12 +384,12 @@ export default function WaitingRoomPage() {
   const handleMemberJoined = useCallback((payload, senderKey) => {
     console.log("[handleMemberJoined] 새로운 멤버가 참여했습니다!", {
       payload,
-      senderKey,
-      currentParticipants: participants.length
+      senderKey
     });
     // 참여자 목록 다시 가져오기
+    console.log("[handleMemberJoined] fetchLobby 호출");
     fetchLobbyRef.current?.();
-  }, [participants.length]);
+  }, []);
 
   // WebSocket 이벤트 핸들러: READY_CHANGED
   // senderKey(이메일)로 해당 참여자를 찾아서 준비 상태 업데이트
@@ -396,6 +410,8 @@ export default function WaitingRoomPage() {
         // myReadyStatus가 있으면 해당 유저의 새 상태
         const newReadyStatus =
           payload.myReadyStatus === "READY" || payload.ready === true;
+
+        console.log(`[handleReadyChanged] ${senderKey}의 준비 상태를 ${newReadyStatus}로 업데이트`);
 
         setParticipants((prev) =>
           prev.map((p) =>
@@ -441,6 +457,25 @@ export default function WaitingRoomPage() {
     [myEmail]
   );
 
+  // WebSocket 이벤트 핸들러: VOICE_LEVEL_CHANGED
+  // 다른 참여자의 음성 레벨 업데이트
+  const handleVoiceLevelChanged = useCallback(
+    (payload, senderKey) => {
+      if (!senderKey) return;
+
+      // 내 음성 레벨은 로컬에서 관리하므로 무시
+      if (senderKey === myEmail) return;
+
+      // 다른 참여자의 음성 레벨 업데이트
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.email === senderKey ? { ...p, voiceLevel: payload.level ?? 0 } : p
+        )
+      );
+    },
+    [myEmail]
+  );
+
   const handleWebSocketError = useCallback(
     (errorMessage) => {
       console.error("WebSocket ERROR:", errorMessage);
@@ -457,14 +492,29 @@ export default function WaitingRoomPage() {
   }, []);
 
   // WebSocket 연결
-  const { sendReady, sendMic } = useRoomWebSocket(inviteCode, {
+  const { sendReady, sendMic, sendVoiceLevel } = useRoomWebSocket(inviteCode, {
     onReadyChanged: handleReadyChanged,
     onMicChanged: handleMicChanged,
     onMemberJoined: handleMemberJoined,
+    onVoiceLevelChanged: handleVoiceLevelChanged,
     onError: handleWebSocketError,
     onConnected: handleConnected,
     onDisconnected: () => console.log("WebSocket 연결 해제됨"),
   });
+
+  // 음성 레벨 브로드캐스트 (마이크가 켜져있고 연결되어 있을 때만)
+  useEffect(() => {
+    if (!myMicOn || !sendVoiceLevel) return;
+
+    // 100ms마다 음성 레벨 전송 (서버 부하 고려)
+    const interval = setInterval(() => {
+      if (myMicOn) {
+        sendVoiceLevel(voiceLevel);
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [myMicOn, voiceLevel, sendVoiceLevel]);
 
   // 내 정보 찾기: email 기반
   const me = useMemo(

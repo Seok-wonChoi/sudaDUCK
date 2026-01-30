@@ -32,6 +32,15 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
     });
   }, [roomCode]);
 
+  const sendVoiceLevel = useCallback((level) => {
+    const client = clientRef.current;
+    if (!client?.connected) return;
+    client.publish({
+      destination: `/app/rooms/${roomCode}/voice-level`,
+      body: JSON.stringify({ level }),
+    });
+  }, [roomCode]);
+
   useEffect(() => {
     if (!roomCode) return;
 
@@ -63,11 +72,12 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
           const { type, payload, senderKey } = data;
 
           // ref를 통해 최신 핸들러 호출
-          const { onReadyChanged, onMicChanged, onMemberJoined, onError } = handlersRef.current;
+          const { onReadyChanged, onMicChanged, onMemberJoined, onVoiceLevelChanged, onError } = handlersRef.current;
           switch (type) {
             case "READY_CHANGED": onReadyChanged?.(payload, senderKey); break;
             case "MIC_CHANGED": onMicChanged?.(payload, senderKey); break;
             case "MEMBER_JOINED": onMemberJoined?.(payload, senderKey); break;
+            case "VOICE_LEVEL_CHANGED": onVoiceLevelChanged?.(payload, senderKey); break;
             case "ERROR": onError?.(payload); break;
           }
         } catch (e) {
@@ -119,5 +129,5 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
     // 의존성 배열에서 handlers를 제거하여 무한 루프를 방지합니다.
   }, [roomCode]); 
 
-  return { sendReady, sendMic, isConnected };
+  return { sendReady, sendMic, sendVoiceLevel, isConnected };
 }
