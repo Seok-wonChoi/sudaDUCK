@@ -40,7 +40,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // =================================================================
         
         // 배포고 뭐고 다 필요없고 그냥 로컬로 쏘세요.
-        String baseUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect";
+        String baseUrl = "http://localhost:5173/oauth2/redirect";
 
         // =================================================================
 
