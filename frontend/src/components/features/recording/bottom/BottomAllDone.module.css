@@ -1,0 +1,124 @@
+/* All Done Container */
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 28px 48px;
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+  border-radius: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.iconCircle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.message {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #065f46;
+  flex: 1;
+}
+
+.restartBtn {
+  background: #10b981;
+  border: none;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 14px 28px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.restartBtn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}
+
+.restartBtn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px 24px;
+    gap: 12px;
+  }
+
+  .iconCircle {
+    width: 48px;
+    height: 48px;
+  }
+
+  .iconCircle svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .message {
+    font-size: 15px;
+  }
+
+  .restartBtn {
+    padding: 9px 18px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 14px 20px;
+    gap: 10px;
+    flex-direction: column;
+  }
+
+  .content {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .iconCircle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .iconCircle svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .message {
+    font-size: 14px;
+  }
+
+  .restartBtn {
+    padding: 10px 20px;
+    font-size: 13px;
+    width: 100%;
+  }
+}

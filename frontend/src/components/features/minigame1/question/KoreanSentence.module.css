@@ -1,0 +1,22 @@
+.wrapper {
+  margin-bottom: 20px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.card {
+  background: #e8ecf4;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.text {
+  margin: 0;
+  font-size: 15px;
+  color: #111827;
+}

@@ -1,0 +1,190 @@
+.Section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 0;
+}
+
+.ImagesWrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.ProfileImageContainer,
+.DuckImageContainer {
+  position: relative;
+}
+
+.ProfileImage,
+.DuckImage {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: visible;
+  background: #f3f4f6;
+}
+
+.ProfileImage img,
+.DuckImage img {
+  border-radius: 50%;
+}
+
+.DuckImageContainer {
+  margin-left: -16px;
+}
+
+.DuckImage {
+  background: #fef3c7;
+}
+
+.Image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.DefaultAvatar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 100%);
+}
+
+.ProfileAccessory {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 22px;
+  pointer-events: none;
+}
+
+.EditButton {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.EditButton:hover {
+  background: #f9fafb;
+}
+
+.CameraIcon,
+.PencilIcon {
+  font-size: 14px;
+}
+
+.InfoCard {
+  flex: 1;
+  background: linear-gradient(135deg, #7c3aed 0%, #c026d3 100%);
+  border-radius: 16px;
+  padding: 20px 24px;
+  color: #ffffff;
+}
+
+.InfoContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.NicknameWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.NicknameEditButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+.NicknameEditButton:hover {
+  opacity: 1;
+}
+
+.LogoutButton {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.LogoutButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.BottomRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.Email {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.CoinBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.CoinIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.CoinAmount {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fbbf24;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 600px) {
+  .Section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .InfoCard {
+    width: 100%;
+  }
+
+  .InfoContent {
+    justify-content: center;
+  }
+}

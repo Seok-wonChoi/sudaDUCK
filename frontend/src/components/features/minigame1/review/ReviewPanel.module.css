@@ -1,0 +1,50 @@
+.panel {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.list {
+  margin-bottom: 32px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 32px;
+}
+
+.completeBtn {
+  padding: 14px 40px;
+  background: #22c55e;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.completeBtn:hover {
+  background: #16a34a;
+}

@@ -1,0 +1,70 @@
+.detail {
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
+.correct {
+  background: #dcfce7;
+}
+
+.wrong {
+  background: #fee2e2;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.correct .badge {
+  background: #22c55e;
+  color: #fff;
+}
+
+.wrong .badge {
+  background: #ef4444;
+  color: #fff;
+}
+
+.answer {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.comparison {
+  display: flex;
+  justify-content: space-between;
+}
+
+.userAnswer,
+.correctAnswer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.label {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.userAnswer .value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.correctAnswer .value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b82f6;
+}

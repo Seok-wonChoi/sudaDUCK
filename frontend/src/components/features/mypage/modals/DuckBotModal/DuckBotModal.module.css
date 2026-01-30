@@ -1,0 +1,144 @@
+.Content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.Preview {
+  background: #f9fafb;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.PreviewImage {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+}
+
+.Grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.DuckCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.DuckCard:hover {
+  border-color: #c7d2fe;
+  background: #f5f3ff;
+}
+
+.DuckCard.Selected {
+  border-color: #4f46e5;
+  background: #eef2ff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.DuckImageWrapper {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.DuckThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.DuckLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.DuckCard.Selected .DuckLabel {
+  color: #4f46e5;
+}
+
+.CancelBtn {
+  padding: 10px 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.CancelBtn:hover {
+  background: #f9fafb;
+}
+
+.SaveBtn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.SaveBtn:hover {
+  filter: brightness(1.05);
+}
+
+/* 잠금 시스템 스타일 */
+.Locked {
+  opacity: 0.7;
+}
+
+.LockOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.LockIcon {
+  font-size: 18px;
+}
+
+.CoinBadge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #000;
+}
+
+.CoinIconSmall {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
