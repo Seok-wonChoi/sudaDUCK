@@ -13,7 +13,14 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
-import { leaveRoom, getRoomLobby, toggleReady, startRoom, updateRoomSettings, getTopics } from "@/api/rooms";
+import {
+  leaveRoom,
+  getRoomLobby,
+  toggleReady,
+  startRoom,
+  updateRoomSettings,
+  getTopics,
+} from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
@@ -43,8 +50,22 @@ function CopyIcon() {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
-      <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <rect
+        x="9"
+        y="9"
+        width="13"
+        height="13"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+      />
+      <path
+        d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+      />
     </svg>
   );
 }
@@ -59,11 +80,26 @@ function ShareIcon() {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <path d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 6.65685 16.3431 8 18 8Z" stroke="currentColor" strokeWidth="2" fill="none"/>
-      <path d="M6 15C7.65685 15 9 13.6569 9 12C9 10.3431 7.65685 9 6 9C4.34315 9 3 10.3431 3 12C3 13.6569 4.34315 15 6 15Z" stroke="currentColor" strokeWidth="2" fill="none"/>
-      <path d="M18 22C19.6569 22 21 20.6569 21 19C21 17.3431 19.6569 16 18 16C16.3431 16 15 17.3431 15 19C15 20.6569 16.3431 22 18 22Z" stroke="currentColor" strokeWidth="2" fill="none"/>
-      <path d="M8.59 13.51L15.42 17.49" stroke="currentColor" strokeWidth="2"/>
-      <path d="M15.41 6.51L8.59 10.49" stroke="currentColor" strokeWidth="2"/>
+      <path
+        d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 6.65685 16.3431 8 18 8Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+      />
+      <path
+        d="M6 15C7.65685 15 9 13.6569 9 12C9 10.3431 7.65685 9 6 9C4.34315 9 3 10.3431 3 12C3 13.6569 4.34315 15 6 15Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+      />
+      <path
+        d="M18 22C19.6569 22 21 20.6569 21 19C21 17.3431 19.6569 16 18 16C16.3431 16 15 17.3431 15 19C15 20.6569 16.3431 22 18 22Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+      />
+      <path d="M8.59 13.51L15.42 17.49" stroke="currentColor" strokeWidth="2" />
+      <path d="M15.41 6.51L8.59 10.49" stroke="currentColor" strokeWidth="2" />
     </svg>
   );
 }
@@ -96,7 +132,6 @@ export default function WaitingRoomPage() {
   const { state } = useLocation();
 
   const roomInfo = state ?? {};
-  const isHost = roomInfo.isHost ?? false;
   const maxCount = roomInfo.maxCount ?? 4;
 
   // 방 코드는 joinCode / inviteCode 둘 중 하나로 넘어오므로 여기서 통일
@@ -104,7 +139,9 @@ export default function WaitingRoomPage() {
 
   // 방 정보 상태 관리 (수정 가능하도록 useState 사용)
   const [roomTitle, setRoomTitle] = useState(roomInfo.roomTitle ?? "수다방");
-  const [topic, setTopic] = useState(roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식");
+  const [topic, setTopic] = useState(
+    roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식",
+  );
   const [turnCount, setTurnCount] = useState(roomInfo.turnCount ?? 3);
 
   // 참여자 목록: email 기반으로 관리
@@ -135,7 +172,7 @@ export default function WaitingRoomPage() {
       "여행 경험담",
       "좋아하는 음식",
     ],
-    []
+    [],
   );
 
   // 재연결 시 lobby 다시 호출하기 위한 ref
@@ -274,6 +311,57 @@ export default function WaitingRoomPage() {
     };
   }, [startAudioAnalysis, stopAudioAnalysis]);
 
+  // JWT 토큰에서 userId 추출하는 헬퍼 함수
+  const getUserIdFromToken = useCallback(() => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.warn("[getUserIdFromToken] accessToken이 없습니다.");
+        return null;
+      }
+
+      // JWT 토큰의 payload 부분 디코딩
+      const base64Url = token.split(".")[1];
+      if (!base64Url) {
+        console.error(
+          "[getUserIdFromToken] JWT 토큰 형식이 올바르지 않습니다.",
+        );
+        return null;
+      }
+
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join(""),
+      );
+
+      const payload = JSON.parse(jsonPayload);
+      console.log("[getUserIdFromToken] JWT payload:", payload);
+
+      // JWT payload에서 memberId 찾기 (숫자형 ID를 우선 사용)
+      const userId =
+        payload.memberId ??
+        payload.userId ??
+        payload.id ??
+        payload.user_id ??
+        payload.sub;
+
+      console.log("[getUserIdFromToken] 추출된 userId:", userId);
+
+      if (!userId) {
+        console.error("[getUserIdFromToken] JWT payload에 userId가 없습니다.");
+        return null;
+      }
+
+      return userId;
+    } catch (e) {
+      console.error("[getUserIdFromToken] JWT 토큰 디코딩 실패:", e);
+      return null;
+    }
+  }, []);
+
   // lobby API 호출: 참여자 목록 + 상태 가져오기
   const fetchLobby = useCallback(async () => {
     if (!inviteCode || inviteCode === "000000") {
@@ -290,32 +378,42 @@ export default function WaitingRoomPage() {
       // 실제 API 응답 구조: { roomId, roomCode, isOpen, participants: [...] }
       const members = data.participants ?? [];
 
-      // localStorage에서 현재 사용자 정보 가져오기
-      const userInfoStr = localStorage.getItem("userInfo");
-      let myUserId = null;
-      if (userInfoStr) {
-        try {
-          const userInfo = JSON.parse(userInfoStr);
-          myUserId = userInfo.userId ?? userInfo.id;
-        } catch (e) {
-          console.error("userInfo 파싱 실패:", e);
+      // JWT 토큰에서 현재 사용자의 userId 가져오기
+      let myUserId = getUserIdFromToken();
+
+      // myUserId가 없는 경우 처리
+      if (!myUserId) {
+        console.warn("[fetchLobby] JWT 토큰에서 userId를 가져올 수 없습니다.");
+
+        // 대안 1: roomInfo.hostUserId 사용 (방장인 경우)
+        if (roomInfo.hostUserId) {
+          myUserId = roomInfo.hostUserId;
+          console.log("[fetchLobby] roomInfo.hostUserId 사용:", myUserId);
+        } else {
+          // 대안 2: 방장 찾기
+          const hostMember = members.find((m) => m.isHost === true);
+          if (hostMember && roomInfo.isHost) {
+            myUserId = hostMember.userId;
+            console.log("[fetchLobby] 방장으로 userId 설정:", myUserId);
+          } else {
+            console.error("[fetchLobby] 현재 사용자를 식별할 수 없습니다.");
+            showToast(
+              "사용자 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.",
+            );
+          }
         }
       }
 
-      // myUserId가 없으면 방장을 찾아서 설정 (방장이면 자기 자신)
-      if (!myUserId && isHost) {
-        const hostMember = members.find((m) => m.isHost === true);
-        if (hostMember) {
-          myUserId = hostMember.userId;
-        }
-      }
+      console.log("[fetchLobby] myUserId:", myUserId);
 
       // email 대신 userId를 문자열로 변환해서 사용
       const myEmailStr = myUserId ? String(myUserId) : "";
       setMyEmail(myEmailStr);
 
       // 준비 완료한 참여자 수 계산 (방장 제외)
-      const readyMembers = members.filter((m) => !m.isHost && m.readyStatus === "READY");
+      const readyMembers = members.filter(
+        (m) => !m.isHost && m.readyStatus === "READY",
+      );
       setReadyCount(readyMembers.length);
       setTotalCount(members.length);
 
@@ -326,6 +424,7 @@ export default function WaitingRoomPage() {
         isHost: m.isHost ?? false,
         isReady: m.readyStatus === "READY",
         micOn: m.micOn ?? true, // 기본값 true
+        voiceLevel: 0, // 초기 음성 레벨
       }));
 
       console.log("매핑된 참여자 목록:", mappedParticipants);
@@ -338,7 +437,13 @@ export default function WaitingRoomPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [inviteCode, showToast, isHost]);
+  }, [
+    inviteCode,
+    showToast,
+    getUserIdFromToken,
+    roomInfo.hostUserId,
+    roomInfo.isHost,
+  ]);
 
   // ref에 저장 (재연결 시 호출용)
   fetchLobbyRef.current = fetchLobby;
@@ -353,59 +458,59 @@ export default function WaitingRoomPage() {
     console.log("[디버깅] 참여자 상태 변경:", {
       myEmail,
       participantsCount: participants.length,
-      participants: participants.map(p => ({
+      participants: participants.map((p) => ({
         email: p.email,
         nickname: p.nickname,
         isMe: p.email === myEmail,
         micOn: p.micOn,
-        isReady: p.isReady
+        isReady: p.isReady,
       })),
-      myMicOn
+      myMicOn,
     });
   }, [participants, myEmail, myMicOn]);
 
   const currentCount = totalCount || participants.length;
 
   // WebSocket 이벤트 핸들러: 멤버 참여
-  const handleMemberJoined = useCallback((payload, senderKey) => {
-    console.log("[handleMemberJoined] 새로운 멤버가 참여했습니다!", {
-      payload,
-      senderKey,
-      currentParticipants: participants.length
-    });
-    // 참여자 목록 다시 가져오기
-    fetchLobbyRef.current?.();
-  }, [participants.length]);
+  const handleMemberJoined = useCallback(
+    (payload, senderKey) => {
+      console.log("[handleMemberJoined] 새로운 멤버가 참여했습니다!", {
+        payload,
+        senderKey,
+        currentParticipants: participants.length,
+      });
+      // 참여자 목록 다시 가져오기
+      fetchLobbyRef.current?.();
+    },
+    [participants.length],
+  );
 
   // WebSocket 이벤트 핸들러: READY_CHANGED
   // senderKey(이메일)로 해당 참여자를 찾아서 준비 상태 업데이트
-  const handleReadyChanged = useCallback(
-    (payload, senderKey) => {
-      console.log("READY_CHANGED 수신:", { payload, senderKey });
+  const handleReadyChanged = useCallback((payload, senderKey) => {
+    console.log("READY_CHANGED 수신:", { payload, senderKey });
 
-      // 서버에서 받은 readyCount, totalCount 업데이트 (프론트에서 계산 금지!)
-      if (payload.readyCount !== undefined) {
-        setReadyCount(payload.readyCount);
-      }
-      if (payload.totalCount !== undefined) {
-        setTotalCount(payload.totalCount);
-      }
+    // 서버에서 받은 readyCount, totalCount 업데이트 (프론트에서 계산 금지!)
+    if (payload.readyCount !== undefined) {
+      setReadyCount(payload.readyCount);
+    }
+    if (payload.totalCount !== undefined) {
+      setTotalCount(payload.totalCount);
+    }
 
-      // senderKey(이메일)로 해당 참여자의 준비 상태 업데이트
-      if (senderKey) {
-        // myReadyStatus가 있으면 해당 유저의 새 상태
-        const newReadyStatus =
-          payload.myReadyStatus === "READY" || payload.ready === true;
+    // senderKey(이메일)로 해당 참여자의 준비 상태 업데이트
+    if (senderKey) {
+      // myReadyStatus가 있으면 해당 유저의 새 상태
+      const newReadyStatus =
+        payload.myReadyStatus === "READY" || payload.ready === true;
 
-        setParticipants((prev) =>
-          prev.map((p) =>
-            p.email === senderKey ? { ...p, isReady: newReadyStatus } : p
-          )
-        );
-      }
-    },
-    []
-  );
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.email === senderKey ? { ...p, isReady: newReadyStatus } : p,
+        ),
+      );
+    }
+  }, []);
 
   // WebSocket 이벤트 핸들러: MIC_CHANGED
   // senderKey(이메일)로 해당 참여자의 마이크 상태 업데이트
@@ -415,7 +520,7 @@ export default function WaitingRoomPage() {
         payload,
         senderKey,
         myEmail,
-        isMyChange: senderKey === myEmail
+        isMyChange: senderKey === myEmail,
       });
 
       if (!senderKey) {
@@ -425,20 +530,45 @@ export default function WaitingRoomPage() {
 
       // 내 마이크는 로컬 상태(myMicOn)로만 관리, 다른 사람의 마이크만 업데이트
       if (senderKey === myEmail) {
-        console.log("[handleMicChanged] 내 마이크 상태 변경은 로컬에서 이미 관리 중입니다. 무시합니다.");
+        console.log(
+          "[handleMicChanged] 내 마이크 상태 변경은 로컬에서 이미 관리 중입니다. 무시합니다.",
+        );
         return;
       }
 
-      console.log(`[handleMicChanged] ${senderKey}의 마이크 상태를 ${payload.micOn}으로 업데이트합니다.`);
+      console.log(
+        `[handleMicChanged] ${senderKey}의 마이크 상태를 ${payload.micOn}으로 업데이트합니다.`,
+      );
 
       // 다른 사람의 마이크 상태만 업데이트
       setParticipants((prev) =>
         prev.map((p) =>
-          p.email === senderKey ? { ...p, micOn: payload.micOn } : p
-        )
+          p.email === senderKey ? { ...p, micOn: payload.micOn } : p,
+        ),
       );
     },
-    [myEmail]
+    [myEmail],
+  );
+
+  // WebSocket 이벤트 핸들러: VOICE_LEVEL_CHANGED
+  // senderKey(이메일)로 해당 참여자의 음성 레벨 업데이트
+  const handleVoiceLevelChanged = useCallback(
+    (payload, senderKey) => {
+      if (!senderKey) return;
+
+      // 내 음성 레벨은 로컬 상태(voiceLevel)로만 관리, 다른 사람의 음성 레벨만 업데이트
+      if (senderKey === myEmail) {
+        return;
+      }
+
+      // 다른 사람의 음성 레벨만 업데이트
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.email === senderKey ? { ...p, voiceLevel: payload.level ?? 0 } : p,
+        ),
+      );
+    },
+    [myEmail],
   );
 
   const handleWebSocketError = useCallback(
@@ -446,7 +576,7 @@ export default function WaitingRoomPage() {
       console.error("WebSocket ERROR:", errorMessage);
       showToast(errorMessage || "오류가 발생했습니다.");
     },
-    [showToast]
+    [showToast],
   );
 
   // WebSocket 재연결 시 lobby 다시 호출해서 상태 동기화
@@ -457,25 +587,37 @@ export default function WaitingRoomPage() {
   }, []);
 
   // WebSocket 연결
-  const { sendReady, sendMic } = useRoomWebSocket(inviteCode, {
+  const { sendReady, sendMic, sendVoiceLevel } = useRoomWebSocket(inviteCode, {
     onReadyChanged: handleReadyChanged,
     onMicChanged: handleMicChanged,
     onMemberJoined: handleMemberJoined,
+    onVoiceLevelChanged: handleVoiceLevelChanged,
     onError: handleWebSocketError,
     onConnected: handleConnected,
     onDisconnected: () => console.log("WebSocket 연결 해제됨"),
   });
 
+  // voiceLevel 변경 시 WebSocket으로 전송
+  useEffect(() => {
+    if (myMicOn && voiceLevel > 0 && sendVoiceLevel) {
+      sendVoiceLevel(voiceLevel);
+    }
+  }, [voiceLevel, myMicOn, sendVoiceLevel]);
+
   // 내 정보 찾기: email 기반
   const me = useMemo(
     () => participants.find((p) => p.email === myEmail),
-    [participants, myEmail]
+    [participants, myEmail],
   );
   const myReady = me?.isReady ?? false;
 
+  // 방장 여부는 participants 배열에서 실시간으로 확인
+  // (방장이 나가면 다음 사람에게 자동으로 방장이 넘어감)
+  const isHost = useMemo(() => me?.isHost ?? false, [me]);
+
   const nonHostAllReady = useMemo(
     () => participants.filter((p) => !p.isHost).every((p) => p.isReady),
-    [participants]
+    [participants],
   );
 
   const canStart = isHost && nonHostAllReady;
@@ -483,7 +625,9 @@ export default function WaitingRoomPage() {
   // 마이크 토글: 로컬 상태 즉시 변경 + WebSocket 전송
   const toggleMyMic = useCallback(async () => {
     const newMicState = !myMicOn;
-    console.log(`[toggleMyMic] 내 마이크 상태 변경: ${myMicOn} -> ${newMicState}, myEmail: ${myEmail}`);
+    console.log(
+      `[toggleMyMic] 내 마이크 상태 변경: ${myMicOn} -> ${newMicState}, myEmail: ${myEmail}`,
+    );
 
     if (myMicOn) {
       setMyMicOn(false);
@@ -505,13 +649,15 @@ export default function WaitingRoomPage() {
   const toggleMyReady = useCallback(async () => {
     const newReadyState = !myReady;
 
-    console.log(`[toggleMyReady] 준비 상태 변경: ${myReady} -> ${newReadyState}`);
+    console.log(
+      `[toggleMyReady] 준비 상태 변경: ${myReady} -> ${newReadyState}`,
+    );
 
     // 즉시 로컬 상태 업데이트 (낙관적 업데이트)
     setParticipants((prev) =>
       prev.map((p) =>
-        p.email === myEmail ? { ...p, isReady: newReadyState } : p
-      )
+        p.email === myEmail ? { ...p, isReady: newReadyState } : p,
+      ),
     );
 
     // API 호출: 준비 상태 토글
@@ -522,8 +668,8 @@ export default function WaitingRoomPage() {
       // API 실패 시 롤백
       setParticipants((prev) =>
         prev.map((p) =>
-          p.email === myEmail ? { ...p, isReady: !newReadyState } : p
-        )
+          p.email === myEmail ? { ...p, isReady: !newReadyState } : p,
+        ),
       );
       showToast("준비 상태 변경에 실패했습니다.");
       return;
@@ -559,7 +705,7 @@ export default function WaitingRoomPage() {
     } else {
       try {
         await navigator.clipboard.writeText(
-          `참여 코드: ${inviteCode}\n방 제목: ${roomTitle}\n주제: ${topic}`
+          `참여 코드: ${inviteCode}\n방 제목: ${roomTitle}\n주제: ${topic}`,
         );
         showToast("초대 정보가 복사되었습니다!");
       } catch (e) {
@@ -656,7 +802,10 @@ export default function WaitingRoomPage() {
           topic: editTopic.trim(),
           turnCount: editTurn,
         };
-        sessionStorage.setItem("together_room_info", JSON.stringify(updatedInfo));
+        sessionStorage.setItem(
+          "together_room_info",
+          JSON.stringify(updatedInfo),
+        );
       }
     } catch (e) {
       console.error("sessionStorage 업데이트 실패:", e);
@@ -694,14 +843,29 @@ export default function WaitingRoomPage() {
         myEmail,
       },
     });
-  }, [canStart, navigate, roomInfo, isHost, maxCount, participants, myMicOn, myEmail, inviteCode, showToast]);
+  }, [
+    canStart,
+    navigate,
+    roomInfo,
+    isHost,
+    maxCount,
+    participants,
+    myMicOn,
+    myEmail,
+    inviteCode,
+    showToast,
+  ]);
 
   const handlePrimary = useCallback(() => {
     if (isHost) handleStart();
     else toggleMyReady();
   }, [isHost, handleStart, toggleMyReady]);
 
-  const primaryLabel = isHost ? "대화 시작하기" : myReady ? "준비 취소" : "준비하기";
+  const primaryLabel = isHost
+    ? "대화 시작하기"
+    : myReady
+      ? "준비 취소"
+      : "준비하기";
   const primaryDisabled = isHost ? !canStart : false;
 
   /**
@@ -763,7 +927,9 @@ export default function WaitingRoomPage() {
             />
 
             <div className={styles.SpeechRight}>
-              <div className={styles.SpeechBubbleRight}>첫 번째 대화 주제는 {topic}입니다!</div>
+              <div className={styles.SpeechBubbleRight}>
+                첫 번째 대화 주제는 {topic}입니다!
+              </div>
               <img className={styles.Duck} src={duckImg} alt="오리" />
             </div>
           </div>
@@ -839,7 +1005,9 @@ export default function WaitingRoomPage() {
             <div className={styles.ParticipantsBody}>
               {isLoading ? (
                 <div className={styles.ParticipantRowEmpty}>
-                  <div className={styles.EmptySlotText}>참여자 목록 로딩 중...</div>
+                  <div className={styles.EmptySlotText}>
+                    참여자 목록 로딩 중...
+                  </div>
                 </div>
               ) : (
                 Array.from({ length: maxCount }).map((_, index) => {
@@ -847,7 +1015,10 @@ export default function WaitingRoomPage() {
 
                   if (!p) {
                     return (
-                      <div key={`empty-${index}`} className={styles.ParticipantRowEmpty}>
+                      <div
+                        key={`empty-${index}`}
+                        className={styles.ParticipantRowEmpty}
+                      >
                         <div className={styles.EmptySlotText}>빈 자리</div>
                       </div>
                     );
@@ -859,21 +1030,28 @@ export default function WaitingRoomPage() {
                   const micOn = isMe ? myMicOn : (p.micOn ?? false);
 
                   // 디버깅: 각 참여자 렌더링 시 상태 출력
-                  if (process.env.NODE_ENV === 'development') {
+                  if (process.env.NODE_ENV === "development") {
                     console.log(`[렌더링] ${p.nickname}:`, {
                       email: p.email,
                       isMe,
                       micOn,
                       myMicOn,
-                      'p.micOn': p.micOn
+                      "p.micOn": p.micOn,
                     });
                   }
 
                   return (
-                    <div key={p.email || index} className={styles.ParticipantRow}>
+                    <div
+                      key={p.email || index}
+                      className={styles.ParticipantRow}
+                    >
                       <div className={styles.ParticipantLeft}>
                         <div className={styles.UserIconWrap} aria-hidden="true">
-                          <img className={styles.UserIconImg} src={usersIcon} alt="" />
+                          <img
+                            className={styles.UserIconImg}
+                            src={usersIcon}
+                            alt=""
+                          />
                         </div>
 
                         <div className={styles.InfoColumn}>
@@ -886,7 +1064,9 @@ export default function WaitingRoomPage() {
                             {!p.isHost ? (
                               <span
                                 className={`${styles.ReadyTag} ${
-                                  p.isReady ? styles.ReadyTagOn : styles.ReadyTagOff
+                                  p.isReady
+                                    ? styles.ReadyTagOn
+                                    : styles.ReadyTagOff
                                 }`}
                               >
                                 {p.isReady ? "준비 완료" : "대기"}
@@ -918,7 +1098,9 @@ export default function WaitingRoomPage() {
                       </div>
 
                       <div className={styles.ParticipantRight}>
-                        {p.isHost ? <span className={styles.HostTag}>방장</span> : null}
+                        {p.isHost ? (
+                          <span className={styles.HostTag}>방장</span>
+                        ) : null}
                       </div>
                     </div>
                   );
@@ -957,9 +1139,15 @@ export default function WaitingRoomPage() {
                   ? "모든 참여자가 준비 완료하면 대화를 시작할 수 있습니다"
                   : "준비하기를 누르면 방장이 대화를 시작할 수 있습니다"}
               </li>
-              <li className={styles.GuideItem}>각 턴마다 1분간 자유롭게 대화하세요</li>
-              <li className={styles.GuideItem}>AI가 대화를 분석하고 피드백을 제공합니다</li>
-              <li className={styles.GuideItem}>조용한 환경에서 진행하면 더 좋습니다</li>
+              <li className={styles.GuideItem}>
+                각 턴마다 1분간 자유롭게 대화하세요
+              </li>
+              <li className={styles.GuideItem}>
+                AI가 대화를 분석하고 피드백을 제공합니다
+              </li>
+              <li className={styles.GuideItem}>
+                조용한 환경에서 진행하면 더 좋습니다
+              </li>
             </ul>
           </section>
         </div>
@@ -1058,7 +1246,10 @@ export default function WaitingRoomPage() {
                         }`}
                         onClick={() => setEditTurn(n)}
                       >
-                        <span className={styles.PopupTurnIcon} aria-hidden="true">
+                        <span
+                          className={styles.PopupTurnIcon}
+                          aria-hidden="true"
+                        >
                           ↻
                         </span>
                         <span className={styles.PopupTurnText}>{n}턴</span>
