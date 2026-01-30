@@ -25,14 +25,14 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
 
-    // ✅ 운영 서버 주소로 완전 하드코딩 (프론트엔드 리다이렉트 경로)
+    // ✅ 운영 환경 하드코딩 주소
     private final String redirectUrl = "https://i14e104.p.ssafy.io/oauth2/redirect";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         
-        log.info("========== [PROD] OAuth2SuccessHandler 실행 ==========");
+        log.info("========== [PROD] OAuth2SuccessHandler 진입 ==========");
 
         try {
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
@@ -40,27 +40,28 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String email = (String) kakaoAccount.get("email");
             Long userId = (Long) oAuth2User.getAttribute("id");
 
-            String accessToken = jwtTokenProvider.createAccessToken(userId, email);
-            String refreshToken = jwtTokenProvider.createRefreshToken(refreshToken);
+            log.info("[PROD] 로그인 사용자: {}", email);
 
-            // ✅ 운영 주소 기반으로 타겟 URL 생성
+            // ✅ 빌드 에러 해결: 인자값(userId, email) 정확히 기입
+            String accessToken = jwtTokenProvider.createAccessToken(userId, email);
+            String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
+
+            // ✅ 리다이렉트 URL 생성
             String targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
                     .queryParam("accessToken", accessToken)
                     .queryParam("refreshToken", refreshToken)
                     .build().toUriString();
 
-            log.info("[PROD] 최종 이동 주소: {}", targetUrl);
+            log.info("[PROD] 리다이렉트 실행: {}", targetUrl);
 
-            // Redis 및 쿠키 설정
+            // Redis 저장 및 쿠키 설정
             redisTemplate.opsForValue().set("RT:" + email, refreshToken, Duration.ofDays(14));
             CookieUtil.addCookie(response, "refreshToken", refreshToken, 60 * 60 * 24 * 14, true);
 
-            // 리다이렉트 실행
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
         } catch (Exception e) {
-            log.error("[PROD ERROR] OAuth2SuccessHandler 실패: ", e);
-            // 에러 발생 시에도 운영 로그인 페이지로 이동
+            log.error("[PROD ERROR] 핸들러 실행 중 에러 발생: ", e);
             response.sendRedirect("https://i14e104.p.ssafy.io/login?error=handler_failed");
         }
     }
