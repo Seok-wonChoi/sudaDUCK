@@ -40,6 +40,11 @@ export default function SoloPracticePage() {
   const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 60_000;
 
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/practice");
+  };
+
   const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
@@ -253,6 +258,15 @@ export default function SoloPracticePage() {
         )}
 
         <div className={styles.Content}>
+          <button
+            className={styles.BackButton}
+            type="button"
+            onClick={handleBack}
+            aria-label="뒤로 가기"
+          >
+            &lt;
+          </button>
+
           <div className={styles.HeaderRow}>
             <div className={styles.ExitCol}>
               <ExitButton to="/" label="나가기" confirmMessage="연습을 종료하고 나가시겠습니까?" />
@@ -285,16 +299,16 @@ export default function SoloPracticePage() {
 
                     <div className={styles.VideoFooter}>
                       <div className={styles.VideoFooterLeft}>
-                        <VoiceWave level={voiceLevel} enabled={micOn} />
                         <span className={styles.MeLabel}>나</span>
-                      </div>
-
-                      <div className={styles.VideoFooterRight} aria-label="마이크 상태">
                         <img
                           className={styles.MicMini}
                           src={micOn ? micOffIcon : micOnIcon}
                           alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                         />
+                      </div>
+
+                      <div className={styles.VideoFooterRight}>
+                        <VoiceWave level={voiceLevel} enabled={micOn} />
                       </div>
                     </div>
                   </div>
@@ -322,7 +336,7 @@ export default function SoloPracticePage() {
               <div className={styles.AiBubble}>
                 <div className={styles.AiHeader}>
                   <span className={styles.AiDot} aria-hidden="true" />
-                  <span className={styles.AiTitle}>AI 영어덕</span>
+                  <span className={styles.AiTitle}>AI 수덕</span>
                   <span className={styles.AiDot} aria-hidden="true" />
                 </div>
 
@@ -330,7 +344,7 @@ export default function SoloPracticePage() {
                   🙂
                 </div>
 
-                <div className={styles.AiMainText}>영어로 편하게 말해보세요!</div>
+                <div className={styles.AiMainText}>한국어로 편하게 말해보세요!</div>
                 <div className={styles.AiSubText}>막히면 짧게라도 이어서 말하는 것이 중요합니다.</div>
 
                 <div className={styles.AiPointer} aria-hidden="true" />

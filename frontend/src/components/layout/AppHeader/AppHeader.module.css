@@ -1,6 +1,6 @@
 .Header {
-  height: clamp(64px, 8vh, 76px);
-  padding: 0 clamp(16px, 2.5vw, 34px);
+  height: 70px;
+  padding: 0 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -11,18 +11,18 @@
 .Left {
   display: flex;
   align-items: center;
-  gap: clamp(12px, 1.5vw, 18px);
+  gap: 16px;
 }
 
 .Brand {
   display: flex;
   align-items: center;
-  gap: clamp(8px, 1vw, 10px);
+  gap: 10px;
 }
 
 .LogoMark {
-  width: clamp(20px, 2vw, 22px);
-  height: clamp(20px, 2vw, 22px);
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -36,20 +36,20 @@
 
 .BrandText {
   font-weight: 900;
-  font-size: clamp(18px, 2vw, 20px);
+  font-size: 20px;
   color: #111827;
 }
 
 .Greeting {
   font-weight: 800;
-  font-size: clamp(14px, 1.5vw, 16px);
+  font-size: 15px;
   color: #111827;
 }
 
 .Right {
   display: flex;
   align-items: center;
-  gap: clamp(8px, 1vw, 10px);
+  gap: 10px;
 }
 
 .AvatarButton {
@@ -60,8 +60,8 @@
 }
 
 .Avatar {
-  width: clamp(28px, 3vw, 32px);
-  height: clamp(28px, 3vw, 32px);
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   background: rgba(17, 24, 39, 0.10);
   border: 1px solid rgba(17, 24, 39, 0.12);
@@ -72,9 +72,9 @@
 }
 
 .IconButton {
-  width: clamp(34px, 3.5vw, 38px);
-  height: clamp(34px, 3.5vw, 38px);
-  border-radius: clamp(10px, 1.2vw, 12px);
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
   border: 1px solid rgba(79, 70, 229, 0.18);
   background: rgba(79, 70, 229, 0.08);
   display: grid;
@@ -88,8 +88,8 @@
 }
 
 .IconImage {
-  width: clamp(16px, 1.8vw, 18px);
-  height: clamp(16px, 1.8vw, 18px);
+  width: 17px;
+  height: 17px;
   object-fit: contain;
   display: block;
 }
@@ -98,13 +98,13 @@
   position: absolute;
   top: -4px;
   right: -4px;
-  min-width: clamp(16px, 1.8vw, 18px);
-  height: clamp(16px, 1.8vw, 18px);
-  padding: 0 clamp(5px, 0.6vw, 6px);
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
   border-radius: 999px;
   background: #dc2626;
   color: #ffffff;
-  font-size: clamp(11px, 1.2vw, 12px);
+  font-size: 11px;
   font-weight: 900;
   display: grid;
   place-items: center;
@@ -112,55 +112,55 @@
 
 .Popover {
   position: absolute;
-  top: clamp(42px, 5vh, 46px);
+  top: 44px;
   right: 0;
-  width: clamp(260px, 28vw, 280px);
+  width: 280px;
   background: #ffffff;
   border: 1px solid rgba(229, 231, 235, 1);
-  border-radius: clamp(12px, 1.4vw, 14px);
+  border-radius: 13px;
   box-shadow: 0 18px 40px rgba(17, 24, 39, 0.12);
   overflow: hidden;
   z-index: 20;
 }
 
 .PopoverTitle {
-  padding: clamp(10px, 1.2vw, 12px) clamp(12px, 1.4vw, 14px);
+  padding: 12px 14px;
   font-weight: 900;
-  font-size: clamp(14px, 1.5vw, 16px);
+  font-size: 15px;
   color: #111827;
   border-bottom: 1px solid rgba(229, 231, 235, 1);
 }
 
 .PopoverBody {
-  padding: clamp(10px, 1.2vw, 12px) clamp(12px, 1.4vw, 14px);
+  padding: 12px 14px;
 }
 
 .EmptyText {
   color: #6b7280;
-  font-size: clamp(12px, 1.3vw, 13px);
+  font-size: 13px;
   font-weight: 700;
 }
 
 .NotifItem {
-  padding: clamp(8px, 1vw, 10px);
-  border-radius: clamp(8px, 1vw, 10px);
+  padding: 9px;
+  border-radius: 9px;
   background: rgba(249, 250, 251, 1);
   border: 1px solid rgba(229, 231, 235, 1);
 }
 
 .NotifItem + .NotifItem {
-  margin-top: clamp(8px, 1vw, 10px);
+  margin-top: 9px;
 }
 
 .NotifText {
   font-weight: 800;
   color: #111827;
-  font-size: clamp(12px, 1.3vw, 13px);
+  font-size: 13px;
 }
 
 .NotifTime {
-  margin-top: clamp(5px, 0.6vw, 6px);
-  font-size: clamp(11px, 1.2vw, 12px);
+  margin-top: 5px;
+  font-size: 11px;
   color: #6b7280;
   font-weight: 700;
 }
@@ -169,19 +169,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: clamp(8px, 1vw, 10px);
-  padding: 0 clamp(8px, 1vw, 12px);
+  gap: 10px;
+  padding: 0 10px;
 }
 
 .MuteButton {
   border: 1px solid rgba(79, 70, 229, 0.22);
   background: rgba(79, 70, 229, 0.08);
   color: #3730a3;
-  padding: clamp(8px, 1vw, 10px) clamp(10px, 1.2vw, 12px);
-  border-radius: clamp(10px, 1.2vw, 12px);
+  padding: 9px 11px;
+  border-radius: 11px;
   cursor: pointer;
   font-weight: 900;
-  font-size: clamp(11px, 1.2vw, 12px);
+  font-size: 12px;
 }
 
 .MuteOn {
@@ -193,12 +193,12 @@
 .VolumeText {
   font-weight: 900;
   color: #111827;
-  font-size: clamp(11px, 1.2vw, 12px);
+  font-size: 12px;
 }
 
 .SliderRow {
-  margin-top: clamp(10px, 1.2vw, 12px);
-  padding: 0 clamp(12px, 1.5vw, 16px);
+  margin-top: 11px;
+  padding: 0 14px;
 }
 
 .Slider {
@@ -206,7 +206,7 @@
 }
 
 .PopoverFooter {
-  padding: clamp(10px, 1.2vw, 12px) clamp(12px, 1.4vw, 14px);
+  padding: 12px 14px;
   border-top: 1px solid rgba(229, 231, 235, 1);
   display: flex;
   justify-content: flex-end;
@@ -217,9 +217,8 @@
   background: transparent;
   cursor: pointer;
   font-weight: 900;
-  font-size: clamp(13px, 1.4vw, 14px);
+  font-size: 14px;
   color: #4f46e5;
-
 }
 
 .BrandButton {
@@ -229,7 +228,7 @@
 
   display: flex;
   align-items: center;
-  gap: clamp(8px, 1vw, 10px);
+  gap: 10px;
 
   cursor: pointer;
 }
@@ -237,8 +236,16 @@
 /* 태블릿 화면 (768px ~ 1024px) */
 @media (max-width: 1024px) {
   .Header {
-    height: 68px;
-    padding: 0 clamp(14px, 2.2vw, 28px);
+    height: 66px;
+    padding: 0 28px;
+  }
+
+  .BrandText {
+    font-size: 19px;
+  }
+
+  .Greeting {
+    font-size: 14px;
   }
 }
 

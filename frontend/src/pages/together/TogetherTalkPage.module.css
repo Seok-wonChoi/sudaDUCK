@@ -16,7 +16,40 @@
 }
 
 .Content {
+  position: relative;
   padding: clamp(18px, 2.5vw, 28px) clamp(16px, 2.5vw, 34px) clamp(22px, 2.8vw, 28px);
+}
+
+.BackButton {
+  position: absolute;
+  top: clamp(20px, 3vw, 34px);
+  left: clamp(16px, 2.5vw, 34px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(36px, 4vw, 40px);
+  height: clamp(36px, 4vw, 40px);
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: clamp(18px, 2vw, 20px);
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+.BackButton:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.BackButton:active {
+  background: #f3f4f6;
+  transform: scale(0.96);
 }
 
 .HeaderRow {
@@ -155,6 +188,9 @@
 }
 
 .VideoCardEmpty {
+  height: clamp(160px, 18vw, 180px);
+  border-radius: clamp(12px, 1.5vw, 14px);
+  padding: clamp(14px, 1.8vw, 16px) clamp(14px, 1.8vw, 16px) clamp(10px, 1.2vw, 12px);
   border: 2px dashed rgba(209, 213, 219, 0.8);
   background: rgba(249, 250, 251, 0.5);
   display: flex;
@@ -195,13 +231,13 @@
 
 .VideoFooter {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
 }
 
 .VideoFooterLeft {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
 }
 
@@ -213,9 +249,8 @@
 
 .VideoFooterRight {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-end;
-  min-width: 18px;
 }
 
 .MicMini {
@@ -474,6 +509,10 @@
     height: 150px;
   }
 
+  .VideoCardEmpty {
+    height: 150px;
+  }
+
   .TopicBubble {
     font-size: 12px;
     padding: 10px 14px;
@@ -538,6 +577,11 @@
   }
 
   .VideoCard {
+    height: 140px;
+    padding: 12px;
+  }
+
+  .VideoCardEmpty {
     height: 140px;
     padding: 12px;
   }

@@ -47,6 +47,11 @@ export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
 
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/together");
+  };
+
   useEffect(() => {
     if (!state) {
       navigate("/together", { replace: true });
@@ -383,6 +388,15 @@ export default function TogetherTalkPage() {
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Content}>
+          <button
+            className={styles.BackButton}
+            type="button"
+            onClick={handleBack}
+            aria-label="뒤로 가기"
+          >
+            &lt;
+          </button>
+
           <div className={styles.HeaderRow}>
             <div className={styles.ExitCol}>
               <ExitButton
@@ -488,16 +502,16 @@ export default function TogetherTalkPage() {
 
                     <div className={styles.VideoFooter}>
                       <div className={styles.VideoFooterLeft}>
-                        {isMe ? <VoiceWave level={voiceLevel} enabled={micOn} /> : null}
                         <span className={styles.MeLabel}>{p.name}</span>
-                      </div>
-
-                      <div className={styles.VideoFooterRight} aria-label="마이크 상태">
                         <img
                           className={styles.MicMini}
                           src={participantMicOn ? micOffIcon : micOnIcon}
                           alt={participantMicOn ? "마이크 켜짐" : "마이크 꺼짐"}
                         />
+                      </div>
+
+                      <div className={styles.VideoFooterRight}>
+                        {isMe ? <VoiceWave level={voiceLevel} enabled={micOn} /> : null}
                       </div>
                     </div>
                   </div>

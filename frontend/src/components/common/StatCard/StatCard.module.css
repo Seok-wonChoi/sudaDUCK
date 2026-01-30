@@ -25,3 +25,35 @@
   color: #6b7280;
   font-weight: 600;
 }
+
+/* 태블릿 이하 */
+@media (max-width: 768px) {
+  .Card {
+    padding: 20px 16px;
+  }
+
+  .Value {
+    font-size: 26px;
+  }
+
+  .Label {
+    font-size: 13px;
+  }
+}
+
+/* 모바일 */
+@media (max-width: 480px) {
+  .Card {
+    padding: 18px 14px;
+    border-radius: 14px;
+  }
+
+  .Value {
+    font-size: 24px;
+  }
+
+  .Label {
+    font-size: 12px;
+    margin-top: 8px;
+  }
+}
