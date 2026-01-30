@@ -45,14 +45,14 @@ export default defineConfig({
   server: {
     proxy: {
   // 웹소켓 전용 (경로가 /dev-api/ws 로 올 경우)
-  "/dev-api/ws": {
+  "/prod-api/ws": {
     target: "https://i14e104.p.ssafy.io",
     changeOrigin: true,
     ws: true,
     rewrite: (path) => path.replace(/^\/dev-api/, ""),
   },
   // 일반 API 전용
-  "/dev-api": {
+  "/prod-api": {
     target: "https://i14e104.p.ssafy.io",
     changeOrigin: true,
   },
