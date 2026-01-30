@@ -37,16 +37,17 @@ public class AuthController {
     // =================================================================
     @Operation(summary = "로그인 시작", description = "환경 정보(local/prod)를 받아서 세션에 저장 후 카카오로 리다이렉트합니다.")
     @GetMapping("/login")
-    public void login(@RequestParam("env") String env,
-                      HttpSession session,
+    public void login(@RequestParam("env") String env, 
+                      HttpSession session, 
                       HttpServletResponse response) throws IOException {
-
-        // 1. "local"인지 "prod"인지 서버 메모리(세션)에 저장
-        // 쿠키가 아니므로 도메인 상관없이 안전하게 저장됨
+        
+        // 1. 세션에 환경 저장
         session.setAttribute("client_env", env);
 
-        // 2. 저장했으면 카카오 로그인 페이지로 이동
-        response.sendRedirect("/oauth2/authorization/kakao");
+        // 2. ★ [핵심 수정] "/dev-api"를 붙여야 Nginx가 백엔드로 넘겨줍니다!
+        // 기존: response.sendRedirect("/oauth2/authorization/kakao");  <-- 이거 때문에 프론트로 감
+        // 변경:
+        response.sendRedirect("/dev-api/oauth2/authorization/kakao"); 
     }
 
     @Operation(summary = "내 정보 조회", description = "쿠키의 토큰을 확인하여 내 정보를 반환합니다.")
