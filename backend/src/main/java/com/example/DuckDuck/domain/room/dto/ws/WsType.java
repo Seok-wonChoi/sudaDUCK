@@ -15,7 +15,12 @@ public enum WsType {
     // ROOM / PARTICIPANT
     PARTICIPANT_JOINED,
     PARTICIPANT_LEFT,
+
     ROOM_UPDATED,
+    ROOM_STARTED,
+
+    ROOM_ENDED,
+    ROOM_CLOSED,
 
     // ERROR
     ERROR
