@@ -5,7 +5,7 @@ import styles from "./MakeRoomPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 
-import { createRoom } from "@/api/rooms";
+import { createRoom, getTopics, joinRoom } from "@/api/rooms";
 
 const ROOM_INFO_KEY = "together_room_info";
 
@@ -49,10 +49,23 @@ export default function MakeRoomPage() {
     setTopic(t);
   };
 
-  const handleAiRecommend = () => {
-    if (hotTopics.length === 0) return;
-    const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
-    setTopic(next);
+  const handleAiRecommend = async () => {
+    try {
+      const data = await getTopics();
+      const topics = data.topics || [];
+      if (topics.length > 0) {
+        // 서버에서 받은 주제 중 랜덤으로 하나 선택
+        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+        setTopic(randomTopic);
+      }
+    } catch (e) {
+      console.error("AI 주제 추천 API 호출 실패:", e);
+      // API 실패 시 로컬 hotTopics에서 선택 (fallback)
+      if (hotTopics.length > 0) {
+        const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+        setTopic(next);
+      }
+    }
   };
 
   const handleSubmit = async () => {
@@ -69,12 +82,21 @@ export default function MakeRoomPage() {
 
     setLoading(true);
     try {
-      // POST /api/v1/rooms
+      // 1. 방 생성: POST /api/v1/rooms
       const res = await createRoom({
         title: title.trim(),
         topic: topic.trim(),
         turnCnt: turn,
       });
+
+      // 2. 방 참가: POST /api/v1/rooms/join (방장도 명시적으로 참가해야 함)
+      try {
+        await joinRoom({ roomCode: res.roomCode });
+        console.log("방 생성 후 자동 참가 성공");
+      } catch (joinError) {
+        console.error("방 참가 실패:", joinError);
+        // 참가 실패해도 방 생성은 성공했으므로 계속 진행
+      }
 
       // WaitingRoomPage에서 쓰는 형태로 맞춤
       const roomInfo = {
@@ -90,6 +112,7 @@ export default function MakeRoomPage() {
         turnCount: res.turnCnt,
 
         joinCode: res.roomCode,
+        inviteCode: res.roomCode, // joinCode와 inviteCode 모두 설정
       };
 
       sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));
@@ -114,10 +137,7 @@ export default function MakeRoomPage() {
             aria-label="뒤로 가기"
             disabled={loading}
           >
-            <span className={styles.BackIcon} aria-hidden="true">
-              &lt;
-            </span>
-            <span className={styles.BackText}>뒤로가기</span>
+            &lt;
           </button>
 
           <h1 className={styles.Title}>방 만들기</h1>

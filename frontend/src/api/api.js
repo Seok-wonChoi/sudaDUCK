@@ -1,6 +1,9 @@
 import axios from "axios";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/dev-api";
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/dev-api")
+  .trim()
+  .replace(/\/$/, "");
+
 const REFRESH_URL = "/api/v1/auth/refresh";
 
 const api = axios.create({
@@ -11,14 +14,24 @@ const api = axios.create({
   withCredentials: true,
 });
 
+function setAuthHeader(config, token) {
+  if (!token) return config;
+
+  // axios v1에서 headers가 AxiosHeaders인 경우 set이 가장 안전
+  if (config.headers && typeof config.headers.set === "function") {
+    config.headers.set("Authorization", `Bearer ${token}`);
+  } else {
+    config.headers = config.headers ?? {};
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
+  return config;
+}
+
 /* [REQUEST INTERCEPTOR] 헤더에 토큰 부착 */
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`; // 띄어쓰기 한 칸 확인!
-    }
-    return config;
+    return setAuthHeader(config, token);
   },
   (error) => Promise.reject(error)
 );
@@ -31,10 +44,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // 1. 401 에러이고, 재시도한 적이 없을 때만 실행
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      
-      // 무한 루프 방지: refresh 요청 자체가 401이면 바로 로그아웃
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      // refresh 요청 자체가 401이면 바로 로그아웃
       if (originalRequest.url?.includes(REFRESH_URL)) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
@@ -45,22 +56,37 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // 2. 리프레시 토큰으로 새 엑세스 토큰 요청
         if (!refreshPromise) {
           const storedRefreshToken = localStorage.getItem("refreshToken");
+          if (!storedRefreshToken) {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            window.location.href = "/login";
+            return Promise.reject(error);
+          }
 
           refreshPromise = axios
-            .post(`${API_BASE_URL}${REFRESH_URL}`, 
-              { refreshToken: storedRefreshToken }, // ✅ 바디에 토큰 실어 보내기
-              { withCredentials: true }
+            .post(
+              `${API_BASE_URL}${REFRESH_URL}`,
+              { refreshToken: storedRefreshToken },
+              {
+                withCredentials: true,
+                headers: { "Content-Type": "application/json" },
+              }
             )
             .then((res) => {
               const newAccessToken = res?.data?.accessToken;
-              if (newAccessToken) {
-                localStorage.setItem("accessToken", newAccessToken);
-                return newAccessToken;
-              }
-              throw new Error("No AccessToken in response");
+              const newRefreshToken = res?.data?.refreshToken;
+
+              if (!newAccessToken) throw new Error("No AccessToken in response");
+
+              localStorage.setItem("accessToken", newAccessToken);
+              if (newRefreshToken) localStorage.setItem("refreshToken", newRefreshToken);
+
+              // WS가 쿠키 access_token을 요구 - cross-site 요청을 위해 SameSite=None; Secure 설정
+              document.cookie = `access_token=${newAccessToken}; Path=/; SameSite=None; Secure`;
+
+              return newAccessToken;
             })
             .finally(() => {
               refreshPromise = null;
@@ -69,13 +95,10 @@ api.interceptors.response.use(
 
         const newAccessToken = await refreshPromise;
 
-        // 3. 새 토큰으로 헤더 교체 후 원래 요청 재시도
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        // 새 토큰으로 원래 요청 재시도 (헤더 확실히 세팅)
+        setAuthHeader(originalRequest, newAccessToken);
         return api(originalRequest);
-
       } catch (refreshErr) {
-        // 4. 리프레시마저 실패하면 모든 정보 삭제 후 로그인 페이지로
-        console.error("[API] 토큰 재발급 실패:", refreshErr);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         window.location.href = "/login";

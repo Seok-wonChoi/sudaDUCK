@@ -7,6 +7,14 @@ import ExitGuard from "@/components/common/ExitGuard/ExitGuard";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
 
+import {
+  leaveRoom,
+  startSilenceMonitoring,
+  stopSilenceMonitoring,
+  recordVoiceActivity
+} from "@/api/rooms";
+import useRoomWebSocket from "@/hooks/useRoomWebSocket";
+
 import duckImg from "@/assets/images/duck.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
 import duckHappyImg from "@/assets/images/duck_happy.png";
@@ -45,6 +53,11 @@ export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
 
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/together");
+  };
+
   useEffect(() => {
     if (!state) {
       navigate("/together", { replace: true });
@@ -54,22 +67,20 @@ export default function TogetherTalkPage() {
   const roomInfo = state ?? {};
   const topic = roomInfo.topic ?? "좋아하는 음식";
   const maxCount = roomInfo.maxCount ?? 4;
+  const roomId = roomInfo.roomId;
+  const myUserId = roomInfo.myUserId; // 사용자 ID
+  const currentTurn = roomInfo.currentTurn ?? 1; // 현재 턴 (기본값 1)
+  const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
 
+  // WaitingRoomPage에서 전달받은 참여자 목록 (순서대로)
   const participants = useMemo(() => {
     const raw = Array.isArray(roomInfo.participants) ? roomInfo.participants : [];
-    if (raw.length > 0) {
-      return raw.map((p, idx) => ({
-        id: p.id ?? `u${idx + 1}`,
-        name: p.name ?? `참여자 ${idx + 1}`,
-        isMe: p.id === "me" || p.isMe === true,
-      }));
-    }
-    return [
-      { id: "me", name: "나", isMe: true },
-      { id: "u2", name: "참여자 1", isMe: false },
-      { id: "u3", name: "참여자 2", isMe: false },
-      { id: "u4", name: "참여자 3", isMe: false },
-    ];
+    return raw.map((p) => ({
+      id: p.id ?? p.email ?? "unknown",
+      name: p.name ?? p.nickname ?? "참여자",
+      isMe: p.isMe === true,
+      micOn: p.micOn ?? false,
+    }));
   }, [roomInfo.participants]);
 
   const slots = useMemo(() => {
@@ -85,6 +96,23 @@ export default function TogetherTalkPage() {
   const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
+  const [aiSuggestion, setAiSuggestion] = useState(""); // AI 추천 메시지
+
+  // WebSocket 연결: AI 대화 추천 수신
+  const handleConversationSuggestion = useCallback((question) => {
+    console.log("AI 대화 추천 수신:", question);
+    setAiSuggestion(question);
+    // 10초 후 메시지 자동 숨김
+    setTimeout(() => {
+      setAiSuggestion("");
+    }, 10000);
+  }, []);
+
+  useRoomWebSocket(roomCode, {
+    onConversationSuggestion: handleConversationSuggestion,
+    onConnected: () => console.log("WebSocket 연결됨 (TogetherTalkPage)"),
+    onDisconnected: () => console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
+  });
 
   const audioRef = useRef({
     stream: null,
@@ -206,13 +234,48 @@ export default function TogetherTalkPage() {
   }, []);
 
   useEffect(() => {
-    // 페이지 로드 시 마이크 자동 켜기
+    // 페이지 로드 시 마이크 자동 켜기 & 정적 감지 시작
     startAudioAnalysis();
+
+    // 정적 감지 시작 (roomId가 있을 때만)
+    if (roomId && currentTurn) {
+      startSilenceMonitoring(roomId, currentTurn)
+        .then(() => {
+          console.log("정적 감지 모니터링 시작");
+        })
+        .catch((e) => {
+          console.error("정적 감지 시작 실패:", e);
+        });
+    }
 
     return () => {
       stopAudioAnalysis();
+
+      // 정적 감지 중지
+      if (roomId) {
+        stopSilenceMonitoring(roomId)
+          .then(() => {
+            console.log("정적 감지 모니터링 중지");
+          })
+          .catch((e) => {
+            console.error("정적 감지 중지 실패:", e);
+          });
+      }
     };
-  }, [startAudioAnalysis, stopAudioAnalysis]);
+  }, [startAudioAnalysis, stopAudioAnalysis, roomId, currentTurn]);
+
+  // 음성 감지 시 API 호출
+  useEffect(() => {
+    if (isSpeaking && roomId && myUserId && currentTurn) {
+      recordVoiceActivity(roomId, myUserId, currentTurn)
+        .then(() => {
+          console.log("음성 활동 기록 성공");
+        })
+        .catch((e) => {
+          console.error("음성 활동 기록 실패:", e);
+        });
+    }
+  }, [isSpeaking, roomId, myUserId, currentTurn]);
 
   const toggleMic = useCallback(async () => {
     if (micOn) {
@@ -226,12 +289,62 @@ export default function TogetherTalkPage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
-    navigate("/", { replace: true });
-  }, [navigate, stopAudioAnalysis]);
 
-  const handleDone = useCallback(() => {
+    // 정적 감지 중지
+    if (roomId) {
+      try {
+        await stopSilenceMonitoring(roomId);
+        console.log("정적 감지 모니터링 중지");
+      } catch (e) {
+        console.error("정적 감지 중지 실패:", e);
+      }
+    }
+
+    // 대화 종료 후 녹음 페이지로 이동 (endRoom은 복습 완료 후 자동 호출)
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "together",
+        roomInfo,
+        participants,
+      }
+    });
+  }, [navigate, stopAudioAnalysis, roomInfo, participants, roomId]);
+
+  const handleDone = useCallback(async () => {
     console.log("시간 종료");
-  }, []);
+    await stopAudioAnalysis();
+
+    // 정적 감지 중지
+    if (roomId) {
+      try {
+        await stopSilenceMonitoring(roomId);
+        console.log("정적 감지 모니터링 중지");
+      } catch (e) {
+        console.error("정적 감지 중지 실패:", e);
+      }
+    }
+
+    // 방 퇴장 API 호출
+    const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
+    if (roomCode) {
+      try {
+        await leaveRoom({ roomCode });
+      } catch (e) {
+        console.error("방 퇴장 API 호출 실패:", e);
+      }
+    }
+
+    // 대화 종료 후 녹음 페이지로 이동
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "together",
+        roomInfo,
+        participants,
+      }
+    });
+  }, [stopAudioAnalysis, roomInfo, participants, navigate, roomId]);
 
   /* =========================
      돌발 퀘스트 (수동 시작 1/2/3)
@@ -358,6 +471,15 @@ export default function TogetherTalkPage() {
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Content}>
+          <button
+            className={styles.BackButton}
+            type="button"
+            onClick={handleBack}
+            aria-label="뒤로 가기"
+          >
+            &lt;
+          </button>
+
           <div className={styles.HeaderRow}>
             <div className={styles.ExitCol}>
               <ExitButton
@@ -365,8 +487,28 @@ export default function TogetherTalkPage() {
                 replace
                 label="나가기"
                 confirmMessage="메인 화면으로 나가시겠습니까?"
-                onExit={() => {
-                  stopAudioAnalysis();
+                onExit={async () => {
+                  await stopAudioAnalysis();
+
+                  // 정적 감지 중지
+                  if (roomId) {
+                    try {
+                      await stopSilenceMonitoring(roomId);
+                      console.log("정적 감지 모니터링 중지");
+                    } catch (e) {
+                      console.error("정적 감지 중지 실패:", e);
+                    }
+                  }
+
+                  // 방 퇴장 API 호출
+                  const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
+                  if (roomCode) {
+                    try {
+                      await leaveRoom({ roomCode });
+                    } catch (e) {
+                      console.error("방 퇴장 API 호출 실패:", e);
+                    }
+                  }
                 }}
               />
             </div>
@@ -431,6 +573,8 @@ export default function TogetherTalkPage() {
 
                 const p = slot.p;
                 const isMe = p.isMe === true;
+                // 내 마이크는 로컬 상태, 다른 사람은 전달받은 상태
+                const participantMicOn = isMe ? micOn : (p.micOn ?? false);
 
                 return (
                   <div
@@ -451,24 +595,16 @@ export default function TogetherTalkPage() {
 
                     <div className={styles.VideoFooter}>
                       <div className={styles.VideoFooterLeft}>
-                        {isMe ? <VoiceWave level={voiceLevel} enabled={micOn} /> : null}
                         <span className={styles.MeLabel}>{p.name}</span>
+                        <img
+                          className={styles.MicMini}
+                          src={participantMicOn ? micOffIcon : micOnIcon}
+                          alt={participantMicOn ? "마이크 켜짐" : "마이크 꺼짐"}
+                        />
                       </div>
 
-                      <div className={styles.VideoFooterRight} aria-label="마이크 상태">
-                        {isMe ? (
-                          <img
-                            className={styles.MicMini}
-                            src={micOn ? micOffIcon : micOnIcon}
-                            alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
-                          />
-                        ) : (
-                          <img
-                            className={`${styles.MicMini} ${styles.MicMuted}`}
-                            src={micOffIcon}
-                            alt="마이크 꺼짐"
-                          />
-                        )}
+                      <div className={styles.VideoFooterRight}>
+                        {isMe ? <VoiceWave level={voiceLevel} enabled={micOn} /> : null}
                       </div>
                     </div>
                   </div>
@@ -505,10 +641,19 @@ export default function TogetherTalkPage() {
                 🙂
               </div>
 
-              <div className={styles.AiMainText}>영어로 편하게 대화해보세요!</div>
-              <div className={styles.AiSubText}>
-                5초 동안 침묵이 지속되면 제가 도와드릴게요.
-              </div>
+              {aiSuggestion ? (
+                <>
+                  <div className={styles.AiMainText}>대화 추천</div>
+                  <div className={styles.AiSubText}>{aiSuggestion}</div>
+                </>
+              ) : (
+                <>
+                  <div className={styles.AiMainText}>영어로 편하게 대화해보세요!</div>
+                  <div className={styles.AiSubText}>
+                    15초 동안 침묵이 지속되면 제가 도와드릴게요.
+                  </div>
+                </>
+              )}
 
               <div className={styles.AiPointer} aria-hidden="true" />
             </div>

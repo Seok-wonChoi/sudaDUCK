@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./AiPracticePage.module.css";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
@@ -35,8 +36,14 @@ function VoiceWave({ level, enabled }) {
 }
 
 export default function AiPracticePage() {
+  const navigate = useNavigate();
   const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 60_000;
+
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/practice");
+  };
 
   const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -216,14 +223,30 @@ export default function AiPracticePage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
-    console.log("대화 종료");
+    // 대화 종료 후 녹음 페이지로 이동
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "ai",
+        topic,
+      }
+    });
   }, [stopAudioAnalysis]);
 
   const handleDone = useCallback(async () => {
     await stopAudioAnalysis();
     setMicOn(false);
     console.log("시간 종료");
-  }, [stopAudioAnalysis]);
+
+    // 대화 종료 후 녹음 페이지로 이동
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "ai",
+        topic,
+      }
+    });
+  }, [stopAudioAnalysis, navigate, topic]);
 
   return (
     <div className={styles.Page}>
@@ -242,6 +265,15 @@ export default function AiPracticePage() {
         )}
 
         <div className={styles.Content}>
+          <button
+            className={styles.BackButton}
+            type="button"
+            onClick={handleBack}
+            aria-label="뒤로 가기"
+          >
+            &lt;
+          </button>
+
           <div className={styles.HeaderRow}>
             <div className={styles.ExitCol}>
               <ExitButton to="/" label="나가기" confirmMessage="연습을 종료하고 나가시겠습니까?" />
@@ -274,16 +306,16 @@ export default function AiPracticePage() {
 
                     <div className={styles.VideoFooter}>
                       <div className={styles.VideoFooterLeft}>
-                        <VoiceWave level={voiceLevel} enabled={micOn} />
                         <span className={styles.MeLabel}>나</span>
-                      </div>
-
-                      <div className={styles.VideoFooterRight} aria-label="마이크 상태">
                         <img
                           className={styles.MicMini}
                           src={micOn ? micOffIcon : micOnIcon}
                           alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                         />
+                      </div>
+
+                      <div className={styles.VideoFooterRight}>
+                        <VoiceWave level={voiceLevel} enabled={micOn} />
                       </div>
                     </div>
                   </div>

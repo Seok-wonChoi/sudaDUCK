@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./AppHeader.module.css";
 import bellIcon from "@/assets/icons/notice_bell.png";
@@ -9,6 +9,8 @@ import duckProfile1 from "@/assets/images/duck_profile1.png";
 import duckProfile2 from "@/assets/images/duck_profile2.png";
 import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
+
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 
 const DUCK_PROFILE_IMAGES = {
   profile1: duckProfile1,
@@ -42,12 +44,19 @@ export default function AppHeader({
   initialMuted = false,
   initialVolume = 70,
   onChangeSound,
+  // 로고 클릭 시 나가기 확인 관련 props
+  logoExitMessage,
+  logoExitConfirmText = "나가기",
+  logoExitCancelText = "취소",
+  onLogoExit,
 }) {
   const navigate = useNavigate();
   const rootRef = useRef(null);
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [logoExitModalOpen, setLogoExitModalOpen] = useState(false);
+  const [logoExitProcessing, setLogoExitProcessing] = useState(false);
 
   const [muted, setMuted] = useState(initialMuted);
   const [volume, setVolume] = useState(initialVolume);
@@ -132,9 +141,40 @@ export default function AppHeader({
     setSettingsOpen((v) => !v);
   };
 
-  const onLogoClick = () => {
+  const onLogoClick = useCallback(() => {
+    // 로고 클릭 시 나가기 확인이 필요한 경우 (logoExitMessage가 있으면)
+    if (logoExitMessage) {
+      setLogoExitModalOpen(true);
+      return;
+    }
+    // 일반적인 경우 바로 메인으로 이동
     navigate("/");
-  };
+  }, [logoExitMessage, navigate]);
+
+  const handleLogoExitConfirm = useCallback(async () => {
+    if (logoExitProcessing) return;
+
+    setLogoExitProcessing(true);
+    try {
+      // 나가기 콜백 실행 (leaveRoom API 호출 등)
+      if (typeof onLogoExit === "function") {
+        await onLogoExit();
+      }
+
+      setLogoExitModalOpen(false);
+      navigate("/");
+    } catch (e) {
+      console.error("로고 클릭 나가기 실패:", e);
+      alert(e?.message || "나가기에 실패했습니다.");
+    } finally {
+      setLogoExitProcessing(false);
+    }
+  }, [onLogoExit, navigate, logoExitProcessing]);
+
+  const handleLogoExitCancel = useCallback(() => {
+    if (logoExitProcessing) return;
+    setLogoExitModalOpen(false);
+  }, [logoExitProcessing]);
 
   const onProfileClick = () => {
     navigate("/mypage");
@@ -281,6 +321,16 @@ export default function AppHeader({
           )}
         </div>
       </div>
+
+      {/* 로고 클릭 시 나가기 확인 모달 */}
+      <ConfirmModal
+        open={logoExitModalOpen}
+        message={logoExitMessage || "메인 화면으로 나가시겠습니까?"}
+        confirmText={logoExitProcessing ? "나가는 중..." : logoExitConfirmText}
+        cancelText={logoExitCancelText}
+        onConfirm={handleLogoExitConfirm}
+        onClose={handleLogoExitCancel}
+      />
     </header>
   );
 }
