@@ -12,12 +12,6 @@ export async function updateAvatarCustom(avatarData) {
   return data;
 }
 
-// 내가 저장한 스크립트 모두 조회하기: GET /api/v1/script/my
-export async function getMyScripts() {
-  const { data } = await api.get("/api/v1/script/my");
-  return data;
-}
-
 // 사용자 프로필 커스터마이징 정보 조회: GET /api/v1/me/profile/custom
 export async function getMyProfileCustom() {
   const { data } = await api.get("/api/v1/me/profile/custom");
@@ -50,3 +44,8 @@ export async function updateAiDuckBot(duckBotData) {
   return data;
 }
 
+// 내가 저장한 스크립트 모두 조회하기: GET /api/v1/script/my
+export async function getMyScripts() {
+  const { data } = await api.get("/api/v1/script/my");
+  return data;
+}

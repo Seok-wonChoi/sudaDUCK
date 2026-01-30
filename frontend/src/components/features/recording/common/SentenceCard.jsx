@@ -62,7 +62,7 @@ export default function SentenceCard({
               // 빈칸으로 처리
               newParts.push(
                 <span key={`blank-${word}-${idx}`} className={styles.blank}>
-                  {'_'.repeat(split.length)}
+                  {'\u00A0'.repeat(split.length)}
                 </span>
               );
             } else if (split) {

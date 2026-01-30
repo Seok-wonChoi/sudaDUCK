@@ -460,7 +460,6 @@ export default function MyPage() {
             profileColor={duckStyle.color}
             profileAccessory={duckStyle.accessory}
             nickname={nickname}
-            email="example@test.com"
             nicknameStyle={nicknameStyle}
             duckBotImage={DUCK_BOT_IMAGES[duckBotId]}
             coins={coins}
