@@ -290,51 +290,55 @@ export default function WaitingRoomPage() {
       // 실제 API 응답 구조: { roomId, roomCode, isOpen, participants: [...] }
       const members = data.participants ?? [];
 
-      // localStorage에서 현재 사용자 정보 가져오기
+      // localStorage에서 현재 사용자 정보 가져오기 (이메일 주소 필요!)
       const userInfoStr = localStorage.getItem("userInfo");
+      let myEmailAddress = "";
       let myUserId = null;
+
       if (userInfoStr) {
         try {
           const userInfo = JSON.parse(userInfoStr);
+          // WebSocket senderKey는 이메일 주소를 사용하므로 이메일을 가져옴
+          myEmailAddress = userInfo.email || userInfo.userEmail || "";
           myUserId = userInfo.userId ?? userInfo.id ?? userInfo.memberId;
           console.log("[fetchLobby] localStorage userInfo:", userInfo);
-          console.log("[fetchLobby] myUserId:", myUserId);
+          console.log("[fetchLobby] myEmail:", myEmailAddress, "myUserId:", myUserId);
         } catch (e) {
           console.error("userInfo 파싱 실패:", e);
         }
       }
 
-      // myUserId가 없으면 방장을 찾아서 설정 (방장이면 자기 자신)
-      if (!myUserId && isHost) {
-        const hostMember = members.find((m) => m.isHost === true);
-        if (hostMember) {
-          myUserId = hostMember.userId;
-          console.log("[fetchLobby] 방장으로부터 myUserId 설정:", myUserId);
-        }
-      }
-
-      // 여전히 myUserId가 없으면, API 응답에서 현재 사용자 찾기 시도
-      // (서버가 현재 사용자를 특별히 표시하는 경우 - 예: isMe 필드)
-      if (!myUserId) {
+      // 이메일이 없으면 API 응답에서 찾기
+      if (!myEmailAddress) {
         const meInResponse = members.find((m) => m.isMe === true);
         if (meInResponse) {
+          myEmailAddress = meInResponse.email || "";
           myUserId = meInResponse.userId;
-          console.log("[fetchLobby] API 응답에서 현재 사용자 찾음:", myUserId);
+          console.log("[fetchLobby] API 응답에서 현재 사용자 찾음:", myEmailAddress);
         }
       }
 
-      // email 대신 userId를 문자열로 변환해서 사용
-      const myEmailStr = myUserId ? String(myUserId) : "";
-      setMyEmail(myEmailStr);
+      // 여전히 이메일이 없으면 방장 찾기
+      if (!myEmailAddress && isHost) {
+        const hostMember = members.find((m) => m.isHost === true);
+        if (hostMember) {
+          myEmailAddress = hostMember.email || "";
+          myUserId = hostMember.userId;
+          console.log("[fetchLobby] 방장으로부터 이메일 설정:", myEmailAddress);
+        }
+      }
+
+      // WebSocket senderKey와 매칭하기 위해 실제 이메일 주소 사용
+      setMyEmail(myEmailAddress);
 
       // 준비 완료한 참여자 수 계산 (방장 제외)
       const readyMembers = members.filter((m) => !m.isHost && m.readyStatus === "READY");
       setReadyCount(readyMembers.length);
       setTotalCount(members.length);
 
-      // 참여자 목록 변환 (userId를 email 필드로 사용)
+      // 참여자 목록 변환 (WebSocket senderKey 매칭을 위해 실제 이메일 주소 사용)
       const mappedParticipants = members.map((m) => ({
-        email: String(m.userId ?? ""), // userId를 문자열로 변환
+        email: m.email || String(m.userId ?? ""), // 실제 이메일 주소 우선, 없으면 userId
         nickname: m.nickname ?? "참여자",
         isHost: m.isHost ?? false,
         isReady: m.readyStatus === "READY",
@@ -539,16 +543,18 @@ export default function WaitingRoomPage() {
       setMyMicOn(false);
       await stopAudioAnalysis();
       // WebSocket으로 마이크 상태 전송
+      console.log("[toggleMyMic] sendMic(false) 호출 시작");
       sendMic(false);
-      console.log("[toggleMyMic] 마이크 OFF 전송 완료");
+      console.log("[toggleMyMic] sendMic(false) 호출 완료");
       return;
     }
 
     setMyMicOn(true);
     await startAudioAnalysis();
+    console.log("[toggleMyMic] sendMic(true) 호출 시작");
     // WebSocket으로 마이크 상태 전송
     sendMic(true);
-    console.log("[toggleMyMic] 마이크 ON 전송 완료");
+    console.log("[toggleMyMic] sendMic(true) 호출 완료");
   }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic, myEmail]);
 
   // 준비 상태 토글: 즉시 로컬 상태 업데이트 + API 호출 + WebSocket으로 전송
