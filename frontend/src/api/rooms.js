@@ -35,9 +35,11 @@ export async function updateRoomSettings(roomCode, settings) {
   return data;
 }
 
-// 대기 방 상태 조회: GET /api/v1/rooms/lobby
-export async function getRoomLobby() {
-  const { data } = await api.get("/api/v1/rooms/lobby");
+// 대기 방 상태 조회: GET /api/v1/rooms/lobby?roomCode={roomCode}
+export async function getRoomLobby(roomCode) {
+  const { data } = await api.get("/api/v1/rooms/lobby", {
+    params: { roomCode }
+  });
   return data;
 }
 

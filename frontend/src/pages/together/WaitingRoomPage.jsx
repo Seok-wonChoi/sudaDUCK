@@ -13,7 +13,7 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
-import { leaveRoom, getRoomLobby, toggleReady, startRoom, updateRoomSettings } from "@/api/rooms";
+import { leaveRoom, getRoomLobby, toggleReady, startRoom, updateRoomSettings, getTopics } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
@@ -96,7 +96,7 @@ export default function WaitingRoomPage() {
   const { state } = useLocation();
 
   const roomInfo = state ?? {};
-  const isHost = roomInfo.isHost ?? true;
+  const isHost = roomInfo.isHost ?? false;
   const maxCount = roomInfo.maxCount ?? 4;
 
   // 방 코드는 joinCode / inviteCode 둘 중 하나로 넘어오므로 여기서 통일
@@ -283,7 +283,7 @@ export default function WaitingRoomPage() {
 
     try {
       setIsLoading(true);
-      const data = await getRoomLobby();
+      const data = await getRoomLobby(inviteCode);
 
       // 서버 응답 형태에 맞게 파싱 (백엔드 응답 구조에 따라 조정 필요)
       // 예상 응답: { members: [...], myEmail: "...", readyCount: 2, totalCount: 4 }
@@ -565,10 +565,27 @@ export default function WaitingRoomPage() {
     setEditTopic(t);
   }, []);
 
-  const handleAiRecommend = useCallback(() => {
-    if (hotTopics.length === 0) return;
-    const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
-    setEditTopic(next);
+  const handleAiRecommend = useCallback(async () => {
+    // API 호출: AI 주제 추천받기
+    try {
+      const data = await getTopics();
+      const topics = data.topics || [];
+      if (topics.length > 0) {
+        // 서버에서 받은 주제 중 랜덤 선택
+        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+        setEditTopic(randomTopic);
+        return;
+      }
+    } catch (e) {
+      console.error("AI 주제 추천 API 호출 실패:", e);
+      // API 실패 시 로컬 hotTopics로 폴백
+    }
+
+    // 폴백: 로컬 주제 목록 사용
+    if (hotTopics.length > 0) {
+      const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+      setEditTopic(next);
+    }
   }, [hotTopics]);
 
   const handleSaveEditRoomInfo = useCallback(async () => {
