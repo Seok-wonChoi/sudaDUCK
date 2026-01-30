@@ -23,9 +23,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
+        // 로그 추가
+        String authHeader = request.getHeader("Authorization");
+        System.out.println("[JWT] " + request.getMethod() + " " + request.getRequestURI()
+                + " Authorization=" + (authHeader == null ? "null" : authHeader.substring(0, Math.min(20, authHeader.length())) + "..."));
         //헤더에서 토큰 추출
         String accessToken = resolveToken(request);
+        // 로그 추가
+        System.out.println("[JWT] accessToken null? " + (accessToken == null));
 
         String refreshToken = CookieUtil.getCookie(request, "refreshToken")
                 .map(Cookie::getValue)
