@@ -5,6 +5,7 @@ public enum WsType {
     READY_CHANGED,
     MIC_SET,
     MIC_CHANGED,
+    VOICE_LEVEL_CHANGED,
 
 
     ROOM_UPDATED,   //방 정보 수정
