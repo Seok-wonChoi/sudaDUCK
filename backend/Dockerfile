@@ -19,14 +19,13 @@ RUN ./gradlew clean bootJar -x test --no-daemon
 # ---------------------------------------------------------
 
 # 2. 실행 단계 (Runner)
-# [수정] alpine 대신 일반 jre를 사용하여 네이티브 라이브러리 호환성 해결
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-# [추정] Azure Speech SDK 실행에 꼭 필요한 시스템 라이브러리 설치
+# [수정] libasound2 -> libasound2t64 (최신 우분투 대응)
 RUN apt-get update && apt-get install -y \
     libssl-dev \
-    libasound2 \
+    libasound2t64 \
     libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 
