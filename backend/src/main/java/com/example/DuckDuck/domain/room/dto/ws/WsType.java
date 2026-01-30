@@ -1,13 +1,22 @@
 package com.example.DuckDuck.domain.room.dto.ws;
 
 public enum WsType {
+    // READY
     READY_SET,
     READY_CHANGED,
+
+    // MIC
     MIC_SET,
     MIC_CHANGED,
+
+    // VOICE
     VOICE_LEVEL_CHANGED,
 
+    // ROOM / PARTICIPANT
+    PARTICIPANT_JOINED,
+    PARTICIPANT_LEFT,
+    ROOM_UPDATED,
 
-    ROOM_UPDATED,   //방 정보 수정
+    // ERROR
     ERROR
 }

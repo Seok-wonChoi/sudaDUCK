@@ -6,6 +6,10 @@ import com.example.DuckDuck.domain.room.dto.request.RoomLeaveRequest;
 import com.example.DuckDuck.domain.room.dto.response.RoomCreateResponse;
 import com.example.DuckDuck.domain.room.dto.response.RoomJoinResponse;
 import com.example.DuckDuck.domain.room.dto.response.RoomLeaveResponse;
+import com.example.DuckDuck.domain.room.dto.ws.ParticipantChangedPayload;
+import com.example.DuckDuck.domain.room.dto.ws.ParticipantLeftPayload;
+import com.example.DuckDuck.domain.room.dto.ws.RoomWsMessage;
+import com.example.DuckDuck.domain.room.dto.ws.WsType;
 import com.example.DuckDuck.domain.room.entity.Room;
 import com.example.DuckDuck.domain.room.entity.RoomParticipants;
 import com.example.DuckDuck.domain.room.repository.RoomParticipantsRepository;
@@ -20,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
+
 @Service
 @RequiredArgsConstructor
 public class RoomService {
@@ -28,6 +33,7 @@ public class RoomService {
     private final RoomParticipantsRepository roomParticipantsRepository;
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RoomSocketService roomSocketService;
     private static final long ROOM_TTL_HOURS = 6;
     private static final String ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -238,12 +244,28 @@ public class RoomService {
         // TTL 동기화(참가 이벤트마다 갱신)
         refreshRoomTtl(roomId, request.getRoomCode());
 
+        roomSocketService.broadcast(
+                request.getRoomCode(),
+                RoomWsMessage.of(
+                        WsType.PARTICIPANT_JOINED,
+                        request.getRoomCode(),
+                        String.valueOf(member.getId()),
+                        new ParticipantChangedPayload(
+                                member.getId(),
+                                member.getNickname(),
+                                member.getProfileImageUrl(),
+                                false
+                        )
+                )
+        );
+
         return RoomJoinResponse.builder()
                 .roomId(roomId)
                 .roomCode(request.getRoomCode())
                 .readyStatus("NOT_READY")
                 .alreadyJoined(alreadyJoined)
                 .build();
+
     }
 
     // ===================== 방 나가기 =====================
@@ -340,6 +362,16 @@ public class RoomService {
 
         // 9) 방 유지: TTL 갱신
         refreshRoomTtl(roomId, roomCode);
+
+        roomSocketService.broadcast(
+                roomCode,
+                RoomWsMessage.of(
+                        WsType.PARTICIPANT_LEFT,
+                        roomCode,
+                        String.valueOf(member.getId()),
+                        new ParticipantLeftPayload(member.getId())
+                )
+        );
 
         return RoomLeaveResponse.builder()
                 .roomId(roomId)
