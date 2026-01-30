@@ -30,3 +30,15 @@ export async function purchaseItem(itemId, purchaseData) {
   return data;
 }
 
+// 프로필 닉네임 수정: PATCH /api/v1/me/profile/nickname
+export async function updateNickname(nicknameData) {
+  const { data } = await api.patch("/api/v1/me/profile/nickname", nicknameData);
+  return data;
+}
+
+// AI 오리봇 커스터마이징: PATCH /api/v1/me/profile/custom/ai-duckbot
+export async function updateAiDuckBot(duckBotData) {
+  const { data } = await api.patch("/api/v1/me/profile/custom/ai-duckbot", duckBotData);
+  return data;
+}
+

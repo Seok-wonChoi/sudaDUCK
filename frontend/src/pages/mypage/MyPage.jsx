@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import styles from "./MyPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
-import { getMyScripts, updateAvatarCustom, updateDuckCustom, getMyProfileCustom, purchaseItem } from "@/api/mypage";
+import { getMyScripts, updateAvatarCustom, updateDuckCustom, getMyProfileCustom, purchaseItem, updateNickname, updateAiDuckBot } from "@/api/mypage";
 import { logout } from "@/api/auth";
 
 import ProfileSection from "@/components/features/mypage/ProfileSection/ProfileSection";
@@ -234,11 +234,13 @@ export default function MyPage() {
 
   const handleSaveNicknameStyle = async ({ nickname: newNickname, ...style }) => {
     try {
-      // API 호출
-      await updateAvatarCustom({
-        nickname: newNickname,
-        ...style,
-      });
+      // 닉네임 변경 API 호출
+      if (newNickname && newNickname !== nickname) {
+        await updateNickname({ nickname: newNickname });
+      }
+
+      // 닉네임 스타일(배경, 효과) 변경 API 호출
+      await updateAvatarCustom(style);
 
       // 성공 시 로컬 state 업데이트
       if (newNickname) setNickname(newNickname);
@@ -277,9 +279,17 @@ export default function MyPage() {
     }
   };
 
-  const handleSaveDuckBot = (id) => {
-    // AI 오리봇 API는 아직 백엔드와 협의 중
-    setDuckBotId(id);
+  const handleSaveDuckBot = async (id) => {
+    try {
+      // AI 오리봇 변경 API 호출
+      await updateAiDuckBot({ duckBotId: id });
+
+      // 성공 시 로컬 state 업데이트
+      setDuckBotId(id);
+    } catch (error) {
+      console.error('AI 오리봇 변경 실패:', error);
+      alert('AI 오리봇 변경에 실패했습니다.');
+    }
   };
 
   const handleLogout = async () => {
