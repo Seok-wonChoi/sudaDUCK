@@ -11,7 +11,8 @@ import {
   leaveRoom,
   startSilenceMonitoring,
   stopSilenceMonitoring,
-  recordVoiceActivity
+  recordVoiceActivity,
+  getRoomLobby,
 } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
@@ -25,6 +26,8 @@ import micOffIcon from "@/assets/icons/mic_off.png";
 
 import UnexpectedQuestOverlay from "@/components/features/unexpected-quest/UnexpectedQuestOverlay";
 import UnexpectedQuestFillBlankModal from "@/components/features/unexpected-quest/UnexpectedQuestFillBlankModal";
+
+const ROOM_INFO_KEY = "together_room_info";
 
 function VoiceWave({ level, enabled }) {
   const multipliers = useMemo(() => [0.5, 0.7, 0.85, 1, 0.85, 0.7, 0.5], []);
@@ -49,39 +52,153 @@ function VoiceWave({ level, enabled }) {
   );
 }
 
+function safeParseJson(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
+}
+
+function getUserIdFromToken() {
+  try {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return null;
+
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+
+    const payload = JSON.parse(jsonPayload);
+    return (
+      payload.memberId ??
+      payload.userId ??
+      payload.id ??
+      payload.user_id ??
+      payload.sub ??
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
 export default function TogetherTalkPage() {
   const navigate = useNavigate();
-  const { state } = useLocation();
+  const location = useLocation();
 
-  const handleBack = () => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate("/together");
-  };
+  const [hydratedInfo, setHydratedInfo] = useState(() => {
+    if (location.state) return location.state;
+
+    const saved = sessionStorage.getItem(ROOM_INFO_KEY);
+    const parsed = saved ? safeParseJson(saved) : null;
+    return parsed ?? null;
+  });
 
   useEffect(() => {
-    if (!state) {
+    if (location.state) {
+      setHydratedInfo(location.state);
+      try {
+        sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(location.state));
+      } catch {
+        // ignore
+      }
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!hydratedInfo) {
       navigate("/together", { replace: true });
     }
-  }, [state, navigate]);
+  }, [hydratedInfo, navigate]);
 
-  const roomInfo = state ?? {};
-  const topic = roomInfo.topic ?? "좋아하는 음식";
-  const maxCount = roomInfo.maxCount ?? 4;
-  const roomId = roomInfo.roomId;
-  const myUserId = roomInfo.myUserId; // 사용자 ID
-  const currentTurn = roomInfo.currentTurn ?? 1; // 현재 턴 (기본값 1)
-  const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
+  const roomInfo = hydratedInfo ?? {};
 
-  // WaitingRoomPage에서 전달받은 참여자 목록 (순서대로)
-  const participants = useMemo(() => {
-    const raw = Array.isArray(roomInfo.participants) ? roomInfo.participants : [];
+  const resolvedRoomCode = useMemo(() => {
+    return (
+      roomInfo.roomCode ||
+      roomInfo.inviteCode ||
+      roomInfo.joinCode ||
+      roomInfo.code ||
+      roomInfo.roomInfo?.roomCode ||
+      ""
+    );
+  }, [roomInfo]);
+
+  const [topic, setTopic] = useState(roomInfo.topic ?? "좋아하는 음식");
+  const [maxCount, setMaxCount] = useState(roomInfo.maxCount ?? 4);
+
+  const [roomId, setRoomId] = useState(roomInfo.roomId ?? null);
+  const [currentTurn, setCurrentTurn] = useState(roomInfo.currentTurn ?? 1);
+
+  const myUserId = useMemo(() => {
+    return roomInfo.myUserId ?? getUserIdFromToken();
+  }, [roomInfo.myUserId]);
+
+  const [participants, setParticipants] = useState(() => {
+    const raw = Array.isArray(roomInfo.participants)
+      ? roomInfo.participants
+      : [];
     return raw.map((p) => ({
       id: p.id ?? p.email ?? "unknown",
       name: p.name ?? p.nickname ?? "참여자",
       isMe: p.isMe === true,
       micOn: p.micOn ?? false,
     }));
-  }, [roomInfo.participants]);
+  });
+
+  const syncLobby = useCallback(async () => {
+    if (!resolvedRoomCode) return;
+
+    try {
+      const data = await getRoomLobby(resolvedRoomCode);
+
+      if (data?.topic) setTopic(data.topic);
+      if (data?.turnCnt !== undefined && data?.turnCnt !== null) {
+        // turnCnt는 "전체 턴 수"일 가능성이 높아서 currentTurn과는 다른 값입니다.
+        // 여기서는 currentTurn을 덮어쓰지 않습니다.
+      }
+      if (data?.roomId) setRoomId(data.roomId);
+
+      const members = Array.isArray(data?.participants)
+        ? data.participants
+        : [];
+
+      const myIdStr = myUserId != null ? String(myUserId) : null;
+
+      const mapped = members.map((m) => {
+        const idStr = String(m.userId ?? "");
+        return {
+          id: idStr || "unknown",
+          name: m.nickname ?? "참여자",
+          isMe: myIdStr ? idStr === myIdStr : false,
+          micOn: m.micOn ?? false,
+        };
+      });
+
+      if (mapped.length > 0) {
+        setParticipants(mapped);
+      }
+
+      if (data?.maxCount) {
+        setMaxCount(data.maxCount);
+      }
+    } catch (e) {
+      // 로비 동기화 실패는 치명적이지 않게 처리
+      console.error("[TogetherTalkPage] getRoomLobby 실패:", e);
+    }
+  }, [resolvedRoomCode, myUserId]);
+
+  useEffect(() => {
+    syncLobby();
+  }, [syncLobby]);
 
   const slots = useMemo(() => {
     const arr = [];
@@ -96,22 +213,38 @@ export default function TogetherTalkPage() {
   const [micOn, setMicOn] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
-  const [aiSuggestion, setAiSuggestion] = useState(""); // AI 추천 메시지
+  const [aiSuggestion, setAiSuggestion] = useState("");
 
-  // WebSocket 연결: AI 대화 추천 수신
+  const aiTimeoutRef = useRef(null);
+
   const handleConversationSuggestion = useCallback((question) => {
-    console.log("AI 대화 추천 수신:", question);
-    setAiSuggestion(question);
-    // 10초 후 메시지 자동 숨김
-    setTimeout(() => {
+    setAiSuggestion(question || "");
+
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current);
+      aiTimeoutRef.current = null;
+    }
+
+    aiTimeoutRef.current = setTimeout(() => {
       setAiSuggestion("");
+      aiTimeoutRef.current = null;
     }, 10000);
   }, []);
 
-  useRoomWebSocket(roomCode, {
+  useEffect(() => {
+    return () => {
+      if (aiTimeoutRef.current) {
+        clearTimeout(aiTimeoutRef.current);
+        aiTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  useRoomWebSocket(resolvedRoomCode, {
     onConversationSuggestion: handleConversationSuggestion,
     onConnected: () => console.log("WebSocket 연결됨 (TogetherTalkPage)"),
-    onDisconnected: () => console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
+    onDisconnected: () =>
+      console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
   });
 
   const audioRef = useRef({
@@ -142,7 +275,7 @@ export default function TogetherTalkPage() {
     if (a.ctx) {
       try {
         await a.ctx.close();
-      } catch (e) {
+      } catch {
         // ignore
       }
       a.ctx = null;
@@ -222,58 +355,42 @@ export default function TogetherTalkPage() {
 
       try {
         await ctx.resume();
-      } catch (e) {
+      } catch {
         // ignore
       }
 
       tick();
-    } catch (e) {
+    } catch {
       setIsSpeaking(false);
       setVoiceLevel(0);
     }
   }, []);
 
   useEffect(() => {
-    // 페이지 로드 시 마이크 자동 켜기 & 정적 감지 시작
     startAudioAnalysis();
 
-    // 정적 감지 시작 (roomId가 있을 때만)
     if (roomId && currentTurn) {
-      startSilenceMonitoring(roomId, currentTurn)
-        .then(() => {
-          console.log("정적 감지 모니터링 시작");
-        })
-        .catch((e) => {
-          console.error("정적 감지 시작 실패:", e);
-        });
+      startSilenceMonitoring(roomId, currentTurn).catch((e) => {
+        console.error("정적 감지 시작 실패:", e);
+      });
     }
 
     return () => {
       stopAudioAnalysis();
 
-      // 정적 감지 중지
       if (roomId) {
-        stopSilenceMonitoring(roomId)
-          .then(() => {
-            console.log("정적 감지 모니터링 중지");
-          })
-          .catch((e) => {
-            console.error("정적 감지 중지 실패:", e);
-          });
+        stopSilenceMonitoring(roomId).catch((e) => {
+          console.error("정적 감지 중지 실패:", e);
+        });
       }
     };
   }, [startAudioAnalysis, stopAudioAnalysis, roomId, currentTurn]);
 
-  // 음성 감지 시 API 호출
   useEffect(() => {
     if (isSpeaking && roomId && myUserId && currentTurn) {
-      recordVoiceActivity(roomId, myUserId, currentTurn)
-        .then(() => {
-          console.log("음성 활동 기록 성공");
-        })
-        .catch((e) => {
-          console.error("음성 활동 기록 실패:", e);
-        });
+      recordVoiceActivity(roomId, myUserId, currentTurn).catch((e) => {
+        console.error("음성 활동 기록 실패:", e);
+      });
     }
   }, [isSpeaking, roomId, myUserId, currentTurn]);
 
@@ -287,77 +404,64 @@ export default function TogetherTalkPage() {
     await startAudioAnalysis();
   }, [micOn, startAudioAnalysis, stopAudioAnalysis]);
 
-  const handleEnd = useCallback(async () => {
+  const doLeaveRoom = useCallback(async () => {
     await stopAudioAnalysis();
 
-    // 정적 감지 중지
     if (roomId) {
       try {
         await stopSilenceMonitoring(roomId);
-        console.log("정적 감지 모니터링 중지");
       } catch (e) {
         console.error("정적 감지 중지 실패:", e);
       }
     }
 
-    // 대화 종료 후 녹음 페이지로 이동 (endRoom은 복습 완료 후 자동 호출)
-    navigate("/recording", {
-      replace: true,
-      state: {
-        mode: "together",
-        roomInfo,
-        participants,
-      }
-    });
-  }, [navigate, stopAudioAnalysis, roomInfo, participants, roomId]);
-
-  const handleDone = useCallback(async () => {
-    console.log("시간 종료");
-    await stopAudioAnalysis();
-
-    // 정적 감지 중지
-    if (roomId) {
+    if (resolvedRoomCode) {
       try {
-        await stopSilenceMonitoring(roomId);
-        console.log("정적 감지 모니터링 중지");
-      } catch (e) {
-        console.error("정적 감지 중지 실패:", e);
-      }
-    }
-
-    // 방 퇴장 API 호출
-    const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
-    if (roomCode) {
-      try {
-        await leaveRoom({ roomCode });
+        await leaveRoom({ roomCode: resolvedRoomCode });
       } catch (e) {
         console.error("방 퇴장 API 호출 실패:", e);
       }
     }
+  }, [stopAudioAnalysis, roomId, resolvedRoomCode]);
 
-    // 대화 종료 후 녹음 페이지로 이동
+  const handleEnd = useCallback(async () => {
+    await doLeaveRoom();
+
     navigate("/recording", {
       replace: true,
       state: {
         mode: "together",
         roomInfo,
         participants,
-      }
+      },
     });
-  }, [stopAudioAnalysis, roomInfo, participants, navigate, roomId]);
+  }, [doLeaveRoom, navigate, roomInfo, participants]);
+
+  const handleDone = useCallback(async () => {
+    await doLeaveRoom();
+
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "together",
+        roomInfo,
+        participants,
+      },
+    });
+  }, [doLeaveRoom, navigate, roomInfo, participants]);
+
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/together");
+  };
 
   /* =========================
      돌발 퀘스트 (수동 시작 1/2/3)
-     - 버튼 없는 화면: 클릭으로 다음
-     - 2번 입력 화면: 버튼으로 다음
-     - 진행 동안 TimerGauge 정지, 종료 후 재개
   ========================= */
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
   const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | 3 | null
-  // idle | intro | q2game | q3intro | q3meaning | resultFail | resultSuccess
   const [questStep, setQuestStep] = useState("idle");
-  // 정답 여부 (테스트 버전: 랜덤으로 설정)
   const [isCorrect, setIsCorrect] = useState(false);
 
   const questRunning = questStep !== "idle";
@@ -384,67 +488,56 @@ export default function TogetherTalkPage() {
         setQuestStep("q3intro");
       }
     },
-    [questRunning]
+    [questRunning],
   );
 
   const handleOverlayClickNext = useCallback(() => {
-    // 1번 인트로 -> 바로 결과 (테스트: 랜덤)
     if (questStep === "intro" && activeQuest === 1) {
-      const correct = Math.random() > 0.5; // 테스트: 50% 확률로 성공/실패
+      const correct = Math.random() > 0.5;
       setIsCorrect(correct);
       setQuestStep(correct ? "resultSuccess" : "resultFail");
       return;
     }
 
-    // 2번 인트로 -> 게임 화면
     if (questStep === "intro" && activeQuest === 2) {
       setQuestStep("q2game");
       return;
     }
 
-    // 3번 첫 화면 -> 문장/뜻 화면
     if (questStep === "q3intro") {
       setQuestStep("q3meaning");
       return;
     }
 
-    // 3번 문장/뜻 화면 -> 결과 (테스트: 랜덤)
     if (questStep === "q3meaning") {
-      const correct = Math.random() > 0.5; // 테스트: 50% 확률
+      const correct = Math.random() > 0.5;
       setIsCorrect(correct);
       setQuestStep(correct ? "resultSuccess" : "resultFail");
       return;
     }
 
-    // 결과 화면 (성공 또는 실패) -> 복귀
     if (questStep === "resultFail" || questStep === "resultSuccess") {
       endQuestAndResume();
     }
   }, [questStep, activeQuest, endQuestAndResume]);
 
   const handleSubmitQuest2 = useCallback(() => {
-    // 2번 퀘스트 제출 시 정답 여부 판단 (테스트: 랜덤)
-    const correct = Math.random() > 0.5; // 테스트: 50% 확률
+    const correct = Math.random() > 0.5;
     setIsCorrect(correct);
     setQuestStep(correct ? "resultSuccess" : "resultFail");
   }, []);
 
-  // 1번 인트로(영어 문장 하드코딩)
   const quest1English = "Dd duck says: This is a random English sentence.";
 
-  // 2번 인트로
   const quest2IntroTitle = "돌발 퀘스트!!\n빈칸을 채워요.";
   const quest2IntroSub = "가장 먼저 맞힌 사람이 점수를 얻어요.";
 
-  // 3번 첫 화면(이미지 1)
   const quest3IntroTitle = "돌발 퀘스트!!\n단어의 뜻을 맞춰요.";
   const quest3IntroSub = "모두 협동해서 점수를 얻어보아요.";
 
-  // 3번 두 번째 화면(이미지 2)
   const quest3EnglishSentence = "I couldn't agree with you more on that point.";
   const quest3KoreanMeaning = "그 점에 대해서 당신의 말에 전적으로 동의합니다.";
 
-  // 결과 텍스트
   const isSuccess = questStep === "resultSuccess";
 
   const failText = "아쉽게도 성공하지 못했어요\n다음 번 기회를 노려봐요!";
@@ -453,11 +546,13 @@ export default function TogetherTalkPage() {
   const resultBubbleText = isSuccess ? successText : failText;
   const resultDuckSrc = isSuccess ? duckHappyImg : duckSadImg;
 
-  const showIntroOverlay = questStep === "intro" && (activeQuest === 1 || activeQuest === 2);
+  const showIntroOverlay =
+    questStep === "intro" && (activeQuest === 1 || activeQuest === 2);
   const showQuest2Game = questStep === "q2game" && activeQuest === 2;
 
   const showQuest3IntroOverlay = questStep === "q3intro" && activeQuest === 3;
-  const showQuest3MeaningOverlay = questStep === "q3meaning" && activeQuest === 3;
+  const showQuest3MeaningOverlay =
+    questStep === "q3meaning" && activeQuest === 3;
 
   const showResultOverlay =
     (questStep === "resultFail" || questStep === "resultSuccess") &&
@@ -487,35 +582,15 @@ export default function TogetherTalkPage() {
                 replace
                 label="나가기"
                 confirmMessage="메인 화면으로 나가시겠습니까?"
-                onExit={async () => {
-                  await stopAudioAnalysis();
-
-                  // 정적 감지 중지
-                  if (roomId) {
-                    try {
-                      await stopSilenceMonitoring(roomId);
-                      console.log("정적 감지 모니터링 중지");
-                    } catch (e) {
-                      console.error("정적 감지 중지 실패:", e);
-                    }
-                  }
-
-                  // 방 퇴장 API 호출
-                  const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
-                  if (roomCode) {
-                    try {
-                      await leaveRoom({ roomCode });
-                    } catch (e) {
-                      console.error("방 퇴장 API 호출 실패:", e);
-                    }
-                  }
-                }}
+                onExit={doLeaveRoom}
               />
             </div>
 
             <div className={styles.TopicRow}>
               <img className={styles.SmallDuck} src={duckImg} alt="오리" />
-              <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다!</div>
+              <div className={styles.TopicBubble}>
+                첫 번째 대화 주제는 {topic}입니다!
+              </div>
             </div>
 
             <div className={styles.TimerCol}>
@@ -524,7 +599,10 @@ export default function TogetherTalkPage() {
                 isRunning={isRoomTimerRunning}
                 onDone={handleDone}
               />
-              <div className={styles.QuestButtons} aria-label="돌발 퀘스트 시작 버튼">
+              <div
+                className={styles.QuestButtons}
+                aria-label="돌발 퀘스트 시작 버튼"
+              >
                 <button
                   type="button"
                   className={styles.QuestBtn}
@@ -557,113 +635,134 @@ export default function TogetherTalkPage() {
           </div>
 
           <div className={styles.Stage}>
-          <div className={styles.LeftStage}>
-            <section className={styles.CardsGrid} aria-label="참여자 영상 영역">
-              {slots.map((slot) => {
-                if (slot.kind === "empty") {
+            <div className={styles.LeftStage}>
+              <section
+                className={styles.CardsGrid}
+                aria-label="참여자 영상 영역"
+              >
+                {slots.map((slot) => {
+                  if (slot.kind === "empty") {
+                    return (
+                      <div
+                        key={slot.id}
+                        className={`${styles.VideoCard} ${styles.VideoCardEmpty}`}
+                      >
+                        <div className={styles.EmptyText}>빈 자리</div>
+                      </div>
+                    );
+                  }
+
+                  const p = slot.p;
+                  const isMe = p.isMe === true;
+                  const participantMicOn = isMe ? micOn : (p.micOn ?? false);
+
                   return (
                     <div
-                      key={slot.id}
-                      className={`${styles.VideoCard} ${styles.VideoCardEmpty}`}
+                      key={p.id}
+                      className={`${styles.VideoCard} ${
+                        isMe && isSpeaking
+                          ? styles.VideoCardSpeaking
+                          : styles.VideoCardIdle
+                      }`}
                     >
-                      <div className={styles.EmptyText}>빈 자리</div>
+                      <div className={styles.VideoInner}>
+                        <div className={styles.AvatarCircle}>
+                          <img
+                            className={styles.AvatarDuck}
+                            src={duckImg}
+                            alt={`${p.name} 아바타`}
+                          />
+                        </div>
+                      </div>
+
+                      <div className={styles.VideoFooter}>
+                        <div className={styles.VideoFooterLeft}>
+                          <span className={styles.MeLabel}>{p.name}</span>
+                          <img
+                            className={styles.MicMini}
+                            src={participantMicOn ? micOffIcon : micOnIcon}
+                            alt={
+                              participantMicOn ? "마이크 켜짐" : "마이크 꺼짐"
+                            }
+                          />
+                        </div>
+
+                        <div className={styles.VideoFooterRight}>
+                          {isMe ? (
+                            <VoiceWave level={voiceLevel} enabled={micOn} />
+                          ) : null}
+                        </div>
+                      </div>
                     </div>
                   );
-                }
+                })}
+              </section>
 
-                const p = slot.p;
-                const isMe = p.isMe === true;
-                // 내 마이크는 로컬 상태, 다른 사람은 전달받은 상태
-                const participantMicOn = isMe ? micOn : (p.micOn ?? false);
+              <div className={styles.BottomActions}>
+                <button
+                  type="button"
+                  className={styles.PrimaryButton}
+                  onClick={toggleMic}
+                >
+                  <img
+                    className={styles.ButtonIcon}
+                    src={micOn ? micOffIcon : micOnIcon}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  {micOn ? "마이크 끄기" : "마이크 켜기"}
+                </button>
 
-                return (
-                  <div
-                    key={p.id}
-                    className={`${styles.VideoCard} ${
-                      isMe && isSpeaking ? styles.VideoCardSpeaking : styles.VideoCardIdle
-                    }`}
-                  >
-                    <div className={styles.VideoInner}>
-                      <div className={styles.AvatarCircle}>
-                        <img
-                          className={styles.AvatarDuck}
-                          src={duckImg}
-                          alt={`${p.name} 아바타`}
-                        />
-                      </div>
-                    </div>
-
-                    <div className={styles.VideoFooter}>
-                      <div className={styles.VideoFooterLeft}>
-                        <span className={styles.MeLabel}>{p.name}</span>
-                        <img
-                          className={styles.MicMini}
-                          src={participantMicOn ? micOffIcon : micOnIcon}
-                          alt={participantMicOn ? "마이크 켜짐" : "마이크 꺼짐"}
-                        />
-                      </div>
-
-                      <div className={styles.VideoFooterRight}>
-                        {isMe ? <VoiceWave level={voiceLevel} enabled={micOn} /> : null}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </section>
-
-            <div className={styles.BottomActions}>
-              <button type="button" className={styles.PrimaryButton} onClick={toggleMic}>
-                <img
-                  className={styles.ButtonIcon}
-                  src={micOn ? micOffIcon : micOnIcon}
-                  alt=""
-                  aria-hidden="true"
-                />
-                {micOn ? "마이크 끄기" : "마이크 켜기"}
-              </button>
-
-              <button type="button" className={styles.SecondaryButton} onClick={handleEnd}>
-                대화 종료
-              </button>
+                <button
+                  type="button"
+                  className={styles.SecondaryButton}
+                  onClick={handleEnd}
+                >
+                  대화 종료
+                </button>
+              </div>
             </div>
+
+            <aside className={styles.RightStage} aria-label="AI 도우미">
+              <div className={styles.AiBubble}>
+                <div className={styles.AiHeader}>
+                  <span className={styles.AiDot} aria-hidden="true" />
+                  <span className={styles.AiTitle}>AI 영어덕</span>
+                  <span className={styles.AiDot} aria-hidden="true" />
+                </div>
+
+                <div className={styles.AiFace} aria-hidden="true">
+                  🙂
+                </div>
+
+                {aiSuggestion ? (
+                  <>
+                    <div className={styles.AiMainText}>대화 추천</div>
+                    <div className={styles.AiSubText}>{aiSuggestion}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.AiMainText}>
+                      영어로 편하게 대화해보세요!
+                    </div>
+                    <div className={styles.AiSubText}>
+                      15초 동안 침묵이 지속되면 제가 도와드릴게요.
+                    </div>
+                  </>
+                )}
+
+                <div className={styles.AiPointer} aria-hidden="true" />
+              </div>
+
+              <img
+                className={styles.BigDuck}
+                src={duckBotCyanImg}
+                alt="AI 오리"
+              />
+            </aside>
           </div>
-
-          <aside className={styles.RightStage} aria-label="AI 도우미">
-            <div className={styles.AiBubble}>
-              <div className={styles.AiHeader}>
-                <span className={styles.AiDot} aria-hidden="true" />
-                <span className={styles.AiTitle}>AI 영어덕</span>
-                <span className={styles.AiDot} aria-hidden="true" />
-              </div>
-
-              <div className={styles.AiFace} aria-hidden="true">
-                🙂
-              </div>
-
-              {aiSuggestion ? (
-                <>
-                  <div className={styles.AiMainText}>대화 추천</div>
-                  <div className={styles.AiSubText}>{aiSuggestion}</div>
-                </>
-              ) : (
-                <>
-                  <div className={styles.AiMainText}>영어로 편하게 대화해보세요!</div>
-                  <div className={styles.AiSubText}>
-                    15초 동안 침묵이 지속되면 제가 도와드릴게요.
-                  </div>
-                </>
-              )}
-
-              <div className={styles.AiPointer} aria-hidden="true" />
-            </div>
-
-            <img className={styles.BigDuck} src={duckBotCyanImg} alt="AI 오리" />
-          </aside>
-        </div>
         </div>
 
-        {/* 1/2번 인트로 오버레이: 클릭으로 다음 */}
         <UnexpectedQuestOverlay
           open={showIntroOverlay}
           onClose={handleOverlayClickNext}
@@ -677,14 +776,12 @@ export default function TogetherTalkPage() {
           escToClose={false}
         />
 
-        {/* 2번: 빈칸 입력 화면(버튼으로 진행) */}
         <UnexpectedQuestFillBlankModal
           open={showQuest2Game}
           duckSrc={duckBombImg}
           onSubmit={handleSubmitQuest2}
         />
 
-        {/* 3번: 첫 화면(이미지1) */}
         <UnexpectedQuestOverlay
           open={showQuest3IntroOverlay}
           onClose={handleOverlayClickNext}
@@ -698,7 +795,6 @@ export default function TogetherTalkPage() {
           escToClose={false}
         />
 
-        {/* 3번: 두 번째 화면(이미지2) - 영어 문장 + 한글 뜻 */}
         <UnexpectedQuestOverlay
           open={showQuest3MeaningOverlay}
           onClose={handleOverlayClickNext}
@@ -712,7 +808,6 @@ export default function TogetherTalkPage() {
           escToClose={false}
         />
 
-        {/* 결과 오버레이: 클릭으로 실패 -> 성공 -> 복귀 */}
         <UnexpectedQuestOverlay
           open={showResultOverlay}
           onClose={handleOverlayClickNext}

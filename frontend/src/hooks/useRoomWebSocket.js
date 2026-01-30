@@ -8,11 +8,14 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
   const suggestionSubRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  // 핸들러를 ref로 보관해서 리렌더링 시에도 최신 핸들러를 사용
   const handlersRef = useRef(handlers);
   useEffect(() => {
     handlersRef.current = handlers;
   }, [handlers]);
+
+  // voice-level 전송 쓰로틀/변화량 제한
+  const lastVoiceSentAtRef = useRef(0);
+  const lastVoiceSentLevelRef = useRef(0);
 
   const sendReady = useCallback(
     (ready) => {
@@ -45,6 +48,19 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
       const client = clientRef.current;
       if (!client?.connected) return;
 
+      const now = performance.now();
+      const lastAt = lastVoiceSentAtRef.current;
+      const lastLevel = lastVoiceSentLevelRef.current;
+
+      // 250ms 이내 재전송 금지
+      if (now - lastAt < 250) return;
+
+      // 변화량이 너무 작으면 전송 금지
+      if (Math.abs(level - lastLevel) < 0.03) return;
+
+      lastVoiceSentAtRef.current = now;
+      lastVoiceSentLevelRef.current = level;
+
       client.publish({
         destination: `/app/rooms/${roomCode}/voice-level`,
         body: JSON.stringify({ level }),
@@ -64,19 +80,27 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
     const client = new Client({
       webSocketFactory: () => new SockJS(socketUrl),
-      connectHeaders: {
-        Authorization: token ? `Bearer ${token}` : "",
-      },
+
+      // 빈 Authorization을 보내지 않도록 처리(권장)
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      debug: (str) => console.log("[STOMP Debug]: ", str),
+
+      // debug는 반드시 함수여야 합니다.
+      debug: (str) => {
+        if (import.meta.env.DEV && window.__STOMP_DEBUG__) {
+          console.log("[STOMP]", str);
+        }
+      },
+      // 완전 OFF를 원하면 위 debug 대신 아래 한 줄로 바꾸세요:
+      // debug: () => {},
     });
 
     client.onConnect = () => {
       setIsConnected(true);
 
-      // 방 이벤트 구독
       subRef.current = client.subscribe(
         `/topic/rooms/${roomCode}`,
         (message) => {
@@ -95,7 +119,6 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
               onError,
             } = handlersRef.current;
 
-            // 어떤 메시지든 isOpen:true가 포함되면 시작 이벤트로 간주 가능
             const openFlag =
               payload?.isOpen === true ||
               data?.isOpen === true ||
@@ -141,10 +164,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
                 break;
 
               default:
-                // 타입이 없거나 모르는 타입이어도 isOpen:true면 시작 처리
-                if (openFlag) {
-                  onRoomStarted?.(payload ?? data, senderKey);
-                }
+                if (openFlag) onRoomStarted?.(payload ?? data, senderKey);
                 break;
             }
           } catch (e) {
@@ -153,7 +173,6 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
         },
       );
 
-      // AI 대화 추천 구독
       suggestionSubRef.current = client.subscribe(
         `/topic/room/${roomCode}/suggestion`,
         (message) => {
