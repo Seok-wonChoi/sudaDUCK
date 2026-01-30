@@ -23,27 +23,26 @@ export async function login(data) {
 
 /**
  * 카카오 OAuth2 로그인
- * 백엔드 OAuth2 인증 엔드포인트로 리다이렉트
- *
- * 플로우:
- * 1. 이 함수 호출 → 백엔드 /oauth2/authorization/kakao로 리다이렉트
- * 2. 백엔드가 카카오 로그인 페이지로 리다이렉트
- * 3. 카카오 로그인 성공
- * 4. 백엔드가 프론트엔드 /oauth2/redirect?token={accessToken}로 리다이렉트
- * 5. OAuth2RedirectHandler가 토큰을 localStorage에 저장하고 메인 페이지로 이동
+ * * 변경점:
+ * 1. 쿠키 설정 로직 삭제 (이제 필요 없음)
+ * 2. 바로 카카오로 안 가고, 백엔드 AuthController(/api/v1/auth/login)를 거쳐감
+ * 3. URL 뒤에 ?env=local 파라미터를 붙여서 환경을 알림
  */
 export const loginWithKakao = () => {
+  // 1. API 주소 다듬기 (끝에 / 제거)
   const base = (API_BASE_URL || "").trim().replace(/\/$/, "");
+  
+  // 2. 현재 브라우저가 로컬인지 확인
   const isLocal = window.location.hostname === "localhost";
 
-  // ★ [핵심] 로컬이 아닐 때(배포 환경일 때)만 쿠키를 심습니다!
-  // 로컬에서는 쿠키 심어봤자 서버로 안 날아가니 안 심는 겁니다.
-  if (!isLocal) {
-    document.cookie = "client_env=production; path=/; max-age=300";
-  }
+  // 3. 보낼 파라미터 결정 (로컬이면 'local', 아니면 'prod')
+  const envParam = isLocal ? "local" : "prod";
 
-  console.log(`[카카오 로그인] ${isLocal ? '로컬' : '배포'} 환경 감지`);
-  window.location.href = `${base}/oauth2/authorization/kakao`;
+  console.log(`[카카오 로그인] 환경: ${envParam}, AuthController로 이동합니다.`);
+
+  // ★ [핵심] 우리가 만든 백엔드 컨트롤러로 이동! (?env=... 붙임)
+  // 예: https://i14e104.../dev-api/api/v1/auth/login?env=local
+  window.location.href = `${base}/api/v1/auth/login?env=${envParam}`;
 };
 
 /**

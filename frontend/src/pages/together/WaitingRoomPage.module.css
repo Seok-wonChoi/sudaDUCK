@@ -19,6 +19,7 @@
 
 /* 상단 흰 영역 */
 .Top {
+  position: relative;
   padding: clamp(20px, 2.2vw, 22px) clamp(16px, 2.5vw, 34px) clamp(30px, 3.5vw, 34px);
 }
 
@@ -34,6 +35,9 @@
 
 /* 뒤로가기 버튼 */
 .BackButton {
+  position: absolute;
+  top: clamp(20px, 3vw, 34px);
+  left: clamp(16px, 2.5vw, 34px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -48,7 +52,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
+  z-index: 10;
 }
 
 .BackButton:hover {
@@ -283,9 +287,10 @@
 }
 
 .ButtonIcon {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 /* 방 설정 변경 버튼 */
@@ -830,8 +835,8 @@
   }
 
   .ButtonIcon {
-    width: 11px;
-    height: 11px;
+    width: 14px;
+    height: 14px;
   }
 }
 

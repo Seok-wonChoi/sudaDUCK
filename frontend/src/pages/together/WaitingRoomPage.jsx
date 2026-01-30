@@ -13,7 +13,7 @@ import shareIcon from "@/assets/icons/kakaotalk_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
 
-import { leaveRoom, getRoomLobby } from "@/api/rooms";
+import { leaveRoom, getRoomLobby, toggleReady, startRoom } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
@@ -29,6 +29,41 @@ function PlayIcon() {
       focusable="false"
     >
       <path d="M8 5v14l11-7z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke="currentColor" strokeWidth="2" fill="none"/>
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 6.65685 16.3431 8 18 8Z" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M6 15C7.65685 15 9 13.6569 9 12C9 10.3431 7.65685 9 6 9C4.34315 9 3 10.3431 3 12C3 13.6569 4.34315 15 6 15Z" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M18 22C19.6569 22 21 20.6569 21 19C21 17.3431 19.6569 16 18 16C16.3431 16 15 17.3431 15 19C15 20.6569 16.3431 22 18 22Z" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M8.59 13.51L15.42 17.49" stroke="currentColor" strokeWidth="2"/>
+      <path d="M15.41 6.51L8.59 10.49" stroke="currentColor" strokeWidth="2"/>
     </svg>
   );
 }
@@ -438,8 +473,8 @@ export default function WaitingRoomPage() {
     console.log("[toggleMyMic] 마이크 ON 전송 완료");
   }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic, myEmail]);
 
-  // 준비 상태 토글: 즉시 로컬 상태 업데이트 + WebSocket으로 전송
-  const toggleMyReady = useCallback(() => {
+  // 준비 상태 토글: 즉시 로컬 상태 업데이트 + API 호출 + WebSocket으로 전송
+  const toggleMyReady = useCallback(async () => {
     const newReadyState = !myReady;
 
     console.log(`[toggleMyReady] 준비 상태 변경: ${myReady} -> ${newReadyState}`);
@@ -451,9 +486,24 @@ export default function WaitingRoomPage() {
       )
     );
 
+    // API 호출: 준비 상태 토글
+    try {
+      await toggleReady(inviteCode);
+    } catch (e) {
+      console.error("준비 상태 변경 API 호출 실패:", e);
+      // API 실패 시 롤백
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.email === myEmail ? { ...p, isReady: !newReadyState } : p
+        )
+      );
+      showToast("준비 상태 변경에 실패했습니다.");
+      return;
+    }
+
     // WebSocket으로 준비 상태 전송
     sendReady(newReadyState);
-  }, [myReady, sendReady, myEmail]);
+  }, [myReady, sendReady, myEmail, inviteCode, showToast]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -566,8 +616,18 @@ export default function WaitingRoomPage() {
     setEditPopupOpen(false);
   }, [editTitle, editTopic, editTurn, showToast]);
 
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
     if (!canStart) return;
+
+    // API 호출: 방 시작하기
+    try {
+      await startRoom(inviteCode);
+      console.log("방 시작 API 호출 성공");
+    } catch (e) {
+      console.error("방 시작 API 호출 실패:", e);
+      showToast("방을 시작하는데 실패했습니다.");
+      return;
+    }
 
     navigate("/together/talk", {
       state: {
@@ -584,7 +644,7 @@ export default function WaitingRoomPage() {
         myEmail,
       },
     });
-  }, [canStart, navigate, roomInfo, isHost, maxCount, participants, myMicOn, myEmail]);
+  }, [canStart, navigate, roomInfo, isHost, maxCount, participants, myMicOn, myEmail, inviteCode, showToast]);
 
   const handlePrimary = useCallback(() => {
     if (isHost) handleStart();
@@ -598,6 +658,10 @@ export default function WaitingRoomPage() {
    * 방 퇴장: POST /api/v1/rooms/leave
    * Request: { roomCode }
    */
+  const handleBack = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
   const handleExit = useCallback(async () => {
     const roomCode = inviteCode;
 
@@ -614,7 +678,7 @@ export default function WaitingRoomPage() {
 
     // WS 연결 붙이면 여기서 disconnect도 같이 호출(나중에 추가)
     // roomSocket.disconnect?.();
-  }, [inviteCode]);
+  }, [inviteCode, navigate]);
 
   return (
     <div className={styles.Page}>
@@ -622,6 +686,14 @@ export default function WaitingRoomPage() {
         <AppHeader userName="user" notifications={[]} />
 
         <div className={styles.Top}>
+          <button
+            className={styles.BackButton}
+            onClick={handleBack}
+            aria-label="뒤로 가기"
+          >
+            &lt;
+          </button>
+
           <div className={styles.TopHeaderRow}>
             <ExitButton
               to="/"
@@ -679,7 +751,7 @@ export default function WaitingRoomPage() {
                           className={styles.InviteCodeButton}
                           onClick={handleKakaoShare}
                         >
-                          <img src={shareIcon} alt="" className={styles.ButtonIcon} />
+                          <img src={shareIcon} alt="공유" className={styles.ButtonIcon} />
                           공유
                         </button>
                         <button
@@ -687,7 +759,7 @@ export default function WaitingRoomPage() {
                           className={styles.InviteCodeButton}
                           onClick={handleCopy}
                         >
-                          <img src={copyIcon} alt="" className={styles.ButtonIcon} />
+                          <CopyIcon />
                           복사
                         </button>
                       </div>

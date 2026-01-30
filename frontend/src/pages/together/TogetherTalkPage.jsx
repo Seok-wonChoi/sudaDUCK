@@ -7,7 +7,7 @@ import ExitGuard from "@/components/common/ExitGuard/ExitGuard";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
 
-import { leaveRoom } from "@/api/rooms";
+import { leaveRoom, endRoom } from "@/api/rooms";
 
 import duckImg from "@/assets/images/duck.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
@@ -227,6 +227,19 @@ export default function TogetherTalkPage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
+
+    // API 호출: 방 상태를 대기방으로 전환
+    const roomCode = roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
+    if (roomCode) {
+      try {
+        await endRoom(roomCode);
+        console.log("방 종료 API 호출 성공 - 대기방으로 전환됨");
+      } catch (e) {
+        console.error("방 종료 API 호출 실패:", e);
+        // API 실패해도 녹음 페이지로 이동
+      }
+    }
+
     // 대화 종료 후 녹음 페이지로 이동
     navigate("/recording", {
       replace: true,
