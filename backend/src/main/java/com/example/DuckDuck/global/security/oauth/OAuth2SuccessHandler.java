@@ -4,7 +4,6 @@ import com.example.DuckDuck.global.security.jwt.CookieUtil;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
@@ -37,33 +36,19 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
         // =================================================================
-        // ★ [수정됨] 세션(Session) 확인 로직
+        // ★ [수정] 복잡한 조건문 삭제 -> 무조건 로컬로 고정
         // =================================================================
         
-        HttpSession session = request.getSession();
-        // AuthController에서 저장해둔 값 꺼내기
-        String clientEnv = (String) session.getAttribute("client_env");
-        
-        // 사용한 세션 값은 지워줌 (청소)
-        session.removeAttribute("client_env");
+        // 배포고 뭐고 다 필요없고 그냥 로컬로 쏘세요.
+        String baseUrl = "http://localhost:5173/oauth2/redirect";
 
-        String baseUrl;
-        
-        // 세션에 "local"이라고 적혀있으면 로컬로 리다이렉트
-        if ("local".equals(clientEnv)) {
-            baseUrl = "http://localhost:5173/oauth2/redirect";
-        } else {
-            // 없거나 그 외의 값이면 무조건 배포 서버로 (안전빵)
-            baseUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect";
-        }
+        // =================================================================
 
-        // 2. URL 파라미터로 토큰 실어서 보냄 (로컬/배포 통일)
+        // 2. URL 파라미터로 토큰 실어서 보냄
         String targetUrl = UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)
                 .build().toUriString();
-
-        // =================================================================
 
         // RT:{email} 저장 (Redis)
         redisTemplate.opsForValue().set(
@@ -72,7 +57,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 Duration.ofDays(14)
         );
         
-        // HttpOnly 쿠키 (RefreshToken) - 보안 백업용
+        // HttpOnly 쿠키 (RefreshToken)
         CookieUtil.addCookie(
                 response,
                 "refreshToken",
@@ -81,7 +66,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 true
         );
 
-        // 최종 리다이렉트 실행
+        // 리다이렉트 실행
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }

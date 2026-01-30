@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,21 +31,14 @@ public class AuthController {
     private final AuthService authService;
 
     // =================================================================
-    // ★ [추가됨] 프론트에서 제일 먼저 들어오는 곳
-    // 요청 예시: /api/v1/auth/login?env=local
+    // ★ [수정] 세션 저장 로직 삭제. 그냥 카카오로 이동시킴.
     // =================================================================
-    @Operation(summary = "로그인 시작", description = "환경 정보(local/prod)를 받아서 세션에 저장 후 카카오로 리다이렉트합니다.")
+    @Operation(summary = "로그인 시작", description = "카카오 로그인 페이지로 리다이렉트합니다.")
     @GetMapping("/login")
-    public void login(@RequestParam("env") String env, 
-                      HttpSession session, 
+    public void login(@RequestParam(value = "env", required = false) String env, 
                       HttpServletResponse response) throws IOException {
         
-        // 1. 세션에 환경 저장
-        session.setAttribute("client_env", env);
-
-        // 2. ★ [핵심 수정] "/dev-api"를 붙여야 Nginx가 백엔드로 넘겨줍니다!
-        // 기존: response.sendRedirect("/oauth2/authorization/kakao");  <-- 이거 때문에 프론트로 감
-        // 변경:
+        // 파라미터(env) 받든 말든 신경 끄고 바로 카카오로 보냄
         response.sendRedirect("/dev-api/oauth2/authorization/kakao"); 
     }
 
