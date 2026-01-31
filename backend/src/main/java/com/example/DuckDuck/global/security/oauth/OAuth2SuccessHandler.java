@@ -11,7 +11,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-
+import org.springframework.beans.factory.annotation.Value;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
@@ -22,6 +22,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
+    
+    @Value("${custom.oauth2.redirect-url}")
+    private String redirectUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -40,7 +43,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         if (isLocalDev) {
             // 로컬 개발 시: localhost로 토큰을 실어서 리다이렉트
-            targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth2/redirect")
+            targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
                     .queryParam("accessToken", accessToken) // 쿠키 대신 URL로 전달하는 것이 확실함
                     .queryParam("refreshToken", refreshToken)
                     .build().toUriString();
