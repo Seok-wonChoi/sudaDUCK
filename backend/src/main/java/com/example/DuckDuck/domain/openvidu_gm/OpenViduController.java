@@ -7,7 +7,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.security.Principal;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.Map;
 
 @RestController
@@ -25,7 +31,31 @@ public class OpenViduController {
 
     @PostConstruct
     public void init() {
+        // 1. SSL 인증서 무시 설정 (개발용)
+        // 브라우저에서는 "고급->이동"으로 뚫리지만 Java는 이게 없으면 에러가 납니다.
+        TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() { return null; }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) { }
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) { }
+                }
+        };
+
+        try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAllCerts, new SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+            // 호스트네임 검증도 무시 (IP주소랑 도메인 달라도 통과)
+            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+        } catch (Exception e) {
+            System.err.println("SSL 설정 실패: " + e.getMessage());
+        }
+
+        // 2. OpenVidu 객체 생성
         this.openVidu = new OpenVidu(OPENVIDU_URL, OPENVIDU_SECRET);
+
+        System.out.println("✅ OpenVidu 연결 준비 완료: " + OPENVIDU_URL);
     }
 
     /**
