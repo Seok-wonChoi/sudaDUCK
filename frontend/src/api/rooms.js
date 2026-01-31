@@ -44,8 +44,10 @@ export async function getRoomLobby(roomCode) {
 }
 
 // 준비 상태 토글-참여자: PATCH /api/v1/rooms/{roomCode}/ready
-export async function toggleReady(roomCode) {
-  const { data } = await api.patch(`/api/v1/rooms/${roomCode}/ready`);
+export async function toggleReady(roomCode, isReady) {
+  const { data } = await api.patch(`/api/v1/rooms/${roomCode}/ready`, {
+    ready: isReady  
+  });
   return data;
 }
 
