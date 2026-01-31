@@ -1,6 +1,9 @@
 package com.example.DuckDuck.domain.room.service;
 
+import com.example.DuckDuck.domain.game.service.MiniGameService;
 import com.example.DuckDuck.domain.room.dto.response.RoomStartResponse;
+import com.example.DuckDuck.domain.room.dto.ws.RoomWsMessage;
+import com.example.DuckDuck.domain.room.dto.ws.WsType;
 import com.example.DuckDuck.domain.room.entity.Room;
 import com.example.DuckDuck.domain.room.repository.RoomParticipantsRepository;
 import com.example.DuckDuck.domain.room.repository.RoomRepository;
@@ -28,6 +31,8 @@ public class RoomStartService {
     private final RoomParticipantsRepository roomParticipantsRepository;
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RoomSocketService roomSocketService;
+    private final MiniGameService miniGameService;
 
     private static final long ROOM_TTL_HOURS = 6;
 
@@ -136,12 +141,21 @@ public class RoomStartService {
         roomRepository.save(room);
 
         //====== redis에 topic과 member id-name 정보 저장 ======
-        String topicKey = "room:"+roomId + ":topic";
-        redisTemplate.opsForValue().set(topicKey, room.getTopic(), ROOM_TTL_HOURS, TimeUnit.HOURS);
 
+        //이전 게임의 잔재(스크립트, 점수, 리뷰 문제 등) redis 데이터 삭제
+        miniGameService.clearReviewData(roomId);
+
+        String topicKey = "room:"+roomId + ":topic";
         String memberNamesKey = "room:" + roomId +":member";
         String participantsKey = "room:" + roomId + ":participants";
 
+        //멤버 목록, 토픽 등도 깔끔하게 지우고 다시 세팅
+        redisTemplate.delete(Arrays.asList(topicKey, memberNamesKey, participantsKey));
+
+        //topic 저장
+        redisTemplate.opsForValue().set(topicKey, room.getTopic(), ROOM_TTL_HOURS, TimeUnit.HOURS);
+
+        //memberInfo 저장
         List<Long> memberIds = members.stream()
                 .map(m -> Long.parseLong(String.valueOf(m)))
                 .toList();
@@ -173,7 +187,7 @@ public class RoomStartService {
         // (선택) OpenVidu 세션 생성/시작 트리거는 여기서 호출
         // openViduService.createSession(roomId) ...
 
-        return RoomStartResponse.builder()
+        RoomStartResponse response = RoomStartResponse.builder()
                 .roomId(roomId)
                 .roomCode(roomCode)
                 .isOpen(true)
@@ -182,5 +196,18 @@ public class RoomStartService {
                 .readyCount(readyCount)
                 .message("대화 시작 성공")
                 .build();
+
+
+        roomSocketService.broadcast(
+                roomCode,
+                RoomWsMessage.of(
+                        WsType.ROOM_STARTED,
+                        roomCode,
+                        String.valueOf(member.getId()),
+                        response
+                )
+        );
+
+        return response;
     }
 }

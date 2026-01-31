@@ -615,3 +615,21 @@
     font-size: 11px;
   }
 }
+
+/* 퀘스트 1 답변 화면 배너 */
+.Quest1Banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 20px 32px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  text-align: center;
+  color: white;
+}
+
+.Quest1BannerQuestion {
+  font-size: clamp(32px, 4.8vw, 48px);
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}

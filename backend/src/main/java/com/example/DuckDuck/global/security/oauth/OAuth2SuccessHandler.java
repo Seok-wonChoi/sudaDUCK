@@ -5,64 +5,75 @@ import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-
+import org.springframework.beans.factory.annotation.Value;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
-
-    // ✅ 운영 환경 하드코딩 주소
-    private final String redirectUrl = "https://i14e104.p.ssafy.io/oauth2/redirect";
+    
+    @Value("${custom.oauth2.redirect-url}")
+    private String redirectUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
-        
-        log.info("========== [PROD] OAuth2SuccessHandler 진입 ==========");
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttribute("kakao_account");
+        String email = (String) kakaoAccount.get("email");
+        Long userId = (Long) oAuth2User.getAttribute("id");
 
-        try {
-            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-            Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttribute("kakao_account");
-            String email = (String) kakaoAccount.get("email");
-            Long userId = (Long) oAuth2User.getAttribute("id");
+        // 1. 토큰 생성
+        String accessToken = jwtTokenProvider.createAccessToken(userId, email);
+        String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
-            log.info("[PROD] 로그인 사용자: {}", email);
+        boolean isLocalDev = true; // 개발 중엔 true로 설정
+        String targetUrl;
 
-            // ✅ 빌드 에러 해결: 인자값(userId, email) 정확히 기입
-            String accessToken = jwtTokenProvider.createAccessToken(userId, email);
-            String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
-
-            // ✅ 리다이렉트 URL 생성
-            String targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
-                    .queryParam("accessToken", accessToken)
+        if (isLocalDev) {
+            // 로컬 개발 시: localhost로 토큰을 실어서 리다이렉트
+            targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
+                    .queryParam("accessToken", accessToken) // 쿠키 대신 URL로 전달하는 것이 확실함
                     .queryParam("refreshToken", refreshToken)
                     .build().toUriString();
-
-            log.info("[PROD] 리다이렉트 실행: {}", targetUrl);
-
-            // Redis 저장 및 쿠키 설정
-            redisTemplate.opsForValue().set("RT:" + email, refreshToken, Duration.ofDays(14));
-            CookieUtil.addCookie(response, "refreshToken", refreshToken, 60 * 60 * 24 * 14, true);
-
-            getRedirectStrategy().sendRedirect(request, response, targetUrl);
-
-        } catch (Exception e) {
-            log.error("[PROD ERROR] 핸들러 실행 중 에러 발생: ", e);
-            response.sendRedirect("https://i14e104.p.ssafy.io/login?error=handler_failed");
+        } else {
+            // 배포 환경 시: 기존 도메인 유지
+            targetUrl = "https://i14e104.p.ssafy.io/dev/oauth2/redirect";
+            CookieUtil.addCookie(response, "accessToken", accessToken, 60, false);
         }
+
+        //RT:{email} 저장 (중복 로그인 기준)
+        redisTemplate.opsForValue().set(
+                "RT:" + email,
+                refreshToken,
+                Duration.ofDays(14)
+        );
+        // HttpOnly 쿠키
+        CookieUtil.addCookie(
+                response,
+                "refreshToken",
+                refreshToken,
+                60 * 60 * 24 * 14,
+                true
+        );
+
+
+        getRedirectStrategy().sendRedirect(
+                request,
+                response,
+                targetUrl
+        );
+
     }
 }

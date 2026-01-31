@@ -56,6 +56,9 @@ dependencies {
 
 	// WebFlux
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // OpenVidu Java Client
+    implementation 'io.openvidu:openvidu-java-client:2.32.0'
 }
 
 tasks.named('test') {

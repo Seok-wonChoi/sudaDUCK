@@ -5,7 +5,7 @@ import styles from "./MakeRoomPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 
-import { createRoom, getTopics } from "@/api/rooms";
+import { createRoom, getTopics, joinRoom } from "@/api/rooms";
 
 const ROOM_INFO_KEY = "together_room_info";
 
@@ -82,12 +82,21 @@ export default function MakeRoomPage() {
 
     setLoading(true);
     try {
-      // POST /api/v1/rooms
+      // 1. 방 생성: POST /api/v1/rooms
       const res = await createRoom({
         title: title.trim(),
         topic: topic.trim(),
         turnCnt: turn,
       });
+
+      // 2. 방 참가: POST /api/v1/rooms/join (방장도 명시적으로 참가해야 함)
+      try {
+        await joinRoom({ roomCode: res.roomCode });
+        console.log("방 생성 후 자동 참가 성공");
+      } catch (joinError) {
+        console.error("방 참가 실패:", joinError);
+        // 참가 실패해도 방 생성은 성공했으므로 계속 진행
+      }
 
       // WaitingRoomPage에서 쓰는 형태로 맞춤
       const roomInfo = {
@@ -103,6 +112,7 @@ export default function MakeRoomPage() {
         turnCount: res.turnCnt,
 
         joinCode: res.roomCode,
+        inviteCode: res.roomCode, // joinCode와 inviteCode 모두 설정
       };
 
       sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));

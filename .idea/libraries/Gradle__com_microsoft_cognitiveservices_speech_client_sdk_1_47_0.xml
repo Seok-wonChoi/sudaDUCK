@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: com.microsoft.cognitiveservices.speech:client-sdk:1.47.0" type="java-imported" external-system-id="GRADLE">
+    <properties groupId="com.microsoft.cognitiveservices.speech" artifactId="client-sdk" version="1.47.0" baseVersion="1.47.0" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.microsoft.cognitiveservices.speech/client-sdk/1.47.0/14fe99e80a3c5e095afe85449922139d8d6b4ae1/client-sdk-1.47.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

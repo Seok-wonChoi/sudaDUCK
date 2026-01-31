@@ -1,9 +1,11 @@
 import axios from "axios";
 
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/prod-api")
-.trim()
-.replace(/\/$/, "");;
-const REFRESH_URL = "/api/v1/auth/refresh";
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+
+export const API_BASE_URL = rawBaseUrl
+  .trim()
+  .replace(/\/$/, "");
+  
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -29,6 +31,16 @@ function setAuthHeader(config, token) {
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
+    const existingAuth = config.headers?.Authorization || config.headers?.authorization;
+
+    if (!token) {
+      console.warn("[API] accessToken이 없습니다. 로그인이 필요합니다.");
+    } else {
+      console.log("[API] 요청:", config.method?.toUpperCase(), config.url, "토큰 길이:", token.length);
+      if (existingAuth) {
+        console.log("[API] 기존 Authorization 헤더 존재:", existingAuth.substring(0, 20) + "...");
+      }
+    }
     return setAuthHeader(config, token);
   },
   (error) => Promise.reject(error)
@@ -43,8 +55,11 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      console.warn("[API] 401 에러 발생:", originalRequest.url);
+
       // refresh 요청 자체가 401이면 바로 로그아웃
       if (originalRequest.url?.includes(REFRESH_URL)) {
+        console.error("[API] 토큰 재발급 실패. 로그인 페이지로 이동합니다.");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         window.location.href = "/login";
@@ -57,11 +72,14 @@ api.interceptors.response.use(
         if (!refreshPromise) {
           const storedRefreshToken = localStorage.getItem("refreshToken");
           if (!storedRefreshToken) {
+            console.error("[API] refreshToken이 없습니다. 로그인 페이지로 이동합니다.");
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
             window.location.href = "/login";
             return Promise.reject(error);
           }
+
+          console.log("[API] 토큰 재발급 시도 중...");
 
           refreshPromise = axios
             .post(
@@ -78,6 +96,7 @@ api.interceptors.response.use(
 
               if (!newAccessToken) throw new Error("No AccessToken in response");
 
+              console.log("[API] 토큰 재발급 성공");
               localStorage.setItem("accessToken", newAccessToken);
               if (newRefreshToken) localStorage.setItem("refreshToken", newRefreshToken);
 
@@ -94,9 +113,11 @@ api.interceptors.response.use(
         const newAccessToken = await refreshPromise;
 
         // 새 토큰으로 원래 요청 재시도 (헤더 확실히 세팅)
+        console.log("[API] 새 토큰으로 재시도:", originalRequest.url);
         setAuthHeader(originalRequest, newAccessToken);
         return api(originalRequest);
       } catch (refreshErr) {
+        console.error("[API] 토큰 재발급 실패. 로그인 페이지로 이동합니다.", refreshErr);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         window.location.href = "/login";

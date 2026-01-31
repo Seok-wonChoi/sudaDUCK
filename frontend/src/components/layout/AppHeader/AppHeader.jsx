@@ -148,7 +148,7 @@ export default function AppHeader({
       return;
     }
     // 일반적인 경우 바로 메인으로 이동
-    navigate("/");
+    navigate("/main");
   }, [logoExitMessage, navigate]);
 
   const handleLogoExitConfirm = useCallback(async () => {
@@ -162,7 +162,7 @@ export default function AppHeader({
       }
 
       setLogoExitModalOpen(false);
-      navigate("/");
+      navigate("/main");
     } catch (e) {
       console.error("로고 클릭 나가기 실패:", e);
       alert(e?.message || "나가기에 실패했습니다.");

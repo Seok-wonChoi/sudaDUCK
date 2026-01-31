@@ -31,10 +31,10 @@ public class ScriptService {
 
     //스크립트 좋아요 + 취소
     @Transactional
-    public Map<String, Object> likeSentence(String email, Long roomId, int turnNo, String scriptId){
+    public Map<String, Object> likeSentence(Long userId, Long roomId, int turnNo, String scriptId){
 
         //좋아요 누른 유저 객체 조회
-        Member member = memberRepository.findByEmail(email)
+        Member member = memberRepository.findById(userId)
                 .orElseThrow(()-> new RuntimeException("존재하지 않는 사용자입니다."));
 
         String sentenceId = member.getId() + "_" + scriptId;
@@ -52,6 +52,13 @@ public class ScriptService {
             throw new RuntimeException("해당 스크립트가 존재하지 않거나 이미 만료되었습니다.");
         }
 
+        String speakerId = (String) data.get("speaker_id");
+        String realSpeakerName = (String) redisTemplate.opsForHash().get("room:" + roomId + ":member", speakerId);
+
+        if(realSpeakerName == null){
+            realSpeakerName = (String) data.getOrDefault("speaker_name","Unknown");
+        }
+
         LocalDateTime createdAt = LocalDateTime.parse((String) data.get("created_at"));
 
         //참여자 리스트 json 전처리
@@ -66,7 +73,7 @@ public class ScriptService {
         Sentence sentence = Sentence.builder()
                 .sentenceId(sentenceId)
                 .user(member)
-                .speakerName((String) data.get("speaker_name"))
+                .speakerName(realSpeakerName)
                 .englishSentence((String) data.get("english"))
                 .koreanSentence((String) data.get("korean"))
                 .score(Integer.parseInt((String)data.get("score")))

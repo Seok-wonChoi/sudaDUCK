@@ -303,7 +303,22 @@ export default function MyPage() {
     const fetchMyScripts = async () => {
       try {
         const data = await getMyScripts();
-        setSentences(data);
+
+        // 백엔드 응답을 컴포넌트 형식으로 변환
+        const formattedSentences = Array.isArray(data) ? data.map(item => ({
+          id: item.sentenceId || item.id,
+          english: item.englishSentence || item.english || '',
+          korean: item.koreanSentence || item.korean || '',
+          topic: item.topic || '',
+          score: item.score,
+          date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
+          bookmarked: true,
+          // 추가 정보
+          speakerName: item.speakerName,
+          participants: item.participants,
+        })) : [];
+
+        setSentences(formattedSentences);
       } catch (error) {
         console.error("스크립트 조회 실패:", error);
         // 실패 시 MOCK 데이터 사용
@@ -331,20 +346,53 @@ export default function MyPage() {
 
   const handleSaveNicknameStyle = async ({ nickname: newNickname, background, effect }) => {
     try {
-      // 닉네임 변경 API 호출
+      // 닉네임 변경 API 호출 (토큰 만료 시 자동 재시도)
       if (newNickname && newNickname !== nickname) {
-        await updateNickname({ nickname: newNickname });
+        let retryCount = 0;
+        let response = null;
+
+        while (retryCount < 2) {
+          try {
+            response = await updateNickname({ nickname: newNickname });
+            break; // 성공하면 루프 탈출
+          } catch (err) {
+            if (err.response?.status === 401 && retryCount === 0) {
+              // 첫 번째 401 에러는 토큰 갱신 후 재시도
+              retryCount++;
+              await new Promise(resolve => setTimeout(resolve, 500)); // 토큰 갱신 대기
+            } else {
+              throw err; // 다른 에러나 두 번째 401은 그대로 throw
+            }
+          }
+        }
+
+        // API 응답에서 실제 변경된 닉네임으로 state 업데이트
+        if (response && response.nickname) {
+          setNickname(response.nickname);
+        }
       }
 
       // 닉네임 스타일(배경, 효과) 변경 API 호출 - bgStyle 필드 사용
-      await updateAvatarCustom({ bgStyle: background, effect });
+      const styleResponse = await updateAvatarCustom({ bgStyle: background, effect });
 
-      // 성공 시 로컬 state 업데이트
-      if (newNickname) setNickname(newNickname);
-      setNicknameStyle({ background, effect });
+      // API 응답에서 실제 변경된 스타일로 state 업데이트
+      if (styleResponse && styleResponse.avatarCustomJson) {
+        try {
+          const avatarCustom = JSON.parse(styleResponse.avatarCustomJson);
+          setNicknameStyle({
+            background: avatarCustom.bgStyle || background,
+            effect: avatarCustom.effect || effect
+          });
+        } catch (e) {
+          console.error("avatarCustomJson 파싱 실패:", e);
+          setNicknameStyle({ background, effect });
+        }
+      } else {
+        setNicknameStyle({ background, effect });
+      }
     } catch (error) {
       console.error("닉네임 커스터마이징 저장 실패:", error);
-      alert("닉네임 저장에 실패했습니다.");
+      alert("닉네임 저장에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -460,7 +508,6 @@ export default function MyPage() {
             profileColor={duckStyle.color}
             profileAccessory={duckStyle.accessory}
             nickname={nickname}
-            email="example@test.com"
             nicknameStyle={nicknameStyle}
             duckBotImage={DUCK_BOT_IMAGES[duckBotId]}
             coins={coins}

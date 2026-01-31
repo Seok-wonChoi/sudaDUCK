@@ -35,8 +35,14 @@ public class RoomStartController {
             @Parameter(hidden = true) Authentication authentication,
             @PathVariable String roomCode
     ) {
-        String email = (authentication != null) ? (String) authentication.getPrincipal() : null;
-        if (email == null) return ResponseEntity.status(401).build();
+        if(authentication == null || !authentication.isAuthenticated()){
+            return ResponseEntity.status(401).build();
+        }
+
+        String email = (String) authentication.getPrincipal();
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.status(401).build();
+        }
 
         return ResponseEntity.ok(roomStartService.startRoom(email, roomCode));
     }

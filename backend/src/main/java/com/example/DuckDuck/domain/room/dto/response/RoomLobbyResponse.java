@@ -13,6 +13,13 @@ public class RoomLobbyResponse {
     private Long roomId;
     private String roomCode;
     private Boolean isOpen;
+
+    // 방 정보
+    private String title;
+    private String topic;
+    private Integer turnCnt;
+    private Long hostId;
+
     private List<ParticipantInfo> participants;
 
     @Getter

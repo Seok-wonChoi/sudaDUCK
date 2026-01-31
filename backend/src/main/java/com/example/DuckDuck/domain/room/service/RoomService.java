@@ -1,11 +1,17 @@
 package com.example.DuckDuck.domain.room.service;
 
+import com.example.DuckDuck.domain.ai.service.AiProfanityFilterService;
+import com.example.DuckDuck.domain.game.service.MiniGameService;
 import com.example.DuckDuck.domain.room.dto.request.RoomCreateRequest;
 import com.example.DuckDuck.domain.room.dto.request.RoomJoinRequest;
 import com.example.DuckDuck.domain.room.dto.request.RoomLeaveRequest;
 import com.example.DuckDuck.domain.room.dto.response.RoomCreateResponse;
 import com.example.DuckDuck.domain.room.dto.response.RoomJoinResponse;
 import com.example.DuckDuck.domain.room.dto.response.RoomLeaveResponse;
+import com.example.DuckDuck.domain.room.dto.ws.ParticipantChangedPayload;
+import com.example.DuckDuck.domain.room.dto.ws.ParticipantLeftPayload;
+import com.example.DuckDuck.domain.room.dto.ws.RoomWsMessage;
+import com.example.DuckDuck.domain.room.dto.ws.WsType;
 import com.example.DuckDuck.domain.room.entity.Room;
 import com.example.DuckDuck.domain.room.entity.RoomParticipants;
 import com.example.DuckDuck.domain.room.repository.RoomParticipantsRepository;
@@ -20,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
+
 @Service
 @RequiredArgsConstructor
 public class RoomService {
@@ -28,8 +35,11 @@ public class RoomService {
     private final RoomParticipantsRepository roomParticipantsRepository;
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RoomSocketService roomSocketService;
+    private final AiProfanityFilterService aiProfanityFilterService;
     private static final long ROOM_TTL_HOURS = 6;
     private static final String ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private final MiniGameService miniGameService;
 
     // ===== Redis Key =====
     private String keyRoomCodeToId(String roomCode) { // roomCode -> roomId
@@ -44,6 +54,9 @@ public class RoomService {
     private String keyRoomReady(Long roomId) {
         return "room:ready:" + roomId;
     }
+    private String keyRoomTopic(Long roomId) { return "room:" + roomId + ":topic"; }
+    private String keyRoomMember(Long roomId) { return "room:" + roomId + ":member";}
+    private String keyRoomParticipants(Long roomId) { return "room:" + roomId + ":participants";}
 
     private void refreshRoomTtl(Long roomId, String roomCode) {
         redisTemplate.expire(keyRoomMembers(roomId), ROOM_TTL_HOURS, TimeUnit.HOURS);
@@ -55,6 +68,9 @@ public class RoomService {
     // ===================== 방 생성 =====================
     @Transactional
     public RoomCreateResponse createRoomByEmail(String email, RoomCreateRequest request) {
+
+        // gpt 주제 필터링
+        aiProfanityFilterService.validateText(request.topic(), "방 주제");
 
         // 1. 방장(Member) 조회 (JWT에서 얻은 userId 기준)
         Member host = memberRepository.findByEmail(email)
@@ -238,26 +254,39 @@ public class RoomService {
         // TTL 동기화(참가 이벤트마다 갱신)
         refreshRoomTtl(roomId, request.getRoomCode());
 
+        roomSocketService.broadcast(
+                request.getRoomCode(),
+                RoomWsMessage.of(
+                        WsType.PARTICIPANT_JOINED,
+                        request.getRoomCode(),
+                        String.valueOf(member.getId()),
+                        new ParticipantChangedPayload(
+                                member.getId(),
+                                member.getNickname(),
+                                member.getProfileImageUrl(),
+                                false
+                        )
+                )
+        );
+
         return RoomJoinResponse.builder()
                 .roomId(roomId)
                 .roomCode(request.getRoomCode())
                 .readyStatus("NOT_READY")
                 .alreadyJoined(alreadyJoined)
                 .build();
+
     }
 
     // ===================== 방 나가기 =====================
     @Transactional
     public RoomLeaveResponse leaveRoom(String email, RoomLeaveRequest request) {
 
-
-        // 1) member 조회
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. email=" + email));
 
         String roomCode = request.getRoomCode();
 
-        // 2) Redis에서 roomCode -> roomId 조회
         Object roomIdObj = redisTemplate.opsForValue().get(keyRoomCodeToId(roomCode));
         if (roomIdObj == null) {
             throw new IllegalArgumentException("유효하지 않거나 만료된 방 코드입니다. roomCode=" + roomCode);
@@ -270,41 +299,54 @@ public class RoomService {
             throw new IllegalArgumentException("방 코드 매핑 데이터가 올바르지 않습니다. roomCode=" + roomCode);
         }
 
-        // 3) Room 존재 확인
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다. roomId=" + roomId));
 
-        // 4) DB 참가자 확인
         RoomParticipants participant = roomParticipantsRepository
                 .findByRoom_RoomIdAndUser_Id(roomId, member.getId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 방에 참가 중인 사용자가 아닙니다. roomId=" + roomId));
 
         boolean isHost = Boolean.TRUE.equals(participant.getIsHost());
 
-        // 5) DB 상태 업데이트 (나감)
+        // DB 상태 업데이트 (나감)
         participant.setIsLeft(true);
-        participant.setLastRejoinedAt(LocalDateTime.now()); // 컬럼 의미가 재입장 시간이라면 leaveAt 컬럼 따로 추천
+        participant.setLastRejoinedAt(LocalDateTime.now());
 
-        // 6) Redis에서 members/ready 제거
+        // Redis에서 members/ready 제거
         redisTemplate.opsForSet().remove(keyRoomMembers(roomId), String.valueOf(member.getId()));
         redisTemplate.opsForHash().delete(keyRoomReady(roomId), String.valueOf(member.getId()));
 
-        // 7) 방장이라면 방 종료
+        // ===================== 방장 퇴장 -> 방 종료 =====================
         if (isHost) {
             LocalDateTime now = LocalDateTime.now();
-            // DB: 방 참가자 전원 퇴장 처리
             roomParticipantsRepository.markAllLeftByRoomId(roomId, now);
 
-            // Redis 정리 (방 종료)
+            room.setIsOpen(false);
+            roomRepository.save(room);
+
+            // 방송
+            roomSocketService.broadcast(
+                    roomCode,
+                    RoomWsMessage.of(
+                            WsType.ROOM_CLOSED,
+                            roomCode,
+                            String.valueOf(member.getId()),
+                            "방장이 퇴장하여 방이 종료되었습니다."
+                    )
+            );
+
+            // Redis 정리
             redisTemplate.delete(keyRoomMembers(roomId));
             redisTemplate.delete(keyRoomReady(roomId));
             redisTemplate.delete(keyRoomIdToCode(roomId));
             redisTemplate.delete(keyRoomCodeToId(roomCode));
 
-            // Room 상태 업데이트 (닫힘 처리 등)
-            room.setIsOpen(false);
+            redisTemplate.delete(keyRoomTopic(roomId));
+            redisTemplate.delete(keyRoomMember(roomId));
+            redisTemplate.delete(keyRoomParticipants(roomId));
 
-            // TODO - OpenVidu 세션 종료 호출
+            //미니게임/스크립트도 삭제
+            miniGameService.clearReviewData(roomId);
 
             return RoomLeaveResponse.builder()
                     .roomId(roomId)
@@ -315,19 +357,36 @@ public class RoomService {
                     .build();
         }
 
-        // 8) 참가자라면 남은 인원 체크 → 0명이면 방 종료
+        // ===================== 참가자 퇴장 -> 남은 인원 체크 =====================
         Long remaining = redisTemplate.opsForSet().size(keyRoomMembers(roomId));
         if (remaining == null) remaining = 0L;
 
         if (remaining == 0L) {
-            // 남은 인원 0이면 방 종료 (Redis 정리)
+            room.setIsOpen(false);
+            roomRepository.save(room);
+
+            // 방송
+            roomSocketService.broadcast(
+                    roomCode,
+                    RoomWsMessage.of(
+                            WsType.ROOM_CLOSED,
+                            roomCode,
+                            String.valueOf(member.getId()),
+                            "모든 참가자가 퇴장하여 방이 종료되었습니다."
+                    )
+            );
+
+            // Redis 정리
             redisTemplate.delete(keyRoomMembers(roomId));
             redisTemplate.delete(keyRoomReady(roomId));
             redisTemplate.delete(keyRoomIdToCode(roomId));
             redisTemplate.delete(keyRoomCodeToId(roomCode));
 
-            // Room 상태 업데이트
-            room.setIsOpen(false);
+            redisTemplate.delete(keyRoomTopic(roomId));
+            redisTemplate.delete(keyRoomMember(roomId));
+            redisTemplate.delete(keyRoomParticipants(roomId));
+
+            miniGameService.clearReviewData(roomId);
 
             return RoomLeaveResponse.builder()
                     .roomId(roomId)
@@ -338,8 +397,19 @@ public class RoomService {
                     .build();
         }
 
-        // 9) 방 유지: TTL 갱신
+        // 방 유지: TTL 갱신
         refreshRoomTtl(roomId, roomCode);
+
+        // 참가자 퇴장 브로드캐스트
+        roomSocketService.broadcast(
+                roomCode,
+                RoomWsMessage.of(
+                        WsType.PARTICIPANT_LEFT,
+                        roomCode,
+                        String.valueOf(member.getId()),
+                        new ParticipantLeftPayload(member.getId())
+                )
+        );
 
         return RoomLeaveResponse.builder()
                 .roomId(roomId)
@@ -348,6 +418,5 @@ public class RoomService {
                 .roomClosed(false)
                 .remainingCount(remaining)
                 .build();
-
     }
 }
