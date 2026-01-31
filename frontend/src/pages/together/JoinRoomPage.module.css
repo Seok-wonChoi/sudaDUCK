@@ -304,3 +304,31 @@
     font-size: 11px;
   }
 }
+
+/* Toast: 하단 중앙 토스트 메시지 */
+.Toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.95);
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  animation: toastSlideUp 0.3s ease-out;
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

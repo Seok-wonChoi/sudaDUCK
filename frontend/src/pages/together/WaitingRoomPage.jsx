@@ -397,15 +397,31 @@ export default function WaitingRoomPage() {
       const mapped = members.map((m) => {
         const key = String(m.userId ?? "");
         const prev = prevMap.get(key);
+        const serverReady = m.readyStatus === "READY";
+
+        // 서버 상태와 이전 상태가 다르면 로그 출력
+        if (prev && prev.isReady !== serverReady) {
+          console.log("[WaitingRoom] fetchLobby - 준비 상태 변경 감지:", {
+            key,
+            nickname: m.nickname,
+            prevReady: prev.isReady,
+            serverReady,
+          });
+        }
 
         return {
           key,
           nickname: m.nickname ?? "참여자",
           isHost: m.isHost ?? false,
-          isReady: m.readyStatus === "READY",
+          isReady: serverReady,
           micOn: m.micOn ?? prev?.micOn ?? true,
           voiceLevel: prev?.voiceLevel ?? 0,
         };
+      });
+
+      console.log("[WaitingRoom] fetchLobby 완료:", {
+        participantCount: mapped.length,
+        readyCount: mapped.filter((p) => p.isReady && !p.isHost).length,
       });
 
       setParticipants(mapped);
@@ -469,26 +485,63 @@ export default function WaitingRoomPage() {
   const hasNavigatedRef = useRef(false);
 
   const handleMemberJoined = useCallback(() => {
-    fetchLobbyRef.current?.();
+    console.log("[WaitingRoom] MEMBER_JOINED - fetchLobby 지연 호출");
+    // 서버가 상태를 업데이트할 시간을 주기 위해 지연
+    setTimeout(() => {
+      fetchLobbyRef.current?.();
+    }, 300);
   }, []);
 
   const handleMemberLeft = useCallback(() => {
-    fetchLobbyRef.current?.();
+    console.log("[WaitingRoom] MEMBER_LEFT - fetchLobby 지연 호출");
+    // 서버가 상태를 업데이트할 시간을 주기 위해 지연
+    setTimeout(() => {
+      fetchLobbyRef.current?.();
+    }, 300);
   }, []);
 
+  const handleRoomClosed = useCallback(() => {
+    console.log("[WaitingRoom] ROOM_CLOSED - 방장이 퇴장하여 방 종료");
+
+    // 세션 정리
+    sessionStorage.removeItem(ROOM_INFO_KEY);
+
+    // 메인 화면으로 이동하면서 토스트 메시지 전달
+    navigate("/together", {
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+    });
+  }, [navigate]);
+
   const handleReadyChanged = useCallback((payload, senderKey) => {
+    console.log("[WaitingRoom] READY_CHANGED 수신:", { payload, senderKey });
+
     if (payload?.readyCount !== undefined) setReadyCount(payload.readyCount);
     if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
 
     if (senderKey) {
-      const newReady =
-        payload?.myReadyStatus === "READY" || payload?.ready === true;
+      // payload에서 준비 상태 확인 (여러 형식 지원)
+      let newReady = false;
+      if (payload?.myReadyStatus === "READY") {
+        newReady = true;
+      } else if (payload?.myReadyStatus === "NOT_READY") {
+        newReady = false;
+      } else if (payload?.ready !== undefined) {
+        newReady = payload.ready === true;
+      }
+
+      console.log("[WaitingRoom] 준비 상태 업데이트:", {
+        senderKey: String(senderKey),
+        newReady,
+        payload,
+      });
 
       setParticipants((prev) =>
         prev.map((p) =>
           p.key === String(senderKey) ? { ...p, isReady: newReady } : p,
         ),
       );
+    } else {
+      console.warn("[WaitingRoom] senderKey가 없어서 준비 상태 업데이트 불가", payload);
     }
   }, []);
 
@@ -628,6 +681,7 @@ export default function WaitingRoomPage() {
     onVoiceLevelChanged: handleVoiceLevelChanged,
     onSettingsChanged: handleSettingsChanged,
     onRoomStarted,
+    onRoomClosed: handleRoomClosed,
     onError: handleWebSocketError,
     onConnected: () => fetchLobbyRef.current?.(),
   });
@@ -661,24 +715,43 @@ export default function WaitingRoomPage() {
   }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
   const toggleMyReady = useCallback(async () => {
-    const next = !myReady;
+    console.log("[WaitingRoom] toggleMyReady 호출:", { myKey, myReady });
 
-    setParticipants((prev) =>
-      prev.map((p) => (p.key === myKey ? { ...p, isReady: next } : p)),
-    );
+    // 함수형 업데이트로 최신 상태 기반 토글
+    let nextReady = null;
+    setParticipants((prev) => {
+      const me = prev.find((p) => p.key === myKey);
+      nextReady = !(me?.isReady ?? false);
+      console.log("[WaitingRoom] Optimistic update:", {
+        myKey,
+        before: me?.isReady,
+        after: nextReady,
+      });
+      return prev.map((p) => (p.key === myKey ? { ...p, isReady: nextReady } : p));
+    });
 
     try {
-      await toggleReady(inviteCode);
-    } catch {
+      console.log("[WaitingRoom] API 호출 시작:", inviteCode);
+      const response = await toggleReady(inviteCode);
+      console.log("[WaitingRoom] API 호출 성공:", response);
+    } catch (error) {
+      console.error("[WaitingRoom] API 호출 실패:", error);
+      // Rollback
       setParticipants((prev) =>
-        prev.map((p) => (p.key === myKey ? { ...p, isReady: !next } : p)),
+        prev.map((p) => (p.key === myKey ? { ...p, isReady: !nextReady } : p)),
       );
       showToast("준비 상태 변경에 실패했습니다.");
       return;
     }
 
-    if (sendReady) sendReady(next);
-  }, [myReady, myKey, inviteCode, sendReady, showToast]);
+    // WebSocket으로 다른 참여자들에게 전송
+    if (sendReady) {
+      console.log("[WaitingRoom] WebSocket 전송:", nextReady);
+      sendReady(nextReady);
+    } else {
+      console.warn("[WaitingRoom] sendReady가 없어서 WebSocket 전송 불가");
+    }
+  }, [myKey, inviteCode, sendReady, showToast]);
 
   const handleCopy = useCallback(async () => {
     try {
