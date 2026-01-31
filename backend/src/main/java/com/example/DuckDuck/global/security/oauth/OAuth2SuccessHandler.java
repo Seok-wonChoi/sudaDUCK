@@ -43,7 +43,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         if (isLocalDev) {
             // 로컬 개발 시: localhost로 토큰을 실어서 리다이렉트
-            targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
+            targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth2/redirect")
                     .queryParam("accessToken", accessToken) // 쿠키 대신 URL로 전달하는 것이 확실함
                     .queryParam("refreshToken", refreshToken)
                     .build().toUriString();
