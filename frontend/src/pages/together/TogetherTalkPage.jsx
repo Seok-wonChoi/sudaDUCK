@@ -235,8 +235,21 @@ export default function TogetherTalkPage() {
     };
   }, []);
 
+  const handleSilenceDetected = useCallback((payload, senderKey) => {
+    console.log("🔇 [정적 감지] 15초 동안 대화가 없었습니다!", {
+      payload,
+      senderKey,
+      roomId,
+      currentTurn,
+    });
+
+    // 화면에 알림 표시 (선택적)
+    // alert("15초 동안 대화가 없었습니다. 대화를 이어가세요!");
+  }, [roomId, currentTurn]);
+
   useRoomWebSocket(resolvedRoomCode, {
     onConversationSuggestion: handleConversationSuggestion,
+    onSilenceDetected: handleSilenceDetected,
     onConnected: () => console.log("WebSocket 연결됨 (TogetherTalkPage)"),
     onDisconnected: () =>
       console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
@@ -643,7 +656,14 @@ export default function TogetherTalkPage() {
             <div className={styles.LeftStage}>
               {showQuest1Answering && (
                 <div className={styles.Quest1Banner}>
-                  <div className={styles.Quest1BannerQuestion}>
+                  <div
+                    className={styles.Quest1BannerQuestion}
+                    onClick={() => {
+                      console.log("[테스트] 영어 문장 클릭 - 돌발 퀘스트 종료");
+                      endQuestAndResume();
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
                     {quest1English}
                   </div>
                 </div>
@@ -693,7 +713,7 @@ export default function TogetherTalkPage() {
                           <span className={styles.MeLabel}>{p.name}</span>
                           <img
                             className={styles.MicMini}
-                            src={participantMicOn ? micOnIcon : micOffIcon}
+                            src={participantMicOn ? micOffIcon : micOnIcon}
                             alt={
                               participantMicOn ? "마이크 켜짐" : "마이크 꺼짐"
                             }
@@ -719,7 +739,7 @@ export default function TogetherTalkPage() {
                 >
                   <img
                     className={styles.ButtonIcon}
-                    src={micOn ? micOnIcon : micOffIcon}
+                    src={micOn ? micOffIcon : micOnIcon}
                     alt=""
                     aria-hidden="true"
                   />
@@ -827,10 +847,12 @@ export default function TogetherTalkPage() {
           open={showQuest2Intro}
           onClose={handleOverlayClickNext}
           duckSrc={duckBombImg}
-          bubbleText={quest2IntroTitle}
-          subText={quest2IntroSub}
+          bubbleTitle={quest2IntroTitle}
+          bubbleText={quest2IntroSub}
+          subText={null}
           subTone="danger"
           countdownNumber={undefined}
+          speechBubbleType={2}
           clickAnywhere
           showCloseButton={false}
           escToClose={false}
