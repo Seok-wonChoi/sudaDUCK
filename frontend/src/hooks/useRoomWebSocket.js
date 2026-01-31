@@ -108,6 +108,11 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
     });
 
     client.onConnect = () => {
+      console.log("[WebSocket] ✅ 연결 성공:", {
+        roomCode,
+        topic: `/topic/rooms/${roomCode}`,
+        socketUrl
+      });
       setIsConnected(true);
 
       subRef.current = client.subscribe(
@@ -137,10 +142,11 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
             switch (type) {
               case "READY_CHANGED":
-                console.log("[WebSocket] READY_CHANGED 수신:", {
+                console.log("[WebSocket] 🔄 READY_CHANGED 수신:", {
                   payload,
                   senderKey,
                   type,
+                  fullData: data
                 });
                 onReadyChanged?.(payload, senderKey);
                 break;
@@ -151,11 +157,21 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
               case "MEMBER_JOINED":
               case "PARTICIPANT_JOINED":
+                console.log("[WebSocket] 🟢 MEMBER_JOINED 수신:", {
+                  payload,
+                  senderKey,
+                  type,
+                });
                 onMemberJoined?.(payload, senderKey);
                 break;
 
               case "MEMBER_LEFT":
               case "PARTICIPANT_LEFT":
+                console.log("[WebSocket] 🔴 MEMBER_LEFT 수신:", {
+                  payload,
+                  senderKey,
+                  type,
+                });
                 onMemberLeft?.(payload, senderKey);
                 break;
 
@@ -228,17 +244,20 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
       handlersRef.current.onConnected?.();
     };
 
-    client.onStompError = () => {
+    client.onStompError = (frame) => {
+      console.error("[WebSocket] ❌ STOMP 에러:", frame);
       setIsConnected(false);
       handlersRef.current.onError?.("STOMP 인증 에러");
     };
 
-    client.onWebSocketError = () => {
+    client.onWebSocketError = (event) => {
+      console.error("[WebSocket] ❌ WebSocket 에러:", event);
       setIsConnected(false);
       handlersRef.current.onError?.("서버와 연결할 수 없습니다.");
     };
 
     client.onDisconnect = () => {
+      console.log("[WebSocket] 🔌 연결 해제됨:", { roomCode });
       setIsConnected(false);
       handlersRef.current.onDisconnected?.();
     };

@@ -484,20 +484,34 @@ export default function WaitingRoomPage() {
 
   const hasNavigatedRef = useRef(false);
 
-  const handleMemberJoined = useCallback(() => {
-    console.log("[WaitingRoom] MEMBER_JOINED - fetchLobby 지연 호출");
-    // 서버가 상태를 업데이트할 시간을 주기 위해 지연
+  const handleMemberJoined = useCallback((payload, senderKey) => {
+    console.log("[WaitingRoom] 🟢 MEMBER_JOINED 수신:", {
+      payload,
+      senderKey,
+      currentParticipants: participantsRef.current.length
+    });
+
+    // 즉시 fetchLobby 호출하고, 100ms 후에 한번 더 호출 (서버 상태 동기화)
+    fetchLobbyRef.current?.();
     setTimeout(() => {
+      console.log("[WaitingRoom] fetchLobby 재호출 (MEMBER_JOINED 100ms 후)");
       fetchLobbyRef.current?.();
-    }, 300);
+    }, 100);
   }, []);
 
-  const handleMemberLeft = useCallback(() => {
-    console.log("[WaitingRoom] MEMBER_LEFT - fetchLobby 지연 호출");
-    // 서버가 상태를 업데이트할 시간을 주기 위해 지연
+  const handleMemberLeft = useCallback((payload, senderKey) => {
+    console.log("[WaitingRoom] 🔴 MEMBER_LEFT 수신:", {
+      payload,
+      senderKey,
+      currentParticipants: participantsRef.current.length
+    });
+
+    // 즉시 fetchLobby 호출하고, 100ms 후에 한번 더 호출 (서버 상태 동기화)
+    fetchLobbyRef.current?.();
     setTimeout(() => {
+      console.log("[WaitingRoom] fetchLobby 재호출 (MEMBER_LEFT 100ms 후)");
       fetchLobbyRef.current?.();
-    }, 300);
+    }, 100);
   }, []);
 
   const handleRoomClosed = useCallback(() => {
@@ -513,7 +527,15 @@ export default function WaitingRoomPage() {
   }, [navigate]);
 
   const handleReadyChanged = useCallback((payload, senderKey) => {
-    console.log("[WaitingRoom] READY_CHANGED 수신:", { payload, senderKey });
+    console.log("[WaitingRoom] 🔄 READY_CHANGED 수신:", {
+      payload,
+      senderKey,
+      currentParticipants: participantsRef.current.map(p => ({
+        key: p.key,
+        nickname: p.nickname,
+        isReady: p.isReady
+      }))
+    });
 
     if (payload?.readyCount !== undefined) setReadyCount(payload.readyCount);
     if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
@@ -521,27 +543,43 @@ export default function WaitingRoomPage() {
     if (senderKey) {
       // payload에서 준비 상태 확인 (여러 형식 지원)
       let newReady = false;
-      if (payload?.myReadyStatus === "READY") {
+      if (payload?.myReadyStatus === "READY" || payload?.readyStatus === "READY") {
         newReady = true;
-      } else if (payload?.myReadyStatus === "NOT_READY") {
+      } else if (payload?.myReadyStatus === "NOT_READY" || payload?.readyStatus === "NOT_READY") {
         newReady = false;
       } else if (payload?.ready !== undefined) {
         newReady = payload.ready === true;
+      } else if (payload?.isReady !== undefined) {
+        newReady = payload.isReady === true;
       }
 
-      console.log("[WaitingRoom] 준비 상태 업데이트:", {
+      console.log("[WaitingRoom] ✅ 준비 상태 업데이트 적용:", {
         senderKey: String(senderKey),
         newReady,
         payload,
       });
 
-      setParticipants((prev) =>
-        prev.map((p) =>
+      setParticipants((prev) => {
+        const updated = prev.map((p) =>
           p.key === String(senderKey) ? { ...p, isReady: newReady } : p,
-        ),
-      );
+        );
+        console.log("[WaitingRoom] 업데이트 후 participants:", updated.map(p => ({
+          key: p.key,
+          nickname: p.nickname,
+          isReady: p.isReady
+        })));
+        return updated;
+      });
+
+      // 100ms 후 fetchLobby로 서버 상태와 동기화
+      setTimeout(() => {
+        console.log("[WaitingRoom] fetchLobby 호출 (READY_CHANGED 동기화)");
+        fetchLobbyRef.current?.();
+      }, 100);
     } else {
-      console.warn("[WaitingRoom] senderKey가 없어서 준비 상태 업데이트 불가", payload);
+      console.warn("[WaitingRoom] ⚠️ senderKey가 없어서 준비 상태 업데이트 불가", payload);
+      // senderKey가 없어도 fetchLobby로 동기화 시도
+      fetchLobbyRef.current?.();
     }
   }, []);
 
@@ -673,7 +711,7 @@ export default function WaitingRoomPage() {
     ],
   );
 
-  const { sendReady, sendMic, sendVoiceLevel } = useRoomWebSocket(inviteCode, {
+  const { sendReady, sendMic, sendVoiceLevel, isConnected } = useRoomWebSocket(inviteCode, {
     onReadyChanged: handleReadyChanged,
     onMicChanged: handleMicChanged,
     onMemberJoined: handleMemberJoined,
@@ -683,8 +721,19 @@ export default function WaitingRoomPage() {
     onRoomStarted,
     onRoomClosed: handleRoomClosed,
     onError: handleWebSocketError,
-    onConnected: () => fetchLobbyRef.current?.(),
+    onConnected: () => {
+      console.log("[WaitingRoom] ✅ WebSocket 연결 성공! roomCode:", inviteCode);
+      fetchLobbyRef.current?.();
+    },
+    onDisconnected: () => {
+      console.log("[WaitingRoom] ❌ WebSocket 연결 해제됨");
+    },
   });
+
+  // WebSocket 연결 상태 로그
+  useEffect(() => {
+    console.log("[WaitingRoom] WebSocket 연결 상태:", isConnected ? "✅ 연결됨" : "❌ 끊김");
+  }, [isConnected]);
 
   const lastLocalSentRef = useRef({ at: 0, level: 0 });
   useEffect(() => {
@@ -715,27 +764,39 @@ export default function WaitingRoomPage() {
   }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
   const toggleMyReady = useCallback(async () => {
-    console.log("[WaitingRoom] toggleMyReady 호출:", { myKey, myReady });
+    console.log("[WaitingRoom] 🔘 toggleMyReady 호출:", {
+      myKey,
+      myReady,
+      isConnected,
+      inviteCode
+    });
+
+    if (!isConnected) {
+      console.warn("[WaitingRoom] ⚠️ WebSocket 미연결 상태 - 준비 불가");
+      showToast("서버와 연결되지 않았습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
 
     // 함수형 업데이트로 최신 상태 기반 토글
     let nextReady = null;
     setParticipants((prev) => {
       const me = prev.find((p) => p.key === myKey);
       nextReady = !(me?.isReady ?? false);
-      console.log("[WaitingRoom] Optimistic update:", {
+      console.log("[WaitingRoom] ✨ Optimistic update:", {
         myKey,
         before: me?.isReady,
         after: nextReady,
+        me: me ? { key: me.key, nickname: me.nickname } : null
       });
       return prev.map((p) => (p.key === myKey ? { ...p, isReady: nextReady } : p));
     });
 
     try {
-      console.log("[WaitingRoom] API 호출 시작:", inviteCode);
+      console.log("[WaitingRoom] 📡 API 호출 시작:", { inviteCode, nextReady });
       const response = await toggleReady(inviteCode);
-      console.log("[WaitingRoom] API 호출 성공:", response);
+      console.log("[WaitingRoom] ✅ API 호출 성공:", response);
     } catch (error) {
-      console.error("[WaitingRoom] API 호출 실패:", error);
+      console.error("[WaitingRoom] ❌ API 호출 실패:", error);
       // Rollback
       setParticipants((prev) =>
         prev.map((p) => (p.key === myKey ? { ...p, isReady: !nextReady } : p)),
@@ -746,12 +807,18 @@ export default function WaitingRoomPage() {
 
     // WebSocket으로 다른 참여자들에게 전송
     if (sendReady) {
-      console.log("[WaitingRoom] WebSocket 전송:", nextReady);
+      console.log("[WaitingRoom] 📤 WebSocket 전송:", { nextReady, destination: `/app/rooms/${inviteCode}/ready` });
       sendReady(nextReady);
     } else {
-      console.warn("[WaitingRoom] sendReady가 없어서 WebSocket 전송 불가");
+      console.warn("[WaitingRoom] ⚠️ sendReady가 없어서 WebSocket 전송 불가");
     }
-  }, [myKey, inviteCode, sendReady, showToast]);
+
+    // 100ms 후 서버 상태와 동기화
+    setTimeout(() => {
+      console.log("[WaitingRoom] fetchLobby 호출 (toggleMyReady 동기화)");
+      fetchLobbyRef.current?.();
+    }, 100);
+  }, [myKey, myReady, inviteCode, sendReady, showToast, isConnected]);
 
   const handleCopy = useCallback(async () => {
     try {
