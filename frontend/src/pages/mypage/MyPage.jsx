@@ -179,6 +179,10 @@ export default function MyPage() {
   });
   const [duckBotId, setDuckBotId] = useState("cyan");
 
+  // 통계 데이터
+  const [totalPlaytime, setTotalPlaytime] = useState(0); // 총 플레이 타임 (초)
+  const [consecutiveDays, setConsecutiveDays] = useState(0); // 연속 학습 일수
+
   // 코인 시스템
   const [coins, setCoins] = useState(200); // 초기 코인 (테스트용 200코인)
   const [unlockedProfiles, setUnlockedProfiles] = useState(["profile1"]); // 기본 프로필 (profile1)
@@ -255,6 +259,8 @@ export default function MyPage() {
 
         if (profileData.nickname) setNickname(profileData.nickname);
         if (profileData.coins !== undefined) setCoins(profileData.coins);
+        if (profileData.totalTime !== undefined) setTotalPlaytime(profileData.totalTime);
+        if (profileData.attendanceDays !== undefined) setConsecutiveDays(profileData.attendanceDays);
 
         // JSON 문자열 파싱
         if (profileData.duckCustomJson) {
@@ -328,9 +334,19 @@ export default function MyPage() {
     fetchMyScripts();
   }, []);
 
+  // 총 플레이 타임을 "시간:분" 형식으로 변환
+  const formatPlaytime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}시간 ${minutes}분`;
+    }
+    return `${minutes}분`;
+  };
+
   const stats = [
-    { value: 0, label: "총 플레이 타임", unit: "" },
-    { value: 0, label: "연속 학습", unit: "일" },
+    { value: formatPlaytime(totalPlaytime), label: "총 플레이 타임", unit: "" },
+    { value: consecutiveDays, label: "연속 학습", unit: "일" },
     { value: sentences.length, label: "저장된 문장", unit: "개" },
   ];
 

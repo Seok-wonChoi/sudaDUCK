@@ -37,17 +37,55 @@ export default function SentenceCard({
 
   // 영어 문장을 빈칸 처리하는 함수
   const getDisplayEnglish = () => {
-    // AI가 읽어줄 때나 idle 상태(턴 종료 리포트)에서는 전체 문장 표시
-    const showFullSentence =
-      cardState === 'ai_playing' ||
-      cardState === 'idle' ||
-      !isActive;
-
-    if (showFullSentence || blankWords.length === 0) {
+    // 빈칸 단어가 없으면 전체 문장 표시
+    if (blankWords.length === 0) {
       return <>{english}</>;
     }
 
-    // 녹음 대기 중, 녹음 중, 녹음 완료 시에는 빈칸 처리
+    // AI가 읽어줄 때는 전체 문장 표시
+    if (cardState === 'ai_playing') {
+      return <>{english}</>;
+    }
+
+    // 녹음 시작 전(idle이면서 isActive인 경우)에는 전체 문장 표시
+    if (cardState === 'idle' && isActive) {
+      return <>{english}</>;
+    }
+
+    // 턴 종료 리포트(!isActive)에서는 빈칸을 [ ] 안에 표시
+    if (!isActive) {
+      let parts = [english];
+      blankWords.forEach((word) => {
+        const newParts = [];
+        parts.forEach((part) => {
+          if (typeof part === 'string') {
+            // 대소문자 구분 없이 단어 찾기
+            const regex = new RegExp(`\\b(${word})\\b`, 'gi');
+            const splits = part.split(regex);
+
+            splits.forEach((split, idx) => {
+              if (split.toLowerCase() === word.toLowerCase()) {
+                // [ ] 안에 단어 표시
+                newParts.push(
+                  <span key={`blank-${word}-${idx}`} className={styles.blankBracket}>
+                    [{split}]
+                  </span>
+                );
+              } else if (split) {
+                newParts.push(split);
+              }
+            });
+          } else {
+            newParts.push(part);
+          }
+        });
+        parts = newParts;
+      });
+
+      return <>{parts}</>;
+    }
+
+    // 녹음 대기 중, 녹음 중, 녹음 완료 시에는 빈칸 처리 (공백으로)
     let parts = [english];
     blankWords.forEach((word) => {
       const newParts = [];

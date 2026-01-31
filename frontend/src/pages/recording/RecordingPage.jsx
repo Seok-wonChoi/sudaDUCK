@@ -6,7 +6,6 @@ import {
   toggleScriptLike,
   getTurnScripts,
 } from "@/api/shadowing";
-import { endRoom } from "@/api/rooms";
 
 import BottomIdle from "@/components/features/recording/bottom/BottomIdle";
 import BottomAITimer from "@/components/features/recording/bottom/BottomAITimer";
@@ -18,7 +17,6 @@ import BottomAllDone from "@/components/features/recording/bottom/BottomAllDone"
 
 // 설정 상수
 const AI_PLAYING_MS = 2500;
-const MAX_RECORDING_MS = 6000;
 
 const STEP = {
   IDLE: "idle",
@@ -76,7 +74,7 @@ export default function RecordingPage() {
 
   const TURNS = roomInfo.turnCount || 3;
 
-  const [step, setStep] = useState(STEP.IDLE);
+  const [step, setStep] = useState(STEP.AI_TIMER);
   const [currentTurn, setCurrentTurn] = useState(1);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [countdown, setCountdown] = useState(3);
@@ -84,12 +82,10 @@ export default function RecordingPage() {
   const [sentenceScores, setSentenceScores] = useState({});
   const [bookmarkedSentences, setBookmarkedSentences] = useState([]);
   const [conversations, setConversations] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedTurnForReport, setSelectedTurnForReport] = useState(null);
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
-  const endRoomCalledRef = useRef(false);
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
   const audioRef = useRef(null);
@@ -258,7 +254,6 @@ export default function RecordingPage() {
   useEffect(() => {
     const fetchTurnScripts = async () => {
       if (!roomId || conversations[currentTurn]) return;
-      setIsLoading(true);
       try {
         const response = await getTurnScripts(roomId, currentTurn);
         const scripts = Array.isArray(response) ? response : [response];
@@ -281,8 +276,6 @@ export default function RecordingPage() {
         setConversations((prev) => ({ ...prev, [currentTurn]: formatted }));
       } catch (e) {
         console.error("스크립트 로드 실패:", e);
-      } finally {
-        setIsLoading(false);
       }
     };
     fetchTurnScripts();
@@ -319,7 +312,6 @@ export default function RecordingPage() {
     } else if (step === STEP.RECORDING) {
       setRecordingTime(0);
       startRecording();
-      timerRef.current = setTimeout(() => stopRecording(), MAX_RECORDING_MS);
       intervalRef.current = setInterval(
         () => setRecordingTime((p) => p + 1),
         1000,
@@ -364,14 +356,14 @@ export default function RecordingPage() {
       case STEP.AI_TIMER:
         return <BottomAITimer seconds={countdown} />;
       case STEP.AI_PLAYING:
-        return <BottomAIPlaying onSkip={() => setStep(STEP.RECORD_TIMER)} />;
+        return <BottomAIPlaying />;
       case STEP.RECORD_TIMER:
         return <BottomRecordTimer seconds={countdown} />;
       case STEP.RECORDING:
         return <BottomRecording onStop={stopRecording} />;
       case STEP.RECORD_DONE:
         return (
-          <BottomRecordDone onNext={goNextSentence} isLast={isLastSentence} />
+          <BottomRecordDone isLast={isLastSentence} />
         );
       case STEP.TURN_REPORT:
         return (
