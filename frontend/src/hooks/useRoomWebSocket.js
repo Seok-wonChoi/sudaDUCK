@@ -83,9 +83,21 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
     const token = localStorage.getItem("accessToken");
     const apiBase = import.meta.env.VITE_API_BASE_URL || "";
-    const socketUrl = apiBase.startsWith("http")
-      ? `${apiBase}/ws`
-      : `${window.location.origin}${apiBase}/ws`;
+
+    // WebSocket 연결 URL 생성
+    // 로컬 개발 환경에서는 Vite 프록시가 SockJS를 제대로 처리하지 못하므로 직접 서버로 연결
+    let socketUrl;
+    if (import.meta.env.DEV && apiBase === "/dev-api") {
+      // 로컬 개발: 직접 HTTPS 서버로 연결
+      socketUrl = "https://i14e104.p.ssafy.io/dev-api/ws";
+      console.log("[WebSocket] 로컬 개발 모드: 직접 서버 연결");
+    } else if (apiBase.startsWith("http")) {
+      // 프로덕션: 전체 URL 사용
+      socketUrl = `${apiBase}/ws`;
+    } else {
+      // 기타: 상대 경로 사용
+      socketUrl = `${window.location.origin}${apiBase}/ws`;
+    }
 
     const client = new Client({
       webSocketFactory: () => new SockJS(socketUrl),
