@@ -39,7 +39,7 @@ public class AuthController {
                       HttpServletResponse response) throws IOException {
         
         // 파라미터(env) 받든 말든 신경 끄고 바로 카카오로 보냄
-        response.sendRedirect("/dev-api/oauth2/authorization/kakao"); 
+        response.sendRedirect("/prod-api/oauth2/authorization/kakao"); 
     }
 
     @Operation(summary = "내 정보 조회", description = "쿠키의 토큰을 확인하여 내 정보를 반환합니다.")
