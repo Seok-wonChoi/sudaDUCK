@@ -17,7 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.beans.factory.annotation.Value;
 import java.io.IOException;
 import java.util.Map;
 
@@ -30,6 +30,12 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthService authService;
 
+    @Value("${custom.api-prefix:/api}") 
+    private String apiPrefix;
+
+    @Value("${custom.oauth2.redirect-url}")
+    private String redirectUrl;
+
     // =================================================================
     // ★ [수정] 세션 저장 로직 삭제. 그냥 카카오로 이동시킴.
     // =================================================================
@@ -38,8 +44,10 @@ public class AuthController {
     public void login(@RequestParam(value = "env", required = false) String env, 
                       HttpServletResponse response) throws IOException {
         
-        // 파라미터(env) 받든 말든 신경 끄고 바로 카카오로 보냄
-        response.sendRedirect("/prod-api/oauth2/authorization/kakao"); 
+        // 1. 하드코딩 대신 apiPrefix 변수 사용
+        // "/prod-api/oauth2/authorization/kakao"가 동적으로 만들어짐
+        String kakaoAuthUrl = apiPrefix + "/oauth2/authorization/kakao";
+        response.sendRedirect(kakaoAuthUrl);
     }
 
     @Operation(summary = "내 정보 조회", description = "쿠키의 토큰을 확인하여 내 정보를 반환합니다.")

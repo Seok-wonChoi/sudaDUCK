@@ -12,7 +12,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-
+import org.springframework.beans.factory.annotation.Value;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
@@ -25,8 +25,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
 
-    // ✅ 운영 환경 하드코딩 주소
-    private final String redirectUrl = "https://i14e104.p.ssafy.io/oauth2/redirect";
+    @Value("${custom.oauth2.redirect-url}")
+    private String redirectUrl;
+
+    
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
