@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { OpenVidu } from 'openvidu-browser';
-import { createSession, createToken } from '@/api/openvidu'; // 아까 만든 API 파일 경로 확인!
+import { createSession, createToken } from '@/api/openVidu'; // 아까 만든 API 파일 경로 확인!
 
 const VoiceRoom = () => {
   // 상태 관리
