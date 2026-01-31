@@ -440,19 +440,13 @@ export default function TogetherTalkPage() {
   const handleDone = useCallback(async () => {
     await doLeaveRoom();
 
-    navigate("/recording", {
+    navigate("/main", {
       replace: true,
-      state: {
-        mode: "together",
-        roomInfo,
-        participants,
-      },
     });
-  }, [doLeaveRoom, navigate, roomInfo, participants]);
+  }, [doLeaveRoom, navigate]);
 
   const handleBack = () => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate("/together");
+    navigate("/main");
   };
 
   /* =========================
@@ -460,9 +454,10 @@ export default function TogetherTalkPage() {
   ========================= */
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
-  const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | 3 | null
+  const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | null (3번 제거)
   const [questStep, setQuestStep] = useState("idle");
   const [isCorrect, setIsCorrect] = useState(false);
+  const [countdown, setCountdown] = useState(3);
 
   const questRunning = questStep !== "idle";
 
@@ -470,6 +465,7 @@ export default function TogetherTalkPage() {
     setActiveQuest(null);
     setQuestStep("idle");
     setIsRoomTimerRunning(true);
+    setCountdown(3);
   }, []);
 
   const startQuest = useCallback(
@@ -479,40 +475,39 @@ export default function TogetherTalkPage() {
       setActiveQuest(id);
       setIsRoomTimerRunning(false);
 
-      if (id === 1 || id === 2) {
-        setQuestStep("intro");
+      if (id === 1) {
+        setQuestStep("q1intro");
         return;
       }
 
-      if (id === 3) {
-        setQuestStep("q3intro");
+      if (id === 2) {
+        setQuestStep("intro");
       }
     },
     [questRunning],
   );
 
   const handleOverlayClickNext = useCallback(() => {
-    if (questStep === "intro" && activeQuest === 1) {
-      const correct = Math.random() > 0.5;
-      setIsCorrect(correct);
-      setQuestStep(correct ? "resultSuccess" : "resultFail");
+    // 퀘스트 1 흐름: intro → ready → countdown3 → countdown2 → countdown1 → showQuestion → answering → result
+    if (questStep === "q1intro" && activeQuest === 1) {
+      setQuestStep("q1ready");
+      setCountdown(3);
       return;
     }
 
+    if (questStep === "q1ready" && activeQuest === 1) {
+      setQuestStep("q1showQuestion");
+      return;
+    }
+
+    if (questStep === "q1showQuestion" && activeQuest === 1) {
+      setQuestStep("q1answering");
+      return;
+    }
+
+    // 퀘스트 2
     if (questStep === "intro" && activeQuest === 2) {
       setQuestStep("q2game");
-      return;
-    }
-
-    if (questStep === "q3intro") {
-      setQuestStep("q3meaning");
-      return;
-    }
-
-    if (questStep === "q3meaning") {
-      const correct = Math.random() > 0.5;
-      setIsCorrect(correct);
-      setQuestStep(correct ? "resultSuccess" : "resultFail");
       return;
     }
 
@@ -521,42 +516,79 @@ export default function TogetherTalkPage() {
     }
   }, [questStep, activeQuest, endQuestAndResume]);
 
+  // 퀘스트 1: 카운트다운 자동 진행
+  useEffect(() => {
+    if (questStep !== "q1ready" || activeQuest !== 1) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setQuestStep("q1showQuestion");
+          return 3;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [questStep, activeQuest]);
+
+  // 퀘스트 1: 영어 문장 표시 후 3초 뒤 자동으로 답변 화면으로 전환
+  useEffect(() => {
+    if (questStep !== "q1showQuestion" || activeQuest !== 1) return;
+
+    const timer = setTimeout(() => {
+      setQuestStep("q1answering");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [questStep, activeQuest]);
+
   const handleSubmitQuest2 = useCallback(() => {
     const correct = Math.random() > 0.5;
     setIsCorrect(correct);
     setQuestStep(correct ? "resultSuccess" : "resultFail");
   }, []);
 
-  const quest1English = "Dd duck says: This is a random English sentence.";
+  const handleQuest1AnswerSubmit = useCallback(() => {
+    // TODO: AI 기능 연결 후 실제 답변 검증
+    const correct = Math.random() > 0.5;
+    setIsCorrect(correct);
+    setQuestStep(correct ? "resultSuccess" : "resultFail");
+  }, []);
 
-  const quest2IntroTitle = "돌발 퀘스트!!\n빈칸을 채워요.";
-  const quest2IntroSub = "가장 먼저 맞힌 사람이 점수를 얻어요.";
+  // 퀘스트 1 텍스트
+  const quest1IntroTitle = "돌발 퀘스트!!";
+  const quest1IntroBody = "영어로만 답해야 해!!\n모두 협동해서 점수를 얻어봐";
+  const quest1ReadyText = "다들 준비는 됐나?";
+  const quest1English = "What is your favorite food?";
 
-  const quest3IntroTitle = "돌발 퀘스트!!\n단어의 뜻을 맞춰요.";
-  const quest3IntroSub = "모두 협동해서 점수를 얻어보아요.";
-
-  const quest3EnglishSentence = "I couldn't agree with you more on that point.";
-  const quest3KoreanMeaning = "그 점에 대해서 당신의 말에 전적으로 동의합니다.";
+  // 퀘스트 2 텍스트
+  const quest2IntroTitle = "돌발 퀘스트!!\n빈칸을 채워.";
+  const quest2IntroSub = "가장 먼저 맞힌 사람이 점수를 얻어.";
 
   const isSuccess = questStep === "resultSuccess";
 
-  const failText = "아쉽게도 성공하지 못했어요\n다음 번 기회를 노려봐요!";
-  const successText = "대단해요!! 점수를 획득했어요!!";
+  const failText = "아쉽게도 성공하지 못했어\n다음 번 기회를 노려봐!";
+  const successText = "대단해!! 점수를 획득했어!!";
 
   const resultBubbleText = isSuccess ? successText : failText;
   const resultDuckSrc = isSuccess ? duckHappyImg : duckSadImg;
 
-  const showIntroOverlay =
-    questStep === "intro" && (activeQuest === 1 || activeQuest === 2);
-  const showQuest2Game = questStep === "q2game" && activeQuest === 2;
+  // 퀘스트 1 오버레이 표시 조건
+  const showQuest1Intro = questStep === "q1intro" && activeQuest === 1;
+  const showQuest1Ready = questStep === "q1ready" && activeQuest === 1;
+  const showQuest1ShowQuestion = questStep === "q1showQuestion" && activeQuest === 1;
+  const showQuest1Answering = questStep === "q1answering" && activeQuest === 1;
 
-  const showQuest3IntroOverlay = questStep === "q3intro" && activeQuest === 3;
-  const showQuest3MeaningOverlay =
-    questStep === "q3meaning" && activeQuest === 3;
+  // 퀘스트 2 오버레이 표시 조건
+  const showIntroOverlay = questStep === "intro" && activeQuest === 2;
+  const showQuest2Game = questStep === "q2game" && activeQuest === 2;
 
   const showResultOverlay =
     (questStep === "resultFail" || questStep === "resultSuccess") &&
-    (activeQuest === 1 || activeQuest === 2 || activeQuest === 3);
+    (activeQuest === 1 || activeQuest === 2);
 
   return (
     <div className={styles.Page}>
@@ -621,21 +653,17 @@ export default function TogetherTalkPage() {
                 >
                   2
                 </button>
-                <button
-                  type="button"
-                  className={styles.QuestBtn}
-                  onClick={() => startQuest(3)}
-                  disabled={questRunning}
-                  aria-label="돌발 퀘스트 3 시작"
-                >
-                  3
-                </button>
               </div>
             </div>
           </div>
 
           <div className={styles.Stage}>
             <div className={styles.LeftStage}>
+              {showQuest1Answering && (
+                <div className={styles.Quest1Banner}>
+                  <div className={styles.Quest1BannerQuestion}>{quest1English}</div>
+                </div>
+              )}
               <section
                 className={styles.CardsGrid}
                 aria-label="참여자 영상 영역"
@@ -763,31 +791,59 @@ export default function TogetherTalkPage() {
           </div>
         </div>
 
+        {/* 퀘스트 1: 인트로 */}
         <UnexpectedQuestOverlay
-          open={showIntroOverlay}
+          open={showQuest1Intro}
           onClose={handleOverlayClickNext}
           duckSrc={duckBombImg}
-          bubbleText={activeQuest === 1 ? quest1English : quest2IntroTitle}
-          subText={activeQuest === 2 ? quest2IntroSub : null}
-          subTone={activeQuest === 2 ? "danger" : "normal"}
+          bubbleTitle={quest1IntroTitle}
+          bubbleText={quest1IntroBody}
+          subText={null}
+          subTone="danger"
           countdownNumber={undefined}
+          speechBubbleType={2}
           clickAnywhere
           showCloseButton={false}
           escToClose={false}
         />
 
-        <UnexpectedQuestFillBlankModal
-          open={showQuest2Game}
-          duckSrc={duckBombImg}
-          onSubmit={handleSubmitQuest2}
-        />
-
+        {/* 퀘스트 1: 준비 + 카운트다운 */}
         <UnexpectedQuestOverlay
-          open={showQuest3IntroOverlay}
+          open={showQuest1Ready}
           onClose={handleOverlayClickNext}
           duckSrc={duckBombImg}
-          bubbleText={quest3IntroTitle}
-          subText={quest3IntroSub}
+          bubbleText={quest1ReadyText}
+          subText={null}
+          subTone="normal"
+          countdownNumber={countdown}
+          speechBubbleType={2}
+          clickAnywhere={false}
+          showCloseButton={false}
+          escToClose={false}
+        />
+
+        {/* 퀘스트 1: 영어 문장 표시 */}
+        <UnexpectedQuestOverlay
+          open={showQuest1ShowQuestion}
+          onClose={handleOverlayClickNext}
+          duckSrc={duckBombImg}
+          bubbleText={quest1English}
+          subText="영어로만 답해야 해!!!"
+          subTone="danger"
+          countdownNumber={undefined}
+          speechBubbleType={2}
+          clickAnywhere
+          showCloseButton={false}
+          escToClose={false}
+        />
+
+        {/* 퀘스트 2: 인트로 */}
+        <UnexpectedQuestOverlay
+          open={showIntroOverlay}
+          onClose={handleOverlayClickNext}
+          duckSrc={duckBombImg}
+          bubbleText={quest2IntroTitle}
+          subText={quest2IntroSub}
           subTone="danger"
           countdownNumber={undefined}
           clickAnywhere
@@ -795,17 +851,11 @@ export default function TogetherTalkPage() {
           escToClose={false}
         />
 
-        <UnexpectedQuestOverlay
-          open={showQuest3MeaningOverlay}
-          onClose={handleOverlayClickNext}
+        {/* 퀘스트 2: 게임 화면 */}
+        <UnexpectedQuestFillBlankModal
+          open={showQuest2Game}
           duckSrc={duckBombImg}
-          bubbleText={`영어 문장\n${quest3EnglishSentence}`}
-          subText={`한글 해석\n${quest3KoreanMeaning}`}
-          subTone="normal"
-          countdownNumber={undefined}
-          clickAnywhere
-          showCloseButton={false}
-          escToClose={false}
+          onSubmit={handleSubmitQuest2}
         />
 
         <UnexpectedQuestOverlay

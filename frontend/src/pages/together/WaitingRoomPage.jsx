@@ -475,9 +475,14 @@ export default function WaitingRoomPage() {
   const isHost = useMemo(() => me?.isHost ?? false, [me]);
   const myReady = me?.isReady ?? false;
 
-  const nonHostAllReady = useMemo(
-    () => participants.filter((p) => !p.isHost).every((p) => p.isReady),
+  const nonHostParticipants = useMemo(
+    () => participants.filter((p) => !p.isHost),
     [participants],
+  );
+
+  const nonHostAllReady = useMemo(
+    () => nonHostParticipants.every((p) => p.isReady),
+    [nonHostParticipants],
   );
 
   const canStart = isHost && nonHostAllReady;
