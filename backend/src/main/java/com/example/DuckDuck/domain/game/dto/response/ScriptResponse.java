@@ -9,6 +9,7 @@ import lombok.*;
 @Builder
 public class ScriptResponse {
     private Integer order_no;
+    private String scriptId;
     private String speakerName;
     private String english;
     private String korean;
