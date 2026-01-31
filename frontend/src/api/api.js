@@ -1,9 +1,12 @@
 import axios from "axios";
 
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/prod-api")
-.trim()
-.replace(/\/$/, "");;
-const REFRESH_URL = "/api/v1/auth/refresh";
+// 1. 환경 변수가 있으면 쓰고, 없으면 현재 호스트 주소를 기본값으로 사용
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+
+export const API_BASE_URL = rawBaseUrl
+  .trim()
+  .replace(/\/$/, "");
+  
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
