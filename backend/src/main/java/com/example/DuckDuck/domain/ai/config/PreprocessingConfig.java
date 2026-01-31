@@ -26,7 +26,7 @@ public class PreprocessingConfig {
     /**
      * 최소 텍스트 길이
      */
-    private int minLength = 5;
+    private int minLength = 4;
     
     /**
      * 최대 텍스트 길이
