@@ -128,7 +128,7 @@ export default function MiniGame2Page() {
   };
 
   const handleComplete = () => {
-    navigate('/');
+    navigate('/main');
   };
 
   if (phase === GAME_PHASE.COUNTDOWN) {

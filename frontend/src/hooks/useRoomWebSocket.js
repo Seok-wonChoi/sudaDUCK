@@ -20,7 +20,16 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
   const sendReady = useCallback(
     (ready) => {
       const client = clientRef.current;
-      if (!client?.connected) return;
+      if (!client?.connected) {
+        console.warn("[WebSocket] sendReady 실패: 연결되지 않음");
+        return;
+      }
+
+      console.log("[WebSocket] sendReady 전송:", {
+        roomCode,
+        ready,
+        destination: `/app/rooms/${roomCode}/ready`,
+      });
 
       client.publish({
         destination: `/app/rooms/${roomCode}/ready`,
@@ -116,6 +125,8 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
               onVoiceLevelChanged,
               onSettingsChanged,
               onRoomStarted,
+              onRoomClosed,
+              onSilenceDetected,
               onError,
             } = handlersRef.current;
 
@@ -126,6 +137,11 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
             switch (type) {
               case "READY_CHANGED":
+                console.log("[WebSocket] READY_CHANGED 수신:", {
+                  payload,
+                  senderKey,
+                  type,
+                });
                 onReadyChanged?.(payload, senderKey);
                 break;
 
@@ -157,6 +173,26 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
               case "ROOM_OPENED":
               case "ROOM_START":
                 onRoomStarted?.(payload ?? data, senderKey);
+                break;
+
+              case "ROOM_CLOSED":
+              case "HOST_LEFT":
+              case "ROOM_DISBANDED":
+                console.log("[WebSocket] ROOM_CLOSED 수신:", {
+                  payload,
+                  type,
+                });
+                onRoomClosed?.(payload, senderKey);
+                break;
+
+              case "SILENCE_DETECTED":
+              case "AWKWARD_SILENCE":
+                console.log("[WebSocket] SILENCE_DETECTED 수신:", {
+                  payload,
+                  senderKey,
+                  type,
+                });
+                onSilenceDetected?.(payload, senderKey);
                 break;
 
               case "ERROR":

@@ -1,5 +1,6 @@
 import styles from "./TogetherPage.module.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ActionCard from "@/components/common/ActionCard/ActionCard";
@@ -9,10 +10,25 @@ import joinRoomIcon from "@/assets/icons/join_room.png";
 
 export default function TogetherPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [toastMessage, setToastMessage] = useState("");
+
+  const showToast = useCallback((message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(""), 3000);
+  }, []);
+
+  // location state에서 토스트 메시지 확인
+  useEffect(() => {
+    if (location.state?.toastMessage) {
+      showToast(location.state.toastMessage);
+      // state 정리 (뒤로가기 시 다시 표시되지 않도록)
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate, showToast]);
 
   const handleBack = () => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate("/");
+    navigate("/main");
   };
 
   const handleMakeRoom = () => {
@@ -85,6 +101,8 @@ export default function TogetherPage() {
             </div>
           </div>
         </section>
+
+        {toastMessage ? <div className={styles.Toast}>{toastMessage}</div> : null}
       </div>
     </div>
   );
