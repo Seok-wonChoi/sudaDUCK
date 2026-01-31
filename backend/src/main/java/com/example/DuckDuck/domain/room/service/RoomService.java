@@ -69,7 +69,8 @@ public class RoomService {
     @Transactional
     public RoomCreateResponse createRoomByEmail(String email, RoomCreateRequest request) {
 
-        // gpt 주제 필터링
+        // gpt 방 제목, 주제 필터링
+        aiProfanityFilterService.validateText(request.title(), "방 주제");
         aiProfanityFilterService.validateText(request.topic(), "방 주제");
 
         // 1. 방장(Member) 조회 (JWT에서 얻은 userId 기준)
