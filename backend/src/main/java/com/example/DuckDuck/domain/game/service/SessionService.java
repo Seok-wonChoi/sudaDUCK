@@ -33,6 +33,9 @@ public class SessionService {
         List<ScriptResponse> responses = new ArrayList<>();
 
         for (String key : keys) {
+            // key에서 scriptId 추출
+            String scriptId = key.substring(key.lastIndexOf(":") + 1);
+
             // Hash 구조이므로 entries()를 사용하여 Map으로 가져옴
             Map<Object, Object> entries = redisTemplate.opsForHash().entries(key);
 
@@ -45,6 +48,7 @@ public class SessionService {
                 responses.add(ScriptResponse.builder()
                         // Redis CLI 결과에 맞게 필드 매핑 (String으로 변환 후 처리)
                         .order_no(Integer.parseInt(entries.get("order_no").toString()))
+                        .scriptId(scriptId)
                         .speakerName(speakerName) // CLI엔 id로 되어있음
                         .english((String) entries.get("english"))
                         .korean((String) entries.get("korean"))
