@@ -3,12 +3,15 @@ package com.example.DuckDuck.domain.game.controller;
 import com.example.DuckDuck.domain.game.dto.response.MySentenceResponse;
 import com.example.DuckDuck.domain.game.entity.Sentence;
 import com.example.DuckDuck.domain.game.service.ScriptService;
+import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +26,7 @@ import java.util.Optional;
 public class ScriptController {
 
     private final ScriptService scriptService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Operation(
             summary = "문장 좋아요 저장",
@@ -34,13 +38,17 @@ public class ScriptController {
             @ApiResponse(responseCode = "404", description = "Redis에서 해당 스크립트를 찾을 수 없음")
     })
     @PostMapping("/{scriptId}/like")
-    public ResponseEntity<Map<String, Object>> like(@AuthenticationPrincipal String email,
+    public ResponseEntity<Map<String, Object>> like(
+            @RequestHeader("Authorization") String authHeader,
                                        @RequestParam Long roomId,
                                        @RequestParam int turnNo,
                                        @PathVariable String scriptId){
 
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenProvider.getUserId(token);
+
         Map<String, Object> result = scriptService.
-                likeSentence(email, roomId, turnNo, scriptId);
+                likeSentence(userId, roomId, turnNo, scriptId);
 
         return ResponseEntity.ok(result);
     }

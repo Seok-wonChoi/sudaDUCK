@@ -61,6 +61,7 @@ public class GptService {
 
     /**
      * 번역 및 학습 콘텐츠 생성
+     * ✅ 부적절한 표현 필터링 추가
      */
     public GptScriptResponse generateScript(String koreanText) {
         String prompt = String.format(
@@ -70,6 +71,22 @@ public class GptService {
                         "# Context\n" +
                         "사용자가 음성으로 말한 한국어를 영어로 번역하고, 학습 자료를 만들어야 합니다.\n" +
                         "입력된 한국어는 이미 전처리된 자연스러운 구어체입니다.\n\n" +
+
+                        "# ⚠️ CRITICAL: 부적절한 표현 필터링\n" +
+                        "입력 텍스트에 다음과 같은 표현이 있으면 번역을 거부하세요:\n" +
+                        "- 욕설, 비속어\n" +
+                        "- 성적인 표현\n" +
+                        "- 폭력적 표현\n" +
+                        "- 차별적/혐오 표현\n" +
+                        "- 의미 불명의 단어나 글자 조합\n" +
+                        "- 영어로 번역이 불가능하거나 부적절한 내용\n\n" +
+
+                        "부적절한 내용이 발견되면 다음과 같이 응답:\n" +
+                        "{\n" +
+                        "  \"en\": \"INAPPROPRIATE_CONTENT\",\n" +
+                        "  \"blank_script\": \"\",\n" +
+                        "  \"similarity_phrases\": []\n" +
+                        "}\n\n" +
 
                         "# Input\n" +
                         "한국어 문장: \"%s\"\n\n" +
@@ -81,7 +98,7 @@ public class GptService {
                         "1. **en** (영어 번역문)\n" +
                         "   - 구어체 특성을 살려 자연스럽게 번역\n" +
                         "   - 실제 원어민이 일상에서 사용하는 표현 우선\n" +
-                        "   - 문법적으로 완벽하되 너무 격식적이지 않게\n\n" +
+                        "   - 문법적으로 완벽하되 너무 격식적이지 않게\n" +
 
                         "2. **blank_script** (빈칸 학습지)\n" +
                         "   - 'en'에서 핵심 단어 2-3개를 [ ]로 치환\n" +
@@ -103,7 +120,9 @@ public class GptService {
                         "  ]\n" +
                         "}\n\n" +
 
-                        "# Examples\n" +
+                        "# Examples\n\n" +
+                        
+                        "## 예시 1: 정상 문장\n" +
                         "입력: \"오늘 날씨 진짜 좋다\"\n" +
                         "출력:\n" +
                         "{\n" +
@@ -115,13 +134,32 @@ public class GptService {
                         "  ]\n" +
                         "}\n\n" +
 
+                        
+                        "## 예시 : 의미 불명\n" +
+                        "입력: \"asdfqwer 1234\"\n" +
+                        "출력:\n" +
+                        "{\n" +
+                        "  \"en\": \"INAPPROPRIATE_CONTENT\",\n" +
+                        "  \"blank_script\": \"\",\n" +
+                        "  \"similarity_phrases\": []\n" +
+                        "}\n\n" +
+
                         "이제 위 한국어 문장을 처리해주세요.", koreanText
         );
 
         String jsonResponse = callGptRaw(prompt);
         
         try {
-            return objectMapper.readValue(jsonResponse, GptScriptResponse.class);
+            GptScriptResponse response = objectMapper.readValue(jsonResponse, GptScriptResponse.class);
+            
+            // 부적절한 콘텐츠 체크
+            if ("INAPPROPRIATE_CONTENT".equals(response.getEn())) {
+                log.warn("부적절한 콘텐츠 감지됨 - 원본: '{}'", koreanText);
+                throw new RuntimeException("부적절한 콘텐츠가 포함되어 번역할 수 없습니다");
+            }
+            
+            return response;
+            
         } catch (Exception e) {
             log.error("스크립트 생성 파싱 실패: {}", e.getMessage());
             throw new RuntimeException("GPT 응답 파싱 실패", e);
@@ -152,7 +190,6 @@ public class GptService {
 
     /**
      * GPT 호출 (JSON 문자열 반환)
-     * ✅ 에러 처리 강화
      */
     public String callGptRaw(String prompt) {
         HttpHeaders headers = new HttpHeaders();
@@ -173,20 +210,18 @@ public class GptService {
         Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
         String content = (String) message.get("content");
 
-        // ✅ JSON 추출 개선 (에러 처리 강화)
+        // JSON 추출
         int startIndex = content.indexOf("{");
         int endIndex = content.lastIndexOf("}");
         
-        // JSON 객체가 없으면 배열 확인
         if (startIndex == -1 || endIndex == -1) {
             startIndex = content.indexOf("[");
             endIndex = content.lastIndexOf("]");
         }
         
-        // ✅ 여전히 JSON이 없으면 원본 반환
         if (startIndex == -1 || endIndex == -1 || startIndex > endIndex) {
             log.warn("JSON을 찾을 수 없음. 원본 반환: {}", content);
-            return content;  // 원본 그대로 반환
+            return content;
         }
         
         String extracted = content.substring(startIndex, endIndex + 1);
