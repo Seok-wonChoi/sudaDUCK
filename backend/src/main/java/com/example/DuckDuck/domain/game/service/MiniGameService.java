@@ -2,7 +2,10 @@ package com.example.DuckDuck.domain.game.service;
 
 import com.example.DuckDuck.domain.game.dto.response.ReviewQuestionResponse;
 import com.example.DuckDuck.domain.game.dto.request.ReviewSubmitRequest;
+import com.example.DuckDuck.domain.game.dto.response.ReviewRankingResponse;
 import com.example.DuckDuck.domain.game.dto.response.ReviewSubmitResponse;
+import com.example.DuckDuck.domain.user.entity.Member;
+import com.example.DuckDuck.domain.user.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 public class MiniGameService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final MemberRepository memberRepository;
 
     public List<ReviewQuestionResponse> getReviewQuestions(Long userId, Long roomId){
 
@@ -124,6 +128,49 @@ public class MiniGameService {
                 .build();
     }
 
+    public List<ReviewRankingResponse> getReviewRanking(Long userId, Long roomId) {
+        // 1. Redis에서 복습 게임 점수 데이터 조회 (userId -> score)
+        String scoreKey = "room:" + roomId + ":review:scores";
+        Map<Object, Object> scores = redisTemplate.opsForHash().entries(scoreKey);
+
+        if (scores.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. 점수가 있는 유저 ID 리스트 추출 (Long 타입 변환)
+        List<Long> userIds = scores.keySet().stream()
+                .map(id -> Long.parseLong(id.toString()))
+                .collect(Collectors.toList());
+
+        // 3. DB에서 해당 유저들의 닉네임과 프로필 이미지 한 번에 조회
+        List<Member> participants = memberRepository.findAllById(userIds);
+
+        // 4. 조회를 위해 Map으로 변환 (Key: userId, Value: Member 객체)
+        Map<Long, Member> memberMap = participants.stream()
+                .collect(Collectors.toMap(Member::getId, member -> member));
+
+        // 5. 점수 데이터와 멤버 정보 결합
+        List<ReviewRankingResponse> ranking = new ArrayList<>();
+        for (Map.Entry<Object, Object> entry : scores.entrySet()) {
+            Long entryUserId = Long.parseLong(entry.getKey().toString());
+            int score = Integer.parseInt(entry.getValue().toString());
+
+            Member m = memberMap.get(entryUserId);
+
+            ranking.add(ReviewRankingResponse.builder()
+                    .nickname(m != null ? m.getNickname() : "알 수 없음")
+                    .profileImageUrl(m != null ? m.getProfileImageUrl() : null)
+                    .score(score)
+                    .isMe(entryUserId.equals(userId))
+                    .build());
+        }
+
+        // 6. 점수 높은 순(내림차순)으로 정렬
+        return ranking.stream()
+                .sorted(Comparator.comparing(ReviewRankingResponse::getScore).reversed())
+                .collect(Collectors.toList());
+    }
+
     private List<String> extractWordsInBrackets(String text) {
         List<String> words = new ArrayList<>();
         Pattern pattern = Pattern.compile("\\[(.*?)\\]");
@@ -138,5 +185,32 @@ public class MiniGameService {
         if (score == 4) return "완벽해요! 모든 문제를 맞췄습니다.";
         if (score >= 2) return "훌륭합니다! 복습 효과가 좋네요.";
         return "조금 더 연습해볼까요? 화이팅!";
+    }
+
+    //redis 정보 삭제
+    public void clearReviewData(Long roomId) {
+        // 1. 유저별 문제 리스트 삭제 (room:roomId:review:user:*)
+        String userQuestionsPattern = "room:" + roomId + ":review:user*";
+        Set<String> questionKeys = redisTemplate.keys(userQuestionsPattern);
+        if (questionKeys != null && !questionKeys.isEmpty()) {
+            redisTemplate.delete(questionKeys);
+        }
+
+        // 2. 복습 게임 점수 데이터 삭제 (room:roomId:review:scores)
+        String scoreKey = "room:" + roomId + ":review:scores";
+        redisTemplate.delete(scoreKey);
+
+        // 3. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
+        List<String> patterns = Arrays.asList(
+                "room:" + roomId + ":turn:*:script:*",  // 개별 스크립트 (단수)
+                "room:" + roomId + ":turn:*:scripts"  // 스크립트 묶음 (복수, 혹시 모를 대비)
+        );
+
+        for (String pattern : patterns) {
+            Set<String> keys = redisTemplate.keys(pattern);
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+        }
     }
 }

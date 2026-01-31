@@ -2,6 +2,7 @@ package com.example.DuckDuck.domain.game.controller;
 
 import com.example.DuckDuck.domain.game.dto.response.ReviewQuestionResponse;
 import com.example.DuckDuck.domain.game.dto.request.ReviewSubmitRequest;
+import com.example.DuckDuck.domain.game.dto.response.ReviewRankingResponse;
 import com.example.DuckDuck.domain.game.dto.response.ReviewSubmitResponse;
 import com.example.DuckDuck.domain.game.service.MiniGameService;
 import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
@@ -56,4 +57,32 @@ public class MiniGameController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(
+            summary = "복습 게임 랭킹 조회",
+            description = "복습 게임 종료 후 참여자들의 점수와 프로필 정보를 순위별로 조회합니다."
+    )
+    @GetMapping("/{roomId}/review/ranking")
+    public ResponseEntity<List<ReviewRankingResponse>> getRanking(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long roomId) {
+
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenProvider.getUserId(token);
+
+        List<ReviewRankingResponse> ranking = miniGameService.getReviewRanking(userId, roomId);
+
+        return ResponseEntity.ok(ranking);
+    }
+
+    @Operation(
+            summary = "복습 게임 데이터 삭제",
+            description = "게임 종료 후 Redis에 저장된 모든 복습 관련 임시 데이터를 삭제합니다."
+    )
+    @DeleteMapping("/{roomId}/review/clear")
+    public ResponseEntity<Void> clearReviewData(
+            @PathVariable Long roomId) {
+
+        miniGameService.clearReviewData(roomId);
+        return ResponseEntity.noContent().build();
+    }
 }
