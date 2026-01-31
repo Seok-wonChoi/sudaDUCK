@@ -73,16 +73,4 @@ public class MiniGameController {
 
         return ResponseEntity.ok(ranking);
     }
-
-    @Operation(
-            summary = "복습 게임 데이터 삭제",
-            description = "게임 종료 후 Redis에 저장된 모든 복습 관련 임시 데이터를 삭제합니다."
-    )
-    @DeleteMapping("/{roomId}/review/clear")
-    public ResponseEntity<Void> clearReviewData(
-            @PathVariable Long roomId) {
-
-        miniGameService.clearReviewData(roomId);
-        return ResponseEntity.noContent().build();
-    }
 }

@@ -176,10 +176,19 @@ public class MiniGameService {
         Pattern pattern = Pattern.compile("\\[(.*?)\\]");
         Matcher matcher = pattern.matcher(text);
         while (matcher.find()) {
-            words.add(matcher.group(1).trim().toLowerCase());
+            // [ wonder ] -> wonder (알파벳만 추출, 공백/특수문자 제거)
+            String word = matcher.group(1)
+                    .replaceAll("[^a-zA-Z]", "") // 알파벳 아닌 것 제거
+                    .toLowerCase()
+                    .trim();
+
+            if (!word.isEmpty()) {
+                words.add(word);
+            }
         }
         return words;
     }
+
     // 점수에 따른 간단한 피드백 메시지 생성
     private String getFeedbackMessage(int score) {
         if (score == 4) return "완벽해요! 모든 문제를 맞췄습니다.";
@@ -202,10 +211,9 @@ public class MiniGameService {
 
         // 3. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
         List<String> patterns = Arrays.asList(
-                "room:" + roomId + ":turn:*:script:*",  // 개별 스크립트 (단수)
-                "room:" + roomId + ":turn:*:scripts"  // 스크립트 묶음 (복수, 혹시 모를 대비)
+                "room:" + roomId + ":turn:*",  // 개별 스크립트 (단수)
+                "room:" + roomId + ":scripts"// 스크립트 묶음 (복수, 혹시 모를 대비)
         );
-
         for (String pattern : patterns) {
             Set<String> keys = redisTemplate.keys(pattern);
             if (keys != null && !keys.isEmpty()) {

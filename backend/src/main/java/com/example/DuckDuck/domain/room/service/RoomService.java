@@ -1,6 +1,7 @@
 package com.example.DuckDuck.domain.room.service;
 
 import com.example.DuckDuck.domain.ai.service.AiProfanityFilterService;
+import com.example.DuckDuck.domain.game.service.MiniGameService;
 import com.example.DuckDuck.domain.room.dto.request.RoomCreateRequest;
 import com.example.DuckDuck.domain.room.dto.request.RoomJoinRequest;
 import com.example.DuckDuck.domain.room.dto.request.RoomLeaveRequest;
@@ -38,6 +39,7 @@ public class RoomService {
     private final AiProfanityFilterService aiProfanityFilterService;
     private static final long ROOM_TTL_HOURS = 6;
     private static final String ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private final MiniGameService miniGameService;
 
     // ===== Redis Key =====
     private String keyRoomCodeToId(String roomCode) { // roomCode -> roomId
@@ -52,6 +54,9 @@ public class RoomService {
     private String keyRoomReady(Long roomId) {
         return "room:ready:" + roomId;
     }
+    private String keyRoomTopic(Long roomId) { return "room:" + roomId + ":topic"; }
+    private String keyRoomMember(Long roomId) { return "room:" + roomId + ":member";}
+    private String keyRoomParticipants(Long roomId) { return "room:" + roomId + ":participants";}
 
     private void refreshRoomTtl(Long roomId, String roomCode) {
         redisTemplate.expire(keyRoomMembers(roomId), ROOM_TTL_HOURS, TimeUnit.HOURS);
@@ -336,6 +341,13 @@ public class RoomService {
             redisTemplate.delete(keyRoomIdToCode(roomId));
             redisTemplate.delete(keyRoomCodeToId(roomCode));
 
+            redisTemplate.delete(keyRoomTopic(roomId));
+            redisTemplate.delete(keyRoomMember(roomId));
+            redisTemplate.delete(keyRoomParticipants(roomId));
+
+            //미니게임/스크립트도 삭제
+            miniGameService.clearReviewData(roomId);
+
             return RoomLeaveResponse.builder()
                     .roomId(roomId)
                     .roomCode(roomCode)
@@ -369,6 +381,12 @@ public class RoomService {
             redisTemplate.delete(keyRoomReady(roomId));
             redisTemplate.delete(keyRoomIdToCode(roomId));
             redisTemplate.delete(keyRoomCodeToId(roomCode));
+
+            redisTemplate.delete(keyRoomTopic(roomId));
+            redisTemplate.delete(keyRoomMember(roomId));
+            redisTemplate.delete(keyRoomParticipants(roomId));
+
+            miniGameService.clearReviewData(roomId);
 
             return RoomLeaveResponse.builder()
                     .roomId(roomId)
