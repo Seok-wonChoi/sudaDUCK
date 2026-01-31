@@ -104,7 +104,6 @@ export default function SentenceCard({
             <div className={styles.recordingCircle}>
               <span className={styles.countdownNumber}>{formatTime(recordingTime)}</span>
             </div>
-            <p className={styles.recordingHint}>자동으로 다음 음성으로 넘어갑니다</p>
           </div>
         );
 
