@@ -9,6 +9,7 @@ export default function RecordingLayout({
   sentenceCards = [],
   activeCardState = 'idle',
   countdown = 3,
+  recordingTime = 0,
   bottomContent,
   onBookmarkToggle = null,
 }) {
@@ -37,6 +38,7 @@ export default function RecordingLayout({
                 isActive={card.isActive}
                 cardState={activeCardState}
                 countdown={countdown}
+                recordingTime={recordingTime}
                 initialBookmarked={card.isBookmarked}
                 onBookmarkToggle={onBookmarkToggle}
               />

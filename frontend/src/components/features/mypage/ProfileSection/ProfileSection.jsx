@@ -107,7 +107,6 @@ export default function ProfileSection({
           )}
         </div>
         <div className={styles.BottomRow}>
-          <div className={styles.Email}>{email}</div>
           <div className={styles.CoinBadge}>
             <img src={coinImage} alt="코인" className={styles.CoinIcon} />
             <span className={styles.CoinAmount}>{coins}</span>

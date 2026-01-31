@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Recordinglayout from '@/components/features/recording/layout/RecordingLayout';
-import { saveAssessment, toggleScriptLike } from '@/api/shadowing';
+import { saveAssessment, toggleScriptLike, getTurnScripts } from '@/api/shadowing';
 import { endRoom } from '@/api/rooms';
 
 import BottomIdle from '@/components/features/recording/bottom/BottomIdle';
@@ -26,6 +26,7 @@ const STEP = {
   RECORD_TIMER: 'record_timer',
   RECORDING: 'recording',
   RECORD_DONE: 'record_done',
+  TURN_REPORT: 'turn_report', // 턴 종료 후 리포트
   ALL_DONE: 'all_done',
 };
 
@@ -95,16 +96,22 @@ export default function RecordingPage() {
   const [currentTurn, setCurrentTurn] = useState(1);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [countdown, setCountdown] = useState(3);
+  const [recordingTime, setRecordingTime] = useState(0); // 녹음 시간 (초)
   const [sentenceScores, setSentenceScores] = useState({});
   const [bookmarkedSentences, setBookmarkedSentences] = useState([]);
+  const [conversations, setConversations] = useState({}); // 턴별 스크립트 저장
+  const [isLoading, setIsLoading] = useState(false);
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
   const endRoomCalledRef = useRef(false); // endRoom 중복 호출 방지
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const audioRef = useRef(null); // TTS 오디오 재생용
 
   const currentTurnSentences = useMemo(() => {
-    return DUMMY_CONVERSATIONS[currentTurn] || [];
-  }, [currentTurn]);
+    return conversations[currentTurn] || DUMMY_CONVERSATIONS[currentTurn] || [];
+  }, [currentTurn, conversations]);
 
   const currentSentence = useMemo(() => {
     return currentTurnSentences[currentSentenceIndex];
@@ -123,24 +130,66 @@ export default function RecordingPage() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     timerRef.current = null;
     intervalRef.current = null;
+
+    // TTS 오디오도 정리
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
   }, []);
 
-  const goNextSentence = () => {
-    if (isLastSentence) {
-      setStep(STEP.ALL_DONE);
-      return;
-    }
+  // 녹음 시작
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      recordedChunksRef.current = [];
 
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start();
+    } catch (error) {
+      console.error('녹음 시작 실패:', error);
+    }
+  }, []);
+
+  // Blob을 base64로 변환
+  const blobToBase64 = (blob) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const goNextSentence = () => {
     // 현재 턴의 다음 문장으로 이동
     if (currentSentenceIndex < currentTurnSentences.length - 1) {
       setCurrentSentenceIndex((idx) => idx + 1);
       setStep(STEP.AI_TIMER);
     } else {
-      // 다음 턴으로 이동
-      setCurrentTurn((t) => t + 1);
-      setCurrentSentenceIndex(0);
-      setStep(STEP.AI_TIMER);
+      // 턴의 마지막 문장이면 턴 리포트로
+      setStep(STEP.TURN_REPORT);
     }
+  };
+
+  const goNextTurn = () => {
+    // 마지막 턴이면 전체 완료
+    if (currentTurn >= TURNS) {
+      setStep(STEP.ALL_DONE);
+      return;
+    }
+
+    // 다음 턴으로 이동
+    setCurrentTurn((t) => t + 1);
+    setCurrentSentenceIndex(0);
+    setStep(STEP.AI_TIMER);
   };
 
   const startFlow = () => {
@@ -148,18 +197,45 @@ export default function RecordingPage() {
   };
 
   const stopRecording = async () => {
+    // 녹음 중지
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+
+      // 녹음 스트림 정리
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+
     if (currentSentence) {
       try {
-        // 발음 평가 API 호출
-        const result = await saveAssessment({
-          sentenceId: currentSentence.id,
-          // TODO: 실제 녹음 데이터 추가 필요
-          // audioData: recordedAudio,
-          // text: currentSentence.english,
-        });
+        // 녹음된 오디오 데이터 처리
+        let audioBase64 = null;
+        if (recordedChunksRef.current.length > 0) {
+          const audioBlob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+          audioBase64 = await blobToBase64(audioBlob);
+        }
+
+        // 발음 평가 API 호출 - 401 에러 시 자동 재시도
+        let result = null;
+        let retryCount = 0;
+        while (retryCount < 2) {
+          try {
+            result = await saveAssessment({
+              audio: audioBase64 || '',
+            });
+            break; // 성공하면 루프 탈출
+          } catch (err) {
+            if (err.response?.status === 401 && retryCount === 0) {
+              // 첫 번째 401 에러는 토큰 갱신 후 재시도
+              retryCount++;
+              await new Promise(resolve => setTimeout(resolve, 500)); // 토큰 갱신 대기
+            } else {
+              throw err; // 다른 에러나 두 번째 401은 그대로 throw
+            }
+          }
+        }
 
         // API 응답에서 점수 받아오기
-        const score = result.score || Math.floor(Math.random() * 40) + 60; // fallback: 랜덤 점수
+        const score = result?.score || Math.floor(Math.random() * 40) + 60; // fallback: 랜덤 점수
         setSentenceScores((prev) => ({
           ...prev,
           [currentSentence.id]: score,
@@ -188,8 +264,22 @@ export default function RecordingPage() {
 
   const handleBookmarkToggle = useCallback(async (sentenceId, isBookmarked) => {
     try {
-      // API 호출 - 스크립트 저장/취소
-      await toggleScriptLike(sentenceId);
+      // API 호출 - 401 에러 시 자동 재시도
+      let retryCount = 0;
+      while (retryCount < 2) {
+        try {
+          await toggleScriptLike(sentenceId);
+          break; // 성공하면 루프 탈출
+        } catch (err) {
+          if (err.response?.status === 401 && retryCount === 0) {
+            // 첫 번째 401 에러는 토큰 갱신 후 재시도
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 500)); // 토큰 갱신 대기
+          } else {
+            throw err; // 다른 에러나 두 번째 401은 그대로 throw
+          }
+        }
+      }
 
       // API 호출 성공 시 로컬 state 업데이트
       setBookmarkedSentences((prev) => {
@@ -217,7 +307,7 @@ export default function RecordingPage() {
       });
     } catch (error) {
       console.error('북마크 API 호출 실패:', error);
-      alert('북마크 저장에 실패했습니다.');
+      alert('북마크 저장에 실패했습니다. 다시 시도해주세요.');
     }
   }, []);
 
@@ -232,6 +322,56 @@ export default function RecordingPage() {
       console.error('북마크 불러오기 실패:', error);
     }
   }, []);
+
+  // 턴별 스크립트 조회
+  useEffect(() => {
+    const fetchTurnScripts = async () => {
+      // roomInfo에서 roomId 추출 (inviteCode, joinCode, roomCode, id 등 다양한 형태 가능)
+      console.log('RecordingPage roomInfo:', roomInfo);
+      const roomId = roomInfo.id || roomInfo.roomId || roomInfo.inviteCode || roomInfo.joinCode || roomInfo.roomCode;
+      console.log('추출된 roomId:', roomId);
+
+      if (!roomId) {
+        console.warn('roomId를 찾을 수 없습니다. DUMMY_CONVERSATIONS를 사용합니다.');
+        return;
+      }
+
+      // 이미 해당 턴의 데이터가 있으면 스킵
+      if (conversations[currentTurn]) {
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const response = await getTurnScripts(roomId, currentTurn);
+
+        // API 응답을 컴포넌트에서 사용하는 형식으로 변환
+        const scripts = Array.isArray(response) ? response : [response];
+        const formattedScripts = scripts.map((script, index) => ({
+          id: script.order_no ?? index + 1,
+          speaker: script.speakerName || '참여자',
+          korean: script.korean || '',
+          english: script.english || '',
+          // blank_script에서 빈칸 단어 추출 (추후 백엔드 형식에 맞게 수정 필요)
+          blankWords: script.blank_script ? script.blank_script.split(',').map(w => w.trim()) : [],
+          score: null,
+          tts_url: script.tts_url || null,
+        }));
+
+        setConversations(prev => ({
+          ...prev,
+          [currentTurn]: formattedScripts,
+        }));
+      } catch (error) {
+        console.error('스크립트 조회 실패:', error);
+        // 실패 시 DUMMY_CONVERSATIONS 사용
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTurnScripts();
+  }, [currentTurn, roomInfo, conversations]);
 
   // 복습 게임 완료 시 endRoom API 자동 호출
   useEffect(() => {
@@ -258,6 +398,22 @@ export default function RecordingPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCountdown(3);
     }
+    // 녹음 시간 리셋 (녹음 시작 시)
+    if (step === STEP.RECORDING) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRecordingTime(0);
+    }
+  }, [step]);
+
+  // 녹음 시간 증가 (1초마다)
+  useEffect(() => {
+    if (step !== STEP.RECORDING) return;
+
+    const interval = setInterval(() => {
+      setRecordingTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [step]);
 
   // 메인 타이머 로직
@@ -279,9 +435,49 @@ export default function RecordingPage() {
     }
 
     if (step === STEP.AI_PLAYING) {
-      timerRef.current = setTimeout(() => {
-        setStep(STEP.RECORD_TIMER);
-      }, AI_PLAYING_MS);
+      const ttsUrl = currentSentence?.tts_url;
+
+      if (ttsUrl) {
+        // 실제 TTS 오디오 재생
+        try {
+          const audio = new Audio(ttsUrl);
+          audioRef.current = audio;
+
+          // 재생 시작
+          audio.play().catch((error) => {
+            console.error('TTS 재생 실패:', error);
+            // 재생 실패 시 타이머로 fallback
+            timerRef.current = setTimeout(() => {
+              setStep(STEP.RECORD_TIMER);
+            }, AI_PLAYING_MS);
+          });
+
+          // 재생 완료 시 다음 단계로
+          audio.onended = () => {
+            setStep(STEP.RECORD_TIMER);
+          };
+
+          // 에러 처리
+          audio.onerror = () => {
+            console.error('TTS 로딩 실패');
+            // 에러 시 타이머로 fallback
+            timerRef.current = setTimeout(() => {
+              setStep(STEP.RECORD_TIMER);
+            }, AI_PLAYING_MS);
+          };
+        } catch (error) {
+          console.error('TTS 오디오 생성 실패:', error);
+          // 예외 발생 시 타이머로 fallback
+          timerRef.current = setTimeout(() => {
+            setStep(STEP.RECORD_TIMER);
+          }, AI_PLAYING_MS);
+        }
+      } else {
+        // tts_url이 없으면 기존 타이머 사용
+        timerRef.current = setTimeout(() => {
+          setStep(STEP.RECORD_TIMER);
+        }, AI_PLAYING_MS);
+      }
       return;
     }
 
@@ -300,24 +496,38 @@ export default function RecordingPage() {
     }
 
     if (step === STEP.RECORDING) {
+      // 녹음 시작
+      startRecording();
+
       timerRef.current = setTimeout(() => {
-        setStep(STEP.RECORD_DONE);
+        stopRecording();
       }, MAX_RECORDING_MS);
       return;
     }
-  }, [step, clearAllTimers]);
+
+    if (step === STEP.RECORD_DONE) {
+      // 1.5초 후 자동으로 다음 문장으로
+      timerRef.current = setTimeout(() => {
+        goNextSentence();
+      }, 1500);
+      return;
+    }
+  }, [step, clearAllTimers, startRecording, stopRecording, goNextSentence, currentSentence]);
 
   // 카드 리스트에 전달할 데이터
   const sentenceCardsData = useMemo(() => {
+    // TURN_REPORT 상태일 때는 모든 카드를 활성화하여 표시
+    const isReportMode = step === STEP.TURN_REPORT;
+
     return currentTurnSentences.map((sentence, index) => ({
       ...sentence,
       score: sentenceScores[sentence.id],
-      isActive: index === currentSentenceIndex,
+      isActive: isReportMode ? true : index === currentSentenceIndex,
       currentSentence: index + 1,
       totalSentences: currentTurnSentences.length,
       isBookmarked: bookmarkedSentences.includes(sentence.id),
     }));
-  }, [currentTurnSentences, currentSentenceIndex, sentenceScores, bookmarkedSentences]);
+  }, [currentTurnSentences, currentSentenceIndex, sentenceScores, bookmarkedSentences, step]);
 
   // 현재 활성 카드의 상태
   const getActiveCardState = () => {
@@ -330,6 +540,8 @@ export default function RecordingPage() {
         return 'recording';
       case STEP.RECORD_DONE:
         return 'record_done';
+      case STEP.TURN_REPORT:
+        return 'idle'; // 턴 리포트에서는 모든 카드가 idle 상태
       default:
         return 'idle';
     }
@@ -360,6 +572,32 @@ export default function RecordingPage() {
           />
         );
 
+      case STEP.TURN_REPORT:
+        return (
+          <div style={{
+            padding: '20px',
+            textAlign: 'center',
+            background: '#fff',
+            borderTop: '1px solid #e5e7eb'
+          }}>
+            <button
+              onClick={goNextTurn}
+              style={{
+                padding: '12px 32px',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#fff',
+                background: '#2b7fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              {currentTurn >= TURNS ? '완료' : '다음 턴으로'}
+            </button>
+          </div>
+        );
+
       case STEP.ALL_DONE:
         return <BottomAllDone onRestart={restart} />;
 
@@ -374,6 +612,7 @@ export default function RecordingPage() {
       sentenceCards={sentenceCardsData}
       activeCardState={getActiveCardState()}
       countdown={countdown}
+      recordingTime={recordingTime}
       bottomContent={bottomContent()}
       onBookmarkToggle={handleBookmarkToggle}
     />
