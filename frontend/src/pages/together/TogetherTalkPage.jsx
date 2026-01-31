@@ -153,6 +153,7 @@ export default function TogetherTalkPage() {
       name: p.name ?? p.nickname ?? "참여자",
       isMe: p.isMe === true,
       micOn: p.micOn ?? false,
+      isHost: p.isHost ?? false,
     }));
   });
 
