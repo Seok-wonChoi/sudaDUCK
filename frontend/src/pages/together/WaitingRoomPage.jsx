@@ -130,13 +130,12 @@ export default function WaitingRoomPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
 
-  // state가 없을 수 있으므로 sessionStorage에서 복구
   const initialRoomInfo = useMemo(() => {
     if (state) return state;
     try {
       const stored = sessionStorage.getItem(ROOM_INFO_KEY);
       if (stored) return JSON.parse(stored);
-    } catch (e) {
+    } catch {
       // ignore
     }
     return {};
@@ -145,11 +144,9 @@ export default function WaitingRoomPage() {
   const roomInfo = initialRoomInfo ?? {};
   const maxCount = roomInfo.maxCount ?? 4;
 
-  // 방 코드는 joinCode / inviteCode / roomCode 로 넘어올 수 있음
   const inviteCode =
     roomInfo.joinCode ?? roomInfo.inviteCode ?? roomInfo.roomCode ?? "000000";
 
-  // 방 정보
   const [roomId, setRoomId] = useState(roomInfo.roomId ?? null);
   const [roomTitle, setRoomTitle] = useState(
     roomInfo.roomTitle ?? roomInfo.title ?? "수다방",
@@ -161,15 +158,13 @@ export default function WaitingRoomPage() {
     roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
   );
 
-  // 참여자 목록
-  // { key(email), nickname, isHost, isReady, micOn, voiceLevel }
   const [participants, setParticipants] = useState([]);
   const participantsRef = useRef([]);
   useEffect(() => {
     participantsRef.current = participants;
   }, [participants]);
 
-  const [myKey, setMyKey] = useState(""); // userId 문자열을 key로 사용
+  const [myKey, setMyKey] = useState("");
   const [readyCount, setReadyCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -177,11 +172,9 @@ export default function WaitingRoomPage() {
   const [myMicOn, setMyMicOn] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
 
-  // 음성 분석
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
 
-  // 방 설정 변경 팝업
   const [editPopupOpen, setEditPopupOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(roomTitle);
   const [editTopic, setEditTopic] = useState(topic);
@@ -204,7 +197,6 @@ export default function WaitingRoomPage() {
     setTimeout(() => setToastMessage(""), 2000);
   }, []);
 
-  // JWT에서 userId 추출
   const getUserIdFromToken = useCallback(() => {
     try {
       const token = localStorage.getItem("accessToken");
@@ -230,12 +222,11 @@ export default function WaitingRoomPage() {
         payload.sub;
 
       return userId ? String(userId) : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   }, []);
 
-  // 오디오 분석
   const audioRef = useRef({
     stream: null,
     ctx: null,
@@ -264,7 +255,7 @@ export default function WaitingRoomPage() {
     if (a.ctx) {
       try {
         await a.ctx.close();
-      } catch (e) {
+      } catch {
         // ignore
       }
       a.ctx = null;
@@ -344,12 +335,12 @@ export default function WaitingRoomPage() {
 
       try {
         await ctx.resume();
-      } catch (e) {
+      } catch {
         // ignore
       }
 
       tick();
-    } catch (e) {
+    } catch {
       setIsSpeaking(false);
       setVoiceLevel(0);
     }
@@ -362,10 +353,8 @@ export default function WaitingRoomPage() {
     };
   }, [startAudioAnalysis, stopAudioAnalysis]);
 
-  // lobby 재조회용 ref
   const fetchLobbyRef = useRef(null);
 
-  // lobby API
   const fetchLobby = useCallback(async () => {
     if (!inviteCode || inviteCode === "000000") {
       setIsLoading(false);
@@ -378,7 +367,6 @@ export default function WaitingRoomPage() {
 
       const members = data.participants ?? [];
 
-      // roomId / 방 설정 갱신
       if (data.roomId != null) setRoomId(data.roomId);
 
       const nextTitle = data.title ?? data.roomTitle;
@@ -392,13 +380,11 @@ export default function WaitingRoomPage() {
       if (nextTurn !== undefined && nextTurn !== null)
         setTurnCount(Number(nextTurn));
 
-      // 내 key 결정
       const tokenKey = getUserIdFromToken();
       const resolvedMyKey =
         tokenKey ?? (roomInfo.myUserId ? String(roomInfo.myUserId) : "");
       if (resolvedMyKey) setMyKey(resolvedMyKey);
 
-      // 카운트
       const readyMembers = members.filter(
         (m) => !m.isHost && m.readyStatus === "READY",
       );
@@ -406,7 +392,6 @@ export default function WaitingRoomPage() {
       setReadyCount(readyMembers.length);
       setTotalCount(members.length);
 
-      // 이전 voiceLevel 보존
       const prevMap = new Map(participantsRef.current.map((p) => [p.key, p]));
 
       const mapped = members.map((m) => {
@@ -425,7 +410,6 @@ export default function WaitingRoomPage() {
 
       setParticipants(mapped);
 
-      // sessionStorage 갱신(다음 화면/새로고침 대비)
       try {
         const nextRoomInfo = {
           ...roomInfo,
@@ -441,10 +425,10 @@ export default function WaitingRoomPage() {
           maxCount,
         };
         sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(nextRoomInfo));
-      } catch (e) {
+      } catch {
         // ignore
       }
-    } catch (e) {
+    } catch {
       showToast("참여자 목록을 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
@@ -475,19 +459,13 @@ export default function WaitingRoomPage() {
   const isHost = useMemo(() => me?.isHost ?? false, [me]);
   const myReady = me?.isReady ?? false;
 
-  const nonHostParticipants = useMemo(
-    () => participants.filter((p) => !p.isHost),
-    [participants],
-  );
-
   const nonHostAllReady = useMemo(
-    () => nonHostParticipants.every((p) => p.isReady),
-    [nonHostParticipants],
+    () => participants.filter((p) => !p.isHost).every((p) => p.isReady),
+    [participants],
   );
 
   const canStart = isHost && nonHostAllReady;
 
-  // WebSocket 연결
   const hasNavigatedRef = useRef(false);
 
   const handleMemberJoined = useCallback(() => {
@@ -519,7 +497,6 @@ export default function WaitingRoomPage() {
       if (!senderKey) return;
       const k = String(senderKey);
 
-      // 내 마이크는 로컬(myMicOn)로 유지
       if (k === myKey) return;
 
       setParticipants((prev) =>
@@ -546,7 +523,6 @@ export default function WaitingRoomPage() {
     [myKey],
   );
 
-  // SETTINGS_CHANGED 반영(가장 중요)
   const handleSettingsChanged = useCallback(
     (payload) => {
       const nextTitle =
@@ -563,13 +539,11 @@ export default function WaitingRoomPage() {
       if (nextTurn !== null && nextTurn !== undefined)
         setTurnCount(Number(nextTurn));
 
-      // 일반적으로 설정 변경 시 준비상태가 리셋되는 경우가 많으므로 로컬에서도 반영
       setParticipants((prev) =>
         prev.map((p) => (p.isHost ? p : { ...p, isReady: false })),
       );
       setReadyCount(0);
 
-      // sessionStorage 갱신(참여자도 즉시 반영되게)
       try {
         const stored = sessionStorage.getItem(ROOM_INFO_KEY);
         const base = stored ? JSON.parse(stored) : {};
@@ -582,13 +556,11 @@ export default function WaitingRoomPage() {
           turnCnt: nextTurn != null ? Number(nextTurn) : base.turnCnt,
         };
         sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(updated));
-      } catch (e) {
+      } catch {
         // ignore
       }
 
-      // 설정 변경은 자주 일어나지 않으므로, 1회 lobby 재조회로 확정 동기화
       fetchLobbyRef.current?.();
-
       showToast("방 정보가 변경되었습니다.");
     },
     [showToast],
@@ -660,7 +632,6 @@ export default function WaitingRoomPage() {
     onConnected: () => fetchLobbyRef.current?.(),
   });
 
-  // 내 voiceLevel 전송(연결 훅에서 쓰로틀이 걸려있더라도, 여기서도 최소 조건은 둡니다)
   const lastLocalSentRef = useRef({ at: 0, level: 0 });
   useEffect(() => {
     if (!myMicOn) return;
@@ -676,35 +647,29 @@ export default function WaitingRoomPage() {
     if (voiceLevel > 0) sendVoiceLevel(voiceLevel);
   }, [voiceLevel, myMicOn, sendVoiceLevel]);
 
-  // 마이크 토글
   const toggleMyMic = useCallback(async () => {
-    const next = !myMicOn;
-
     if (myMicOn) {
       setMyMicOn(false);
       await stopAudioAnalysis();
-      sendMic(false);
+      if (sendMic) sendMic(false);
       return;
     }
 
     setMyMicOn(true);
     await startAudioAnalysis();
-    sendMic(true);
+    if (sendMic) sendMic(true);
   }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
-  // 준비 토글
   const toggleMyReady = useCallback(async () => {
     const next = !myReady;
 
-    // 낙관적 업데이트
     setParticipants((prev) =>
       prev.map((p) => (p.key === myKey ? { ...p, isReady: next } : p)),
     );
 
     try {
       await toggleReady(inviteCode);
-    } catch (e) {
-      // 실패 시 롤백
+    } catch {
       setParticipants((prev) =>
         prev.map((p) => (p.key === myKey ? { ...p, isReady: !next } : p)),
       );
@@ -712,15 +677,14 @@ export default function WaitingRoomPage() {
       return;
     }
 
-    sendReady(next);
+    if (sendReady) sendReady(next);
   }, [myReady, myKey, inviteCode, sendReady, showToast]);
 
-  // 초대코드 복사/공유
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(inviteCode);
       showToast("참여 코드가 복사되었습니다.");
-    } catch (e) {
+    } catch {
       showToast("복사에 실패했습니다.");
     }
   }, [inviteCode, showToast]);
@@ -745,12 +709,11 @@ export default function WaitingRoomPage() {
         `참여 코드: ${inviteCode}\n방 제목: ${roomTitle}\n주제: ${topic}`,
       );
       showToast("초대 정보가 복사되었습니다.");
-    } catch (e) {
+    } catch {
       showToast("공유에 실패했습니다.");
     }
   }, [inviteCode, roomTitle, topic, showToast]);
 
-  // 방 설정 변경(방장)
   const handleEditRoomInfo = useCallback(() => {
     if (!isHost) return;
     setEditTitle(roomTitle);
@@ -784,7 +747,7 @@ export default function WaitingRoomPage() {
         setEditTopic(randomTopic);
         return;
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -810,12 +773,11 @@ export default function WaitingRoomPage() {
         topic: editTopic.trim(),
         turnCnt: editTurn,
       });
-    } catch (e) {
+    } catch {
       showToast("방 설정 변경에 실패했습니다.");
       return;
     }
 
-    // 방장 본인은 즉시 반영(참여자는 SETTINGS_CHANGED로 반영됨)
     setRoomTitle(editTitle.trim());
     setTopic(editTopic.trim());
     setTurnCount(editTurn);
@@ -834,30 +796,25 @@ export default function WaitingRoomPage() {
           turnCnt: editTurn,
         }),
       );
-    } catch (e) {
+    } catch {
       // ignore
     }
 
     setEditPopupOpen(false);
-
-    // 서버 상태(readyCount 등) 확정 동기화
     fetchLobbyRef.current?.();
     showToast("방 설정이 변경되었습니다.");
   }, [editTitle, editTopic, editTurn, showToast, inviteCode]);
 
-  // 시작하기(방장): API만 호출하고, 실제 화면 전환은 WS onRoomStarted에서 처리
   const handleStart = useCallback(async () => {
     if (!canStart) return;
 
     try {
       await startRoom(inviteCode);
-    } catch (e) {
+    } catch {
       showToast("방을 시작하는데 실패했습니다.");
       return;
     }
 
-    // 서버가 시작 이벤트를 브로드캐스트하면 onRoomStarted에서 이동합니다.
-    // 만약 브로드캐스트가 누락되는 서버라면, lobby 재조회로 보정합니다.
     setTimeout(() => {
       if (hasNavigatedRef.current) return;
       fetchLobbyRef.current?.();
@@ -876,18 +833,17 @@ export default function WaitingRoomPage() {
       : "준비하기";
   const primaryDisabled = isHost ? !canStart : false;
 
-  // 나가기
   const handleExit = useCallback(async () => {
     try {
       await stopAudioAnalysis();
-    } catch (e) {
+    } catch {
       // ignore
     }
 
     if (inviteCode && inviteCode !== "000000") {
       try {
         await leaveRoom({ roomCode: inviteCode });
-      } catch (e) {
+      } catch {
         // ignore
       }
     }

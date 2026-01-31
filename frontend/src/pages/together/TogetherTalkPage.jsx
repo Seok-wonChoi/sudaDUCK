@@ -161,10 +161,6 @@ export default function TogetherTalkPage() {
       const data = await getRoomLobby(resolvedRoomCode);
 
       if (data?.topic) setTopic(data.topic);
-      if (data?.turnCnt !== undefined && data?.turnCnt !== null) {
-        // turnCnt는 "전체 턴 수"일 가능성이 높아서 currentTurn과는 다른 값입니다.
-        // 여기서는 currentTurn을 덮어쓰지 않습니다.
-      }
       if (data?.roomId) setRoomId(data.roomId);
 
       const members = Array.isArray(data?.participants)
@@ -191,7 +187,6 @@ export default function TogetherTalkPage() {
         setMaxCount(data.maxCount);
       }
     } catch (e) {
-      // 로비 동기화 실패는 치명적이지 않게 처리
       console.error("[TogetherTalkPage] getRoomLobby 실패:", e);
     }
   }, [resolvedRoomCode, myUserId]);
@@ -439,23 +434,22 @@ export default function TogetherTalkPage() {
 
   const handleDone = useCallback(async () => {
     await doLeaveRoom();
-
-    navigate("/main", {
-      replace: true,
-    });
+    navigate("/main", { replace: true });
   }, [doLeaveRoom, navigate]);
 
-  const handleBack = () => {
-    navigate("/main");
-  };
+  // 중복/문법 오류가 있던 handleBack은 하나만 남깁니다.
+  const handleBack = useCallback(() => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/together");
+  }, [navigate]);
 
   /* =========================
-     돌발 퀘스트 (수동 시작 1/2/3)
+     돌발 퀘스트 (수동 시작 1/2)
   ========================= */
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
-  const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | null (3번 제거)
-  const [questStep, setQuestStep] = useState("idle");
+  const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | null
+  const [questStep, setQuestStep] = useState("idle"); // idle | q1intro | q1ready | q1showQuestion | q1answering | intro | q2game | resultFail | resultSuccess
   const [isCorrect, setIsCorrect] = useState(false);
   const [countdown, setCountdown] = useState(3);
 
@@ -472,6 +466,8 @@ export default function TogetherTalkPage() {
     (id) => {
       if (questRunning) return;
 
+      if (id !== 1 && id !== 2) return;
+
       setActiveQuest(id);
       setIsRoomTimerRunning(false);
 
@@ -480,23 +476,17 @@ export default function TogetherTalkPage() {
         return;
       }
 
-      if (id === 2) {
-        setQuestStep("intro");
-      }
+      // id === 2
+      setQuestStep("intro");
     },
     [questRunning],
   );
 
   const handleOverlayClickNext = useCallback(() => {
-    // 퀘스트 1 흐름: intro → ready → countdown3 → countdown2 → countdown1 → showQuestion → answering → result
+    // 퀘스트 1: intro → ready(countdown) → showQuestion → answering → (결과는 추후 처리)
     if (questStep === "q1intro" && activeQuest === 1) {
       setQuestStep("q1ready");
       setCountdown(3);
-      return;
-    }
-
-    if (questStep === "q1ready" && activeQuest === 1) {
-      setQuestStep("q1showQuestion");
       return;
     }
 
@@ -505,12 +495,13 @@ export default function TogetherTalkPage() {
       return;
     }
 
-    // 퀘스트 2
+    // 퀘스트 2: intro → q2game(모달)
     if (questStep === "intro" && activeQuest === 2) {
       setQuestStep("q2game");
       return;
     }
 
+    // 결과 화면 클릭 시 종료
     if (questStep === "resultFail" || questStep === "resultSuccess") {
       endQuestAndResume();
     }
@@ -534,7 +525,7 @@ export default function TogetherTalkPage() {
     return () => clearInterval(timer);
   }, [questStep, activeQuest]);
 
-  // 퀘스트 1: 영어 문장 표시 후 3초 뒤 자동으로 답변 화면으로 전환
+  // 퀘스트 1: 영어 문장 표시 후 3초 뒤 자동으로 answering 전환(원하면 클릭으로도 전환 가능)
   useEffect(() => {
     if (questStep !== "q1showQuestion" || activeQuest !== 1) return;
 
@@ -551,39 +542,30 @@ export default function TogetherTalkPage() {
     setQuestStep(correct ? "resultSuccess" : "resultFail");
   }, []);
 
-  const handleQuest1AnswerSubmit = useCallback(() => {
-    // TODO: AI 기능 연결 후 실제 답변 검증
-    const correct = Math.random() > 0.5;
-    setIsCorrect(correct);
-    setQuestStep(correct ? "resultSuccess" : "resultFail");
-  }, []);
-
-  // 퀘스트 1 텍스트
+  // 퀘스트 텍스트
   const quest1IntroTitle = "돌발 퀘스트!!";
   const quest1IntroBody = "영어로만 답해야 해!!\n모두 협동해서 점수를 얻어봐";
   const quest1ReadyText = "다들 준비는 됐나?";
   const quest1English = "What is your favorite food?";
 
-  // 퀘스트 2 텍스트
-  const quest2IntroTitle = "돌발 퀘스트!!\n빈칸을 채워.";
+  const quest2IntroTitle = "돌발 퀘스트!!\n빈칸을 채워봐.";
   const quest2IntroSub = "가장 먼저 맞힌 사람이 점수를 얻어.";
 
   const isSuccess = questStep === "resultSuccess";
-
   const failText = "아쉽게도 성공하지 못했어\n다음 번 기회를 노려봐!";
   const successText = "대단해!! 점수를 획득했어!!";
 
   const resultBubbleText = isSuccess ? successText : failText;
   const resultDuckSrc = isSuccess ? duckHappyImg : duckSadImg;
 
-  // 퀘스트 1 오버레이 표시 조건
+  // 오버레이 표시 조건
   const showQuest1Intro = questStep === "q1intro" && activeQuest === 1;
   const showQuest1Ready = questStep === "q1ready" && activeQuest === 1;
-  const showQuest1ShowQuestion = questStep === "q1showQuestion" && activeQuest === 1;
+  const showQuest1ShowQuestion =
+    questStep === "q1showQuestion" && activeQuest === 1;
   const showQuest1Answering = questStep === "q1answering" && activeQuest === 1;
 
-  // 퀘스트 2 오버레이 표시 조건
-  const showIntroOverlay = questStep === "intro" && activeQuest === 2;
+  const showQuest2Intro = questStep === "intro" && activeQuest === 2;
   const showQuest2Game = questStep === "q2game" && activeQuest === 2;
 
   const showResultOverlay =
@@ -661,9 +643,12 @@ export default function TogetherTalkPage() {
             <div className={styles.LeftStage}>
               {showQuest1Answering && (
                 <div className={styles.Quest1Banner}>
-                  <div className={styles.Quest1BannerQuestion}>{quest1English}</div>
+                  <div className={styles.Quest1BannerQuestion}>
+                    {quest1English}
+                  </div>
                 </div>
               )}
+
               <section
                 className={styles.CardsGrid}
                 aria-label="참여자 영상 영역"
@@ -708,7 +693,7 @@ export default function TogetherTalkPage() {
                           <span className={styles.MeLabel}>{p.name}</span>
                           <img
                             className={styles.MicMini}
-                            src={participantMicOn ? micOffIcon : micOnIcon}
+                            src={participantMicOn ? micOnIcon : micOffIcon}
                             alt={
                               participantMicOn ? "마이크 켜짐" : "마이크 꺼짐"
                             }
@@ -734,7 +719,7 @@ export default function TogetherTalkPage() {
                 >
                   <img
                     className={styles.ButtonIcon}
-                    src={micOn ? micOffIcon : micOnIcon}
+                    src={micOn ? micOnIcon : micOffIcon}
                     alt=""
                     aria-hidden="true"
                   />
@@ -839,7 +824,7 @@ export default function TogetherTalkPage() {
 
         {/* 퀘스트 2: 인트로 */}
         <UnexpectedQuestOverlay
-          open={showIntroOverlay}
+          open={showQuest2Intro}
           onClose={handleOverlayClickNext}
           duckSrc={duckBombImg}
           bubbleText={quest2IntroTitle}
@@ -858,6 +843,7 @@ export default function TogetherTalkPage() {
           onSubmit={handleSubmitQuest2}
         />
 
+        {/* 결과 */}
         <UnexpectedQuestOverlay
           open={showResultOverlay}
           onClose={handleOverlayClickNext}

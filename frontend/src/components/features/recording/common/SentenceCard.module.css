@@ -5,10 +5,10 @@
   border-radius: 24px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08),
               0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  padding: 48px 60px;
+  padding: 32px 48px;
   width: 100%;
   max-width: 1600px;
-  min-height: 350px;
+  min-height: 280px;
   margin: 0 auto;
   transition: all 0.3s ease;
 }
@@ -29,7 +29,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .speakerInfo {
@@ -148,7 +148,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .section {
@@ -174,9 +174,9 @@
 /* English Section */
 .englishSection {
   background: #eff6ff;
-  padding: 28px 32px;
+  padding: 20px 24px;
   border-radius: 16px;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .englishHeader {
@@ -226,11 +226,11 @@
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 16px;
-  padding: 32px;
-  min-height: 160px;
+  padding: 24px;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .recordingContent {
@@ -267,8 +267,8 @@
 }
 
 .recordingCircle {
-  width: 100px;
-  height: 100px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   background: #ef4444;
   display: flex;

@@ -12,6 +12,7 @@ export default function SentenceCard({
   isActive = false,
   cardState = 'idle',
   countdown = 3,
+  recordingTime = 0, // 녹음 시간 (초)
   sentenceId = null,
   initialBookmarked = false,
   onBookmarkToggle = null,
@@ -36,10 +37,9 @@ export default function SentenceCard({
 
   // 영어 문장을 빈칸 처리하는 함수
   const getDisplayEnglish = () => {
-    // AI가 읽어줄 때나 평가 결과 볼 때는 전체 문장 표시
+    // AI가 읽어줄 때나 idle 상태(턴 종료 리포트)에서는 전체 문장 표시
     const showFullSentence =
       cardState === 'ai_playing' ||
-      cardState === 'record_done' ||
       cardState === 'idle' ||
       !isActive;
 
@@ -47,7 +47,7 @@ export default function SentenceCard({
       return <>{english}</>;
     }
 
-    // 녹음 대기 중이거나 녹음 중일 때는 빈칸 처리
+    // 녹음 대기 중, 녹음 중, 녹음 완료 시에는 빈칸 처리
     let parts = [english];
     blankWords.forEach((word) => {
       const newParts = [];
@@ -62,7 +62,7 @@ export default function SentenceCard({
               // 빈칸으로 처리
               newParts.push(
                 <span key={`blank-${word}-${idx}`} className={styles.blank}>
-                  {'_'.repeat(split.length)}
+                  {'\u00A0'.repeat(split.length)}
                 </span>
               );
             } else if (split) {
@@ -92,10 +92,17 @@ export default function SentenceCard({
         );
 
       case 'recording':
+        // 녹음 시간 포맷: 00:03
+        const formatTime = (seconds) => {
+          const mins = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        };
+
         return (
           <div className={styles.recordingActive}>
             <div className={styles.recordingCircle}>
-              <span className={styles.countdownNumber}>{countdown}</span>
+              <span className={styles.countdownNumber}>{formatTime(recordingTime)}</span>
             </div>
             <p className={styles.recordingHint}>자동으로 다음 음성으로 넘어갑니다</p>
           </div>
@@ -129,32 +136,36 @@ export default function SentenceCard({
           <span className={styles.speakerName}>{speaker}</span>
         </div>
         <div className={styles.headerRight}>
-          {score !== null && (
+          {/* 턴 종료 리포트(idle)에서만 점수 표시 */}
+          {score !== null && cardState === 'idle' && (
             <span className={styles.score}>
               개인 점수: <strong className={styles.scoreValue}>{score}점</strong> / 평균 78점
             </span>
           )}
           <span className={styles.progress}>{currentSentence} / {totalSentences}</span>
-          <button
-            className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}
-            onClick={handleBookmark}
-            aria-label={isBookmarked ? "저장 해제" : "저장하기"}
-            title={isBookmarked ? "저장 해제" : "저장하기"}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M19 3H5C4.20435 3 3.44129 3.31607 2.87868 3.87868C2.31607 4.44129 2 5.20435 2 6V21L12 16.5L22 21V6C22 5.20435 21.6839 4.44129 21.1213 3.87868C20.5587 3.31607 19.7956 3 19 3Z"
-                stroke={isBookmarked ? "#2b7fff" : "#9CA3AF"}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill={isBookmarked ? "#2b7fff" : "none"}
-              />
-            </svg>
-            <span className={styles.bookmarkText}>
-              {isBookmarked ? "저장됨" : "저장하기"}
-            </span>
-          </button>
+          {/* 턴 종료 리포트(idle)에서만 저장하기 버튼 표시 */}
+          {score !== null && cardState === 'idle' && (
+            <button
+              className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}
+              onClick={handleBookmark}
+              aria-label={isBookmarked ? "저장 해제" : "저장하기"}
+              title={isBookmarked ? "저장 해제" : "저장하기"}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M19 3H5C4.20435 3 3.44129 3.31607 2.87868 3.87868C2.31607 4.44129 2 5.20435 2 6V21L12 16.5L22 21V6C22 5.20435 21.6839 4.44129 21.1213 3.87868C20.5587 3.31607 19.7956 3 19 3Z"
+                  stroke={isBookmarked ? "#2b7fff" : "#9CA3AF"}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill={isBookmarked ? "#2b7fff" : "none"}
+                />
+              </svg>
+              <span className={styles.bookmarkText}>
+                {isBookmarked ? "저장됨" : "저장하기"}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
