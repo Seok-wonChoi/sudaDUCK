@@ -11,5 +11,5 @@ public class ReviewQuestionResponse {
     private String scriptId;
     private String korean;
     private String english;
-    private String blank_scripts;
+    private String blank_script;
 }
