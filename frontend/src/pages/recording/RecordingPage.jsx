@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Recordinglayout from '@/components/features/recording/layout/RecordingLayout';
 import { saveAssessment, toggleScriptLike, getTurnScripts } from '@/api/shadowing';
 import { endRoom } from '@/api/rooms';
@@ -11,9 +11,6 @@ import BottomRecordTimer from '@/components/features/recording/bottom/BottomReco
 import BottomRecording from '@/components/features/recording/bottom/BottomRecording';
 import BottomRecordDone from '@/components/features/recording/bottom/BottomRecordDone';
 import BottomAllDone from '@/components/features/recording/bottom/BottomAllDone';
-
-// 서비스 설정
-const TURNS = 3;
 
 // 임시 재생/녹음 시간
 const AI_PLAYING_MS = 2500;
@@ -90,7 +87,12 @@ const DUMMY_CONVERSATIONS = {
 
 export default function RecordingPage() {
   const { state } = useLocation();
+  const navigate = useNavigate();
   const roomInfo = state?.roomInfo || {};
+
+  // 방 생성 시 선택한 턴수 사용 (기본값 3)
+  const TURNS = roomInfo.turnCount || 3;
+  const roomId = roomInfo.roomId;
 
   const [step, setStep] = useState(STEP.IDLE);
   const [currentTurn, setCurrentTurn] = useState(1);
@@ -101,6 +103,7 @@ export default function RecordingPage() {
   const [bookmarkedSentences, setBookmarkedSentences] = useState([]);
   const [conversations, setConversations] = useState({}); // 턴별 스크립트 저장
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedTurnForReport, setSelectedTurnForReport] = useState(null); // 리포트 확인용
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
@@ -110,8 +113,10 @@ export default function RecordingPage() {
   const audioRef = useRef(null); // TTS 오디오 재생용
 
   const currentTurnSentences = useMemo(() => {
-    return conversations[currentTurn] || DUMMY_CONVERSATIONS[currentTurn] || [];
-  }, [currentTurn, conversations]);
+    // ALL_DONE 상태에서 리포트를 보는 경우 선택된 턴의 스크립트를 표시
+    const turnToShow = selectedTurnForReport || currentTurn;
+    return conversations[turnToShow] || DUMMY_CONVERSATIONS[turnToShow] || [];
+  }, [currentTurn, selectedTurnForReport, conversations]);
 
   const currentSentence = useMemo(() => {
     return currentTurnSentences[currentSentenceIndex];
@@ -260,6 +265,23 @@ export default function RecordingPage() {
     setCountdown(3);
     setStep(STEP.IDLE);
     setSentenceScores({});
+    setSelectedTurnForReport(null);
+  };
+
+  const handleComplete = () => {
+    // 미니게임1로 이동
+    navigate('/minigame1', {
+      state: {
+        roomId: roomId,
+      }
+    });
+  };
+
+  const handleTurnClick = (turn) => {
+    // ALL_DONE 상태에서만 작동
+    if (step === STEP.ALL_DONE) {
+      setSelectedTurnForReport(turn);
+    }
   };
 
   const handleBookmarkToggle = useCallback(async (sentenceId, isBookmarked) => {
@@ -516,8 +538,8 @@ export default function RecordingPage() {
 
   // 카드 리스트에 전달할 데이터
   const sentenceCardsData = useMemo(() => {
-    // TURN_REPORT 상태일 때는 모든 카드를 활성화하여 표시
-    const isReportMode = step === STEP.TURN_REPORT;
+    // TURN_REPORT 또는 ALL_DONE 상태일 때는 모든 카드를 활성화하여 표시
+    const isReportMode = step === STEP.TURN_REPORT || step === STEP.ALL_DONE;
 
     return currentTurnSentences.map((sentence, index) => ({
       ...sentence,
@@ -599,7 +621,7 @@ export default function RecordingPage() {
         );
 
       case STEP.ALL_DONE:
-        return <BottomAllDone onRestart={restart} />;
+        return <BottomAllDone onRestart={restart} onComplete={handleComplete} />;
 
       default:
         return null;
@@ -608,13 +630,17 @@ export default function RecordingPage() {
 
   return (
     <Recordinglayout
-      currentTurn={currentTurn}
+      currentTurn={selectedTurnForReport || currentTurn}
       sentenceCards={sentenceCardsData}
       activeCardState={getActiveCardState()}
       countdown={countdown}
       recordingTime={recordingTime}
       bottomContent={bottomContent()}
       onBookmarkToggle={handleBookmarkToggle}
+      totalTurns={TURNS}
+      isAllDone={step === STEP.ALL_DONE}
+      onTurnClick={handleTurnClick}
+      selectedTurnForReport={selectedTurnForReport}
     />
   );
 }
