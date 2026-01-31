@@ -17,6 +17,7 @@ import RecordingPage from "./pages/recording/RecordingPage";
 import MyPage from "./pages/mypage/MyPage";
 import MiniGame1Page from "./pages/minigame/MiniGame1Page";
 import MiniGame2Page from "./pages/minigame/MiniGame2Page";
+import VoiceRoom from "./pages/together/VoiceRoom";
 
 export default function App() {
   return (
@@ -42,6 +43,8 @@ export default function App() {
 
       <Route path="/minigame1" element={<MiniGame1Page />} />
       <Route path="/minigame2" element={<MiniGame2Page />} />
+
+      <Route path="/test" element={<VoiceRoom />} />
     </Routes>
   );
 }
