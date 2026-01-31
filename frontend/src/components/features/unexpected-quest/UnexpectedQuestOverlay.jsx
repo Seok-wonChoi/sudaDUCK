@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import styles from "./UnexpectedQuestOverlay.module.css";
 import speechBubbleImg from "@/assets/images/speech_bubble.png";
+import speechBubble2Img from "@/assets/images/speech_bubble2.png";
+import speechBubble3Img from "@/assets/images/speech_bubble3.png";
 
 export default function UnexpectedQuestOverlay({
   open,
@@ -8,9 +10,11 @@ export default function UnexpectedQuestOverlay({
 
   duckSrc,
   bubbleText,
+  bubbleTitle,  // 강조할 제목 (선택사항)
   subText,
   subTone = "normal",
   countdownNumber,
+  speechBubbleType = 1, // 1, 2, 3 중 선택
 
   // 추가: 버튼 없는 화면을 클릭으로 넘기기
   clickAnywhere = false,     // true면 화면 아무 곳이나 클릭 시 onClose 호출
@@ -52,6 +56,14 @@ export default function UnexpectedQuestOverlay({
     if (!clickAnywhere) e.stopPropagation();
   };
 
+  // speech bubble 이미지 선택
+  const bubbleImgSrc =
+    speechBubbleType === 2
+      ? speechBubble2Img
+      : speechBubbleType === 3
+        ? speechBubble3Img
+        : speechBubbleImg;
+
   return (
     <div
       className={styles.Backdrop}
@@ -72,8 +84,11 @@ export default function UnexpectedQuestOverlay({
         ) : null}
 
         <div className={styles.BubbleWrap}>
-          <img className={styles.BubbleImg} src={speechBubbleImg} alt="" />
+          <img className={styles.BubbleImg} src={bubbleImgSrc} alt="" />
           <div className={styles.BubbleContent}>
+            {bubbleTitle ? (
+              <div className={styles.BubbleTitle}>{bubbleTitle}</div>
+            ) : null}
             <div className={styles.BubbleText}>{bubbleText}</div>
 
             {subText ? (
