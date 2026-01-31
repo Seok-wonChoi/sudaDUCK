@@ -83,9 +83,21 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
     const token = localStorage.getItem("accessToken");
     const apiBase = import.meta.env.VITE_API_BASE_URL || "";
-    const socketUrl = apiBase.startsWith("http")
-      ? `${apiBase}/ws`
-      : `${window.location.origin}${apiBase}/ws`;
+
+    // WebSocket 연결 URL 생성
+    // 로컬 개발 환경에서는 Vite 프록시가 SockJS를 제대로 처리하지 못하므로 직접 서버로 연결
+    let socketUrl;
+    if (import.meta.env.DEV && apiBase === "/dev-api") {
+      // 로컬 개발: 직접 HTTPS 서버로 연결
+      socketUrl = "https://i14e104.p.ssafy.io/dev-api/ws";
+      console.log("[WebSocket] 로컬 개발 모드: 직접 서버 연결");
+    } else if (apiBase.startsWith("http")) {
+      // 프로덕션: 전체 URL 사용
+      socketUrl = `${apiBase}/ws`;
+    } else {
+      // 기타: 상대 경로 사용
+      socketUrl = `${window.location.origin}${apiBase}/ws`;
+    }
 
     const client = new Client({
       webSocketFactory: () => new SockJS(socketUrl),
@@ -108,6 +120,11 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
     });
 
     client.onConnect = () => {
+      console.log("[WebSocket] ✅ 연결 성공:", {
+        roomCode,
+        topic: `/topic/rooms/${roomCode}`,
+        socketUrl
+      });
       setIsConnected(true);
 
       subRef.current = client.subscribe(
@@ -137,10 +154,11 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
             switch (type) {
               case "READY_CHANGED":
-                console.log("[WebSocket] READY_CHANGED 수신:", {
+                console.log("[WebSocket] 🔄 READY_CHANGED 수신:", {
                   payload,
                   senderKey,
                   type,
+                  fullData: data
                 });
                 onReadyChanged?.(payload, senderKey);
                 break;
@@ -151,11 +169,21 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
 
               case "MEMBER_JOINED":
               case "PARTICIPANT_JOINED":
+                console.log("[WebSocket] 🟢 MEMBER_JOINED 수신:", {
+                  payload,
+                  senderKey,
+                  type,
+                });
                 onMemberJoined?.(payload, senderKey);
                 break;
 
               case "MEMBER_LEFT":
               case "PARTICIPANT_LEFT":
+                console.log("[WebSocket] 🔴 MEMBER_LEFT 수신:", {
+                  payload,
+                  senderKey,
+                  type,
+                });
                 onMemberLeft?.(payload, senderKey);
                 break;
 
@@ -228,17 +256,20 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
       handlersRef.current.onConnected?.();
     };
 
-    client.onStompError = () => {
+    client.onStompError = (frame) => {
+      console.error("[WebSocket] ❌ STOMP 에러:", frame);
       setIsConnected(false);
       handlersRef.current.onError?.("STOMP 인증 에러");
     };
 
-    client.onWebSocketError = () => {
+    client.onWebSocketError = (event) => {
+      console.error("[WebSocket] ❌ WebSocket 에러:", event);
       setIsConnected(false);
       handlersRef.current.onError?.("서버와 연결할 수 없습니다.");
     };
 
     client.onDisconnect = () => {
+      console.log("[WebSocket] 🔌 연결 해제됨:", { roomCode });
       setIsConnected(false);
       handlersRef.current.onDisconnected?.();
     };

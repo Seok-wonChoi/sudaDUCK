@@ -852,8 +852,8 @@ export default function TogetherTalkPage() {
                   <div
                     className={styles.Quest1BannerQuestion}
                     onClick={() => {
-                      console.log("[테스트] 영어 문장 클릭 - 돌발 퀘스트 종료");
-                      endQuestAndResume();
+                      console.log("[테스트] 영어 문장 클릭 - 결과 화면 표시");
+                      setQuestStep("resultSuccess");
                     }}
                     style={{ cursor: "pointer" }}
                   >
