@@ -12,6 +12,10 @@ export default function RecordingLayout({
   recordingTime = 0,
   bottomContent,
   onBookmarkToggle = null,
+  totalTurns = 3,
+  isAllDone = false,
+  onTurnClick = null,
+  selectedTurnForReport = null,
 }) {
   return (
     <div className={styles.recordingLayout}>
@@ -19,7 +23,13 @@ export default function RecordingLayout({
 
       <main className={styles.content}>
         <ScriptHeader />
-        <TurnTabs currentTurn={currentTurn} />
+        <TurnTabs
+          currentTurn={currentTurn}
+          totalTurns={totalTurns}
+          isAllDone={isAllDone}
+          onTurnClick={onTurnClick}
+          selectedTurnForReport={selectedTurnForReport}
+        />
 
         <div className={styles.cardsList}>
           {sentenceCards

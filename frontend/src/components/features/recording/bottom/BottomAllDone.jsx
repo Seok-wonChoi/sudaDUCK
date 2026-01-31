@@ -1,6 +1,6 @@
 import styles from './BottomAllDone.module.css';
 
-export default function BottomAllDone({ onRestart }) {
+export default function BottomAllDone({ onRestart, onComplete }) {
   return (
     <div className={styles.container} aria-live="polite">
       <div className={styles.iconCircle}>
@@ -10,9 +10,27 @@ export default function BottomAllDone({ onRestart }) {
       </div>
       <div className={styles.content}>
         <p className={styles.message}>완료 모든 문장의 녹음이 완료되었습니다</p>
-        <button className={styles.restartBtn} onClick={onRestart}>
-          다시하기
-        </button>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+          <button className={styles.restartBtn} onClick={onRestart}>
+            다시하기
+          </button>
+          <button
+            className={styles.completeBtn}
+            onClick={onComplete}
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#fff',
+              background: '#2b7fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            완료
+          </button>
+        </div>
       </div>
     </div>
   );

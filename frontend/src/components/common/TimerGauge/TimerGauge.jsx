@@ -18,6 +18,7 @@ export default function TimerGauge({
   const rafRef = useRef(0);
   const endAtRef = useRef(0);
   const lastShownSecRef = useRef(-1);
+  const remainingMsRef = useRef(durationMs); // 남은 시간 저장 (일시정지/재개용)
 
   const [shownSec, setShownSec] = useState(() =>
     Math.ceil(durationMs / 1000)
@@ -26,10 +27,20 @@ export default function TimerGauge({
   const label = useMemo(() => formatMMSS(Math.max(0, shownSec)), [shownSec]);
 
   useEffect(() => {
-    if (!isRunning) return;
+    if (!isRunning) {
+      // 일시정지: 현재 남은 시간 저장
+      cancelAnimationFrame(rafRef.current);
+      const now = performance.now();
+      if (endAtRef.current > 0) {
+        const remain = Math.max(0, endAtRef.current - now);
+        remainingMsRef.current = remain;
+      }
+      return;
+    }
 
+    // 재개: 남은 시간부터 시작
     const start = performance.now();
-    endAtRef.current = start + durationMs;
+    endAtRef.current = start + remainingMsRef.current;
 
     const tick = (now) => {
       const remain = Math.max(0, endAtRef.current - now);
