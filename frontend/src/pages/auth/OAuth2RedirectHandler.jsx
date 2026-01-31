@@ -35,9 +35,12 @@ export default function OAuth2RedirectHandler() {
       if (refreshToken) {
         localStorage.setItem("refreshToken", refreshToken);
       }
-      
+
+      // WS가 쿠키 access_token을 요구 - cross-site 요청을 위해 SameSite=None; Secure 설정
+      document.cookie = `access_token=${accessToken}; Path=/; SameSite=None; Secure`;
+
       console.log("[OAuth2] 토큰 저장 완료. 메인 페이지로 이동합니다.");
-      
+
       // ✅ replace: true를 사용하여 뒤로가기 스택에서 이 핸들러를 제거합니다.
       navigate("/main", { replace: true });
     } else {
