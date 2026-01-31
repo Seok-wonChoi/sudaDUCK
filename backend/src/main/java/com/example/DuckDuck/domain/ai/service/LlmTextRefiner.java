@@ -133,14 +133,14 @@ public class LlmTextRefiner {
     
     /**
      * LLM 정제가 필요한지 판단
-     * ✅ 조건 완화: 더 많은 경우에 LLM 정제 실행
+     * 조건 완화: 더 많은 경우에 LLM 정제 실행
      */
     public boolean needsRefinement(String text) {
         if (text == null || text.isEmpty()) {
             return false;
         }
         
-        // ✅ 조건 1: 항상 LLM 정제 실행 (STT 오인식 가능성)
+        // 조건 1: 항상 LLM 정제 실행 (STT 오인식 가능성)
         // 주석 처리하고 항상 true 반환하도록 수정할 수도 있음
         
         // 조건 2: 문장이 짧음 (5단어 미만으로 완화)
@@ -168,16 +168,16 @@ public class LlmTextRefiner {
             return true;
         }
         
-        // ✅ 조건 6: STT 오인식 패턴 (항상 체크)
+        // 조건 6: STT 오인식 패턴 (항상 체크)
         if (hasPotentialSttError(text)) {
             log.debug("LLM 정제 필요: STT 오인식 가능성");
             return true;
         }
         
-        // ✅ 조건 7: 모든 문장에 대해 LLM 정제 시도 (선택사항)
+        // 조건 7: 모든 문장에 대해 LLM 정제 시도
         // 비용이 걱정되면 이 부분 주석 처리
         log.debug("LLM 정제 시도: 품질 향상을 위해");
-        return true;  // ✅ 모든 문장을 LLM으로 정제
+        return true;
     }
     
     /**

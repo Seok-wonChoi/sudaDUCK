@@ -1,5 +1,6 @@
 package com.example.DuckDuck.domain.room.service;
 
+import com.example.DuckDuck.domain.ai.service.AiProfanityFilterService;
 import com.example.DuckDuck.domain.room.dto.request.RoomCreateRequest;
 import com.example.DuckDuck.domain.room.dto.request.RoomJoinRequest;
 import com.example.DuckDuck.domain.room.dto.request.RoomLeaveRequest;
@@ -34,6 +35,7 @@ public class RoomService {
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final RoomSocketService roomSocketService;
+    private final AiProfanityFilterService aiProfanityFilterService;
     private static final long ROOM_TTL_HOURS = 6;
     private static final String ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -61,6 +63,9 @@ public class RoomService {
     // ===================== 방 생성 =====================
     @Transactional
     public RoomCreateResponse createRoomByEmail(String email, RoomCreateRequest request) {
+
+        // gpt 주제 필터링
+        aiProfanityFilterService.validateText(request.topic(), "방 주제");
 
         // 1. 방장(Member) 조회 (JWT에서 얻은 userId 기준)
         Member host = memberRepository.findByEmail(email)
