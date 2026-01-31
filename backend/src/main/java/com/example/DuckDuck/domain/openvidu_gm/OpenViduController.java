@@ -52,6 +52,13 @@ public class OpenViduController {
             System.err.println("SSL 설정 실패: " + e.getMessage());
         }
 
+        // ★ 이 3줄을 추가해서 콘솔을 확인하세요! ★
+        System.out.println("=========================================");
+        System.out.println("🔥 현재 적용된 OpenVidu URL: " + OPENVIDU_URL);
+        System.out.println("🔥 현재 적용된 Secret: " + OPENVIDU_SECRET);
+        System.out.println("=========================================");
+
+
         // 2. OpenVidu 객체 생성
         this.openVidu = new OpenVidu(OPENVIDU_URL, OPENVIDU_SECRET);
 
