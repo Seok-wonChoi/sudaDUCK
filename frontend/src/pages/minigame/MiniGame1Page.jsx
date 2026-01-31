@@ -10,7 +10,7 @@ import ResultPanel from '@/components/features/minigame1/result/ResultPanel';
 import ReviewPanel from '@/components/features/minigame1/review/ReviewPanel';
 import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
 import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
-import { getReviewQuestions } from '@/api/miniGame';
+import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewData } from '@/api/miniGame';
 
 const MOCK_PARTICIPANTS = [
   { id: 1, name: '장가은', isActive: true },
@@ -74,6 +74,7 @@ export default function MiniGame1Page() {
   const [showCoinReward, setShowCoinReward] = useState(false);
   const [questions, setQuestions] = useState(MOCK_QUESTIONS);
   const [isLoading, setIsLoading] = useState(true);
+  const [rankings, setRankings] = useState(MOCK_RANKINGS);
 
   const currentUserId = 1;
   const roomId = location.state?.roomId;
@@ -215,25 +216,78 @@ export default function MiniGame1Page() {
 
       setAnsweredQuestions((prev) => [...prev, answered]);
 
+      // 문제 완료 시 정답 제출 API 호출
+      if (roomId && q.scriptId) {
+        const questionAnswers = q.blanks.map((_, idx) => ({
+          scriptId: q.scriptId,
+          userAnswer: idx === currentBlank ? inputValue.trim() : (blanksState[idx]?.value || ''),
+        }));
+
+        submitReviewAnswers(roomId, questionAnswers)
+          .then((result) => {
+            console.log('정답 제출 성공:', result);
+          })
+          .catch((error) => {
+            console.error('정답 제출 실패:', error);
+          });
+      }
+
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion((c) => c + 1);
         initQuestion(currentQuestion + 1);
       } else {
+        // 마지막 문제 완료 - 랭킹 조회
         setPhase(GAME_PHASE.WAITING);
-        setTimeout(() => {
-          setPhase(GAME_PHASE.RESULT);
-          // 1등이면 코인 지급 알림 표시
-          const firstPlace = MOCK_RANKINGS[0];
-          if (firstPlace && firstPlace.id === currentUserId) {
-            setTimeout(() => setShowCoinReward(true), 500);
-          }
-        }, 2000);
+
+        if (roomId) {
+          getReviewRanking(roomId)
+            .then((rankingData) => {
+              console.log('랭킹 조회 성공:', rankingData);
+              setRankings(rankingData);
+
+              setTimeout(() => {
+                setPhase(GAME_PHASE.RESULT);
+                // 1등이면 코인 지급 알림 표시
+                const firstPlace = rankingData[0];
+                if (firstPlace && firstPlace.me) {
+                  setTimeout(() => setShowCoinReward(true), 500);
+                }
+              }, 2000);
+            })
+            .catch((error) => {
+              console.error('랭킹 조회 실패:', error);
+              // 실패해도 결과 화면으로 이동 (MOCK 데이터 사용)
+              setTimeout(() => {
+                setPhase(GAME_PHASE.RESULT);
+              }, 2000);
+            });
+        } else {
+          // roomId 없으면 MOCK 데이터 사용
+          setTimeout(() => {
+            setPhase(GAME_PHASE.RESULT);
+            const firstPlace = MOCK_RANKINGS[0];
+            if (firstPlace && firstPlace.id === currentUserId) {
+              setTimeout(() => setShowCoinReward(true), 500);
+            }
+          }, 2000);
+        }
       }
     }
-  }, [inputValue, currentQuestion, currentBlank, blanksState, initQuestion, questions]);
+  }, [inputValue, currentQuestion, currentBlank, blanksState, initQuestion, questions, roomId, currentUserId]);
 
   const handleReview = () => setPhase(GAME_PHASE.REVIEW);
-  const handleComplete = () => navigate('/minigame2');
+  const handleComplete = async () => {
+    // 게임 종료 시 데이터 삭제
+    if (roomId) {
+      try {
+        await clearReviewData(roomId);
+        console.log('미니게임1 데이터 삭제 성공');
+      } catch (error) {
+        console.error('미니게임1 데이터 삭제 실패:', error);
+      }
+    }
+    navigate('/minigame2');
+  };
 
   if (isLoading || phase === GAME_PHASE.COUNTDOWN) {
     return <CountdownOverlay count={countdown} />;
@@ -274,7 +328,7 @@ export default function MiniGame1Page() {
 
       {phase === GAME_PHASE.RESULT && (
         <ResultPanel
-          rankings={MOCK_RANKINGS}
+          rankings={rankings}
           currentUserId={currentUserId}
           onReview={handleReview}
           onComplete={handleComplete}

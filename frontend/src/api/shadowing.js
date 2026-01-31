@@ -1,7 +1,6 @@
 import api from "./api";
 
 
-
 // 대화 스크립트 조회: GET /api/v1/session/{roomId}/turns/{turnNo}/scripts
 export async function getTurnScripts(roomId, turnNo) {
   const { data } = await api.get(`/api/v1/session/${roomId}/turns/${turnNo}/scripts`);

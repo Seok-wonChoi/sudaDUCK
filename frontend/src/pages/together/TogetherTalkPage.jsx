@@ -14,6 +14,8 @@ import {
   recordVoiceActivity,
   getRoomLobby,
 } from "@/api/rooms";
+import { scheduleQuiz, submitQuizAnswer } from "@/api/quiz";
+import { translateToEnglish } from "@/api/translate";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 import duckImg from "@/assets/images/duck.png";
@@ -426,11 +428,15 @@ export default function TogetherTalkPage() {
       replace: true,
       state: {
         mode: "together",
-        roomInfo,
+        roomInfo: {
+          ...roomInfo,
+          roomId: roomId, // roomId 명시적 전달
+          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3, // 턴수 전달
+        },
         participants,
       },
     });
-  }, [doLeaveRoom, navigate, roomInfo, participants]);
+  }, [doLeaveRoom, navigate, roomInfo, participants, roomId]);
 
   const handleDone = useCallback(async () => {
     await doLeaveRoom();
@@ -452,6 +458,12 @@ export default function TogetherTalkPage() {
   const [questStep, setQuestStep] = useState("idle"); // idle | q1intro | q1ready | q1showQuestion | q1answering | intro | q2game | resultFail | resultSuccess
   const [isCorrect, setIsCorrect] = useState(false);
   const [countdown, setCountdown] = useState(3);
+  const [quizId, setQuizId] = useState(null);
+  const [quizQuestion, setQuizQuestion] = useState("What is your favorite food?");
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedAudio, setRecordedAudio] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const questRunning = questStep !== "idle";
 
@@ -460,12 +472,18 @@ export default function TogetherTalkPage() {
     setQuestStep("idle");
     setIsRoomTimerRunning(true);
     setCountdown(3);
+    setQuizId(null);
+    setQuizQuestion("What is your favorite food?");
+    setIsRecording(false);
+    setRecordedAudio(null);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
   }, []);
 
   const startQuest = useCallback(
     (id) => {
       if (questRunning) return;
-
       if (id !== 1 && id !== 2) return;
 
       setActiveQuest(id);
@@ -536,17 +554,215 @@ export default function TogetherTalkPage() {
     return () => clearTimeout(timer);
   }, [questStep, activeQuest]);
 
+  // 3번째 턴 시작 시 퀴즈 스케줄 (15-40초 후 랜덤 발생)
+  useEffect(() => {
+    if (currentTurn !== 3) return;
+    if (questRunning || activeQuest !== null) return;
+
+    const scheduleRandomQuiz = async () => {
+      try {
+        console.log("[Quiz] 3번째 턴 시작 - 퀴즈 스케줄 요청:", { roomId, currentTurn, participantCount: participants.length });
+        const response = await scheduleQuiz(roomId, currentTurn, participants.length);
+        console.log("[Quiz] 퀴즈 스케줄 응답:", response);
+
+        if (response?.quizId) {
+          setQuizId(response.quizId);
+        }
+        if (response?.question) {
+          setQuizQuestion(response.question);
+        }
+
+        // 15-40초 후 랜덤하게 퀴즈 시작
+        const randomDelay = Math.floor(Math.random() * (40000 - 15000 + 1)) + 15000;
+        console.log(`[Quiz] ${randomDelay / 1000}초 후 퀴즈 시작 예정`);
+
+        setTimeout(() => {
+          console.log("[Quiz] 돌발 퀴즈 시작!");
+          startQuest(1);
+        }, randomDelay);
+      } catch (error) {
+        console.error("[Quiz] 퀴즈 스케줄 실패:", error);
+      }
+    };
+
+    scheduleRandomQuiz();
+  }, [currentTurn, questRunning, activeQuest, roomId, participants.length, startQuest]);
+
+  // 퀘스트 1: 녹음 시작
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setRecordedAudio(audioBlob);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      console.log("[Quiz] 녹음 시작");
+    } catch (error) {
+      console.error("[Quiz] 녹음 시작 실패:", error);
+      alert("마이크 접근 권한이 필요합니다.");
+    }
+  }, []);
+
+  // 퀘스트 1: 녹음 중지
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      console.log("[Quiz] 녹음 중지");
+    }
+  }, []);
+
+  // 퀘스트 1: 답변 제출
+  const handleSubmitQuest1 = useCallback(async () => {
+    if (!recordedAudio || !quizId) {
+      alert("녹음된 답변이 없습니다.");
+      return;
+    }
+
+    try {
+      console.log("[Quiz] 답변 제출 시도:", { quizId, userId: myUserId });
+
+      // Blob을 File로 변환
+      const audioFile = new File([recordedAudio], "answer.webm", { type: "audio/webm" });
+
+      const response = await submitQuizAnswer(quizId, myUserId, audioFile);
+      console.log("[Quiz] 답변 제출 응답:", response);
+
+      // 결과에 따라 성공/실패 화면 표시
+      const correct = response?.isCorrect ?? false;
+      setIsCorrect(correct);
+      setQuestStep(correct ? "resultSuccess" : "resultFail");
+    } catch (error) {
+      console.error("[Quiz] 답변 제출 실패:", error);
+      alert("답변 제출에 실패했습니다.");
+    }
+  }, [recordedAudio, quizId, myUserId]);
+
+  // 퀘스트 1: answering 단계에서 자동 녹음 시작 및 10초 후 자동 제출
+  useEffect(() => {
+    if (questStep !== "q1answering" || activeQuest !== 1) return;
+
+    // 녹음 시작
+    startRecording();
+
+    // 10초 후 자동 녹음 중지
+    const timer = setTimeout(() => {
+      stopRecording();
+    }, 10000);
+
+    return () => {
+      clearTimeout(timer);
+      // cleanup: 녹음 중이면 중지
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, [questStep, activeQuest, startRecording, stopRecording]);
+
+  // 퀘스트 1: 녹음 완료 후 자동 제출
+  useEffect(() => {
+    if (questStep !== "q1answering" || activeQuest !== 1) return;
+    if (!recordedAudio) return;
+
+    // recordedAudio가 설정되면 자동으로 제출
+    console.log("[Quiz] 녹음 완료, 자동 제출 시작");
+    handleSubmitQuest1();
+  }, [recordedAudio, questStep, activeQuest, handleSubmitQuest1]);
+
   const handleSubmitQuest2 = useCallback(() => {
     const correct = Math.random() > 0.5;
     setIsCorrect(correct);
     setQuestStep(correct ? "resultSuccess" : "resultFail");
   }, []);
 
+  /* =========================
+     한국어→영어 번역 (Chrome STT)
+  ========================= */
+  const recognitionRef = useRef(null);
+
+  // STT 시작
+  const startSTT = useCallback(() => {
+    try {
+      // Chrome Web Speech API 사용
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn("[STT] Web Speech API를 지원하지 않는 브라우저입니다.");
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ko-KR"; // 한국어 인식
+      recognition.continuous = true; // 계속 인식
+      recognition.interimResults = false; // 최종 결과만 받기
+
+      recognition.onresult = async (event) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        console.log("[STT] 인식된 텍스트:", transcript);
+
+        // 번역 API 호출
+        try {
+          const response = await translateToEnglish(roomId, transcript, currentTurn, myUserId);
+          console.log("[STT] 번역 결과:", response);
+        } catch (error) {
+          console.error("[STT] 번역 실패:", error);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error("[STT] 오류:", event.error);
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+      console.log("[STT] 음성 인식 시작");
+    } catch (error) {
+      console.error("[STT] 시작 실패:", error);
+    }
+  }, [roomId, currentTurn, myUserId]);
+
+  // STT 중지
+  const stopSTT = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      console.log("[STT] 음성 인식 중지");
+    }
+  }, []);
+
+  // 한국어 대화 시작 시 STT 자동 시작
+  useEffect(() => {
+    // 돌발퀘스트 중이 아니고, roomId가 있을 때만 STT 시작
+    if (!questRunning && roomId) {
+      startSTT();
+    } else {
+      stopSTT();
+    }
+
+    // cleanup
+    return () => {
+      stopSTT();
+    };
+  }, [questRunning, roomId, startSTT, stopSTT]);
+
   // 퀘스트 텍스트
   const quest1IntroTitle = "돌발 퀘스트!!";
   const quest1IntroBody = "영어로만 답해야 해!!\n모두 협동해서 점수를 얻어봐";
   const quest1ReadyText = "다들 준비는 됐나?";
-  const quest1English = "What is your favorite food?";
+  const quest1English = quizQuestion;
 
   const quest2IntroTitle = "돌발 퀘스트!!\n빈칸을 채워봐.";
   const quest2IntroSub = "가장 먼저 맞힌 사람이 점수를 얻어.";
@@ -613,29 +829,6 @@ export default function TogetherTalkPage() {
                 isRunning={isRoomTimerRunning}
                 onDone={handleDone}
               />
-              <div
-                className={styles.QuestButtons}
-                aria-label="돌발 퀘스트 시작 버튼"
-              >
-                <button
-                  type="button"
-                  className={styles.QuestBtn}
-                  onClick={() => startQuest(1)}
-                  disabled={questRunning}
-                  aria-label="돌발 퀘스트 1 시작"
-                >
-                  1
-                </button>
-                <button
-                  type="button"
-                  className={styles.QuestBtn}
-                  onClick={() => startQuest(2)}
-                  disabled={questRunning}
-                  aria-label="돌발 퀘스트 2 시작"
-                >
-                  2
-                </button>
-              </div>
             </div>
           </div>
 
