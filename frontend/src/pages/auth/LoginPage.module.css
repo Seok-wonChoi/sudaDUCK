@@ -1,264 +1,522 @@
+@font-face {
+  font-family: 'Jalnan';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.2/JalnanOTF00.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
 .Page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, #ffffff 50%, rgba(99, 102, 241, 0.05) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: clamp(12px, 2.5vw, 20px);
+  position: relative;
+  overflow: hidden;
+  font-family: 'Pretendard', sans-serif;
+}
+
+/* 노이즈 오버레이 */
+.noiseOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
 .Container {
   width: 100%;
-  max-width: 1000px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 40px;
+  max-width: 850px;
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(3deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
 }
 
 .FormSection {
-  flex: 1;
-  max-width: 400px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.85);
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(79, 70, 229, 0.03) 0%, transparent 50%),
+    radial-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 20px 20px;
+  backdrop-filter: blur(20px);
+  border-radius: 40px;
+  padding: 60px 50px;
+  box-shadow: 0 20px 60px rgba(79, 70, 229, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
-.Logo {
-  margin-bottom: 40px;
+/* 떠다니는 오리 */
+.floatingDuck {
+  position: absolute;
+  bottom: 10%;
+  right: 30px;
+  width: 120px;
+  height: auto;
+  opacity: 0.3;
+  animation: float 7s ease-in-out infinite;
+  filter: drop-shadow(0 10px 20px rgba(79, 70, 229, 0.2));
+  z-index: 1;
+}
+
+/* 떠다니는 장식 요소들 */
+.floatingDecoration1,
+.floatingDecoration2,
+.floatingDecoration3,
+.floatingDecoration4,
+.floatingDecoration5,
+.floatingDecoration6,
+.floatingDecoration7,
+.floatingDecoration8,
+.floatingDecoration9,
+.floatingDecoration10,
+.floatingDecoration11,
+.floatingDecoration12,
+.floatingDecoration13,
+.floatingDecoration14,
+.floatingDecoration15,
+.floatingDecoration16,
+.floatingDecoration17,
+.floatingDecoration18,
+.floatingDecoration19,
+.floatingDecoration20,
+.floatingDecoration21,
+.floatingDecoration22,
+.floatingDecoration23,
+.floatingDecoration24 {
+  position: fixed;
+  opacity: 0.25;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #4f46e5;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.floatingDecoration1 {
+  top: 15%;
+  left: 10%;
+  animation: floatSlow 15s ease-in-out infinite;
+}
+
+.floatingDecoration2 {
+  top: 25%;
+  right: 15%;
+  font-size: 2.5rem;
+  animation: floatSlow 12s ease-in-out infinite 2s;
+}
+
+.floatingDecoration3 {
+  bottom: 30%;
+  left: 8%;
+  animation: floatSlow 18s ease-in-out infinite 4s;
+}
+
+.floatingDecoration4 {
+  top: 60%;
+  right: 12%;
+  font-size: 2.5rem;
+  animation: floatSlow 14s ease-in-out infinite 1s;
+}
+
+.floatingDecoration5 {
+  bottom: 20%;
+  left: 15%;
+  animation: floatSlow 16s ease-in-out infinite 3s;
+}
+
+.floatingDecoration6 {
+  top: 40%;
+  left: 5%;
+  font-size: 2rem;
+  animation: floatSlow 13s ease-in-out infinite 5s;
+}
+
+.floatingDecoration7 {
+  top: 10%;
+  right: 8%;
+  animation: floatSlow 17s ease-in-out infinite 1s;
+}
+
+.floatingDecoration8 {
+  bottom: 35%;
+  right: 10%;
+  font-size: 2.3rem;
+  animation: floatSlow 14s ease-in-out infinite 3s;
+}
+
+.floatingDecoration9 {
+  top: 50%;
+  left: 12%;
+  font-size: 1.6rem;
+  animation: floatSlow 16s ease-in-out infinite 2s;
+}
+
+.floatingDecoration10 {
+  bottom: 15%;
+  right: 20%;
+  font-size: 2.2rem;
+  animation: floatSlow 15s ease-in-out infinite 4s;
+}
+
+.floatingDecoration11 {
+  top: 70%;
+  left: 10%;
+  font-size: 1.6rem;
+  animation: floatSlow 19s ease-in-out infinite 1.5s;
+}
+
+.floatingDecoration12 {
+  top: 30%;
+  left: 18%;
+  font-size: 2rem;
+  animation: floatSlow 13s ease-in-out infinite 3.5s;
+}
+
+.floatingDecoration13 {
+  bottom: 45%;
+  left: 5%;
+  font-size: 1.6rem;
+  animation: floatSlow 20s ease-in-out infinite 2.5s;
+}
+
+.floatingDecoration14 {
+  top: 55%;
+  right: 8%;
+  font-size: 2.4rem;
+  animation: floatSlow 12s ease-in-out infinite 4.5s;
+}
+
+.floatingDecoration15 {
+  bottom: 10%;
+  left: 20%;
+  font-size: 1.6rem;
+  animation: floatSlow 18s ease-in-out infinite 0.5s;
+}
+
+.floatingDecoration16 {
+  top: 20%;
+  left: 3%;
+  font-size: 2.1rem;
+  animation: floatSlow 14s ease-in-out infinite 3s;
+}
+
+.floatingDecoration17 {
+  top: 8%;
+  left: 25%;
+  font-size: 1.7rem;
+  animation: floatSlow 17s ease-in-out infinite 2s;
+}
+
+.floatingDecoration18 {
+  bottom: 25%;
+  right: 5%;
+  font-size: 2.3rem;
+  animation: floatSlow 15s ease-in-out infinite 1s;
+}
+
+.floatingDecoration19 {
+  top: 45%;
+  right: 18%;
+  font-size: 1.8rem;
+  animation: floatSlow 16s ease-in-out infinite 3.5s;
+}
+
+.floatingDecoration20 {
+  bottom: 50%;
+  left: 7%;
+  font-size: 2.4rem;
+  animation: floatSlow 14s ease-in-out infinite 2.5s;
+}
+
+.floatingDecoration21 {
+  top: 35%;
+  right: 25%;
+  font-size: 1.7rem;
+  animation: floatSlow 18s ease-in-out infinite 1.5s;
+}
+
+.floatingDecoration22 {
+  bottom: 40%;
+  left: 22%;
+  font-size: 2.2rem;
+  animation: floatSlow 13s ease-in-out infinite 4s;
+}
+
+.floatingDecoration23 {
+  top: 65%;
+  right: 15%;
+  font-size: 1.8rem;
+  animation: floatSlow 19s ease-in-out infinite 0.5s;
+}
+
+.floatingDecoration24 {
+  bottom: 5%;
+  right: 8%;
+  font-size: 2.5rem;
+  animation: floatSlow 12s ease-in-out infinite 3s;
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-30px) translateX(20px) rotate(5deg);
+  }
+  50% {
+    transform: translateY(-15px) translateX(-20px) rotate(-3deg);
+  }
+  75% {
+    transform: translateY(-40px) translateX(10px) rotate(3deg);
+  }
+}
+
+.TitleWrapper {
+  margin-bottom: 20px;
+}
+
+.MainTitle {
+  font-family: 'Jalnan', sans-serif;
+  font-size: 5rem;
+  font-weight: normal;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  letter-spacing: -2px;
+}
+
+.LogoImage {
+  width: 90px;
+  height: 90px;
+}
+
+.titleChar {
+  color: #4f46e5;
+  display: inline-block;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.titleChar:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.titleChar:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.duckText {
+  color: #6366f1;
+  font-size: 1em;
+  display: inline-block;
+  animation: fadeInUp 0.6s ease-out forwards;
+  animation-delay: 0.5s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .FormContent {
   width: 100%;
-}
-
-.Title {
-  font-size: 32px;
-  font-weight: 800;
-  color: #111827;
-  margin: 0 0 8px 0;
-}
-
-.Subtitle {
-  font-size: 14px;
-  color: #6B7280;
-  margin: 0 0 32px 0;
-}
-
-.Form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  align-items: center;
 }
 
-.InputGroup {
+.HeroImageContainer {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: float 4s ease-in-out infinite;
   position: relative;
 }
 
-.Input {
-  width: 100%;
-  height: 56px;
-  padding: 16px 16px 0;
-  font-size: 15px;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  background: #fff;
-  outline: none;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-}
-
-.Input:focus {
-  border-color: #4A90E2;
-}
-
-.Label {
+.HeroImageContainer::before {
+  content: '';
   position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 15px;
-  color: #9CA3AF;
-  pointer-events: none;
-  transition: all 0.2s ease;
-  background: #fff;
-  padding: 0 4px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(79, 70, 229, 0.15) 30%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  animation: pulse 3s ease-in-out infinite;
 }
 
-.Input:focus + .Label,
-.Input:not(:placeholder-shown) + .Label {
-  top: 0;
-  font-size: 12px;
-  color: #6B7280;
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
 }
 
-.PasswordToggle {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.HeroImage {
+  width: 250px;
+  height: auto;
+  filter: drop-shadow(0 20px 40px rgba(79, 70, 229, 0.3));
 }
 
-.Options {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: -4px;
-}
-
-.RememberMe {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #374151;
-  cursor: pointer;
-}
-
-.RememberMe input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  border: 1px solid #D1D5DB;
-  border-radius: 4px;
-  cursor: pointer;
-  accent-color: #4A90E2;
-}
-
-.ForgotPassword {
-  background: none;
-  border: none;
-  font-size: 14px;
-  color: #EF4444;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.ForgotPassword:hover {
-  text-decoration: underline;
-}
-
-.LoginButton {
-  width: 100%;
-  height: 52px;
-  background: #4A6CF7;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  margin-top: 8px;
-}
-
-.LoginButton:hover {
-  background: #3B5DE7;
-}
-
-.SignupText {
+.WelcomeText {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 20px 0 12px 0;
   text-align: center;
-  font-size: 14px;
-  color: #374151;
-  margin: 20px 0;
 }
 
-.SignupLink {
-  background: none;
-  border: none;
-  color: #EF4444;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.SignupLink:hover {
-  text-decoration: underline;
-}
-
-.Divider {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 24px 0;
-}
-
-.Divider::before,
-.Divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: #E5E7EB;
-}
-
-.Divider span {
-  font-size: 13px;
-  color: #9CA3AF;
-  white-space: nowrap;
+.Subtitle {
+  font-size: 1.1rem;
+  color: #6B7280;
+  margin: 0 0 40px 0;
+  text-align: center;
 }
 
 .KakaoButton {
   width: 100%;
-  height: 52px;
+  max-width: 400px;
+  height: 65px;
   background: #FEE500;
   border: none;
-  border-radius: 8px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 14px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 8px 20px rgba(254, 229, 0, 0.4);
 }
 
 .KakaoButton:hover {
   background: #F5DC00;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(254, 229, 0, 0.5);
 }
 
 .KakaoIcon {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
 }
 
 .KakaoButton span {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 800;
   color: #000;
 }
 
-.ImageSection {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.DuckImage {
-  max-width: 400px;
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-
+/* 반응형 */
 @media (max-width: 768px) {
-  .Container {
-    flex-direction: column;
-    gap: 40px;
+  .MainTitle {
+    font-size: 3.5rem;
+  }
+
+  .LogoImage {
+    width: 50px;
+    height: 50px;
   }
 
   .FormSection {
-    max-width: 100%;
-    width: 100%;
+    padding: 40px 30px;
+    border-radius: 30px;
   }
 
-  .ImageSection {
-    order: -1;
+  .HeroImage {
+    width: 180px;
   }
 
-  .DuckImage {
-    max-width: 200px;
+  .floatingDuck {
+    display: none;
+  }
+
+  .floatingDecoration1,
+  .floatingDecoration2,
+  .floatingDecoration3,
+  .floatingDecoration4,
+  .floatingDecoration5,
+  .floatingDecoration6,
+  .floatingDecoration7,
+  .floatingDecoration8,
+  .floatingDecoration9,
+  .floatingDecoration10,
+  .floatingDecoration11,
+  .floatingDecoration12,
+  .floatingDecoration13,
+  .floatingDecoration14,
+  .floatingDecoration15,
+  .floatingDecoration16,
+  .floatingDecoration17,
+  .floatingDecoration18,
+  .floatingDecoration19,
+  .floatingDecoration20,
+  .floatingDecoration21,
+  .floatingDecoration22,
+  .floatingDecoration23,
+  .floatingDecoration24 {
+    display: none;
+  }
+
+  .WelcomeText {
+    font-size: 1.2rem;
+  }
+
+  .Subtitle {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .MainTitle {
+    font-size: 2.8rem;
+    gap: 10px;
+  }
+
+  .LogoImage {
+    width: 40px;
+    height: 40px;
+  }
+
+  .FormSection {
+    padding: 30px 20px;
+  }
+
+  .HeroImage {
+    width: 150px;
+  }
+
+  .KakaoButton {
+    height: 55px;
+  }
+
+  .KakaoButton span {
+    font-size: 1.1rem;
   }
 }
