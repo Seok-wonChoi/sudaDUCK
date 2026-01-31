@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
-
+const REFRESH_URL = "/api/v1/auth/refresh";
 export const API_BASE_URL = rawBaseUrl
   .trim()
   .replace(/\/$/, "");
