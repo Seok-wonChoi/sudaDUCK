@@ -1,7 +1,27 @@
 import api from "./api";
 
-// 미니게임 복습 문제 조회: GET /api/v1/mini_game/{roomId}/review/questions
+// 미니게임1 복습 4문제 조회: GET /api/v1/mini_game/{roomId}/review/questions
 export async function getReviewQuestions(roomId) {
   const { data } = await api.get(`/api/v1/mini_game/${roomId}/review/questions`);
+  return data;
+}
+
+// 미니게임1 정답 제출: POST /api/v1/mini_game/{roomId}/review/submit
+export async function submitReviewAnswers(roomId, answers) {
+  const { data } = await api.post(`/api/v1/mini_game/${roomId}/review/submit`, {
+    answers,
+  });
+  return data;
+}
+
+// 미니게임1 결과 랭킹 조회: GET /api/v1/mini_game/{roomId}/review/ranking
+export async function getReviewRanking(roomId) {
+  const { data } = await api.get(`/api/v1/mini_game/${roomId}/review/ranking`);
+  return data;
+}
+
+// 미니게임1 데이터 삭제 (방장): DELETE /api/v1/mini_game/{roomId}/review/clear
+export async function clearReviewData(roomId) {
+  const { data } = await api.delete(`/api/v1/mini_game/${roomId}/review/clear`);
   return data;
 }
