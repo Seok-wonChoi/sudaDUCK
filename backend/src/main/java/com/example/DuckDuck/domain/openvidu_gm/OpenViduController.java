@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/openvidu")
-@CrossOrigin(origins ="*")
+@CrossOrigin(originPatterns ="*")
 public class OpenViduController {
 
     @Value("${OPENVIDU_URL}")
