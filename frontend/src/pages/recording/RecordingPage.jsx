@@ -74,10 +74,12 @@ export default function RecordingPage() {
   const navigate = useNavigate();
   const roomInfo = state?.roomInfo || {};
   const myUserId = state?.myUserId; // 본인 userId
+  const participants = state?.participants || []; // 참여자 목록
 
   console.log("[RecordingPage] 페이지 로드 - 전체 state:", state);
   console.log("[RecordingPage] roomInfo:", roomInfo);
   console.log("[RecordingPage] myUserId:", myUserId);
+  console.log("[RecordingPage] participants:", participants);
 
   const TURNS = roomInfo.turnCount || 3;
 
@@ -392,21 +394,42 @@ export default function RecordingPage() {
           .filter(s => s && s.scriptId) // null/undefined 필터링
           .sort((a, b) => (a.order_no || 0) - (b.order_no || 0))
           .map((s, i) => {
-            // 발화자 이름 추출 (여러 필드명 시도)
-            const speakerName = s.speakerName || s.speaker || s.userName || s.nickname || "참여자";
-            const speakerId = s.speakerId || s.userId || s.memberId;
+            console.log(`[RecordingPage] ===== 스크립트 ${i + 1} 원본 데이터 =====`);
+            console.log("[RecordingPage] 전체 객체:", JSON.stringify(s, null, 2));
+            console.log("[RecordingPage] 모든 키:", Object.keys(s));
+
+            // 발화자 ID 추출 (여러 필드명 시도)
+            const speakerId = s.speakerId || s.userId || s.memberId || s.speaker_id || s.user_id;
+
+            // 발화자 이름 추출 시도
+            let speakerName = s.speakerName || s.speaker || s.userName || s.nickname ||
+                             s.speaker_name || s.user_name || null;
+
+            // 이름이 없으면 participants 배열에서 찾기
+            if (!speakerName && speakerId && participants.length > 0) {
+              const participant = participants.find(p =>
+                String(p.id) === String(speakerId) ||
+                String(p.userId) === String(speakerId)
+              );
+              speakerName = participant?.name || participant?.nickname || null;
+              console.log("[RecordingPage] participants에서 찾은 이름:", speakerName, "참여자:", participant);
+            }
+
+            // 여전히 이름이 없으면 "참여자"로 표시
+            if (!speakerName) {
+              speakerName = "참여자";
+            }
 
             // 본인이 말한 경우 "(나)" 추가
             const isMe = myUserId && speakerId && String(speakerId) === String(myUserId);
             const displayName = isMe ? `${speakerName}(나)` : speakerName;
 
-            console.log(`[RecordingPage] 스크립트 ${i + 1} 발화자:`, {
+            console.log(`[RecordingPage] 스크립트 ${i + 1} 발화자 결과:`, {
               speakerName,
               speakerId,
               myUserId,
               isMe,
               displayName,
-              원본: s,
             });
 
             return {
