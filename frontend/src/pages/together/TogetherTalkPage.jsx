@@ -153,8 +153,15 @@ export default function TogetherTalkPage() {
       name: p.name ?? p.nickname ?? "참여자",
       isMe: p.isMe === true,
       micOn: p.micOn ?? false,
+      isHost: p.isHost ?? false,
     }));
   });
+
+  // 방장 여부 확인
+  const isHost = useMemo(() => {
+    const me = participants.find((p) => p.isMe === true);
+    return me?.isHost ?? false;
+  }, [participants]);
 
   const syncLobby = useCallback(async () => {
     if (!resolvedRoomCode) return;
@@ -249,9 +256,28 @@ export default function TogetherTalkPage() {
     // alert("15초 동안 대화가 없었습니다. 대화를 이어가세요!");
   }, [roomId, currentTurn]);
 
-  useRoomWebSocket(resolvedRoomCode, {
+  // 대화 종료 시 모든 참여자가 /recording으로 이동
+  const handleRoomEnded = useCallback((payload) => {
+    console.log("[TogetherTalkPage] ROOM_ENDED 수신 - /recording으로 이동", payload);
+
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "together",
+        roomInfo: {
+          ...roomInfo,
+          roomId: payload?.roomInfo?.roomId ?? roomId,
+          turnCount: payload?.roomInfo?.turnCount ?? roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
+        },
+        participants,
+      },
+    });
+  }, [navigate, roomInfo, roomId, participants]);
+
+  const { sendEndRoom } = useRoomWebSocket(resolvedRoomCode, {
     onConversationSuggestion: handleConversationSuggestion,
     onSilenceDetected: handleSilenceDetected,
+    onRoomEnded: handleRoomEnded,
     onConnected: () => console.log("WebSocket 연결됨 (TogetherTalkPage)"),
     onDisconnected: () =>
       console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
@@ -435,6 +461,15 @@ export default function TogetherTalkPage() {
   }, [stopAudioAnalysis, roomId, resolvedRoomCode]);
 
   const handleEnd = useCallback(async () => {
+    // 방장만 대화 종료 가능
+    if (!isHost) return;
+
+    // WebSocket으로 모든 참여자에게 종료 알림
+    sendEndRoom({
+      roomId,
+      turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+    });
+
     await doLeaveRoom();
 
     navigate("/recording", {
@@ -443,18 +478,38 @@ export default function TogetherTalkPage() {
         mode: "together",
         roomInfo: {
           ...roomInfo,
-          roomId: roomId, // roomId 명시적 전달
-          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3, // 턴수 전달
+          roomId: roomId,
+          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
         },
         participants,
       },
     });
-  }, [doLeaveRoom, navigate, roomInfo, participants, roomId]);
+  }, [doLeaveRoom, navigate, roomInfo, participants, roomId, isHost, sendEndRoom]);
 
   const handleDone = useCallback(async () => {
+    // 타이머 종료 시 방장이면 WebSocket으로 모든 참여자에게 종료 알림
+    if (isHost) {
+      sendEndRoom({
+        roomId,
+        turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+      });
+    }
+
     await doLeaveRoom();
-    navigate("/main", { replace: true });
-  }, [doLeaveRoom, navigate]);
+
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "together",
+        roomInfo: {
+          ...roomInfo,
+          roomId: roomId,
+          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+        },
+        participants,
+      },
+    });
+  }, [doLeaveRoom, navigate, isHost, sendEndRoom, roomId, roomInfo, participants]);
 
   // 중복/문법 오류가 있던 handleBack은 하나만 남깁니다.
   const handleBack = useCallback(() => {
@@ -944,13 +999,16 @@ export default function TogetherTalkPage() {
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
-                <button
-                  type="button"
-                  className={styles.SecondaryButton}
-                  onClick={handleEnd}
-                >
-                  대화 종료
-                </button>
+                {/* 대화 종료 버튼은 방장에게만 표시 */}
+                {isHost && (
+                  <button
+                    type="button"
+                    className={styles.SecondaryButton}
+                    onClick={handleEnd}
+                  >
+                    대화 종료
+                  </button>
+                )}
               </div>
             </div>
 

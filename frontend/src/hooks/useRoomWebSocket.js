@@ -78,6 +78,29 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
     [roomCode],
   );
 
+  // 방장이 대화 종료 시 모든 참여자에게 알림
+  const sendEndRoom = useCallback(
+    (roomInfo) => {
+      const client = clientRef.current;
+      if (!client?.connected) {
+        console.warn("[WebSocket] sendEndRoom 실패: 연결되지 않음");
+        return;
+      }
+
+      console.log("[WebSocket] sendEndRoom 전송:", {
+        roomCode,
+        roomInfo,
+        destination: `/app/rooms/${roomCode}/end`,
+      });
+
+      client.publish({
+        destination: `/app/rooms/${roomCode}/end`,
+        body: JSON.stringify({ roomInfo }),
+      });
+    },
+    [roomCode],
+  );
+
   useEffect(() => {
     if (!roomCode) return;
 
@@ -143,6 +166,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
               onSettingsChanged,
               onRoomStarted,
               onRoomClosed,
+              onRoomEnded,
               onSilenceDetected,
               onError,
             } = handlersRef.current;
@@ -211,6 +235,16 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
                   type,
                 });
                 onRoomClosed?.(payload, senderKey);
+                break;
+
+              case "ROOM_ENDED":
+              case "CONVERSATION_ENDED":
+              case "TALK_ENDED":
+                console.log("[WebSocket] ROOM_ENDED 수신:", {
+                  payload,
+                  type,
+                });
+                onRoomEnded?.(payload, senderKey);
                 break;
 
               case "SILENCE_DETECTED":
@@ -285,5 +319,5 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
     };
   }, [roomCode]);
 
-  return { sendReady, sendMic, sendVoiceLevel, isConnected };
+  return { sendReady, sendMic, sendVoiceLevel, sendEndRoom, isConnected };
 }

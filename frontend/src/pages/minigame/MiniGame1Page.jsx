@@ -11,6 +11,7 @@ import ReviewPanel from '@/components/features/minigame1/review/ReviewPanel';
 import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
 import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
 import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewData } from '@/api/miniGame';
+import { leaveRoom } from '@/api/rooms';
 
 const MOCK_PARTICIPANTS = [
   { id: 1, name: '장가은', isActive: true },
@@ -356,6 +357,20 @@ export default function MiniGame1Page() {
   }, [currentQuestion, currentBlank, blanksState, initQuestion, questions, roomId, currentUserId, answeredQuestions]);
 
   const handleReview = () => setPhase(GAME_PHASE.REVIEW);
+
+  // 로고 클릭 시 나가기 핸들러
+  const handleLogoExit = useCallback(async () => {
+    // roomId를 roomCode로 사용
+    if (roomId) {
+      try {
+        await leaveRoom({ roomCode: roomId });
+        console.log("[MiniGame1Page] 방 퇴장 성공");
+      } catch (e) {
+        console.error("[MiniGame1Page] 방 퇴장 실패:", e);
+      }
+    }
+  }, [roomId]);
+
   const handleComplete = async () => {
     // 게임 종료 시 데이터 삭제
     if (roomId) {
@@ -383,6 +398,8 @@ export default function MiniGame1Page() {
       progress={progress}
       totalProgress={100}
       participants={participants.length > 0 ? participants : MOCK_PARTICIPANTS}
+      logoExitMessage="메인 화면으로 나가시겠습니까?"
+      onLogoExit={handleLogoExit}
     >
       {phase === GAME_PHASE.PLAYING && (
         <div style={{ position: 'relative' }}>

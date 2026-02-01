@@ -16,10 +16,16 @@ export default function RecordingLayout({
   isAllDone = false,
   onTurnClick = null,
   selectedTurnForReport = null,
+  // 로고 클릭 나가기 관련 props
+  logoExitMessage,
+  onLogoExit,
 }) {
   return (
     <div className={styles.recordingLayout}>
-      <AppHeader />
+      <AppHeader
+        logoExitMessage={logoExitMessage}
+        onLogoExit={onLogoExit}
+      />
 
       <main className={styles.content}>
         <ScriptHeader />
