@@ -12,6 +12,7 @@ import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
 import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
 import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewData } from '@/api/miniGame';
 import { leaveRoom } from '@/api/rooms';
+import useRoomWebSocket from '@/hooks/useRoomWebSocket';
 
 const MOCK_PARTICIPANTS = [
   { id: 1, name: '장가은', isActive: true },
@@ -357,6 +358,19 @@ export default function MiniGame1Page() {
   }, [currentQuestion, currentBlank, blanksState, initQuestion, questions, roomId, currentUserId, answeredQuestions]);
 
   const handleReview = () => setPhase(GAME_PHASE.REVIEW);
+
+  // 방장 퇴장 시 메인 화면으로 강제 이동
+  const handleRoomClosed = useCallback(() => {
+    console.log("[MiniGame1Page] ROOM_CLOSED 수신 - 방장 퇴장");
+    navigate("/", {
+      replace: true,
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+    });
+  }, [navigate]);
+
+  useRoomWebSocket(roomId, {
+    onRoomClosed: handleRoomClosed,
+  }, roomId);
 
   // 로고 클릭 시 나가기 핸들러
   const handleLogoExit = useCallback(async () => {

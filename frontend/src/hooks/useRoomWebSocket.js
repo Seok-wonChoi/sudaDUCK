@@ -2,7 +2,8 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import SockJS from "sockjs-client/dist/sockjs";
 import { Client } from "@stomp/stompjs";
 
-export default function useRoomWebSocket(roomCode, handlers = {}) {
+// ★ roomId 파라미터 추가 (정적감지 구독에 사용)
+export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
   const clientRef = useRef(null);
   const subRef = useRef(null);
   const suggestionSubRef = useRef(null);
@@ -138,18 +139,18 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
           console.log("[STOMP]", str);
         }
       },
-      // 완전 OFF를 원하면 위 debug 대신 아래 한 줄로 바꾸세요:
-      // debug: () => {},
     });
 
     client.onConnect = () => {
       console.log("[WebSocket] ✅ 연결 성공:", {
         roomCode,
         topic: `/topic/rooms/${roomCode}`,
+        suggestionTopic: roomId ? `/topic/room/${roomId}/suggestion` : "N/A (roomId 없음)",
         socketUrl
       });
       setIsConnected(true);
 
+      // 기존 방 이벤트 구독 (roomCode 기반)
       subRef.current = client.subscribe(
         `/topic/rooms/${roomCode}`,
         (message) => {
@@ -240,10 +241,12 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
               case "ROOM_ENDED":
               case "CONVERSATION_ENDED":
               case "TALK_ENDED":
-                console.log("[WebSocket] ROOM_ENDED 수신:", {
-                  payload,
-                  type,
-                });
+                if (import.meta.env.DEV) {
+                  console.log("[WebSocket] ROOM_ENDED 수신:", {
+                    payload,
+                    type,
+                  });
+                }
                 onRoomEnded?.(payload, senderKey);
                 break;
 
@@ -271,21 +274,28 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
         },
       );
 
-      suggestionSubRef.current = client.subscribe(
-        `/topic/room/${roomCode}/suggestion`,
-        (message) => {
-          try {
-            const data = JSON.parse(message.body);
-            const { type, question } = data;
+      // ★ 정적감지 구독: roomCode → roomId로 변경
+      // 백엔드 SilenceDetectionService는 /topic/room/{roomId}/suggestion 으로 전송
+      if (roomId) {
+        suggestionSubRef.current = client.subscribe(
+          `/topic/room/${roomId}/suggestion`,
+          (message) => {
+            try {
+              const data = JSON.parse(message.body);
+              const { type, question } = data;
 
-            if (type === "CONVERSATION_SUGGESTION") {
-              handlersRef.current.onConversationSuggestion?.(question);
+              if (type === "CONVERSATION_SUGGESTION") {
+                console.log("[WebSocket] ✅ CONVERSATION_SUGGESTION 수신:", { question, roomId });
+                handlersRef.current.onConversationSuggestion?.(question);
+              }
+            } catch (e) {
+              console.error("Suggestion Msg Parsing Error", e);
             }
-          } catch (e) {
-            console.error("Suggestion Msg Parsing Error", e);
-          }
-        },
-      );
+          },
+        );
+      } else {
+        console.warn("[WebSocket] ⚠️ roomId가 없어서 정적감지 구독 불가");
+      }
 
       handlersRef.current.onConnected?.();
     };
@@ -317,7 +327,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}) {
       if (client) client.deactivate();
       clientRef.current = null;
     };
-  }, [roomCode]);
+  }, [roomCode, roomId]);
 
   return { sendReady, sendMic, sendVoiceLevel, sendEndRoom, isConnected };
 }

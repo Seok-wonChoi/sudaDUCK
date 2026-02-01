@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { leaveRoom } from '@/api/rooms';
+import useRoomWebSocket from '@/hooks/useRoomWebSocket';
 
 import MiniGameLayout from '@/components/features/minigame/layout/MiniGameLayout';
 import CountdownOverlay from '@/components/features/minigame/countdown/CountdownOverlay';
@@ -129,6 +130,19 @@ export default function MiniGame2Page() {
     setRemovedCards([]);
     setShowGuide(true);
   };
+
+  // 방장 퇴장 시 메인 화면으로 강제 이동
+  const handleRoomClosed = useCallback(() => {
+    console.log("[MiniGame2Page] ROOM_CLOSED 수신 - 방장 퇴장");
+    navigate("/", {
+      replace: true,
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+    });
+  }, [navigate]);
+
+  useRoomWebSocket(roomId, {
+    onRoomClosed: handleRoomClosed,
+  }, roomId);
 
   // 로고 클릭 시 나가기 핸들러
   const handleLogoExit = useCallback(async () => {

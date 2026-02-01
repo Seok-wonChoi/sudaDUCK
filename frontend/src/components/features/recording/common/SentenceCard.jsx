@@ -13,6 +13,7 @@ export default function SentenceCard({
   cardState = 'idle',
   countdown = 3,
   recordingTime = 0, // 녹음 시간 (초)
+  recordingCountdown = 10, // 녹음 카운트다운 (초)
   sentenceId = null,
   initialBookmarked = false,
   onBookmarkToggle = null,
@@ -130,8 +131,8 @@ export default function SentenceCard({
         );
 
       case 'recording':
-        // 녹음 시간 포맷: 00:03
-        const formatTime = (seconds) => {
+        // 녹음 카운트다운 포맷: 00:10 -> 00:00
+        const formatCountdown = (seconds) => {
           const mins = Math.floor(seconds / 60);
           const secs = seconds % 60;
           return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
@@ -140,7 +141,7 @@ export default function SentenceCard({
         return (
           <div className={styles.recordingActive}>
             <div className={styles.recordingCircle}>
-              <span className={styles.countdownNumber}>{formatTime(recordingTime)}</span>
+              <span className={styles.countdownNumber}>{formatCountdown(recordingCountdown)}</span>
             </div>
           </div>
         );
