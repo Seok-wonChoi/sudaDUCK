@@ -793,7 +793,7 @@ export default function WaitingRoomPage() {
 
     try {
       console.log("[WaitingRoom] 📡 API 호출 시작:", { inviteCode, nextReady });
-      const response = await toggleReady(inviteCode);
+      const response = await toggleReady(inviteCode, nextReady);
       console.log("[WaitingRoom] ✅ API 호출 성공:", response);
     } catch (error) {
       console.error("[WaitingRoom] ❌ API 호출 실패:", error);

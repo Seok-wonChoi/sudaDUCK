@@ -9,7 +9,7 @@ export default function BottomAllDone({ onRestart, onComplete }) {
         </svg>
       </div>
       <div className={styles.content}>
-        <p className={styles.message}>완료 모든 문장의 녹음이 완료되었습니다</p>
+        <p className={styles.message}>모든 문장의 녹음이 완료되었습니다!</p>
         <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
           <button className={styles.restartBtn} onClick={onRestart}>
             다시하기
@@ -28,7 +28,7 @@ export default function BottomAllDone({ onRestart, onComplete }) {
               cursor: 'pointer'
             }}
           >
-            완료
+            복습게임하기
           </button>
         </div>
       </div>

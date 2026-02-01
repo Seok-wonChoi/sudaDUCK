@@ -724,15 +724,20 @@ export default function TogetherTalkPage() {
       recognition.interimResults = false; // 최종 결과만 받기
 
       recognition.onresult = async (event) => {
-        const transcript = event.results[event.results.length - 1][0].transcript;
-        console.log("[STT] 인식된 텍스트:", transcript);
+        // 새로 추가된 결과만 처리 (이전에 처리된 결과는 건너뜀)
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            const transcript = event.results[i][0].transcript;
+            console.log("[STT] 인식된 텍스트:", transcript);
 
-        // 번역 API 호출
-        try {
-          const response = await translateToEnglish(roomId, transcript, currentTurn, myUserId);
-          console.log("[STT] 번역 결과:", response);
-        } catch (error) {
-          console.error("[STT] 번역 실패:", error);
+            // 번역 API 호출
+            try {
+              const response = await translateToEnglish(roomId, transcript, currentTurn, myUserId);
+              console.log("[STT] 번역 결과:", response);
+            } catch (error) {
+              console.error("[STT] 번역 실패:", error);
+            }
+          }
         }
       };
 

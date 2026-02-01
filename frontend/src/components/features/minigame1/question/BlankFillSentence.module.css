@@ -39,10 +39,29 @@
   vertical-align: middle;
 }
 
+.blankInput {
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.blankInput::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
 .empty {
   background: #fff;
   border: 2px solid #d1d5db;
-  color: transparent;
+  color: #111827;
+}
+
+.active {
+  background: #fff;
+  border: 2px solid #6366f1;
+  color: #111827;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .correct {

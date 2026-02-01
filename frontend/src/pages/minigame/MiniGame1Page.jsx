@@ -63,11 +63,10 @@ export default function MiniGame1Page() {
   const location = useLocation();
   const [phase, setPhase] = useState(GAME_PHASE.COUNTDOWN);
   const [countdown, setCountdown] = useState(3);
-  const [timer, setTimer] = useState(0);
+  const [timer, setTimer] = useState(15);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [currentBlank, setCurrentBlank] = useState(0);
   const [score, setScore] = useState(0);
-  const [inputValue, setInputValue] = useState('');
   const [blanksState, setBlanksState] = useState([]);
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [showGuide, setShowGuide] = useState(false);
@@ -75,6 +74,7 @@ export default function MiniGame1Page() {
   const [questions, setQuestions] = useState(MOCK_QUESTIONS);
   const [isLoading, setIsLoading] = useState(true);
   const [rankings, setRankings] = useState(MOCK_RANKINGS);
+  const [participants, setParticipants] = useState([]);
 
   const currentUserId = 1;
   const roomId = location.state?.roomId;
@@ -120,6 +120,22 @@ export default function MiniGame1Page() {
         });
 
         setQuestions(formattedQuestions);
+
+        // 참여자 정보 추출 (speakerName 기준으로 중복 제거)
+        const uniqueParticipants = [];
+        const seenNames = new Set();
+        data.forEach((item, index) => {
+          if (item.speakerName && !seenNames.has(item.speakerName)) {
+            seenNames.add(item.speakerName);
+            uniqueParticipants.push({
+              id: index + 1,
+              name: item.speakerName,
+              isActive: true,
+            });
+          }
+        });
+        setParticipants(uniqueParticipants);
+
         setIsLoading(false);
       } catch (error) {
         console.error('미니게임 문제 조회 실패:', error);
@@ -156,10 +172,57 @@ export default function MiniGame1Page() {
 
   useEffect(() => {
     if (phase === GAME_PHASE.PLAYING) {
-      const interval = setInterval(() => setTimer((t) => t + 1), 1000);
+      const interval = setInterval(() => {
+        setTimer((t) => {
+          if (t <= 1) {
+            // 시간 종료 - 자동으로 다음 문제로 (빈 답변으로 제출)
+            const q = questions[currentQuestion];
+            if (q) {
+              // 현재 빈칸을 틀린 것으로 처리
+              setBlanksState((prev) => {
+                const next = [...prev];
+                next[currentBlank] = {
+                  value: '',
+                  status: 'wrong',
+                };
+                return next;
+              });
+
+              // 다음 빈칸 또는 다음 문제로
+              if (currentBlank < q.blanks.length - 1) {
+                setCurrentBlank((b) => b + 1);
+              } else {
+                // 문제 완료
+                const answered = {
+                  koreanSentence: q.korean,
+                  englishParts: q.englishParts,
+                  blanks: q.blanks.map((b, idx) => ({
+                    answer: b.answer,
+                    userAnswer: idx <= currentBlank ? (blanksState[idx]?.value || '') : '',
+                    isCorrect: false,
+                  })),
+                  correctCount: 0,
+                  totalBlanks: q.blanks.length,
+                };
+                setAnsweredQuestions((prev) => [...prev, answered]);
+
+                if (currentQuestion < questions.length - 1) {
+                  setCurrentQuestion((c) => c + 1);
+                  initQuestion(currentQuestion + 1);
+                  setTimer(15); // 타이머 리셋
+                } else {
+                  setPhase(GAME_PHASE.WAITING);
+                }
+              }
+            }
+            return 15;
+          }
+          return t - 1;
+        });
+      }, 1000);
       return () => clearInterval(interval);
     }
-  }, [phase]);
+  }, [phase, currentQuestion, currentBlank, questions, blanksState, initQuestion]);
 
   useEffect(() => {
     if (phase === GAME_PHASE.PLAYING && showGuide) {
@@ -174,17 +237,30 @@ export default function MiniGame1Page() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleSubmit = useCallback(() => {
-    if (!inputValue.trim()) return;
+  const handleBlankChange = useCallback((blankIdx, value) => {
+    setBlanksState((prev) => {
+      const next = [...prev];
+      next[blankIdx] = {
+        value: value,
+        status: 'empty',
+      };
+      return next;
+    });
+  }, []);
 
+  const handleBlankSubmit = useCallback((blankIdx) => {
     const q = questions[currentQuestion];
-    const correctAnswer = q.blanks[currentBlank].answer.toLowerCase();
-    const isCorrect = inputValue.trim().toLowerCase() === correctAnswer;
+    const userAnswer = blanksState[blankIdx]?.value?.trim() || '';
+
+    if (!userAnswer) return;
+
+    const correctAnswer = q.blanks[blankIdx].answer.toLowerCase();
+    const isCorrect = userAnswer.toLowerCase() === correctAnswer;
 
     setBlanksState((prev) => {
       const next = [...prev];
-      next[currentBlank] = {
-        value: inputValue.trim(),
+      next[blankIdx] = {
+        value: userAnswer,
         status: isCorrect ? 'correct' : 'wrong',
       };
       return next;
@@ -194,20 +270,18 @@ export default function MiniGame1Page() {
       setScore((s) => s + 1);
     }
 
-    setInputValue('');
-
     if (currentBlank < q.blanks.length - 1) {
       setCurrentBlank((b) => b + 1);
     } else {
+      // 문제 완료
       const answered = {
+        scriptId: q.scriptId, // scriptId 추가
         koreanSentence: q.korean,
         englishParts: q.englishParts,
         blanks: q.blanks.map((b, idx) => ({
           answer: b.answer,
-          userAnswer: idx === currentBlank ? inputValue.trim() : (blanksState[idx]?.value || ''),
-          isCorrect: idx === currentBlank
-            ? inputValue.trim().toLowerCase() === b.answer.toLowerCase()
-            : blanksState[idx]?.status === 'correct',
+          userAnswer: blanksState[idx]?.value || '',
+          isCorrect: blanksState[idx]?.status === 'correct',
         })),
         correctCount: 0,
         totalBlanks: q.blanks.length,
@@ -216,31 +290,37 @@ export default function MiniGame1Page() {
 
       setAnsweredQuestions((prev) => [...prev, answered]);
 
-      // 문제 완료 시 정답 제출 API 호출
-      if (roomId && q.scriptId) {
-        const questionAnswers = q.blanks.map((_, idx) => ({
-          scriptId: q.scriptId,
-          userAnswer: idx === currentBlank ? inputValue.trim() : (blanksState[idx]?.value || ''),
-        }));
-
-        submitReviewAnswers(roomId, questionAnswers)
-          .then((result) => {
-            console.log('정답 제출 성공:', result);
-          })
-          .catch((error) => {
-            console.error('정답 제출 실패:', error);
-          });
-      }
-
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion((c) => c + 1);
         initQuestion(currentQuestion + 1);
+        setTimer(15); // 타이머 리셋
       } else {
-        // 마지막 문제 완료 - 랭킹 조회
+        // 마지막 문제 완료 - 답변 제출 후 랭킹 조회
         setPhase(GAME_PHASE.WAITING);
 
         if (roomId) {
-          getReviewRanking(roomId)
+          // 모든 문제의 답변을 수집 (현재 문제 포함)
+          const allAnsweredQuestions = [...answeredQuestions, answered];
+
+          // 백엔드 API 스키마에 맞게 answers 배열 생성
+          // 한 문제(scriptId)당 하나의 answer 객체, userAnswer는 모든 빈칸 답변을 쉼표로 구분
+          const answers = allAnsweredQuestions.map((question) => {
+            const userAnswer = question.blanks
+              .map((blank) => blank.userAnswer)
+              .join(', ');
+            return {
+              scriptId: question.scriptId,
+              userAnswer: userAnswer,
+            };
+          });
+
+          // 먼저 답변 제출
+          submitReviewAnswers(roomId, answers)
+            .then(() => {
+              console.log('모든 답변 제출 성공');
+              // 답변 제출 후 랭킹 조회
+              return getReviewRanking(roomId);
+            })
             .then((rankingData) => {
               console.log('랭킹 조회 성공:', rankingData);
               setRankings(rankingData);
@@ -255,7 +335,7 @@ export default function MiniGame1Page() {
               }, 2000);
             })
             .catch((error) => {
-              console.error('랭킹 조회 실패:', error);
+              console.error('답변 제출 또는 랭킹 조회 실패:', error);
               // 실패해도 결과 화면으로 이동 (MOCK 데이터 사용)
               setTimeout(() => {
                 setPhase(GAME_PHASE.RESULT);
@@ -273,7 +353,7 @@ export default function MiniGame1Page() {
         }
       }
     }
-  }, [inputValue, currentQuestion, currentBlank, blanksState, initQuestion, questions, roomId, currentUserId]);
+  }, [currentQuestion, currentBlank, blanksState, initQuestion, questions, roomId, currentUserId, answeredQuestions]);
 
   const handleReview = () => setPhase(GAME_PHASE.REVIEW);
   const handleComplete = async () => {
@@ -302,7 +382,7 @@ export default function MiniGame1Page() {
       timer={formatTime(timer)}
       progress={progress}
       totalProgress={100}
-      participants={MOCK_PARTICIPANTS}
+      participants={participants.length > 0 ? participants : MOCK_PARTICIPANTS}
     >
       {phase === GAME_PHASE.PLAYING && (
         <div style={{ position: 'relative' }}>
@@ -313,9 +393,9 @@ export default function MiniGame1Page() {
             koreanSentence={q.korean}
             englishParts={q.englishParts}
             blanks={blanksState}
-            inputValue={inputValue}
-            onInputChange={setInputValue}
-            onSubmit={handleSubmit}
+            currentBlankIndex={currentBlank}
+            onBlankChange={handleBlankChange}
+            onBlankSubmit={handleBlankSubmit}
           />
           <DuckGuide
             message="빈칸에 알맞는 단어를 빠르게 입력해보아요!!"
