@@ -51,9 +51,10 @@ public class GptController {
                                 request.getRoomId(), request.getTurnNo());
                         return ResponseEntity.ok(Map.of("message", "저장 완료"));
                     } else {
-                        log.error("번역 실패 - roomId: {}, turn: {}",
+                        // 전처리 필터링된 경우는 에러가 아님 → 200 반환
+                        log.info("번역 필터링됨 - roomId: {}, turn: {}",
                                 request.getRoomId(), request.getTurnNo());
-                        return ResponseEntity.status(500).body(Map.of("message", "저장 실패"));
+                        return ResponseEntity.ok(Map.of("message", "필터링됨"));
                     }
                 })
                 .exceptionally(exceptionHandler::handle);

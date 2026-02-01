@@ -77,11 +77,14 @@ public class TranslateService {
         try {
             Long roomIdLong = Long.parseLong(roomId);
 
+            // ★ 원본 텍스트를 별도 변수로 저장 (로그용)
+            String originalText = text;
             text = preprocessingService.preprocess(text);
 
             if (text == null) {
+                // ★ 원본 텍스트를 로그에 출력 (기존: text가 이미 null이어서 항상 "null" 출력됨)
                 log.warn("[ASYNC-{}] 전처리 필터링됨 - 원본: '{}'",
-                        orderNo, text);
+                        orderNo, originalText);
                 return CompletableFuture.completedFuture(false);
             }
 
