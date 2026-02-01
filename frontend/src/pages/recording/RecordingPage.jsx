@@ -7,6 +7,7 @@ import {
   getTurnScripts,
 } from "@/api/shadowing";
 import { leaveRoom } from "@/api/rooms";
+import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 import BottomIdle from "@/components/features/recording/bottom/BottomIdle";
 import BottomAITimer from "@/components/features/recording/bottom/BottomAITimer";
@@ -107,6 +108,17 @@ export default function RecordingPage() {
       /* ignore */
     }
     return null;
+  }, [roomInfo]);
+
+  // roomCode 추출
+  const roomCode = useMemo(() => {
+    return (
+      roomInfo.roomCode ||
+      roomInfo.inviteCode ||
+      roomInfo.joinCode ||
+      roomInfo.code ||
+      ""
+    );
   }, [roomInfo]);
 
   const currentTurnSentences = useMemo(() => {
@@ -244,13 +256,19 @@ export default function RecordingPage() {
     }
   }, []);
 
-  const handleLogoExit = useCallback(async () => {
-    const roomCode =
-      roomInfo.roomCode ||
-      roomInfo.inviteCode ||
-      roomInfo.joinCode ||
-      roomInfo.code;
+  const handleRoomClosed = useCallback(() => {
+    console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
+    navigate("/", {
+      replace: true,
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+    });
+  }, [navigate]);
 
+  useRoomWebSocket(roomCode, {
+    onRoomClosed: handleRoomClosed,
+  }, roomId);
+
+  const handleLogoExit = useCallback(async () => {
     if (roomCode) {
       try {
         await leaveRoom({ roomCode });
@@ -259,7 +277,7 @@ export default function RecordingPage() {
         console.error("[RecordingPage] 방 퇴장 실패:", e);
       }
     }
-  }, [roomInfo]);
+  }, [roomCode]);
 
   // --- Effect 로직 ---
 

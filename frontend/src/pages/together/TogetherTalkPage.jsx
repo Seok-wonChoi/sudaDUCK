@@ -155,6 +155,8 @@ export default function TogetherTalkPage() {
       isMe: p.isMe === true,
       micOn: p.micOn ?? false,
       isHost: p.isHost ?? false,
+      voiceLevel: p.voiceLevel ?? 0,
+      isSpeaking: false,
     }));
   });
 
@@ -186,6 +188,9 @@ export default function TogetherTalkPage() {
           name: m.nickname ?? "참여자",
           isMe: myIdStr ? idStr === myIdStr : false,
           micOn: m.micOn ?? false,
+          isHost: m.isHost ?? false,
+          voiceLevel: 0,
+          isSpeaking: false,
         };
       });
 
@@ -254,6 +259,37 @@ export default function TogetherTalkPage() {
     });
   }, [roomId, currentTurn]);
 
+  const handleVoiceLevelChanged = useCallback((payload, senderKey) => {
+    if (!senderKey) return;
+    const k = String(senderKey);
+
+    setParticipants((prev) =>
+      prev.map((p) =>
+        p.id === k ? {
+          ...p,
+          voiceLevel: payload?.level ?? 0,
+          isSpeaking: (payload?.level ?? 0) > 0.03
+        } : p
+      )
+    );
+  }, []);
+
+  const handleMicChanged = useCallback((payload, senderKey) => {
+    if (!senderKey) return;
+    const k = String(senderKey);
+
+    console.log("[TogetherTalkPage] MIC_CHANGED 수신:", {
+      senderKey: k,
+      micOn: payload?.micOn,
+    });
+
+    setParticipants((prev) =>
+      prev.map((p) =>
+        p.id === k ? { ...p, micOn: payload?.micOn ?? false } : p
+      )
+    );
+  }, []);
+
   // 대화 종료 시 모든 참여자가 /recording으로 이동
   const handleRoomEnded = useCallback((payload) => {
     console.log("[TogetherTalkPage] ROOM_ENDED 수신 - /recording으로 이동", payload);
@@ -272,11 +308,23 @@ export default function TogetherTalkPage() {
     });
   }, [navigate, roomInfo, roomId, participants]);
 
+  // 방장 퇴장 시 메인 화면으로 강제 이동
+  const handleRoomClosed = useCallback(() => {
+    console.log("[TogetherTalkPage] ROOM_CLOSED 수신 - 방장 퇴장");
+    navigate("/", {
+      replace: true,
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+    });
+  }, [navigate]);
+
   // ★ useRoomWebSocket에 roomId 전달 (정적감지 구독용)
-  const { sendEndRoom } = useRoomWebSocket(resolvedRoomCode, {
+  const { sendEndRoom, sendVoiceLevel, sendMic } = useRoomWebSocket(resolvedRoomCode, {
     onConversationSuggestion: handleConversationSuggestion,
     onSilenceDetected: handleSilenceDetected,
     onRoomEnded: handleRoomEnded,
+    onRoomClosed: handleRoomClosed,
+    onVoiceLevelChanged: handleVoiceLevelChanged,
+    onMicChanged: handleMicChanged,
     onConnected: () => console.log("WebSocket 연결됨 (TogetherTalkPage)"),
     onDisconnected: () =>
       console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
@@ -429,15 +477,32 @@ export default function TogetherTalkPage() {
     }
   }, [isSpeaking, roomId, myUserId, currentTurn]);
 
+  const lastLocalSentRef = useRef({ at: 0, level: 0 });
+
+  useEffect(() => {
+    if (!micOn) return;
+
+    const now = performance.now();
+    const last = lastLocalSentRef.current;
+
+    if (now - last.at < 120) return;
+    if (Math.abs(voiceLevel - last.level) < 0.02) return;
+
+    lastLocalSentRef.current = { at: now, level: voiceLevel };
+    if (voiceLevel > 0) sendVoiceLevel(voiceLevel);
+  }, [voiceLevel, micOn, sendVoiceLevel]);
+
   const toggleMic = useCallback(async () => {
     if (micOn) {
       setMicOn(false);
+      sendMic(false);
       await stopAudioAnalysis();
       return;
     }
     setMicOn(true);
+    sendMic(true);
     await startAudioAnalysis();
-  }, [micOn, startAudioAnalysis, stopAudioAnalysis]);
+  }, [micOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
   const doLeaveRoom = useCallback(async () => {
     await stopAudioAnalysis();
@@ -937,12 +1002,14 @@ export default function TogetherTalkPage() {
                   const p = slot.p;
                   const isMe = p.isMe === true;
                   const participantMicOn = isMe ? micOn : (p.micOn ?? false);
+                  const participantVoiceLevel = isMe ? voiceLevel : (p.voiceLevel ?? 0);
+                  const participantSpeaking = isMe ? isSpeaking : (p.isSpeaking ?? false);
 
                   return (
                     <div
                       key={p.id}
                       className={`${styles.VideoCard} ${
-                        isMe && isSpeaking
+                        participantSpeaking
                           ? styles.VideoCardSpeaking
                           : styles.VideoCardIdle
                       }`}
@@ -970,9 +1037,7 @@ export default function TogetherTalkPage() {
                         </div>
 
                         <div className={styles.VideoFooterRight}>
-                          {isMe ? (
-                            <VoiceWave level={voiceLevel} enabled={micOn} />
-                          ) : null}
+                          <VoiceWave level={participantVoiceLevel} enabled={participantMicOn} />
                         </div>
                       </div>
                     </div>

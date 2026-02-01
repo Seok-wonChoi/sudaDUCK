@@ -241,10 +241,12 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               case "ROOM_ENDED":
               case "CONVERSATION_ENDED":
               case "TALK_ENDED":
-                console.log("[WebSocket] ROOM_ENDED 수신:", {
-                  payload,
-                  type,
-                });
+                if (import.meta.env.DEV) {
+                  console.log("[WebSocket] ROOM_ENDED 수신:", {
+                    payload,
+                    type,
+                  });
+                }
                 onRoomEnded?.(payload, senderKey);
                 break;
 
