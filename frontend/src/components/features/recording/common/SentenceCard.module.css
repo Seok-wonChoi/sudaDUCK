@@ -207,6 +207,12 @@
   margin: 0 2px;
 }
 
+.blankBracket {
+  color: #2b7fff;
+  font-weight: 700;
+  font-size: 1.05em;
+}
+
 .aiStatus {
   display: flex;
   align-items: center;
