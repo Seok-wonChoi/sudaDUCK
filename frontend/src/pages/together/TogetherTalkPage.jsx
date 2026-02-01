@@ -116,6 +116,17 @@ export default function TogetherTalkPage() {
     }
   }, [location.state]);
 
+  // 타이머 시작 시간 sessionStorage 저장
+  useEffect(() => {
+    if (resolvedRoomCode && timerStartedAt) {
+      try {
+        sessionStorage.setItem(`timer_started_${resolvedRoomCode}`, String(timerStartedAt));
+      } catch {
+        // ignore
+      }
+    }
+  }, [resolvedRoomCode, timerStartedAt]);
+
   useEffect(() => {
     if (!hydratedInfo) {
       navigate("/together", { replace: true });
@@ -143,6 +154,16 @@ export default function TogetherTalkPage() {
   // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
   const [currentTurn, setCurrentTurn] = useState(() => {
     return roomInfo.currentTurn ?? 1;
+  });
+
+  // 타이머 시작 시간 (절대 timestamp) - 웹소켓으로 동기화
+  const [timerStartedAt, setTimerStartedAt] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(`timer_started_${resolvedRoomCode}`);
+      return saved ? parseInt(saved, 10) : null;
+    } catch {
+      return null;
+    }
   });
 
   const myUserId = useMemo(() => {
@@ -179,6 +200,22 @@ export default function TogetherTalkPage() {
       if (data?.topic) setTopic(data.topic);
       if (data?.roomId) setRoomId(data.roomId);
 
+      // 타이머 시작 시간 동기화
+      if (data?.timerStartedAt != null) {
+        const startTime = Number(data.timerStartedAt);
+        console.log("[TogetherTalkPage] 서버로부터 타이머 시작 시간 수신:", {
+          startTime,
+          currentTime: Date.now(),
+          elapsed: Date.now() - startTime
+        });
+        setTimerStartedAt(startTime);
+      } else if (timerStartedAt === null) {
+        // 서버에서 타이머 시작 시간을 제공하지 않으면 현재 시간으로 설정
+        const now = Date.now();
+        console.log("[TogetherTalkPage] 타이머 시작 시간을 현재 시간으로 설정:", now);
+        setTimerStartedAt(now);
+      }
+
       const members = Array.isArray(data?.participants)
         ? data.participants
         : [];
@@ -208,7 +245,7 @@ export default function TogetherTalkPage() {
     } catch (e) {
       console.error("[TogetherTalkPage] getRoomLobby 실패:", e);
     }
-  }, [resolvedRoomCode, myUserId]);
+  }, [resolvedRoomCode, myUserId, timerStartedAt]);
 
   useEffect(() => {
     syncLobby();
@@ -294,6 +331,20 @@ export default function TogetherTalkPage() {
     );
   }, []);
 
+  const handleTimerSync = useCallback((payload) => {
+    console.log("[TogetherTalkPage] TIMER_SYNC 수신:", payload);
+
+    if (payload?.startTimeMs != null) {
+      const startTime = Number(payload.startTimeMs);
+      console.log("[TogetherTalkPage] 타이머 시작 시간 동기화:", {
+        startTime,
+        currentTime: Date.now(),
+        elapsed: Date.now() - startTime
+      });
+      setTimerStartedAt(startTime);
+    }
+  }, []);
+
   // 대화 종료 시 모든 참여자가 /recording으로 이동
   const handleRoomEnded = useCallback((payload) => {
     console.log("[TogetherTalkPage] ROOM_ENDED 수신 - /recording으로 이동", payload);
@@ -330,6 +381,7 @@ export default function TogetherTalkPage() {
     onRoomClosed: handleRoomClosed,
     onVoiceLevelChanged: handleVoiceLevelChanged,
     onMicChanged: handleMicChanged,
+    onTimerSync: handleTimerSync,
     onConnected: () => console.log("WebSocket 연결됨 (TogetherTalkPage)"),
     onDisconnected: () =>
       console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
@@ -969,6 +1021,7 @@ export default function TogetherTalkPage() {
                 durationMs={60_000}
                 isRunning={isRoomTimerRunning}
                 onDone={handleDone}
+                startTimeMs={timerStartedAt}
               />
             </div>
           </div>
