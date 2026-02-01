@@ -284,7 +284,19 @@ export default function RecordingPage() {
   // 턴 스크립트 로드
   useEffect(() => {
     const fetchTurnScripts = async () => {
-      if (!roomId || conversations[currentTurn]) return;
+      // 이미 로드된 경우 스킵
+      if (conversations[currentTurn]) return;
+
+      // roomId가 없으면 더미 데이터 사용
+      if (!roomId) {
+        setConversations((prev) => ({
+          ...prev,
+          [currentTurn]: DUMMY_CONVERSATIONS[currentTurn] || [],
+        }));
+        return;
+      }
+
+      // roomId가 있으면 API로 스크립트 로드
       try {
         const response = await getTurnScripts(roomId, currentTurn);
         const scripts = Array.isArray(response) ? response : [response];
