@@ -6,6 +6,7 @@ import {
   toggleScriptLike,
   getTurnScripts,
 } from "@/api/shadowing";
+import { leaveRoom } from "@/api/rooms";
 
 import BottomIdle from "@/components/features/recording/bottom/BottomIdle";
 import BottomAITimer from "@/components/features/recording/bottom/BottomAITimer";
@@ -244,6 +245,25 @@ export default function RecordingPage() {
     }
   }, []);
 
+  // 로고 클릭 시 나가기 핸들러
+  const handleLogoExit = useCallback(async () => {
+    // roomCode 추출
+    const roomCode =
+      roomInfo.roomCode ||
+      roomInfo.inviteCode ||
+      roomInfo.joinCode ||
+      roomInfo.code;
+
+    if (roomCode) {
+      try {
+        await leaveRoom({ roomCode });
+        console.log("[RecordingPage] 방 퇴장 성공");
+      } catch (e) {
+        console.error("[RecordingPage] 방 퇴장 실패:", e);
+      }
+    }
+  }, [roomInfo]);
+
   // --- Effect 로직 ---
 
   useEffect(() => {
@@ -424,6 +444,8 @@ export default function RecordingPage() {
       isAllDone={step === STEP.ALL_DONE}
       onTurnClick={(t) => step === STEP.ALL_DONE && setSelectedTurnForReport(t)}
       selectedTurnForReport={selectedTurnForReport}
+      logoExitMessage="메인 화면으로 나가시겠습니까?"
+      onLogoExit={handleLogoExit}
     />
   );
 }
