@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom"; // useNavigate 추가됨
+import { useLocation, useNavigate } from "react-router-dom";
 import Recordinglayout from "@/components/features/recording/layout/RecordingLayout";
 import {
   saveAssessment,
@@ -93,7 +93,7 @@ export default function RecordingPage() {
   const recordedChunksRef = useRef([]);
   const audioRef = useRef(null);
 
-  // roomId 추출 (중복 제거 및 최적화)
+  // roomId 추출
   const roomId = useMemo(() => {
     const fromState =
       roomInfo.id ||
@@ -127,7 +127,7 @@ export default function RecordingPage() {
     return false;
   }, [currentTurn, currentSentenceIndex, currentTurnSentences.length, TURNS]);
 
-  // --- 함수들 (useCallback으로 감싸서 린트 에러 방지) ---
+  // --- 함수들 ---
 
   const clearAllTimers = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -175,7 +175,6 @@ export default function RecordingPage() {
         .getTracks()
         .forEach((track) => track.stop());
 
-      // 브라우저가 Blob을 생성할 시간을 주기 위해 살짝 지연
       setTimeout(async () => {
         if (currentSentence && recordedChunksRef.current.length > 0) {
           try {
@@ -258,9 +257,7 @@ export default function RecordingPage() {
     }
   }, []);
 
-  // 로고 클릭 시 나가기 핸들러
   const handleLogoExit = useCallback(async () => {
-    // roomCode 추출
     const roomCode =
       roomInfo.roomCode ||
       roomInfo.inviteCode ||
@@ -284,6 +281,7 @@ export default function RecordingPage() {
     if (saved) setBookmarkedSentences(JSON.parse(saved));
   }, []);
 
+  // 턴 스크립트 로드
   useEffect(() => {
     const fetchTurnScripts = async () => {
       if (!roomId || conversations[currentTurn]) return;
@@ -318,13 +316,46 @@ export default function RecordingPage() {
   useEffect(() => {
     clearAllTimers();
 
-    if (step === STEP.AI_TIMER || step === STEP.RECORD_TIMER) {
+    if (step === STEP.AI_TIMER) {
+      // ★ 스크립트가 아직 로드되지 않은 경우 대기
+      if (conversations[currentTurn] === undefined) {
+        console.log(`[RecordingPage] turn ${currentTurn} 스크립트 로드 대기 중...`);
+        return;
+      }
+
+      // ★ 해당 턴의 스크립트가 빈 배열인 경우 (대화가 없었던 턴)
+      if (conversations[currentTurn].length === 0) {
+        console.log(`[RecordingPage] turn ${currentTurn} 스크립트가 없음 → 다음 턴으로`);
+        if (currentTurn >= TURNS) {
+          // 마지막 턴이면 완료
+          setStep(STEP.ALL_DONE);
+        } else {
+          // 아니면 다음 턴으로
+          setCurrentTurn((t) => t + 1);
+          setCurrentSentenceIndex(0);
+        }
+        return;
+      }
+
+      // 정상: 3초 카운트다운 시작
       setCountdown(3);
       intervalRef.current = setInterval(() => {
         setCountdown((c) => {
           if (c <= 1) {
             clearAllTimers();
-            setStep(step === STEP.AI_TIMER ? STEP.AI_PLAYING : STEP.RECORDING);
+            setStep(STEP.AI_PLAYING);
+            return 0;
+          }
+          return c - 1;
+        });
+      }, 1000);
+    } else if (step === STEP.RECORD_TIMER) {
+      setCountdown(3);
+      intervalRef.current = setInterval(() => {
+        setCountdown((c) => {
+          if (c <= 1) {
+            clearAllTimers();
+            setStep(STEP.RECORDING);
             return 0;
           }
           return c - 1;
@@ -367,7 +398,9 @@ export default function RecordingPage() {
     return () => clearAllTimers();
   }, [
     step,
+    currentTurn,
     currentSentence,
+    conversations,
     clearAllTimers,
     startRecording,
     stopRecording,
