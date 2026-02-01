@@ -570,16 +570,8 @@ export default function WaitingRoomPage() {
         })));
         return updated;
       });
-
-      // 100ms 후 fetchLobby로 서버 상태와 동기화
-      setTimeout(() => {
-        console.log("[WaitingRoom] fetchLobby 호출 (READY_CHANGED 동기화)");
-        fetchLobbyRef.current?.();
-      }, 100);
     } else {
       console.warn("[WaitingRoom] ⚠️ senderKey가 없어서 준비 상태 업데이트 불가", payload);
-      // senderKey가 없어도 fetchLobby로 동기화 시도
-      fetchLobbyRef.current?.();
     }
   }, []);
 
