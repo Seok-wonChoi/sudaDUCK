@@ -139,7 +139,11 @@ export default function TogetherTalkPage() {
   const [maxCount, setMaxCount] = useState(roomInfo.maxCount ?? 4);
 
   const [roomId, setRoomId] = useState(roomInfo.roomId ?? null);
-  const [currentTurn, setCurrentTurn] = useState(roomInfo.currentTurn ?? 1);
+
+  // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
+  const [currentTurn, setCurrentTurn] = useState(() => {
+    return roomInfo.currentTurn ?? 1;
+  });
 
   const myUserId = useMemo(() => {
     return roomInfo.myUserId ?? getUserIdFromToken();
@@ -302,11 +306,12 @@ export default function TogetherTalkPage() {
           ...roomInfo,
           roomId: payload?.roomInfo?.roomId ?? roomId,
           turnCount: payload?.roomInfo?.turnCount ?? roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
+          currentTurn: currentTurn, // 현재 턴 번호 전달
         },
         participants,
       },
     });
-  }, [navigate, roomInfo, roomId, participants]);
+  }, [navigate, roomInfo, roomId, participants, currentTurn]);
 
   // 방장 퇴장 시 메인 화면으로 강제 이동
   const handleRoomClosed = useCallback(() => {
@@ -548,6 +553,7 @@ export default function TogetherTalkPage() {
           ...roomInfo,
           roomId: roomId,
           turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+          currentTurn: currentTurn, // 현재 턴 번호 전달
         },
         participants,
       },
@@ -575,6 +581,7 @@ export default function TogetherTalkPage() {
           ...roomInfo,
           roomId: roomId,
           turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+          currentTurn: currentTurn, // 현재 턴 번호 전달
         },
         participants,
       },

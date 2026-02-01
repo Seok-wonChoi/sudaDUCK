@@ -77,10 +77,12 @@ export default function RecordingPage() {
   const TURNS = roomInfo.turnCount || 3;
 
   const [step, setStep] = useState(STEP.AI_TIMER);
-  const [currentTurn, setCurrentTurn] = useState(1);
+  // state로 전달받은 currentTurn 사용 (TogetherTalkPage에서 전달)
+  const [currentTurn, setCurrentTurn] = useState(roomInfo.currentTurn || 1);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [countdown, setCountdown] = useState(3);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [recordingCountdown, setRecordingCountdown] = useState(10); // 녹음 카운트다운 (10초)
   const [sentenceScores, setSentenceScores] = useState({});
   const [bookmarkedSentences, setBookmarkedSentences] = useState([]);
   const [conversations, setConversations] = useState({});
@@ -218,12 +220,23 @@ export default function RecordingPage() {
 
   const goNextTurn = () => {
     if (currentTurn >= TURNS) {
+      // 마지막 턴이면 ALL_DONE으로 이동
       setStep(STEP.ALL_DONE);
       return;
     }
-    setCurrentTurn((t) => t + 1);
-    setCurrentSentenceIndex(0);
-    setStep(STEP.AI_TIMER);
+
+    // 다음 턴이 있으면 TogetherTalkPage로 돌아가기
+    const nextTurn = currentTurn + 1;
+    navigate("/together/talk", {
+      replace: true,
+      state: {
+        ...state,
+        roomInfo: {
+          ...roomInfo,
+          currentTurn: nextTurn, // 다음 턴 번호 전달
+        },
+      },
+    });
   };
 
   const startFlow = () => setStep(STEP.AI_TIMER);
@@ -289,7 +302,19 @@ export default function RecordingPage() {
   // 턴 스크립트 로드
   useEffect(() => {
     const fetchTurnScripts = async () => {
-      if (!roomId || conversations[currentTurn]) return;
+      // 이미 로드된 경우 스킵
+      if (conversations[currentTurn]) return;
+
+      // roomId가 없으면 더미 데이터 사용
+      if (!roomId) {
+        setConversations((prev) => ({
+          ...prev,
+          [currentTurn]: DUMMY_CONVERSATIONS[currentTurn] || [],
+        }));
+        return;
+      }
+
+      // roomId가 있으면 API로 스크립트 로드
       try {
         const response = await getTurnScripts(roomId, currentTurn);
         const scripts = Array.isArray(response) ? response : [response];
@@ -380,11 +405,22 @@ export default function RecordingPage() {
       }
     } else if (step === STEP.RECORDING) {
       setRecordingTime(0);
+      setRecordingCountdown(10); // 10초 카운트다운 시작
       startRecording();
-      intervalRef.current = setInterval(
-        () => setRecordingTime((p) => p + 1),
-        1000,
-      );
+
+      // 1초마다 recordingTime 증가 및 카운트다운 감소
+      intervalRef.current = setInterval(() => {
+        setRecordingTime((p) => p + 1);
+        setRecordingCountdown((c) => {
+          if (c <= 1) {
+            // 10초가 지나면 자동으로 녹음 중지
+            clearAllTimers();
+            stopRecording();
+            return 0;
+          }
+          return c - 1;
+        });
+      }, 1000);
     } else if (step === STEP.RECORD_DONE) {
       timerRef.current = setTimeout(() => goNextSentence(), 1500);
     }
@@ -431,7 +467,7 @@ export default function RecordingPage() {
       case STEP.RECORD_TIMER:
         return <BottomRecordTimer seconds={countdown} />;
       case STEP.RECORDING:
-        return <BottomRecording onStop={stopRecording} />;
+        return <BottomRecording />;
       case STEP.RECORD_DONE:
         return (
           <BottomRecordDone isLast={isLastSentence} />
@@ -489,6 +525,7 @@ export default function RecordingPage() {
       }
       countdown={countdown}
       recordingTime={recordingTime}
+      recordingCountdown={recordingCountdown}
       bottomContent={bottomContent()}
       onBookmarkToggle={handleBookmarkToggle}
       totalTurns={TURNS}
