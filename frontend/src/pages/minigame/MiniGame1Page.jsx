@@ -362,7 +362,7 @@ export default function MiniGame1Page() {
   // 방장 퇴장 시 메인 화면으로 강제 이동
   const handleRoomClosed = useCallback(() => {
     console.log("[MiniGame1Page] ROOM_CLOSED 수신 - 방장 퇴장");
-    navigate("/", {
+    navigate("/main", {
       replace: true,
       state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
