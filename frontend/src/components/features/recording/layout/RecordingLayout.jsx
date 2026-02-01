@@ -10,6 +10,7 @@ export default function RecordingLayout({
   activeCardState = 'idle',
   countdown = 3,
   recordingTime = 0,
+  recordingCountdown = 10, // 녹음 카운트다운
   bottomContent,
   onBookmarkToggle = null,
   totalTurns = 3,
@@ -55,6 +56,7 @@ export default function RecordingLayout({
                 cardState={activeCardState}
                 countdown={countdown}
                 recordingTime={recordingTime}
+                recordingCountdown={recordingCountdown}
                 initialBookmarked={card.isBookmarked}
                 onBookmarkToggle={onBookmarkToggle}
               />

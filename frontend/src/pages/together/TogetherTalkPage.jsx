@@ -138,7 +138,11 @@ export default function TogetherTalkPage() {
   const [maxCount, setMaxCount] = useState(roomInfo.maxCount ?? 4);
 
   const [roomId, setRoomId] = useState(roomInfo.roomId ?? null);
-  const [currentTurn, setCurrentTurn] = useState(roomInfo.currentTurn ?? 1);
+
+  // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
+  const [currentTurn, setCurrentTurn] = useState(() => {
+    return roomInfo.currentTurn ?? 1;
+  });
 
   const myUserId = useMemo(() => {
     return roomInfo.myUserId ?? getUserIdFromToken();
@@ -268,11 +272,12 @@ export default function TogetherTalkPage() {
           ...roomInfo,
           roomId: payload?.roomInfo?.roomId ?? roomId,
           turnCount: payload?.roomInfo?.turnCount ?? roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
+          currentTurn: currentTurn, // 현재 턴 번호 전달
         },
         participants,
       },
     });
-  }, [navigate, roomInfo, roomId, participants]);
+  }, [navigate, roomInfo, roomId, participants, currentTurn]);
 
   const { sendEndRoom } = useRoomWebSocket(resolvedRoomCode, {
     onConversationSuggestion: handleConversationSuggestion,
@@ -480,11 +485,12 @@ export default function TogetherTalkPage() {
           ...roomInfo,
           roomId: roomId,
           turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+          currentTurn: currentTurn, // 현재 턴 번호 전달
         },
         participants,
       },
     });
-  }, [doLeaveRoom, navigate, roomInfo, participants, roomId, isHost, sendEndRoom]);
+  }, [doLeaveRoom, navigate, roomInfo, participants, roomId, isHost, sendEndRoom, currentTurn]);
 
   const handleDone = useCallback(async () => {
     // 타이머 종료 시 방장이면 WebSocket으로 모든 참여자에게 종료 알림
@@ -505,11 +511,12 @@ export default function TogetherTalkPage() {
           ...roomInfo,
           roomId: roomId,
           turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+          currentTurn: currentTurn, // 현재 턴 번호 전달
         },
         participants,
       },
     });
-  }, [doLeaveRoom, navigate, isHost, sendEndRoom, roomId, roomInfo, participants]);
+  }, [doLeaveRoom, navigate, isHost, sendEndRoom, roomId, roomInfo, participants, currentTurn]);
 
   // 중복/문법 오류가 있던 handleBack은 하나만 남깁니다.
   const handleBack = useCallback(() => {
