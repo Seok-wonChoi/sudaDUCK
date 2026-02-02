@@ -142,3 +142,16 @@
   height: 14px;
   object-fit: contain;
 }
+
+/* 2단계 클릭(구매 대기) 표시 */
+.PendingPurchase {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.PendingHint {
+  margin-top: -4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f46e5;
+}
