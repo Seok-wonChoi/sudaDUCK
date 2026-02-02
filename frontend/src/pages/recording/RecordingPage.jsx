@@ -398,38 +398,52 @@ export default function RecordingPage() {
             console.log("[RecordingPage] 전체 객체:", JSON.stringify(s, null, 2));
             console.log("[RecordingPage] 모든 키:", Object.keys(s));
 
-            // 발화자 ID 추출 (여러 필드명 시도)
-            const speakerId = s.speakerId || s.userId || s.memberId || s.speaker_id || s.user_id;
+            // 발화자 이름 추출 (speakerName만 사용, speakerId는 없음)
+            let speakerName =
+              s.speakerName ||
+              s.speaker ||
+              s.userName ||
+              s.nickname ||
+              s.name ||
+              s.speaker_name ||
+              s.user_name ||
+              s.memberName ||
+              s.member_name ||
+              null;
 
-            // 발화자 이름 추출 시도
-            let speakerName = s.speakerName || s.speaker || s.userName || s.nickname ||
-                             s.speaker_name || s.user_name || null;
+            console.log("[RecordingPage] 백엔드에서 받은 speakerName:", speakerName);
 
-            // 이름이 없으면 participants 배열에서 찾기
-            if (!speakerName && speakerId && participants.length > 0) {
-              const participant = participants.find(p =>
-                String(p.id) === String(speakerId) ||
-                String(p.userId) === String(speakerId)
-              );
-              speakerName = participant?.name || participant?.nickname || null;
-              console.log("[RecordingPage] participants에서 찾은 이름:", speakerName, "참여자:", participant);
+            // speakerName이 없으면 participants에서 가져오기
+            if (!speakerName && participants && participants.length > 0) {
+              console.log("[RecordingPage] speakerName이 없어서 participants 사용");
+              const firstParticipant = participants[0];
+              speakerName = firstParticipant?.name || firstParticipant?.nickname || "참여자";
             }
 
-            // 여전히 이름이 없으면 "참여자"로 표시
-            if (!speakerName) {
+            // 여전히 이름이 없으면 기본값
+            if (!speakerName || speakerName === "Unknown") {
               speakerName = "참여자";
             }
 
-            // 본인이 말한 경우 "(나)" 추가
-            const isMe = myUserId && speakerId && String(speakerId) === String(myUserId);
+            // 본인인지 판단: participants의 isMe로 확인
+            // (speakerId가 없으므로 participants 배열에서 isMe === true인지 확인)
+            let isMe = false;
+            if (participants && participants.length > 0) {
+              const myParticipant = participants.find(p => p.isMe === true);
+              if (myParticipant) {
+                // 내가 유일한 참여자이면 모든 발화가 내 것
+                isMe = participants.length === 1 && myParticipant.isMe;
+              }
+            }
+
             const displayName = isMe ? `${speakerName}(나)` : speakerName;
 
-            console.log(`[RecordingPage] 스크립트 ${i + 1} 발화자 결과:`, {
+            console.log(`[RecordingPage] 스크립트 ${i + 1} 발화자 최종 결과:`, {
               speakerName,
-              speakerId,
               myUserId,
               isMe,
               displayName,
+              participantsCount: participants?.length || 0,
             });
 
             return {
