@@ -29,7 +29,9 @@ export async function saveAssessment(audioBlob, roomId, turnNo, scriptId) {
 }
 
 // 스크립트 저장하기, 취소하기
-export async function toggleScriptLike(scriptId) {
-  const { data } = await api.post(`/api/v1/script/${scriptId}/like`);
+export async function toggleScriptLike(scriptId, roomId, turnNo) {
+  const { data } = await api.post(`/api/v1/script/${scriptId}/like`, null, {
+    params: { roomId, turnNo }, // roomId와 turnNo 둘 다 전송
+  });
   return data;
 }

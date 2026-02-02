@@ -901,7 +901,7 @@ export default function WaitingRoomPage() {
       const response = await toggleReady(inviteCode, nextReady);
       console.log("[WaitingRoom] ✅ API 호출 성공:", response);
     } catch (error) {
-      console.error("[WaitingRoom] ❌ API 호출 실패:", error);
+
       // Rollback
       setParticipants((prev) =>
         prev.map((p) => (p.key === myKey ? { ...p, isReady: !nextReady } : p)),
