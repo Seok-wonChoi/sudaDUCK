@@ -1,6 +1,6 @@
 .scriptHeader {
   text-align: center;
-  padding: clamp(24px, 3vh, 36px) clamp(16px, 2vw, 24px);
+  padding: clamp(24px, 3vh, 36px) 0;
   margin-bottom: clamp(20px, 2.5vh, 28px);
 }
 
@@ -22,7 +22,7 @@
 
 @media (max-width: 768px) {
   .scriptHeader {
-    padding: 24px 16px;
+    padding: 24px 0;
     margin-bottom: 16px;
   }
 
