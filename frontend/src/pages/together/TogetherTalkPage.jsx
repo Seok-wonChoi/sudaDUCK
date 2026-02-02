@@ -162,6 +162,13 @@ export default function TogetherTalkPage() {
 
   const [roomId, setRoomId] = useState(roomInfo.roomId ?? null);
 
+  // ★ hydratedInfo 변경 시 roomId 업데이트 (RecordingPage에서 돌아올 때)
+  useEffect(() => {
+    if (hydratedInfo?.roomInfo?.roomId) {
+      setRoomId(hydratedInfo.roomInfo.roomId);
+    }
+  }, [hydratedInfo]);
+
   // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
   const [currentTurn, setCurrentTurn] = useState(() => {
     return roomInfo.currentTurn ?? 1;
@@ -349,6 +356,12 @@ export default function TogetherTalkPage() {
   // 대화 종료 시 모든 참여자가 /recording으로 이동
   const handleRoomEnded = useCallback((payload) => {
     console.log("[TogetherTalkPage] ROOM_ENDED 수신 - /recording으로 이동", payload);
+    console.log("[TogetherTalkPage] 전달할 데이터:", {
+      roomId: payload?.roomInfo?.roomId ?? roomId,
+      roomCode: resolvedRoomCode,
+      currentTurn,
+      turnCount: payload?.roomInfo?.turnCount ?? roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
+    });
 
     navigate("/recording", {
       replace: true,
@@ -357,13 +370,15 @@ export default function TogetherTalkPage() {
         roomInfo: {
           ...roomInfo,
           roomId: payload?.roomInfo?.roomId ?? roomId,
+          roomCode: resolvedRoomCode,
           turnCount: payload?.roomInfo?.turnCount ?? roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
           currentTurn: currentTurn, // 현재 턴 번호 전달
         },
         participants,
+        myUserId, // 본인 userId 전달
       },
     });
-  }, [navigate, roomInfo, roomId, participants, currentTurn]);
+  }, [navigate, roomInfo, roomId, participants, currentTurn, resolvedRoomCode]);
 
   // 방장 퇴장 시 메인 화면으로 강제 이동
   const handleRoomClosed = useCallback(() => {
@@ -588,6 +603,13 @@ export default function TogetherTalkPage() {
     // 방장만 대화 종료 가능
     if (!isHost) return;
 
+    console.log("[TogetherTalkPage] 대화 종료 - 전달할 데이터:", {
+      roomId,
+      roomCode: resolvedRoomCode,
+      currentTurn,
+      turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+    });
+
     // REST API로 방 종료 (이벤트는 백엔드에서 ROOM_ENDED WS로 브로드캐스트됨)
     try {
       await endRoom(resolvedRoomCode);
@@ -596,12 +618,43 @@ export default function TogetherTalkPage() {
       console.error("[TogetherTalkPage] endRoom REST API 실패:", e);
     }
 
+<<<<<<< HEAD
     // 웹소켓 ROOM_ENDED 메시지를 기다림 (handleRoomEnded에서 모든 참여자가 동시에 /recording으로 이동)
   }, [isHost, resolvedRoomCode]);
 
   // ★ handleDone: 타이머 종료 시에도 REST API 호출
   const handleDone = useCallback(async () => {
     // 방장만 endRoom API 호출
+=======
+    await doLeaveRoom();
+
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "together",
+        roomInfo: {
+          ...roomInfo,
+          roomId: roomId,
+          roomCode: resolvedRoomCode,
+          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+          currentTurn: currentTurn, // 현재 턴 번호 전달
+        },
+        participants,
+        myUserId, // 본인 userId 전달
+      },
+    });
+  }, [doLeaveRoom, navigate, roomInfo, participants, roomId, isHost, resolvedRoomCode, currentTurn, myUserId]);
+
+  // ★ handleDone: 타이머 종료 시에도 REST API 호출
+  const handleDone = useCallback(async () => {
+    console.log("[TogetherTalkPage] 타이머 종료 - 전달할 데이터:", {
+      roomId,
+      roomCode: resolvedRoomCode,
+      currentTurn,
+      turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+    });
+
+>>>>>>> a9ba756d8aa7c676db7f15c2f40e235ffb368619
     if (isHost) {
       try {
         await endRoom(resolvedRoomCode);
@@ -611,8 +664,34 @@ export default function TogetherTalkPage() {
       }
     }
 
+<<<<<<< HEAD
     // 웹소켓 ROOM_ENDED 메시지를 기다림 (handleRoomEnded에서 모든 참여자가 동시에 /recording으로 이동)
   }, [isHost, resolvedRoomCode]);
+=======
+    await doLeaveRoom();
+
+    navigate("/recording", {
+      replace: true,
+      state: {
+        mode: "together",
+        roomInfo: {
+          ...roomInfo,
+          roomId: roomId,
+          roomCode: resolvedRoomCode,
+          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
+          currentTurn: currentTurn, // 현재 턴 번호 전달
+        },
+        participants,
+        myUserId, // 본인 userId 전달
+      },
+    });
+  }, [doLeaveRoom, navigate, isHost, roomId, roomInfo, participants, resolvedRoomCode, currentTurn, myUserId]);
+
+  const handleBack = useCallback(() => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/together");
+  }, [navigate]);
+>>>>>>> a9ba756d8aa7c676db7f15c2f40e235ffb368619
 
   /* =========================
      돌발 퀘스트 (수동 시작 1/2)
