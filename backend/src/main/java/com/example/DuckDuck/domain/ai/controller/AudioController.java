@@ -18,25 +18,29 @@ public class AudioController {
 
     public AudioController() {
         log.info("========================================");
-        log.info("📢 AudioController가 정상적으로 생성되었습니다!");
+        log.info("📢 AudioController 생성됨!");
         log.info("========================================");
     }
 
-    @RequestMapping(value = "/audio/{roomId}/{filename}", method = RequestMethod.GET)
+    @RequestMapping(
+            value = "/audio/{roomId}/{filename}",
+            method = RequestMethod.GET,
+            produces = "audio/wav"
+    )
     public ResponseEntity<Resource> getAudioFile(
             @PathVariable("roomId") String roomId,
             @PathVariable("filename") String filename) {
 
-        log.info("🎵🎵🎵 [Audio] API 호출됨! roomId={}, filename={}", roomId, filename);
+        log.info("🎵🎵🎵 [Audio] 요청 수신: roomId={}, filename={}", roomId, filename);
 
-        // 1. 경로 검증
+        // 1. 보안 검증
         if (filename.contains("..") || roomId.contains("..")) {
             log.warn("❌ [Audio] 잘못된 경로");
             return ResponseEntity.badRequest().build();
         }
 
         if (!filename.endsWith(".wav")) {
-            log.warn("❌ [Audio] WAV 아님");
+            log.warn("❌ [Audio] WAV 아님: {}", filename);
             return ResponseEntity.badRequest().build();
         }
 
@@ -57,7 +61,7 @@ public class AudioController {
         log.info("📊 [Audio] 파일 크기: {} bytes ({} KB)", fileSize, fileSize / 1024);
 
         if (fileSize < 5000) {
-            log.error("❌ [Audio] 파일 크기 이상: {}bytes", fileSize);
+            log.error("❌ [Audio] 파일 손상: {}bytes", fileSize);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
 
@@ -65,30 +69,22 @@ public class AudioController {
             Resource resource = new FileSystemResource(file);
 
             if (!resource.exists() || !resource.isReadable()) {
-                log.error("❌ [Audio] 파일 읽기 불가");
+                log.error("❌ [Audio] 읽기 불가");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
 
-            String contentType = "audio/wav";
-            try {
-                String detected = Files.probeContentType(file.toPath());
-                if (detected != null) {
-                    contentType = detected;
-                }
-            } catch (IOException e) {
-                log.warn("Content-Type 감지 실패, 기본값 사용");
-            }
-
-            log.info("✅✅✅ [Audio] 파일 전송: {} ({} bytes)", filename, fileSize);
+            log.info("✅✅✅ [Audio] 전송 시작: {} ({} bytes)", filename, fileSize);
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_TYPE, contentType)
+                    .header(HttpHeaders.CONTENT_TYPE, "audio/wav")
                     .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileSize))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
                     .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
                     .body(resource);
 
         } catch (Exception e) {
-            log.error("❌ [Audio] 처리 실패", e);
+            log.error("❌ [Audio] 처리 실패: {}", file.getAbsolutePath(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
