@@ -618,43 +618,12 @@ export default function TogetherTalkPage() {
       console.error("[TogetherTalkPage] endRoom REST API 실패:", e);
     }
 
-<<<<<<< HEAD
     // 웹소켓 ROOM_ENDED 메시지를 기다림 (handleRoomEnded에서 모든 참여자가 동시에 /recording으로 이동)
   }, [isHost, resolvedRoomCode]);
 
   // ★ handleDone: 타이머 종료 시에도 REST API 호출
   const handleDone = useCallback(async () => {
     // 방장만 endRoom API 호출
-=======
-    await doLeaveRoom();
-
-    navigate("/recording", {
-      replace: true,
-      state: {
-        mode: "together",
-        roomInfo: {
-          ...roomInfo,
-          roomId: roomId,
-          roomCode: resolvedRoomCode,
-          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
-          currentTurn: currentTurn, // 현재 턴 번호 전달
-        },
-        participants,
-        myUserId, // 본인 userId 전달
-      },
-    });
-  }, [doLeaveRoom, navigate, roomInfo, participants, roomId, isHost, resolvedRoomCode, currentTurn, myUserId]);
-
-  // ★ handleDone: 타이머 종료 시에도 REST API 호출
-  const handleDone = useCallback(async () => {
-    console.log("[TogetherTalkPage] 타이머 종료 - 전달할 데이터:", {
-      roomId,
-      roomCode: resolvedRoomCode,
-      currentTurn,
-      turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
-    });
-
->>>>>>> a9ba756d8aa7c676db7f15c2f40e235ffb368619
     if (isHost) {
       try {
         await endRoom(resolvedRoomCode);
@@ -664,34 +633,8 @@ export default function TogetherTalkPage() {
       }
     }
 
-<<<<<<< HEAD
     // 웹소켓 ROOM_ENDED 메시지를 기다림 (handleRoomEnded에서 모든 참여자가 동시에 /recording으로 이동)
   }, [isHost, resolvedRoomCode]);
-=======
-    await doLeaveRoom();
-
-    navigate("/recording", {
-      replace: true,
-      state: {
-        mode: "together",
-        roomInfo: {
-          ...roomInfo,
-          roomId: roomId,
-          roomCode: resolvedRoomCode,
-          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
-          currentTurn: currentTurn, // 현재 턴 번호 전달
-        },
-        participants,
-        myUserId, // 본인 userId 전달
-      },
-    });
-  }, [doLeaveRoom, navigate, isHost, roomId, roomInfo, participants, resolvedRoomCode, currentTurn, myUserId]);
-
-  const handleBack = useCallback(() => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate("/together");
-  }, [navigate]);
->>>>>>> a9ba756d8aa7c676db7f15c2f40e235ffb368619
 
   /* =========================
      돌발 퀘스트 (수동 시작 1/2)
