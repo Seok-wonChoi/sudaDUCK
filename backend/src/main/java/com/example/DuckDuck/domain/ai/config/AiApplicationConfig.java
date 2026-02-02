@@ -96,15 +96,7 @@ public class AiApplicationConfig implements WebMvcConfigurer {
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 프로젝트 루트 기준 절대 경로
-        String audioPath = new File("storage/audio").getAbsolutePath() + "/";
-
-        registry.addResourceHandler("/audio/**")
-                .addResourceLocations("file:" + audioPath)
-                .setCachePeriod(3600);
-
-        // 디버깅용 로그
-        System.out.println("🎵 [TTS] Audio 서빙 경로: " + audioPath);
+        // /audio는 AudioController가 처리
     }
     
     /**
