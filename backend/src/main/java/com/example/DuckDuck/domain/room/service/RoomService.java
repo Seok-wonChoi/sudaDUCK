@@ -63,6 +63,8 @@ public class RoomService {
         redisTemplate.expire(keyRoomReady(roomId), ROOM_TTL_HOURS, TimeUnit.HOURS);
         redisTemplate.expire(keyRoomIdToCode(roomId), ROOM_TTL_HOURS, TimeUnit.HOURS);
         redisTemplate.expire(keyRoomCodeToId(roomCode), ROOM_TTL_HOURS, TimeUnit.HOURS);
+        // 👇 [추가] 오픈비두 키도 수명 연장! (안 하면 6시간 뒤에 마이크 끊김)
+        redisTemplate.expire(keyRoomOpenVidu(roomId), ROOM_TTL_HOURS, TimeUnit.HOURS);
     }
 
     // ===================== 방 생성 =====================
@@ -92,6 +94,19 @@ public class RoomService {
                 .build();
 
         Room savedRoom = roomRepository.save(room);
+
+        //오픈비듀 로직 추가사항 : 오픈비듀도 세션만들고 저장하기
+        if (request.openviduSessionId() != null) {
+            // 1. 이름표 만들기: "room:100:openvidu"
+            String key = keyRoomOpenVidu(savedRoom.getRoomId());
+
+            // 2. 내용물: "ses_123" (프론트에서 받은 거)
+            String value = request.openviduSessionId();
+
+            // 3. 레디스에 저장 (6시간 뒤 삭제)
+            redisTemplate.opsForValue().set(key, value, ROOM_TTL_HOURS, TimeUnit.HOURS);
+        }
+
 
         // 4. 방장을 참가자로 등록
         RoomParticipants hostParticipant = RoomParticipants.builder()
@@ -269,11 +284,15 @@ public class RoomService {
                         )
                 )
         );
+        //레디스에서 오픈비두 세션 ID 꺼내오기 [오픈비듀 추우가아]
+        String ovSessionId = (String) redisTemplate.opsForValue().get(keyRoomOpenVidu(roomId));
+
 
         return RoomJoinResponse.builder()
                 .roomId(roomId)
                 .roomCode(request.getRoomCode())
                 .readyStatus("NOT_READY")
+                .openviduSessionId(ovSessionId) // 👈 [핵심] 여기서 실어서 보냅니다!
                 .alreadyJoined(alreadyJoined)
                 .build();
 
@@ -419,5 +438,9 @@ public class RoomService {
                 .roomClosed(false)
                 .remainingCount(remaining)
                 .build();
+    }
+
+    private String keyRoomOpenVidu(Long roomId) {  //추가사항 :레디스에 저장된 방번호에 해당된 오픈비듀 세션아이디를 가져옵시다!
+        return "room:" + roomId + ":openvidu";
     }
 }
