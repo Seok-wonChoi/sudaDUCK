@@ -83,8 +83,8 @@
 
 .SubText {
   font-weight: 800;
-  font-size: clamp(16px, 2.4vw, 22px);
-  color: #333;
+  font-size: clamp(26px, 4.0vw, 40px);
+  color: #222;
   white-space: pre-line;
   text-align: center;
   width: 100%;
