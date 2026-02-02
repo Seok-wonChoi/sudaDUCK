@@ -4,7 +4,6 @@ import styles from "./TogetherTalkPage.module.css";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitGuard from "@/components/common/ExitGuard/ExitGuard";
-import ExitButton from "@/components/common/ExitButton/ExitButton";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
 
 import {
@@ -149,6 +148,29 @@ export default function TogetherTalkPage() {
     );
   }, [roomInfo]);
 
+  // 타이머 시작 시간 (절대 timestamp) - 웹소켓으로 동기화
+  const [timerStartedAt, setTimerStartedAt] = useState(() => {
+    try {
+      // resolvedRoomCode는 아직 정의되지 않았으므로 roomInfo에서 직접 추출
+      const roomCode = roomInfo.roomCode || roomInfo.inviteCode || roomInfo.joinCode || roomInfo.code || roomInfo.roomInfo?.roomCode || "";
+      const saved = sessionStorage.getItem(`timer_started_${roomCode}`);
+      return saved ? parseInt(saved, 10) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // 타이머 시작 시간 sessionStorage 저장
+  useEffect(() => {
+    if (resolvedRoomCode && timerStartedAt) {
+      try {
+        sessionStorage.setItem(`timer_started_${resolvedRoomCode}`, String(timerStartedAt));
+      } catch {
+        // ignore
+      }
+    }
+  }, [resolvedRoomCode, timerStartedAt]);
+
   const [topic, setTopic] = useState(roomInfo.topic ?? "좋아하는 음식");
   const [maxCount, setMaxCount] = useState(roomInfo.maxCount ?? 4);
 
@@ -207,6 +229,19 @@ export default function TogetherTalkPage() {
 
       if (data?.topic) setTopic(data.topic);
       if (data?.roomId) setRoomId(data.roomId);
+
+      // 타이머 시작 시간 설정 (서버 값으로 한 번만 동기화)
+      if (data?.timerStartedAt != null && !timerSyncedRef.current) {
+        const serverTime = Number(data.timerStartedAt);
+        console.log("[TogetherTalkPage] 서버로부터 타이머 시작 시간 설정:", serverTime);
+        setTimerStartedAt(serverTime);
+        timerSyncedRef.current = true;
+
+        // sessionStorage에도 저장 (새로고침 시 참고용)
+        if (resolvedRoomCode) {
+          sessionStorage.setItem(`timer_started_${resolvedRoomCode}`, String(serverTime));
+        }
+      }
 
       const members = Array.isArray(data?.participants)
         ? data.participants
@@ -323,6 +358,20 @@ export default function TogetherTalkPage() {
     );
   }, []);
 
+  const handleTimerSync = useCallback((payload) => {
+    if (payload?.startTimeMs != null && !timerSyncedRef.current) {
+      const startTime = Number(payload.startTimeMs);
+      console.log("[TogetherTalkPage] 웹소켓으로 타이머 시작 시간 설정 (처음 1번만):", startTime);
+      setTimerStartedAt(startTime);
+      timerSyncedRef.current = true;
+
+      // sessionStorage에도 저장 (새로고침 시 참고용)
+      if (resolvedRoomCode) {
+        sessionStorage.setItem(`timer_started_${resolvedRoomCode}`, String(startTime));
+      }
+    }
+  }, [resolvedRoomCode]);
+
   // 대화 종료 시 모든 참여자가 /recording으로 이동
   const handleRoomEnded = useCallback((payload) => {
     console.log("[TogetherTalkPage] ROOM_ENDED 수신 - /recording으로 이동", payload);
@@ -353,7 +402,7 @@ export default function TogetherTalkPage() {
   // 방장 퇴장 시 메인 화면으로 강제 이동
   const handleRoomClosed = useCallback(() => {
     console.log("[TogetherTalkPage] ROOM_CLOSED 수신 - 방장 퇴장");
-    navigate("/", {
+    navigate("/main", {
       replace: true,
       state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
@@ -367,6 +416,7 @@ export default function TogetherTalkPage() {
     onRoomClosed: handleRoomClosed,
     onVoiceLevelChanged: handleVoiceLevelChanged,
     onMicChanged: handleMicChanged,
+    onTimerSync: handleTimerSync, // 웹소켓으로 타이머 동기화 (처음 1번만)
     onConnected: () => console.log("WebSocket 연결됨 (TogetherTalkPage)"),
     onDisconnected: () =>
       console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
@@ -582,29 +632,13 @@ export default function TogetherTalkPage() {
     // REST API로 방 종료 (이벤트는 백엔드에서 ROOM_ENDED WS로 브로드캐스트됨)
     try {
       await endRoom(resolvedRoomCode);
-      console.log("[TogetherTalkPage] endRoom REST API 성공");
+      console.log("[TogetherTalkPage] endRoom REST API 성공 - 웹소켓 메시지 대기 중");
     } catch (e) {
       console.error("[TogetherTalkPage] endRoom REST API 실패:", e);
     }
 
-    await doLeaveRoom();
-
-    navigate("/recording", {
-      replace: true,
-      state: {
-        mode: "together",
-        roomInfo: {
-          ...roomInfo,
-          roomId: roomId,
-          roomCode: resolvedRoomCode,
-          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
-          currentTurn: currentTurn, // 현재 턴 번호 전달
-        },
-        participants,
-        myUserId, // 본인 userId 전달
-      },
-    });
-  }, [doLeaveRoom, navigate, roomInfo, participants, roomId, isHost, resolvedRoomCode, currentTurn, myUserId]);
+    // 웹소켓 ROOM_ENDED 메시지를 기다림 (handleRoomEnded에서 모든 참여자가 동시에 /recording으로 이동)
+  }, [isHost, resolvedRoomCode]);
 
   // ★ handleDone: 타이머 종료 시에도 REST API 호출
   const handleDone = useCallback(async () => {
@@ -615,7 +649,7 @@ export default function TogetherTalkPage() {
     if (isHost) {
       try {
         await endRoom(resolvedRoomCode);
-        console.log("[TogetherTalkPage] endRoom REST API 성공 (타이머 종료)");
+        console.log("[TogetherTalkPage] endRoom REST API 성공 (타이머 종료) - 웹소켓 메시지 대기 중");
       } catch (e) {
         console.error("[TogetherTalkPage] endRoom REST API 실패 (타이머 종료):", e);
       }
@@ -986,29 +1020,15 @@ export default function TogetherTalkPage() {
       <div className={styles.Shell}>
         <ExitGuard />
 
-        <AppHeader userName="user" notifications={[]} />
+        <AppHeader
+          userName="user"
+          notifications={[]}
+          logoExitMessage="메인 화면으로 나가시겠습니까?"
+          onLogoExit={doLeaveRoom}
+        />
 
         <div className={styles.Content}>
-          <button
-            className={styles.BackButton}
-            type="button"
-            onClick={handleBack}
-            aria-label="뒤로 가기"
-          >
-            &lt;
-          </button>
-
           <div className={styles.HeaderRow}>
-            <div className={styles.ExitCol}>
-              <ExitButton
-                to="/"
-                replace
-                label="나가기"
-                confirmMessage="메인 화면으로 나가시겠습니까?"
-                onExit={doLeaveRoom}
-              />
-            </div>
-
             <div className={styles.TopicRow}>
               <img className={styles.SmallDuck} src={duckImg} alt="오리" />
               <div className={styles.TopicBubble}>

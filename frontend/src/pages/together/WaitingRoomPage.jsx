@@ -491,12 +491,28 @@ export default function WaitingRoomPage() {
       currentParticipants: participantsRef.current.length
     });
 
-    // 즉시 fetchLobby 호출하고, 100ms 후에 한번 더 호출 (서버 상태 동기화)
-    fetchLobbyRef.current?.();
-    setTimeout(() => {
-      console.log("[WaitingRoom] fetchLobby 재호출 (MEMBER_JOINED 100ms 후)");
-      fetchLobbyRef.current?.();
-    }, 100);
+    if (!senderKey) return;
+
+    const newMember = {
+      key: String(senderKey),
+      nickname: payload?.nickname ?? "참여자",
+      isHost: payload?.isHost ?? false,
+      isReady: payload?.isReady ?? false,
+      micOn: payload?.micOn ?? false,
+      voiceLevel: 0,
+      isSpeaking: false,
+    };
+
+    setParticipants((prev) => {
+      // 이미 존재하는 참여자면 업데이트, 없으면 추가
+      const exists = prev.some((p) => p.key === String(senderKey));
+      if (exists) {
+        return prev.map((p) => p.key === String(senderKey) ? { ...p, ...newMember } : p);
+      }
+      return [...prev, newMember];
+    });
+
+    if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
   }, []);
 
   const handleMemberLeft = useCallback((payload, senderKey) => {
@@ -506,12 +522,11 @@ export default function WaitingRoomPage() {
       currentParticipants: participantsRef.current.length
     });
 
-    // 즉시 fetchLobby 호출하고, 100ms 후에 한번 더 호출 (서버 상태 동기화)
-    fetchLobbyRef.current?.();
-    setTimeout(() => {
-      console.log("[WaitingRoom] fetchLobby 재호출 (MEMBER_LEFT 100ms 후)");
-      fetchLobbyRef.current?.();
-    }, 100);
+    if (!senderKey) return;
+
+    setParticipants((prev) => prev.filter((p) => p.key !== String(senderKey)));
+
+    if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
   }, []);
 
   const handleRoomClosed = useCallback(() => {
@@ -805,11 +820,7 @@ export default function WaitingRoomPage() {
       console.warn("[WaitingRoom] ⚠️ sendReady가 없어서 WebSocket 전송 불가");
     }
 
-    // 100ms 후 서버 상태와 동기화
-    setTimeout(() => {
-      console.log("[WaitingRoom] fetchLobby 호출 (toggleMyReady 동기화)");
-      fetchLobbyRef.current?.();
-    }, 100);
+    // 웹소켓 READY_CHANGED 메시지로 상태 동기화 (fetchLobby 제거로 깜빡임 방지)
   }, [myKey, myReady, inviteCode, sendReady, showToast, isConnected]);
 
   const handleCopy = useCallback(async () => {
