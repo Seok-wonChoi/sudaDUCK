@@ -226,8 +226,17 @@ export default function TogetherTalkPage() {
 
   // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
   const [currentTurn, setCurrentTurn] = useState(() => {
-    return roomInfo.currentTurn ?? 1;
+    return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
   });
+
+  // [수정 2] 데이터 동기화 추가: 페이지 이동으로 hydratedInfo가 바뀌면 턴 번호도 업데이트
+  useEffect(() => {
+    const nextTurn = hydratedInfo?.currentTurn ?? hydratedInfo?.roomInfo?.currentTurn;
+    if (nextTurn) {
+      setCurrentTurn(nextTurn);
+    }
+  }, [hydratedInfo]);
+
 
   const myUserId = useMemo(() => {
     return roomInfo.myUserId ?? getUserIdFromToken();
@@ -898,7 +907,7 @@ export default function TogetherTalkPage() {
       }
     };
 
-    scheduleRandomQuiz();
+    // scheduleRandomQuiz();
   }, [currentTurn, questRunning, activeQuest, roomId, participants.length, startQuest]);
 
   // 퀘스트 1: 녹음 시작
