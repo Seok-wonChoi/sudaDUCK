@@ -57,8 +57,8 @@
 /* Content */
 .content {
   flex: 1;
-  padding: clamp(16px, 2vh, 20px) clamp(20px, 3vw, 40px) clamp(20px, 2.5vh, 28px);
-  max-width: min(1800px, 96vw);
+  padding: clamp(16px, 1.5vh, 20px) clamp(16px, 2vw, 32px) clamp(20px, 2vh, 24px);
+  max-width: 100%;
   margin: 0 auto;
   width: 100%;
 }
@@ -73,7 +73,7 @@
 
 /* Bottom Section */
 .bottomSection {
-  padding: clamp(20px, 2.5vh, 24px) clamp(20px, 2.5vw, 32px);
+  padding: clamp(20px, 2.5vh, 28px) clamp(16px, 2vw, 24px);
   border-top: 1px solid #e5e7eb;
   background: #ffffff;
   box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
@@ -82,19 +82,18 @@
 /* 중형 화면 (1024px ~ 1440px) */
 @media (max-width: 1440px) {
   .content {
-    max-width: min(1600px, 94vw);
+    padding: clamp(14px, 1.5vh, 18px) clamp(16px, 2vw, 28px) clamp(18px, 2vh, 22px);
   }
 }
 
 /* 태블릿 화면 (768px ~ 1024px) */
 @media (max-width: 1024px) {
   .content {
-    max-width: min(1200px, 92vw);
-    padding: clamp(14px, 1.8vh, 18px) clamp(18px, 2.5vw, 32px) clamp(18px, 2.2vh, 24px);
+    padding: clamp(14px, 1.5vh, 18px) clamp(16px, 2vw, 24px) clamp(18px, 2vh, 22px);
   }
 
   .bottomSection {
-    padding: clamp(18px, 2.2vh, 22px) clamp(18px, 2.2vw, 28px);
+    padding: clamp(18px, 2vh, 22px) clamp(16px, 2vw, 24px);
   }
 }
 

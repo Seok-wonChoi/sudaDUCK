@@ -1,13 +1,13 @@
 .turnTabs {
   display: flex;
-  gap: 12px;
+  gap: clamp(10px, 1.2vw, 14px);
   justify-content: center;
-  margin-bottom: 32px;
+  margin-bottom: clamp(24px, 3vh, 36px);
 }
 
 .tab {
-  padding: 10px 28px;
-  font-size: 16px;
+  padding: clamp(8px, 1vh, 12px) clamp(20px, 2.5vw, 32px);
+  font-size: clamp(14px, 1.5vw, 18px);
   font-weight: 500;
   border-radius: 999px;
   border: 1.5px solid #e5e7eb;

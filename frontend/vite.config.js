@@ -56,6 +56,11 @@ export default defineConfig({
     target: "https://i14e104.p.ssafy.io",
     changeOrigin: true,
   },
+  // 오디오 파일 프록시 (TTS 음성 파일)
+  "/audio": {
+    target: "https://i14e104.p.ssafy.io",
+    changeOrigin: true,
+  },
   },
 }
 });

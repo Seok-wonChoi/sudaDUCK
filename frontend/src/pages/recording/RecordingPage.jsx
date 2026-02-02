@@ -478,27 +478,39 @@ export default function RecordingPage() {
 
   // 메인 타이머 및 자동 흐름 제어
   useEffect(() => {
+    console.log("🎬 ========== useEffect 실행 ==========");
+    console.log("[RecordingPage] 현재 step:", step);
+    console.log("[RecordingPage] currentTurn:", currentTurn);
+    console.log("[RecordingPage] conversations[currentTurn]:", conversations[currentTurn]);
+    console.log("[RecordingPage] currentSentence:", currentSentence);
+    console.log("[RecordingPage] currentSentenceIndex:", currentSentenceIndex);
+    console.log("======================================");
+
     clearAllTimers();
 
     if (step === STEP.AI_TIMER) {
+      console.log("📍 [STEP] AI_TIMER 단계 진입");
+
       // ★ 스크립트가 아직 로드되지 않은 경우 대기
       if (conversations[currentTurn] === undefined) {
-        console.log(`[RecordingPage] turn ${currentTurn} 스크립트 로드 대기 중...`);
+        console.log(`⏳ [RecordingPage] turn ${currentTurn} 스크립트 로드 대기 중...`);
         return;
       }
 
       // ★ 해당 턴의 스크립트가 빈 배열인 경우 (스크립트 없음)
       if (conversations[currentTurn].length === 0) {
-        console.error(`[RecordingPage] turn ${currentTurn} 스크립트가 없어서 진행 불가`);
+        console.error(`❌ [RecordingPage] turn ${currentTurn} 스크립트가 없어서 진행 불가`);
         // 에러가 있으면 그대로 대기 (자동으로 넘어가지 않음)
         return;
       }
 
       // 정상: 3초 카운트다운 시작
+      console.log("✅ [STEP] AI_TIMER 카운트다운 시작 (3초)");
       setCountdown(3);
       intervalRef.current = setInterval(() => {
         setCountdown((c) => {
           if (c <= 1) {
+            console.log("⏰ [STEP] AI_TIMER 카운트다운 종료 → AI_PLAYING으로 전환");
             clearAllTimers();
             setStep(STEP.AI_PLAYING);
             return 0;
@@ -507,6 +519,7 @@ export default function RecordingPage() {
         });
       }, 1000);
     } else if (step === STEP.RECORD_TIMER) {
+      console.log("📍 [STEP] RECORD_TIMER 단계 진입");
       setCountdown(3);
       intervalRef.current = setInterval(() => {
         setCountdown((c) => {
@@ -520,11 +533,81 @@ export default function RecordingPage() {
       }, 1000);
     } else if (step === STEP.AI_PLAYING) {
       if (currentSentence?.tts_url) {
-        const audio = new Audio(currentSentence.tts_url);
-        audioRef.current = audio;
-        audio.play().catch(() => setStep(STEP.RECORD_TIMER));
-        audio.onended = () => setStep(STEP.RECORD_TIMER);
+        // ✅ TTS URL: Vite 프록시를 통해 상대 경로로 사용
+        const ttsUrl = currentSentence.tts_url; // 이미 /audio/... 형태
+
+        console.log("🔊 ========== TTS 재생 시작 ==========");
+        console.log("[RecordingPage] 원본 tts_url:", currentSentence.tts_url);
+        console.log("[RecordingPage] 사용할 URL (프록시 통과):", ttsUrl);
+        console.log("======================================");
+
+        // ✅ fetch로 오디오 파일 다운로드 (프록시를 통해 CORS 우회)
+        const accessToken = localStorage.getItem("accessToken");
+
+        console.log("📥 [TTS] fetch로 오디오 파일 다운로드 시작...");
+
+        fetch(ttsUrl, {
+          headers: accessToken ? {
+            'Authorization': `Bearer ${accessToken}`
+          } : {}
+        })
+          .then(response => {
+            console.log("📥 [TTS] fetch 응답:", response.status, response.statusText);
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return response.blob();
+          })
+          .then(blob => {
+            console.log("✅ [TTS] Blob 생성 완료:", blob.size, "bytes, type:", blob.type);
+
+            // Blob URL 생성
+            const blobUrl = URL.createObjectURL(blob);
+            console.log("✅ [TTS] Blob URL 생성:", blobUrl);
+
+            const audio = new Audio(blobUrl);
+            audioRef.current = audio;
+
+            // 재생 완료 시 Blob URL 해제
+            audio.onended = () => {
+              console.log("✅ [TTS] 재생 완료");
+              URL.revokeObjectURL(blobUrl);
+              setStep(STEP.RECORD_TIMER);
+            };
+
+            // 에러 핸들링
+            audio.onerror = (event) => {
+              console.error("❌ [TTS] 오디오 재생 에러:", {
+                event,
+                error: audio.error,
+                errorCode: audio.error?.code,
+              });
+              URL.revokeObjectURL(blobUrl);
+              setStep(STEP.RECORD_TIMER);
+            };
+
+            // 재생 시작
+            audio.play()
+              .then(() => {
+                console.log("✅ [TTS] 재생 시작 성공!");
+              })
+              .catch((err) => {
+                console.error("❌ [TTS] play() 실패:", err.message);
+                URL.revokeObjectURL(blobUrl);
+                setStep(STEP.RECORD_TIMER);
+              });
+          })
+          .catch((err) => {
+            console.error("❌ [TTS] fetch 실패:", {
+              에러: err.message,
+              URL: ttsUrl,
+            });
+            setStep(STEP.RECORD_TIMER);
+          });
       } else {
+        console.warn("⚠️ [RecordingPage] TTS URL이 없어서 기본 타이머 사용");
         timerRef.current = setTimeout(
           () => setStep(STEP.RECORD_TIMER),
           AI_PLAYING_MS,
