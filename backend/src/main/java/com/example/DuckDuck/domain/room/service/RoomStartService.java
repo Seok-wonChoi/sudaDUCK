@@ -147,12 +147,12 @@ public class RoomStartService {
         //topic 저장
         redisTemplate.opsForValue().set(topicKey, room.getTopic(), ROOM_TTL_HOURS, TimeUnit.HOURS);
 
-        //memberInfo 저장
-        List<Long> memberIds = members.stream()
-                .map(m -> Long.parseLong(String.valueOf(m)))
-                .toList();
+        List<Member> memberList = roomParticipantsRepository.findMembersByRoomId(roomId);
 
-        List<Member> memberList = memberRepository.findAllById(memberIds);
+        if (memberList.isEmpty()) {
+            // DB에서도 멤버를 못 찾으면 심각한 오류입니다.
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "방 참여자 정보를 DB에서 찾을 수 없습니다.");
+        }
 
         Map<String, String> idToNameMap = new HashMap<>();
         List<String> allNames = new ArrayList<>();
