@@ -10,14 +10,15 @@
   margin: 0 auto;
   background: #ffffff;
   border-radius: clamp(16px, 2vw, 28px);
-  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.10);
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.1);
   overflow: hidden;
   position: relative;
 }
 
 .Content {
   position: relative;
-  padding: clamp(18px, 2.5vw, 28px) clamp(16px, 2.5vw, 34px) clamp(22px, 2.8vw, 28px);
+  padding: clamp(18px, 2.5vw, 28px) clamp(16px, 2.5vw, 34px)
+    clamp(22px, 2.8vw, 28px);
 }
 
 .BackButton {
@@ -126,7 +127,7 @@
   font-size: clamp(12px, 1.3vw, 13px);
   font-weight: 900;
   color: #111827;
-  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.10);
+  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -175,6 +176,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 0;
 }
 
 .CardsGrid {
@@ -191,7 +193,8 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: clamp(14px, 1.8vw, 16px) clamp(14px, 1.8vw, 16px) clamp(10px, 1.2vw, 12px);
+  padding: clamp(14px, 1.8vw, 16px) clamp(14px, 1.8vw, 16px)
+    clamp(10px, 1.2vw, 12px);
   border: 2px solid rgba(229, 231, 235, 1);
   position: relative;
 }
@@ -200,7 +203,7 @@
   border-color: rgba(34, 197, 94, 0.95);
   box-shadow:
     0 0 0 3px rgba(34, 197, 94, 0.18),
-    0 0 22px rgba(34, 197, 94, 0.30),
+    0 0 22px rgba(34, 197, 94, 0.3),
     0 18px 34px rgba(17, 24, 39, 0.12);
 }
 
@@ -223,7 +226,8 @@
 .VideoCardEmpty {
   height: clamp(160px, 18vw, 180px);
   border-radius: clamp(12px, 1.5vw, 14px);
-  padding: clamp(14px, 1.8vw, 16px) clamp(14px, 1.8vw, 16px) clamp(10px, 1.2vw, 12px);
+  padding: clamp(14px, 1.8vw, 16px) clamp(14px, 1.8vw, 16px)
+    clamp(10px, 1.2vw, 12px);
   border: 2px dashed rgba(209, 213, 219, 0.8);
   background: rgba(249, 250, 251, 0.5);
   display: flex;
@@ -328,13 +332,27 @@
   opacity: 1;
 }
 
-.WaveBar1 { background: rgba(34, 197, 94, 0.95); }
-.WaveBar2 { background: rgba(16, 185, 129, 0.95); }
-.WaveBar3 { background: rgba(59, 130, 246, 0.95); }
-.WaveBar4 { background: rgba(99, 102, 241, 0.95); }
-.WaveBar5 { background: rgba(158, 67, 242, 0.95); }
-.WaveBar6 { background: rgba(59, 130, 246, 0.95); }
-.WaveBar7 { background: rgba(16, 185, 129, 0.95); }
+.WaveBar1 {
+  background: rgba(34, 197, 94, 0.95);
+}
+.WaveBar2 {
+  background: rgba(16, 185, 129, 0.95);
+}
+.WaveBar3 {
+  background: rgba(59, 130, 246, 0.95);
+}
+.WaveBar4 {
+  background: rgba(99, 102, 241, 0.95);
+}
+.WaveBar5 {
+  background: rgba(158, 67, 242, 0.95);
+}
+.WaveBar6 {
+  background: rgba(59, 130, 246, 0.95);
+}
+.WaveBar7 {
+  background: rgba(16, 185, 129, 0.95);
+}
 
 .BottomActions {
   margin-top: 14px;
@@ -381,6 +399,7 @@
   position: relative;
   height: 100%;
   min-height: clamp(360px, 45vw, 440px);
+  min-width: 0;
 }
 
 .AiBubble {
@@ -388,7 +407,8 @@
   background: #ffffff;
   border: 2px solid rgba(79, 70, 229, 0.25);
   border-radius: clamp(12px, 1.5vw, 16px);
-  padding: clamp(12px, 1.5vw, 14px) clamp(14px, 1.8vw, 16px) clamp(14px, 1.8vw, 16px);
+  padding: clamp(12px, 1.5vw, 14px) clamp(14px, 1.8vw, 16px)
+    clamp(14px, 1.8vw, 16px);
   box-shadow: 0 18px 40px rgba(17, 24, 39, 0.14);
   z-index: 2;
 }
@@ -475,7 +495,8 @@
   }
 
   .Content {
-    padding: clamp(16px, 2.2vw, 24px) clamp(14px, 2.2vw, 28px) clamp(20px, 2.5vw, 24px);
+    padding: clamp(16px, 2.2vw, 24px) clamp(14px, 2.2vw, 28px)
+      clamp(20px, 2.5vw, 24px);
   }
 
   .Stage {
@@ -673,19 +694,53 @@
   text-overflow: ellipsis;
 }
 
-/* 퀘스트 1 답변 화면 배너 */
-.Quest1Banner {
+/* AI 추천 주제 배너 */
+.AiSuggestionBanner {
   background: white;
   padding: 20px 24px;
-  margin-bottom: 20px;
+
+  /* 배너를 조금 아래로 */
+  margin: 8px 0 20px; /* 기존 margin-bottom:20px 대체 */
+
   text-align: center;
+  color: #1f2937;
+
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+
+  /* 한 줄이어도 기본 폰트를 더 작게 */
+  font-weight: 900;
+  font-size: clamp(16px, 2.4vw, 28px);
+  line-height: 1.2;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .Quest1BannerQuestion {
-  font-size: 38px;
+  text-align: center;
+
+  /* 한 줄 강제 제거 */
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+
+  /* 기본 폰트 조금 작게 + 길이에 따라 반응형 */
+  font-size: clamp(16px, 2.4vw, 28px);
   font-weight: 900;
-  color: #1f2937;
-  white-space: nowrap;
+  line-height: 1.2;
+
+  /* 최대 3줄 */
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
