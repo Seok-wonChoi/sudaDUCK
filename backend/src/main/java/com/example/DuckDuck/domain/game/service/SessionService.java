@@ -49,7 +49,7 @@ public class SessionService {
                         // Redis CLI 결과에 맞게 필드 매핑 (String으로 변환 후 처리)
                         .order_no(Integer.parseInt(entries.get("order_no").toString()))
                         .scriptId(scriptId)
-                        .speakerName(speakerName) // CLI엔 id로 되어있음
+                        .speakerName(speakerName)
                         .english((String) entries.get("english"))
                         .korean((String) entries.get("korean"))
                         .blank_script((String) entries.get("blank_script"))
@@ -85,12 +85,23 @@ public class SessionService {
         for (String key : scriptKeys) {
             Map<Object, Object> data = redisTemplate.opsForHash().entries(key);
 
+            String userScoreKey = key + ":scores";
+            Map<Object, Object> scoreMap = redisTemplate.opsForHash().entries(userScoreKey);
+
             if (!data.isEmpty()) {
+                double avgScore = 0.0;
+
+                if (!scoreMap.isEmpty()) {
+                    double totalSum = scoreMap.values().stream()
+                            .mapToDouble(v -> Double.parseDouble(v.toString()))
+                            .sum();
+                    avgScore = totalSum / scoreMap.size();
+                }
+
                 String speakId = data.getOrDefault("speaker_id", "").toString();
                 String speakerName = (String) memberMap.getOrDefault(speakId, "Unknown");
 
                 double totalScore = Double.parseDouble(data.getOrDefault("score", "0").toString());
-                double avgScore = totalScore / participantCount;
 
                 results.add(SessionResultResponse.builder()
                         .order_no(Integer.parseInt(data.get("order_no").toString()))
@@ -98,6 +109,7 @@ public class SessionService {
                         .english((String) data.get("english"))
                         .korean((String) data.get("korean"))
                         .blank_script((String) data.get("blank_script"))
+                        .score(totalScore)
                         .averageScore(Math.round(avgScore * 10.0) / 10.0)
                         .build());
             }
