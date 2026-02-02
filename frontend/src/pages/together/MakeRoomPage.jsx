@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./MakeRoomPage.module.css";
-
+import { createSession } from "@/api/openVidu"; // 👈 오픈비듀
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 
@@ -82,11 +82,20 @@ export default function MakeRoomPage() {
 
     setLoading(true);
     try {
+      //오픈비듀 관련 세션 생성
+      const ovSessionId = await createSession(); 
+      console.log("1. 오픈비두 세션 확보:", ovSessionId);
+
+
+
+
+
       // 1. 방 생성: POST /api/v1/rooms
       const res = await createRoom({
         title: title.trim(),
         topic: topic.trim(),
         turnCnt: turn,
+        openviduSessionId: ovSessionId // 👈 백엔드 DTO에 추가한 필드 오픈비듀 세션이올시다!핳핳
       });
 
       // 2. 방 참가: POST /api/v1/rooms/join (방장도 명시적으로 참가해야 함)
@@ -113,6 +122,9 @@ export default function MakeRoomPage() {
 
         joinCode: res.roomCode,
         inviteCode: res.roomCode, // joinCode와 inviteCode 모두 설정
+
+        // ★ [중요] 세션 ID를 꼭 저장해서 대기실로 가져가야 함!
+        openviduSessionId: ovSessionId
       };
 
       sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));
