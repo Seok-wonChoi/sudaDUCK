@@ -133,7 +133,8 @@ export default function JoinRoomPage() {
         joinCode: res.roomCode,
         readyStatus: res.readyStatus,
         alreadyJoined: res.alreadyJoined,
-
+        // ★ [추가] 백엔드 응답에서 받은 세션 ID 저장!
+        openviduSessionId: res.openviduSessionId, // 백엔드 RoomJoinResponse에서 옴
         roomTitle: "-",
         topic: "-",
         turnCount: "-",
