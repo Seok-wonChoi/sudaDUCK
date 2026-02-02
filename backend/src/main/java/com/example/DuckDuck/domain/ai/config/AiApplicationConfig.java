@@ -96,12 +96,7 @@ public class AiApplicationConfig implements WebMvcConfigurer {
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // /audio/** 는 AudioController가 처리하므로 여기서는 매핑하지 않음
-        // 필요한 다른 정적 리소스가 있다면 여기 추가
-
-        // 예시: 업로드 파일 서빙 (필요 시 주석 해제)
-        // registry.addResourceHandler("/uploads/**")
-        //         .addResourceLocations("file:storage/uploads/");
+        // /audio는 AudioController가 처리
     }
 
     /**
