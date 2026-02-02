@@ -87,6 +87,12 @@ public class AzureSpeechService {
      * TTS 생성 (동기 - 빠르므로 그대로 유지)
      */
     public String generateTTS(String text, String roomId) {
+        // 텍스트 검증 추가
+        if (text == null || text.trim().isEmpty()) {
+            log.warn("TTS 생성 요청: 빈 텍스트");
+            throw new AzureSpeechException("TTS 생성할 텍스트가 비어있습니다.");
+        }
+
         String directoryPath = "storage/audio/" + roomId;
         File directory = new File(directoryPath);
         if (!directory.exists()) {
@@ -95,6 +101,7 @@ public class AzureSpeechService {
 
         String fileName = System.currentTimeMillis() + ".wav";
         String savedFilePath = directoryPath + "/" + fileName;
+        File savedFile = new File(savedFilePath);  // ← File 객체 미리 생성
 
         SpeechConfig speechConfig = SpeechConfig.fromSubscription(speechKey, speechRegion);
         speechConfig.setSpeechSynthesisVoiceName("en-US-AvaMultilingualNeural");
@@ -105,21 +112,39 @@ public class AzureSpeechService {
             SpeechSynthesisResult result = synthesizer.SpeakTextAsync(text).get();
 
             if (result.getReason() == ResultReason.SynthesizingAudioCompleted) {
-                log.info("TTS 생성 성공: {}", savedFilePath);
+                // 파일 크기 검증
+                long fileSize = savedFile.length();
+                log.info("TTS 생성 성공: {} ({}bytes)", savedFilePath, fileSize);
 
-                // "storage/audio/" 전체를 "/audio/"로 변경
+                if (fileSize < 5000) {  // 5KB 미만은 비정상
+                    log.error("TTS 파일 크기 이상: {}bytes", fileSize);
+                    savedFile.delete();  // ← 잘못된 파일 삭제
+                    throw new AzureSpeechException("TTS 파일이 너무 작습니다: " + fileSize + "bytes");
+                }
+
                 return savedFilePath.replace("storage/audio/", "/audio/");
-
-                // 또는 이렇게도 가능:
-                // return "/" + savedFilePath.substring("storage/".length());
 
             } else {
                 log.error("TTS 생성 실패: {}", result.getReason());
-                throw new AzureSpeechException("TTS 생성 실패");
+
+                // 실패 시 파일 삭제
+                if (savedFile.exists()) {
+                    savedFile.delete();
+                    log.info("실패한 TTS 파일 삭제: {}", savedFilePath);
+                }
+
+                throw new AzureSpeechException("TTS 생성 실패: " + result.getReason());
             }
 
         } catch (Exception e) {
             log.error("TTS 생성 오류: {}", e.getMessage(), e);
+
+            // 예외 발생 시에도 파일 삭제
+            if (savedFile.exists()) {
+                savedFile.delete();
+                log.info("오류 발생으로 TTS 파일 삭제: {}", savedFilePath);
+            }
+
             throw new AzureSpeechException("TTS 생성 중 오류 발생", e);
         }
     }

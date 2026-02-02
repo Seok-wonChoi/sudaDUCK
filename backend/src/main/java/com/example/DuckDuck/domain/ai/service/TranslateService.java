@@ -68,7 +68,7 @@ public class TranslateService {
             Long turnNo,
             Long speakerId) {
 
-        // 🔥 Redis 기반 sequence 생성 (턴별)
+        // Redis 기반 sequence 생성 (턴별)
         Long orderNo = generateSequence(roomId, turnNo);
 
         log.info("📊 [ORDER-{}] 처리 시작 - roomId: {}, turn: {}, speaker: {}",
@@ -77,12 +77,12 @@ public class TranslateService {
         try {
             Long roomIdLong = Long.parseLong(roomId);
 
-            // ★ 원본 텍스트를 별도 변수로 저장 (로그용)
+            // 원본 텍스트를 별도 변수로 저장 (로그용)
             String originalText = text;
             text = preprocessingService.preprocess(text);
 
             if (text == null) {
-                // ★ 원본 텍스트를 로그에 출력 (기존: text가 이미 null이어서 항상 "null" 출력됨)
+                // 원본 텍스트를 로그에 출력 (기존: text가 이미 null이어서 항상 "null" 출력됨)
                 log.warn("[ASYNC-{}] 전처리 필터링됨 - 원본: '{}'",
                         orderNo, originalText);
                 return CompletableFuture.completedFuture(false);
@@ -93,8 +93,14 @@ public class TranslateService {
             log.info("📊 [ORDER-{}] GPT 완료 - en: {}", orderNo, script.getEn());
 
             // 2. TTS 생성
-            String ttsUrl = azureSpeechService.generateTTS(script.getEn(), roomId);
-            log.info("📊 [ORDER-{}] TTS 완료: {}", orderNo, ttsUrl);
+            try {
+                String ttsUrl = generateTTS(text, roomId);
+                redisTemplate.opsForHash().put(key, "tts_url", ttsUrl);
+            } catch (Exception e) {
+                log.error("TTS 생성 실패, 기본값 사용 또는 재시도", e);
+                // null 또는 기본값 저장
+                redisTemplate.opsForHash().put(key, "tts_url", null);
+            }
 
             // 3. scriptId 생성 (timestamp_orderNo)
             String scriptId = System.currentTimeMillis() + "_" + orderNo;
