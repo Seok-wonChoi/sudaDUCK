@@ -907,7 +907,7 @@ export default function TogetherTalkPage() {
       }
     };
 
-    // scheduleRandomQuiz();
+    scheduleRandomQuiz();
   }, [currentTurn, questRunning, activeQuest, roomId, participants.length, startQuest]);
 
   // 퀘스트 1: 녹음 시작
