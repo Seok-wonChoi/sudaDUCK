@@ -82,7 +82,8 @@ public class SpeechController {
                             roomId, turnNo, scriptId, score);
 
                     // 5. 성공 응답
-                    return ResponseEntity.ok(Map.of("message", "평가 완료"));
+                    return ResponseEntity.ok(Map.of("message", "평가 완료",
+                            "score", String.valueOf(score)));
                 })
                 .exceptionally(ex -> exceptionHandler.handle(ex, scriptId));
     }
