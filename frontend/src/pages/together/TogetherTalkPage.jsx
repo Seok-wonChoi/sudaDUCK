@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./TogetherTalkPage.module.css";
 
@@ -97,6 +97,19 @@ export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
+
+  const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | null
+  const [questStep, setQuestStep] = useState("idle"); // idle | q1intro | q1ready | q1showQuestion | q1answering | intro | q2game | resultFail | resultSuccess
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [countdown, setCountdown] = useState(3);
+  const [quizId, setQuizId] = useState(null);
+  const [quizQuestion, setQuizQuestion] = useState("What is your favorite food?");
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedAudio, setRecordedAudio] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
   const [hydratedInfo, setHydratedInfo] = useState(() => {
     if (location.state) return location.state;
 
@@ -104,6 +117,7 @@ export default function TogetherTalkPage() {
     const parsed = saved ? safeParseJson(saved) : null;
     return parsed ?? null;
   });
+
 
   useEffect(() => {
     if (location.state) {
@@ -170,6 +184,14 @@ export default function TogetherTalkPage() {
       isSpeaking: false,
     }));
   });
+
+  //participants를 추적하는 ref 생성
+  const participantsRef = useRef(participants);
+
+  //participants가 변할 때마다 ref 업데이트
+  useEffect(() => {
+    participantsRef.current = participants;
+  }, [participants]);
 
   // 방장 여부 확인
   const isHost = useMemo(() => {
@@ -586,12 +608,9 @@ export default function TogetherTalkPage() {
 
   // ★ handleDone: 타이머 종료 시에도 REST API 호출
   const handleDone = useCallback(async () => {
-    console.log("[TogetherTalkPage] 타이머 종료 - 전달할 데이터:", {
-      roomId,
-      roomCode: resolvedRoomCode,
-      currentTurn,
-      turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
-    });
+
+    // 내부 로직에서 participants 대신 ref 사용
+    const currentParticipants = participantsRef.current;
 
     if (isHost) {
       try {
@@ -615,11 +634,22 @@ export default function TogetherTalkPage() {
           turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
           currentTurn: currentTurn, // 현재 턴 번호 전달
         },
-        participants,
-        myUserId, // 본인 userId 전달
+        participants: currentParticipants,
       },
     });
-  }, [doLeaveRoom, navigate, isHost, roomId, roomInfo, participants, resolvedRoomCode, currentTurn, myUserId]);
+  }, [doLeaveRoom, navigate, isHost, roomId, roomInfo, resolvedRoomCode]);
+
+  
+  //타이머 컴포넌트를 기억하여 리렌더링 방지
+  const memoizedTimer = useMemo(() => {
+    return (
+      <TimerGauge
+        durationMs={60_000}
+        isRunning={isRoomTimerRunning}
+        onDone={handleDone}
+      />
+    );
+  }, [isRoomTimerRunning, handleDone]);
 
   const handleBack = useCallback(() => {
     if (window.history.length > 1) navigate(-1);
@@ -629,18 +659,7 @@ export default function TogetherTalkPage() {
   /* =========================
      돌발 퀘스트 (수동 시작 1/2)
   ========================= */
-  const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
-  const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | null
-  const [questStep, setQuestStep] = useState("idle"); // idle | q1intro | q1ready | q1showQuestion | q1answering | intro | q2game | resultFail | resultSuccess
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [countdown, setCountdown] = useState(3);
-  const [quizId, setQuizId] = useState(null);
-  const [quizQuestion, setQuizQuestion] = useState("What is your favorite food?");
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudio, setRecordedAudio] = useState(null);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
 
   const questRunning = questStep !== "idle";
 
@@ -998,11 +1017,7 @@ export default function TogetherTalkPage() {
             </div>
 
             <div className={styles.TimerCol}>
-              <TimerGauge
-                durationMs={60_000}
-                isRunning={isRoomTimerRunning}
-                onDone={handleDone}
-              />
+              {memoizedTimer}
             </div>
           </div>
 
