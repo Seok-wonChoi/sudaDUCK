@@ -14,7 +14,9 @@ import micOffIcon from "@/assets/icons/mic_off.png";
 import usersIcon from "@/assets/icons/users_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
-
+// 👇오픈비두 관련 임포트!!
+import { useOpenVidu } from "@/context/OpenViduContext";
+import { createToken } from "@/api/openVidu";
 import {
   leaveRoom,
   getRoomLobby,
@@ -187,6 +189,24 @@ function VoiceWave({ level, enabled }) {
 export default function WaitingRoomPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
+
+  // 👇 오픈비듀우우우 Context에서 함수 꺼내오기
+  const { joinSession, leaveSession, isConnected: isOvConnected , subscribers } = useOpenVidu();
+  
+  // 👇  오픈비듀우우우 브라우저 뒤로가기/새로고침 시 연결 끊기
+  useEffect(() => {
+      const handleBeforeUnload = () => leaveSession();
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+          window.removeEventListener('beforeunload', handleBeforeUnload);
+          if (isOvConnected) leaveSession(); // 컴포넌트 죽을 때 끊기
+      };
+  }, [leaveSession, isOvConnected]);
+
+
+
+
 
   const initialRoomInfo = useMemo(() => {
     if (state) return state;
@@ -523,6 +543,42 @@ export default function WaitingRoomPage() {
   useEffect(() => {
     fetchLobby();
   }, [fetchLobby]);
+  useEffect(() => {
+    const connectToOpenVidu = async () => {
+      const ovSessionId = roomInfo.openviduSessionId;
+      
+      console.log("🔍 [디버깅] 세션 ID:", ovSessionId); 
+      console.log("🔍 [디버깅] 내 Key:", myKey);
+
+      // 1. 이미 연결됐거나(isOvConnected), 세션 ID가 없으면 중단
+      if (isOvConnected || !ovSessionId) {
+          if (!ovSessionId) console.warn("🚨 [OpenVidu] 세션 ID가 없어서 연결 중단됨!");
+          return;
+      }
+
+      try {
+        console.log("🚀 [OpenVidu] 토큰 발급 요청 중...");
+        // 2. 백엔드 API로 토큰 발급
+        const token = await createToken(ovSessionId);
+        console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
+        
+        // 3. 내 닉네임 찾기
+        const myNickname = participants.find(p => p.key === myKey)?.nickname || "Guest";
+
+        // 4. 오픈비두 연결 (Context 함수)
+        await joinSession(token, myNickname);
+        
+      } catch (e) {
+        console.error("❌ [OpenVidu] 연결 실패:", e);
+      }
+    };
+
+    // 조건: 참여자 목록 로딩 완료 && 내 키 확인됨 && 아직 연결 안됨
+    if (participants.length > 0 && myKey) {
+        connectToOpenVidu();
+    }
+    
+  }, [roomInfo.openviduSessionId, isOvConnected, participants, myKey, joinSession]);
 
   const currentCount = totalCount || participants.length;
 
@@ -705,6 +761,9 @@ export default function WaitingRoomPage() {
     },
     [myKey],
   );
+
+  
+
 
   const handleSettingsChanged = useCallback(
     (payload) => {
@@ -1045,7 +1104,7 @@ export default function WaitingRoomPage() {
     fetchLobbyRef.current?.();
     showToast("방 설정이 변경되었습니다.");
   }, [editTitle, editTopic, editTurn, showToast, inviteCode]);
-
+  
   const handleStart = useCallback(async () => {
     if (!canStart) return;
 
@@ -1081,6 +1140,9 @@ export default function WaitingRoomPage() {
       // ignore
     }
 
+    // 👇 👇 여기서 오픈비두 연결 확실히 끊기!
+    leaveSession();
+
     if (inviteCode && inviteCode !== "000000") {
       try {
         await leaveRoom({ roomCode: inviteCode });
@@ -1090,11 +1152,16 @@ export default function WaitingRoomPage() {
     }
 
     sessionStorage.removeItem(ROOM_INFO_KEY);
-  }, [inviteCode, stopAudioAnalysis]);
+  }, [inviteCode, stopAudioAnalysis, leaveSession]); // 👈 의존성 배열에 leaveSession 추가
 
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
+        {subscribers.map((sub, i) => (
+            <div key={i} style={{ display: 'none' }}>
+                <UserAudioComponent streamManager={sub} />
+            </div>
+        ))}
         <AppHeader
           userName="user"
           notifications={[]}
@@ -1469,3 +1536,16 @@ export default function WaitingRoomPage() {
     </div>
   );
 }
+
+// 👇 소리 재생용 컴포넌트 !!!!!!
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};

@@ -1,6 +1,6 @@
 
 import { Routes, Route } from "react-router-dom";
-
+import { OpenViduProvider } from "@/context/OpenViduContext";
 import LandingPage from "./pages/landing/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import OAuth2RedirectHandler from "./pages/auth/OAuth2RedirectHandler";
@@ -21,7 +21,8 @@ import VoiceRoom from "./pages/together/VoiceRoom";
 
 export default function App() {
   return (
-    <Routes>
+    <OpenViduProvider>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
@@ -45,6 +46,7 @@ export default function App() {
       <Route path="/minigame2" element={<MiniGame2Page />} />
 
       <Route path="/test" element={<VoiceRoom />} />
-    </Routes>
+      </Routes>
+    </OpenViduProvider>
   );
 }
