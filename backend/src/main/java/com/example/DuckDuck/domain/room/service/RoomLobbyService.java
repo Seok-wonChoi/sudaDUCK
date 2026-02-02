@@ -5,6 +5,8 @@ import com.example.DuckDuck.domain.room.entity.Room;
 import com.example.DuckDuck.domain.room.entity.RoomParticipants;
 import com.example.DuckDuck.domain.room.repository.RoomParticipantsRepository;
 import com.example.DuckDuck.domain.room.repository.RoomRepository;
+import com.example.DuckDuck.domain.user.entity.Profile;
+import com.example.DuckDuck.domain.user.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ public class RoomLobbyService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final RoomRepository roomRepository;
     private final RoomParticipantsRepository roomParticipantsRepository;
+    private final ProfileRepository profileRepository;
 
     // ===== Redis Key =====
     private String keyRoomCodeToId(String roomCode) { return "room:code:" + roomCode; }
@@ -57,19 +60,34 @@ public class RoomLobbyService {
         // 응답용 참가자 DTO 변환
         List<RoomLobbyResponse.ParticipantInfo> participantInfos =
                 participants.stream()
-                        .map(p -> RoomLobbyResponse.ParticipantInfo.builder()
-                                .userId(p.getUser().getId())
-                                .nickname(p.getUser().getNickname())
-                                .profileImageUrl(p.getUser().getProfileImageUrl())
-                                .isHost(p.getIsHost())
-                                .readyStatus(
-                                        readyMap.getOrDefault(
-                                                p.getUser().getId(),
-                                                "NOT_READY"
-                                        )
-                                )
-                                .build())
+                        .map(p -> {
+                            Long userId = p.getUser().getId();
+
+                            Profile profile = profileRepository.findById(userId)
+                                    .orElse(null);
+
+                            return RoomLobbyResponse.ParticipantInfo.builder()
+                                    .userId(userId)
+                                    .nickname(p.getUser().getNickname())
+
+                                    .avatarCustomJson(
+                                            profile != null ? profile.getAvatarCustomJson() : null
+                                    )
+                                    .duckCustomJson(
+                                            profile != null ? profile.getDuckCustomJson() : null
+                                    )
+                                    .aiDuckbotCustomJson(
+                                            profile != null ? profile.getAiDuckbotCustomJson() : null
+                                    )
+
+                                    .isHost(p.getIsHost())
+                                    .readyStatus(
+                                            readyMap.getOrDefault(userId, "NOT_READY")
+                                    )
+                                    .build();
+                        })
                         .toList();
+
 
         return RoomLobbyResponse.builder()
                 .roomId(roomId)

@@ -34,14 +34,14 @@ pipeline {
                         def commitMsg = sh(script: "git log -1 --pretty=format:'%s'", returnStdout: true).trim()
                         def branchName = env.BRANCH_NAME ?: "unknown"
 
-                        // [START] 배포 시작 알림 (글자 크기 축소 및 대상 삭제)
+                        // [START] 호날두 입장 (경기 시작)
                         def startMsg = """
-#### 🚀 배포 시작
+#### 🏃‍♂️ 선수 입장! (배포 시작)
 ---
-* **브랜치**: `${branchName}`
-* **작업자**: `${buildUser}`
-* **메시지**: `${commitMsg}`
-* **상태**: `진행 중...`
+* **리그**: `${branchName}`
+* **선수**: `${buildUser}`
+* **전술**: `${commitMsg}`
+* **상태**: `경기 시작! (진행 중...)` ⚽
 ---
 """
                         sendMM(startMsg, "#FFD700")
@@ -89,15 +89,15 @@ pipeline {
                 def buildUser = sh(script: "git log -1 --pretty=format:'%an'", returnStdout: true).trim()
                 def branchName = env.BRANCH_NAME ?: "unknown"
                 
-                // [SUCCESS] 서비스 접속 링크 삭제 및 포테이너만 유지
+                // [SUCCESS] 호날두 SIUUU (성공)
                 def msg = """
-#### ✅ 배포 완료
+#### 🐐 SIUUU!!! 배포 성공! ⚽
 ---
-* **브랜치**: `${branchName}`
-* **배포자**: `${buildUser}`
-* **결과**: `무중단 전환 성공`
+* **리그**: `${branchName}`
+* **MOM**: `${buildUser}` (World Class)
+* **결과**: `무중단 전환 성공! 완벽한 골입니다!` 🥅
 ---
-> [🛠 포테이너에서 컨테이너 확인](${PORTAINER_URL})
+> [🛠 포테이너에서 리플레이 확인](${PORTAINER_URL})
 """
                 sendMM(msg, "#228B22")
             }
@@ -107,15 +107,15 @@ pipeline {
                 def buildUser = sh(script: "git log -1 --pretty=format:'%an'", returnStdout: true).trim()
                 def branchName = env.BRANCH_NAME ?: "unknown"
 
-                // [FAILURE] 젠킨스 로그 링크만 유지
+                // [FAILURE] 레드카드 (실패)
                 def msg = """
-#### 🚨 배포 실패
+#### 🟥 VAR 판독중... 배포 실패 (Red Card)
 ---
-* **브랜치**: `${branchName}`
-* **담당자**: `${buildUser}`
-* **상태**: `에러 발생`
+* **리그**: `${branchName}`
+* **선수**: `${buildUser}`
+* **상태**: `오프사이드 (에러 발생)` 🙅‍♂️
 ---
-> [🔍 젠킨스 빌드 로그 확인](${env.BUILD_URL}console)
+> [🔍 젠킨스 로그(VAR) 확인](${env.BUILD_URL}console)
 """
                 sendMM(msg, "#DC143C")
             }

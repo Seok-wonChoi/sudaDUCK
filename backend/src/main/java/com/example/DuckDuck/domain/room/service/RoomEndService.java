@@ -108,11 +108,6 @@ public class RoomEndService {
             }
         }
 
-        // 7) start에서 만들었던 세션성 데이터만 정리 (members/ready는 유지해야 대기방 유지됨)
-        redisTemplate.delete(keyRoomTopic(roomId));
-        redisTemplate.delete(keyRoomMemberNames(roomId));
-        redisTemplate.delete(keyRoomParticipants(roomId));
-
         RoomEndResponse payload = RoomEndResponse.builder()
                 .roomId(roomId)
                 .roomCode(roomCode)
