@@ -148,16 +148,7 @@ export default function TogetherTalkPage() {
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
-  const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | null
-  const [questStep, setQuestStep] = useState("idle"); // idle | q1intro | q1ready | q1showQuestion | q1answering | intro | q2game | resultFail | resultSuccess
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [countdown, setCountdown] = useState(3);
-  const [quizId, setQuizId] = useState(null);
-  const [quizQuestion, setQuizQuestion] = useState("What is your favorite food?");
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudio, setRecordedAudio] = useState(null);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
+
 
   const [hydratedInfo, setHydratedInfo] = useState(() => {
     if (location.state) return location.state;
