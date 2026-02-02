@@ -60,6 +60,39 @@
   padding-bottom: clamp(8px, 1vw, 10px);
 }
 
+/* 돌발퀘스트 수동 시작 버튼 */
+.QuestTestButtons {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  justify-content: center;
+}
+
+.QuestTestButton {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 2px solid #4f46e5;
+  background: #ffffff;
+  color: #4f46e5;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.QuestTestButton:hover {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.QuestTestButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #9ca3af;
+}
+
 .ExitCol {
   display: flex;
   align-items: center;
@@ -212,8 +245,9 @@
 }
 
 .AvatarCircle {
-  width: clamp(85px, 10.5vw, 105px);
-  height: clamp(85px, 10.5vw, 105px);
+  position: relative;
+  width: clamp(100px, 12vw, 120px);
+  height: clamp(100px, 12vw, 120px);
   border-radius: 999px;
   background: #ffffff;
   border: 1px solid #eef2ff;
@@ -224,9 +258,18 @@
 }
 
 .AvatarDuck {
-  width: clamp(55px, 6.8vw, 68px);
-  height: clamp(55px, 6.8vw, 68px);
+  width: clamp(75px, 9vw, 95px);
+  height: clamp(75px, 9vw, 95px);
   object-fit: contain;
+}
+
+.ProfileAccessory {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 22px;
+  pointer-events: none;
 }
 
 .VideoFooter {
@@ -616,20 +659,33 @@
   }
 }
 
+/* AI 추천 주제 배너 */
+.AiSuggestionBanner {
+  background: white;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #1f2937;
+  font-size: 38px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* 퀘스트 1 답변 화면 배너 */
 .Quest1Banner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 20px 32px;
+  background: white;
+  padding: 20px 24px;
   margin-bottom: 20px;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
   text-align: center;
-  color: white;
 }
 
 .Quest1BannerQuestion {
-  font-size: clamp(32px, 4.8vw, 48px);
+  font-size: 38px;
   font-weight: 900;
-  color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
