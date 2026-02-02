@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 @RestController
+@RequestMapping("/api/v1")  // ← 클래스 레벨
 @Slf4j
 public class AudioController {
 
@@ -31,7 +32,7 @@ public class AudioController {
             @PathVariable("roomId") String roomId,
             @PathVariable("filename") String filename) {
 
-        log.info("🎵🎵🎵 [Audio] 요청 수신: roomId={}, filename={}", roomId, filename);
+        log.info("🎵 [Audio] 요청: /api/v1/audio/{}/{}", roomId, filename);
 
         // 1. 보안 검증
         if (filename.contains("..") || roomId.contains("..")) {
@@ -48,7 +49,7 @@ public class AudioController {
         String currentDir = System.getProperty("user.dir");
         File file = new File(currentDir, "storage/audio/" + roomId + "/" + filename);
 
-        log.info("📂 [Audio] 파일 경로: {}", file.getAbsolutePath());
+        log.info("📂 [Audio] 파일: {}", file.getAbsolutePath());
 
         // 3. 파일 존재 확인
         if (!file.exists()) {
@@ -58,7 +59,7 @@ public class AudioController {
 
         // 4. 파일 크기 확인
         long fileSize = file.length();
-        log.info("📊 [Audio] 파일 크기: {} bytes ({} KB)", fileSize, fileSize / 1024);
+        log.info("📊 [Audio] 크기: {} bytes ({} KB)", fileSize, fileSize / 1024);
 
         if (fileSize < 5000) {
             log.error("❌ [Audio] 파일 손상: {}bytes", fileSize);
@@ -73,7 +74,7 @@ public class AudioController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
 
-            log.info("✅✅✅ [Audio] 전송 시작: {} ({} bytes)", filename, fileSize);
+            log.info("✅ [Audio] 전송: {} ({} bytes)", filename, fileSize);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_TYPE, "audio/wav")
@@ -84,7 +85,7 @@ public class AudioController {
                     .body(resource);
 
         } catch (Exception e) {
-            log.error("❌ [Audio] 처리 실패: {}", file.getAbsolutePath(), e);
+            log.error("❌ [Audio] 처리 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
