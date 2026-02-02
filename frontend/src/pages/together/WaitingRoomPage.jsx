@@ -132,8 +132,23 @@ export default function WaitingRoomPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
 
-  // 👇 [추가] Context에서 함수 꺼내오기
-  const { joinSession, leaveSession, isConnected: isOvConnected } = useOpenVidu();
+  // 👇 오픈비듀우우우 Context에서 함수 꺼내오기
+  const { joinSession, leaveSession, isConnected: isOvConnected , subscribers } = useOpenVidu();
+  
+  // 👇  오픈비듀우우우 브라우저 뒤로가기/새로고침 시 연결 끊기
+  useEffect(() => {
+      const handleBeforeUnload = () => leaveSession();
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+          window.removeEventListener('beforeunload', handleBeforeUnload);
+          if (isOvConnected) leaveSession(); // 컴포넌트 죽을 때 끊기
+      };
+  }, [leaveSession, isOvConnected]);
+
+
+
+
 
   const initialRoomInfo = useMemo(() => {
     if (state) return state;
@@ -662,6 +677,9 @@ export default function WaitingRoomPage() {
     [myKey],
   );
 
+  
+
+
   const handleSettingsChanged = useCallback(
     (payload) => {
       const nextTitle =
@@ -988,7 +1006,7 @@ export default function WaitingRoomPage() {
     fetchLobbyRef.current?.();
     showToast("방 설정이 변경되었습니다.");
   }, [editTitle, editTopic, editTurn, showToast, inviteCode]);
-
+  
   const handleStart = useCallback(async () => {
     if (!canStart) return;
 
@@ -1041,6 +1059,11 @@ export default function WaitingRoomPage() {
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
+        {subscribers.map((sub, i) => (
+            <div key={i} style={{ display: 'none' }}>
+                <UserAudioComponent streamManager={sub} />
+            </div>
+        ))}
         <AppHeader
           userName="user"
           notifications={[]}
@@ -1403,3 +1426,16 @@ export default function WaitingRoomPage() {
     </div>
   );
 }
+
+// 👇 소리 재생용 컴포넌트 !!!!!!
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};
