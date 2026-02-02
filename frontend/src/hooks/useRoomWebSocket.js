@@ -169,6 +169,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               onRoomClosed,
               onRoomEnded,
               onSilenceDetected,
+              onTimerSync,
               onError,
             } = handlersRef.current;
 
@@ -258,6 +259,16 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                   type,
                 });
                 onSilenceDetected?.(payload, senderKey);
+                break;
+
+              case "TIMER_SYNC":
+              case "TIMER_STARTED":
+              case "TIMER_START":
+                console.log("[WebSocket] TIMER_SYNC 수신:", {
+                  payload,
+                  type,
+                });
+                onTimerSync?.(payload);
                 break;
 
               case "ERROR":
