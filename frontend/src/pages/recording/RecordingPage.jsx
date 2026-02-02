@@ -292,18 +292,14 @@ export default function RecordingPage() {
       const sentence = currentTurnSentences.find(s => s.id === sentenceId);
       const scriptIdToUse = sentence?.scriptId || sentenceId;
 
-      //현재 보고 있는 턴 번호 계산 (리포트 화면이면 선택된 턴, 아니면 현재 턴)
-      const targetTurn = selectedTurnForReport || currentTurn;
-
       console.log("[RecordingPage] 북마크 토글:", {
         sentenceId,
         scriptIdToUse,
-        roomId, // roomId 확인용 로그 추가
         isBookmarked,
-        turnNo: targetTurn
+        sentence,
       });
 
-      await toggleScriptLike(scriptIdToUse, roomId, targetTurn);
+      await toggleScriptLike(scriptIdToUse);
 
       setBookmarkedSentences((prev) => {
         const next = isBookmarked
@@ -317,7 +313,7 @@ export default function RecordingPage() {
       console.error("북마크 실패:", error);
       alert("북마크 저장에 실패했습니다.");
     }
-  }, [currentTurnSentences, roomId, selectedTurnForReport]);
+  }, [currentTurnSentences]);
 
   const handleRoomClosed = useCallback(() => {
     console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
