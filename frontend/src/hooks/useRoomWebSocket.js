@@ -276,25 +276,31 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
 
       // ★ 정적감지 구독: roomCode → roomId로 변경
       // 백엔드 SilenceDetectionService는 /topic/room/{roomId}/suggestion 으로 전송
-      if (roomId) {
-        suggestionSubRef.current = client.subscribe(
-          `/topic/room/${roomId}/suggestion`,
-          (message) => {
-            try {
-              const data = JSON.parse(message.body);
-              const { type, question } = data;
+      if (handlersRef.current.onConversationSuggestion) {
+        if (roomId) {
+          suggestionSubRef.current = client.subscribe(
+            `/topic/room/${roomId}/suggestion`,
+            (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                const { type, question } = data;
 
-              if (type === "CONVERSATION_SUGGESTION") {
-                console.log("[WebSocket] ✅ CONVERSATION_SUGGESTION 수신:", { question, roomId });
-                handlersRef.current.onConversationSuggestion?.(question);
+                if (type === "CONVERSATION_SUGGESTION") {
+                  console.log("[WebSocket] ✅ CONVERSATION_SUGGESTION 수신:", {
+                    question,
+                    roomId,
+                  });
+                  handlersRef.current.onConversationSuggestion?.(question);
+                }
+              } catch (e) {
+                console.error("Suggestion Msg Parsing Error", e);
               }
-            } catch (e) {
-              console.error("Suggestion Msg Parsing Error", e);
             }
-          },
-        );
-      } else {
-        console.warn("[WebSocket] ⚠️ roomId가 없어서 정적감지 구독 불가");
+          );
+        } else {
+          // 핸들러는 있는데 roomId가 없는 경우에만 경고 출력
+          console.warn("[WebSocket] ⚠️ roomId가 없어서 정적감지 구독 불가");
+        }
       }
 
       handlersRef.current.onConnected?.();
