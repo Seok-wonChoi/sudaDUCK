@@ -1,4 +1,4 @@
-import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./TogetherTalkPage.module.css";
 
@@ -260,8 +260,17 @@ export default function TogetherTalkPage() {
 
   // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
   const [currentTurn, setCurrentTurn] = useState(() => {
-    return roomInfo.currentTurn ?? 1;
+    return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
   });
+
+  // [수정 2] 데이터 동기화 추가: 페이지 이동으로 hydratedInfo가 바뀌면 턴 번호도 업데이트
+  useEffect(() => {
+    const nextTurn = hydratedInfo?.currentTurn ?? hydratedInfo?.roomInfo?.currentTurn;
+    if (nextTurn) {
+      setCurrentTurn(nextTurn);
+    }
+  }, [hydratedInfo]);
+
 
   const myUserId = useMemo(() => {
     return roomInfo.myUserId ?? getUserIdFromToken();
@@ -738,9 +747,9 @@ export default function TogetherTalkPage() {
     await startAudioAnalysis();
   }, [micOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
-  const doLeaveRoom = useCallback(async () => {
+  // [추가] API 호출 없이 오디오/정적감지만 멈추는 헬퍼 함수
+  const stopMediaProcessing = useCallback(async () => {
     await stopAudioAnalysis();
-
     if (roomId) {
       try {
         await stopSilenceMonitoring(roomId);
@@ -748,6 +757,10 @@ export default function TogetherTalkPage() {
         console.error("정적 감지 중지 실패:", e);
       }
     }
+  }, [stopAudioAnalysis, roomId]);
+
+  const doLeaveRoom = useCallback(async () => {
+    await stopAudioAnalysis();
 
     if (resolvedRoomCode) {
       try {
@@ -756,7 +769,8 @@ export default function TogetherTalkPage() {
         console.error("방 퇴장 API 호출 실패:", e);
       }
     }
-  }, [stopAudioAnalysis, roomId, resolvedRoomCode]);
+  }, [stopMediaProcessing, resolvedRoomCode]);
+
 
   // ★ handleEnd: sendEndRoom(WS) 대신 endRoom REST API 호출
   // 백엔드에 /app/rooms/{roomCode}/end WS 핸들러가 없음 → REST API만 존재
@@ -803,7 +817,7 @@ export default function TogetherTalkPage() {
       }
     }
 
-    await doLeaveRoom();
+    await stopMediaProcessing();
 
     navigate("/recording", {
       replace: true,
@@ -1293,7 +1307,14 @@ export default function TogetherTalkPage() {
               </div>
             </div>
 
-            <div className={styles.TimerCol}>{memoizedTimer}</div>
+            <div className={styles.TimerCol}>
+              <TimerGauge
+                durationMs={60_000}
+                isRunning={isRoomTimerRunning}
+                onDone={handleDone}
+                startTimeMs={timerStartedAt}
+              />
+            </div>
           </div>
 
           {/* 돌발퀘스트 수동 시작 버튼 */}
