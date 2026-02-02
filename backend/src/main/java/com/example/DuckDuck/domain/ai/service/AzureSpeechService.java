@@ -106,7 +106,13 @@ public class AzureSpeechService {
 
             if (result.getReason() == ResultReason.SynthesizingAudioCompleted) {
                 log.info("TTS 생성 성공: {}", savedFilePath);
-                return savedFilePath.replace("storage/", "/audio/");
+
+                // "storage/audio/" 전체를 "/audio/"로 변경
+                return savedFilePath.replace("storage/audio/", "/audio/");
+
+                // 또는 이렇게도 가능:
+                // return "/" + savedFilePath.substring("storage/".length());
+
             } else {
                 log.error("TTS 생성 실패: {}", result.getReason());
                 throw new AzureSpeechException("TTS 생성 실패");
