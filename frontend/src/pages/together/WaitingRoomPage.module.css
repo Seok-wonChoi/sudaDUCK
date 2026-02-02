@@ -348,8 +348,9 @@
 
 /* 유저 아이콘 래퍼 */
 .UserIconWrap {
-  width: 40px;
-  height: 40px;
+  position: relative;
+  width: 56px;
+  height: 56px;
   border-radius: 999px;
   background: rgba(249, 115, 22, 0.12);
   display: flex;
@@ -359,9 +360,19 @@
 
 /* 유저 아이콘 이미지 */
 .UserIconImg {
-  width: 18px;
-  height: 18px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
+}
+
+/* 프로필 악세서리 */
+.ProfileAccessory {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+  pointer-events: none;
 }
 
 /* 이름/상태/버튼 영역 컬럼 */
