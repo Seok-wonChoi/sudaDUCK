@@ -12,6 +12,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.io.File;
 import java.util.concurrent.Executor;
 
 /**
@@ -94,9 +95,15 @@ public class AiApplicationConfig implements WebMvcConfigurer {
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 프로젝트 루트 기준 절대 경로
+        String audioPath = new File("storage/audio").getAbsolutePath() + "/";
+
         registry.addResourceHandler("/audio/**")
-                .addResourceLocations("file:storage/audio/")
-                .setCachePeriod(3600);  // 1시간 캐싱
+                .addResourceLocations("file:" + audioPath)
+                .setCachePeriod(3600);
+
+        // 디버깅용 로그
+        System.out.println("🎵 [TTS] Audio 서빙 경로: " + audioPath);
     }
     
     /**
