@@ -11,4 +11,6 @@ public class RoomJoinResponse {
     private final String roomCode;
     private final String readyStatus;
     private final boolean alreadyJoined;
+    //오픈비두 세션 ID
+    private final String openviduSessionId;
 }
