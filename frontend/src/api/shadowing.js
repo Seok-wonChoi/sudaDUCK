@@ -21,11 +21,10 @@ export async function saveAssessment(audioBlob, roomId, turnNo, scriptId) {
   formData.append("turnNo", turnNo);
   formData.append("scriptId", scriptId);
 
-  const { data } = await api.post("/api/v1/assessment", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  // ⚠️ FormData 전송 시 Content-Type 헤더를 명시하지 않아야 함
+  // axios가 자동으로 boundary를 포함한 multipart/form-data를 설정함
+  // 명시적으로 설정하면 Authorization 헤더가 누락될 수 있음
+  const { data } = await api.post("/api/v1/assessment", formData);
   return data;
 }
 
