@@ -92,14 +92,14 @@ public class TranslateService {
             GptScriptResponse script = gptService.generateScript(text);
             log.info("📊 [ORDER-{}] GPT 완료 - en: {}", orderNo, script.getEn());
 
-            // 2. TTS 생성
+            // 2. TTS 생성 (영어 텍스트로 생성)
+            String ttsUrl = null;
             try {
-                String ttsUrl = generateTTS(text, roomId);
-                redisTemplate.opsForHash().put(key, "tts_url", ttsUrl);
+                ttsUrl = azureSpeechService.generateTTS(script.getEn(), roomId);
+                log.info("📊 [ORDER-{}] TTS 완료 - url: {}", orderNo, ttsUrl);
             } catch (Exception e) {
-                log.error("TTS 생성 실패, 기본값 사용 또는 재시도", e);
-                // null 또는 기본값 저장
-                redisTemplate.opsForHash().put(key, "tts_url", null);
+                log.error("📊 [ORDER-{}] ❌ TTS 생성 실패 - 기본값(null) 사용", orderNo, e);
+                // ttsUrl은 null로 유지
             }
 
             // 3. scriptId 생성 (timestamp_orderNo)
@@ -140,7 +140,7 @@ public class TranslateService {
             scriptData.put("score", "0");
             scriptData.put("blank_script", script.getBlankScript());
             scriptData.put("similarity_phrases", String.join(",", script.getSimilarityPhrases()));
-            scriptData.put("tts_url", ttsUrl);
+            scriptData.put("tts_url", ttsUrl != null ? ttsUrl : "");  // null이면 빈 문자열
             scriptData.put("created_at", LocalDateTime.now().toString());
 
             redisTemplate.opsForHash().putAll(detailKey, scriptData);
