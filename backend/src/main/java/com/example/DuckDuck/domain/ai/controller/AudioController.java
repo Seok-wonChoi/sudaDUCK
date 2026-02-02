@@ -16,6 +16,13 @@ import java.nio.file.Files;
 @RequestMapping("/audio")
 @Slf4j
 public class AudioController {
+    
+    public AudioController() {
+        // 이 로그가 찍히면 파일이 존재하고, 스프링 빈으로 등록까지 된 것임
+        log.info("========================================");
+        log.info("📢 AudioController가 정상적으로 생성되었습니다!");
+        log.info("========================================");
+    }
 
     /**
      * TTS 오디오 파일 서빙
