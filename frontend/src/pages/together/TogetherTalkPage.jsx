@@ -1307,7 +1307,6 @@ export default function TogetherTalkPage() {
               </div>
             </div>
 
-<<<<<<< HEAD
             <div className={styles.TimerCol}>
               <TimerGauge
                 durationMs={60_000}
@@ -1316,9 +1315,6 @@ export default function TogetherTalkPage() {
                 startTimeMs={timerStartedAt}
               />
             </div>
-=======
-            <div className={styles.TimerCol}>{memoizedTimer}</div>
->>>>>>> bd64a7f3d755a1b96a21d71a9257d17dca890958
           </div>
 
           {/* 돌발퀘스트 수동 시작 버튼 */}
