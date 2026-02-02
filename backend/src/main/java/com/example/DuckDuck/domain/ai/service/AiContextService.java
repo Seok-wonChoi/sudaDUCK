@@ -39,7 +39,7 @@ public class AiContextService {
             // Redis Key: room:{roomId}:turn:{turn}:scripts
             String key = String.format("room:%d:turn:%d:scripts", roomId, turn);
 
-            Set<String> scripts = redisTemplate.opsForZSet().range(key, 0, -1);
+            Set<String> scripts = redisTemplate.opsForSet().members(key);
             
             if (scripts == null || scripts.isEmpty()) {
                 log.warn("대화 스크립트 없음 - roomId: {}, turn: {}", roomId, turn);
