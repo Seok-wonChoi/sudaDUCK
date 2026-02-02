@@ -2,13 +2,13 @@
 .sentenceCard {
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 24px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08),
-              0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  padding: 32px 48px;
+  border-radius: 14px;
+  box-shadow: 0 8px 12px -3px rgba(0, 0, 0, 0.06),
+              0 3px 5px -3px rgba(0, 0, 0, 0.04);
+  padding: clamp(12px, 1.5vh, 18px) clamp(10px, 1.2vw, 14px);
   width: 100%;
-  max-width: 1600px;
-  min-height: 280px;
+  max-width: 100%;
+  min-height: clamp(160px, 20vh, 220px);
   margin: 0 auto;
   transition: all 0.3s ease;
 }
@@ -29,18 +29,18 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .speakerInfo {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 
 .speakerIcon {
-  width: 64px;
-  height: 64px;
+  width: clamp(36px, 4.5vw, 48px);
+  height: clamp(36px, 4.5vw, 48px);
   background: #2b7fff;
   border-radius: 50%;
   display: flex;
@@ -50,24 +50,24 @@
 }
 
 .speakerIcon svg {
-  width: 28px;
-  height: 28px;
+  width: clamp(16px, 2.2vw, 20px);
+  height: clamp(16px, 2.2vw, 20px);
 }
 
 .speakerName {
   font-weight: 600;
-  font-size: 28px;
+  font-size: clamp(15px, 1.8vw, 20px);
   color: #1e2939;
 }
 
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 
 .score {
-  font-size: 18px;
+  font-size: 14px;
   color: #6b7280;
 }
 
@@ -78,7 +78,7 @@
 
 .progress {
   font-weight: 500;
-  font-size: 20px;
+  font-size: 13px;
   color: #6b7280;
   white-space: nowrap;
 }
@@ -87,12 +87,12 @@
   background: none;
   border: 1px solid #e5e7eb;
   cursor: pointer;
-  padding: 8px 14px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border-radius: 8px;
+  gap: 4px;
+  border-radius: 6px;
   transition: all 0.3s ease;
 }
 
@@ -118,7 +118,7 @@
 }
 
 .bookmarkText {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   color: #6b7280;
   transition: color 0.3s ease;
@@ -148,25 +148,25 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 
 .label {
   font-weight: 600;
-  font-size: 16px;
+  font-size: clamp(12px, 1.3vw, 14px);
   color: #6b7280;
   text-transform: none;
 }
 
 .text {
-  font-size: 22px;
-  line-height: 1.6;
+  font-size: clamp(13px, 1.5vw, 17px);
+  line-height: 1.5;
   color: #1e2939;
   margin: 0;
 }
@@ -174,16 +174,16 @@
 /* English Section */
 .englishSection {
   background: #eff6ff;
-  padding: 20px 24px;
-  border-radius: 16px;
-  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-top: 4px;
 }
 
 .englishHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .englishSection .label {
@@ -191,20 +191,20 @@
 }
 
 .englishSection .text {
-  font-size: 24px;
+  font-size: clamp(14px, 1.6vw, 19px);
   font-weight: 400;
-  letter-spacing: 0.5px;
-  word-spacing: 2px;
+  letter-spacing: 0.1px;
+  word-spacing: 0.5px;
 }
 
 .blank {
   color: #2b7fff;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   display: inline-block;
-  border-bottom: 3px solid #2b7fff;
-  padding-bottom: 2px;
-  margin: 0 2px;
+  border-bottom: 2px solid #2b7fff;
+  padding-bottom: 1px;
+  margin: 0 1px;
 }
 
 .blankBracket {
@@ -231,12 +231,12 @@
 .recordingBox {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 24px;
-  min-height: 140px;
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 80px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 
 .recordingContent {
@@ -245,7 +245,7 @@
   align-items: center;
   justify-content: center;
   flex: 1;
-  padding: 20px 0;
+  padding: 12px 0;
 }
 
 .recordingStatus {
@@ -256,7 +256,7 @@
 }
 
 .statusText {
-  font-size: 18px;
+  font-size: 14px;
   color: #6b7280;
   font-weight: 500;
 }
@@ -269,12 +269,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .recordingCircle {
-  width: 140px;
-  height: 140px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   background: #ef4444;
   display: flex;
@@ -295,13 +295,13 @@
 }
 
 .countdownNumber {
-  font-size: 48px;
+  font-size: 36px;
   font-weight: 700;
   color: #ffffff;
 }
 
 .recordingHint {
-  font-size: 18px;
+  font-size: 14px;
   color: #6b7280;
   margin: 0;
   text-align: center;
@@ -310,77 +310,77 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .sentenceCard {
-    padding: 24px;
-    border-radius: 20px;
+    padding: 10px 8px;
+    border-radius: 12px;
   }
 
   .header {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 6px;
   }
 
   .bookmarkButton {
-    padding: 6px 10px;
+    padding: 4px 6px;
   }
 
   .bookmarkText {
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .speakerIcon {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
 
   .speakerName {
-    font-size: 18px;
+    font-size: 13px;
   }
 
   .progress {
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .text {
-    font-size: 15px;
+    font-size: 12px;
   }
 
   .englishSection .text {
-    font-size: 16px;
+    font-size: 13px;
   }
 
   .englishSection {
-    padding: 16px;
+    padding: 8px 10px;
   }
 
   .recordingBox {
-    padding: 16px;
+    padding: 10px;
   }
 }
 
 @media (max-width: 480px) {
   .sentenceCard {
-    padding: 20px;
-    border-radius: 16px;
+    padding: 10px 8px;
+    border-radius: 10px;
   }
 
   .content {
-    gap: 12px;
+    gap: 6px;
   }
 
   .englishSection {
-    padding: 14px;
+    padding: 8px 10px;
     margin-top: 4px;
   }
 
   .recordingBox {
-    padding: 14px;
+    padding: 8px;
   }
 
   .text {
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .englishSection .text {
-    font-size: 15px;
+    font-size: 12px;
   }
 }

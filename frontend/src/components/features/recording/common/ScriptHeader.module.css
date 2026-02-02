@@ -1,20 +1,20 @@
 .scriptHeader {
   text-align: center;
-  padding: 32px 20px;
-  margin-bottom: 24px;
+  padding: clamp(24px, 3vh, 36px) 0;
+  margin-bottom: clamp(20px, 2.5vh, 28px);
 }
 
 .title {
   font-weight: 700;
-  font-size: 32px;
+  font-size: clamp(26px, 3vw, 38px);
   line-height: 1.2;
   color: #1e2939;
-  margin: 0 0 12px 0;
+  margin: 0 0 clamp(10px, 1.2vh, 14px) 0;
 }
 
 .subtitle {
   font-weight: 400;
-  font-size: 16px;
+  font-size: clamp(14px, 1.5vw, 18px);
   line-height: 1.5;
   color: #6b7280;
   margin: 0;
@@ -22,7 +22,7 @@
 
 @media (max-width: 768px) {
   .scriptHeader {
-    padding: 24px 16px;
+    padding: 24px 0;
     margin-bottom: 16px;
   }
 

@@ -22,49 +22,51 @@ export default function RecordingLayout({
   onLogoExit,
 }) {
   return (
-    <div className={styles.recordingLayout}>
-      <AppHeader
-        logoExitMessage={logoExitMessage}
-        onLogoExit={onLogoExit}
-      />
-
-      <main className={styles.content}>
-        <ScriptHeader />
-        <TurnTabs
-          currentTurn={currentTurn}
-          totalTurns={totalTurns}
-          isAllDone={isAllDone}
-          onTurnClick={onTurnClick}
-          selectedTurnForReport={selectedTurnForReport}
+    <div className={styles.page}>
+      <div className={styles.shell}>
+        <AppHeader
+          logoExitMessage={logoExitMessage}
+          onLogoExit={onLogoExit}
         />
 
-        <div className={styles.cardsList}>
-          {sentenceCards
-            .filter((card) => card.isActive)
-            .map((card) => (
-              <SentenceCard
-                key={card.id}
-                sentenceId={card.id}
-                speaker={card.speaker}
-                currentSentence={card.currentSentence}
-                totalSentences={card.totalSentences}
-                korean={card.korean}
-                english={card.english}
-                blankWords={card.blankWords}
-                score={card.score}
-                isActive={card.isActive}
-                cardState={activeCardState}
-                countdown={countdown}
-                recordingTime={recordingTime}
-                recordingCountdown={recordingCountdown}
-                initialBookmarked={card.isBookmarked}
-                onBookmarkToggle={onBookmarkToggle}
-              />
-            ))}
-        </div>
-      </main>
+        <main className={styles.content}>
+          <ScriptHeader />
+          <TurnTabs
+            currentTurn={currentTurn}
+            totalTurns={totalTurns}
+            isAllDone={isAllDone}
+            onTurnClick={onTurnClick}
+            selectedTurnForReport={selectedTurnForReport}
+          />
 
-      <div className={styles.bottomSection}>{bottomContent}</div>
+          <div className={styles.cardsList}>
+            {sentenceCards
+              .filter((card) => card.isActive)
+              .map((card) => (
+                <SentenceCard
+                  key={card.id}
+                  sentenceId={card.id}
+                  speaker={card.speaker}
+                  currentSentence={card.currentSentence}
+                  totalSentences={card.totalSentences}
+                  korean={card.korean}
+                  english={card.english}
+                  blankWords={card.blankWords}
+                  score={card.score}
+                  isActive={card.isActive}
+                  cardState={activeCardState}
+                  countdown={countdown}
+                  recordingTime={recordingTime}
+                  recordingCountdown={recordingCountdown}
+                  initialBookmarked={card.isBookmarked}
+                  onBookmarkToggle={onBookmarkToggle}
+                />
+              ))}
+          </div>
+        </main>
+
+        <div className={styles.bottomSection}>{bottomContent}</div>
+      </div>
     </div>
   );
 }
