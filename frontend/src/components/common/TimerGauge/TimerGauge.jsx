@@ -13,6 +13,7 @@ export default function TimerGauge({
   durationMs = 60_000,
   isRunning = true,
   onDone,
+  startTimeMs = null, // 절대 시작 시간 (timestamp)
 }) {
   const fillRef = useRef(null);
   const rafRef = useRef(0);
@@ -30,19 +31,36 @@ export default function TimerGauge({
     if (!isRunning) {
       // 일시정지: 현재 남은 시간 저장
       cancelAnimationFrame(rafRef.current);
-      const now = performance.now();
-      if (endAtRef.current > 0) {
-        const remain = Math.max(0, endAtRef.current - now);
+
+      if (startTimeMs) {
+        // 절대 시간 모드: 현재 남은 시간 계산
+        const now = Date.now();
+        const elapsed = now - startTimeMs;
+        const remain = Math.max(0, durationMs - elapsed);
         remainingMsRef.current = remain;
+      } else {
+        // 상대 시간 모드
+        const now = performance.now();
+        if (endAtRef.current > 0) {
+          const remain = Math.max(0, endAtRef.current - now);
+          remainingMsRef.current = remain;
+        }
       }
       return;
     }
 
-    // 재개: 남은 시간부터 시작
-    const start = performance.now();
-    endAtRef.current = start + remainingMsRef.current;
+    // 재개
+    if (startTimeMs) {
+      // 절대 시간 모드: 시작 시간 기준으로 종료 시간 계산
+      endAtRef.current = startTimeMs + durationMs;
+    } else {
+      // 상대 시간 모드: 남은 시간부터 시작
+      const start = performance.now();
+      endAtRef.current = start + remainingMsRef.current;
+    }
 
-    const tick = (now) => {
+    const tick = () => {
+      const now = startTimeMs ? Date.now() : performance.now();
       const remain = Math.max(0, endAtRef.current - now);
       const progress = durationMs > 0 ? remain / durationMs : 0;
 
@@ -69,7 +87,7 @@ export default function TimerGauge({
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [durationMs, isRunning, onDone]);
+  }, [durationMs, isRunning, onDone, startTimeMs]);
 
   return (
     <div className={styles.Wrap} aria-label="남은 시간">

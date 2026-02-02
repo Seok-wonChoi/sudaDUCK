@@ -65,6 +65,25 @@ export default function SoloPracticePage() {
   const [countdownSec, setCountdownSec] = useState(3);
   const [isRunning, setIsRunning] = useState(false);
 
+  // 타이머 시작 시간 (절대 timestamp)
+  const [timerStartedAt] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('solo_practice_timer');
+      return saved ? parseInt(saved, 10) : Date.now();
+    } catch {
+      return Date.now();
+    }
+  });
+
+  // sessionStorage 저장
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('solo_practice_timer', String(timerStartedAt));
+    } catch {
+      // ignore
+    }
+  }, [timerStartedAt]);
+
   const audioRef = useRef({
     stream: null,
     ctx: null,
@@ -290,7 +309,7 @@ export default function SoloPracticePage() {
             </div>
 
             <div className={styles.TimerCol}>
-              <TimerGauge durationMs={DURATION_MS} isRunning={isRunning} onDone={handleDone} />
+              <TimerGauge durationMs={DURATION_MS} isRunning={isRunning} onDone={handleDone} startTimeMs={timerStartedAt} />
             </div>
           </div>
 

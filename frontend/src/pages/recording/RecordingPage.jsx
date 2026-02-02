@@ -73,6 +73,13 @@ export default function RecordingPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const roomInfo = state?.roomInfo || {};
+  const myUserId = state?.myUserId; // 본인 userId
+  const participants = state?.participants || []; // 참여자 목록
+
+  console.log("[RecordingPage] 페이지 로드 - 전체 state:", state);
+  console.log("[RecordingPage] roomInfo:", roomInfo);
+  console.log("[RecordingPage] myUserId:", myUserId);
+  console.log("[RecordingPage] participants:", participants);
 
   const TURNS = roomInfo.turnCount || 3;
 
@@ -87,6 +94,8 @@ export default function RecordingPage() {
   const [bookmarkedSentences, setBookmarkedSentences] = useState([]);
   const [conversations, setConversations] = useState({});
   const [selectedTurnForReport, setSelectedTurnForReport] = useState(null);
+  const [scriptError, setScriptError] = useState(null);
+  const [isLoadingScript, setIsLoadingScript] = useState(false);
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
@@ -94,14 +103,26 @@ export default function RecordingPage() {
   const recordedChunksRef = useRef([]);
   const audioRef = useRef(null);
 
-  // roomId 추출
+  // roomId 추출 (우선순위: roomId > id > roomCode > inviteCode > joinCode)
   const roomId = useMemo(() => {
+    console.log("[RecordingPage] roomId 추출 시작 - roomInfo 상세:", {
+      roomId: roomInfo.roomId,
+      id: roomInfo.id,
+      roomCode: roomInfo.roomCode,
+      inviteCode: roomInfo.inviteCode,
+      joinCode: roomInfo.joinCode,
+      전체: roomInfo,
+    });
+
     const fromState =
-      roomInfo.id ||
       roomInfo.roomId ||
+      roomInfo.id ||
+      roomInfo.roomCode ||
       roomInfo.inviteCode ||
-      roomInfo.joinCode ||
-      roomInfo.roomCode;
+      roomInfo.joinCode;
+
+    console.log("[RecordingPage] roomId 추출 결과:", fromState);
+
     if (fromState) return fromState;
     try {
       const testRoomInfo = sessionStorage.getItem("testRoomInfo");
@@ -227,14 +248,24 @@ export default function RecordingPage() {
 
     // 다음 턴이 있으면 TogetherTalkPage로 돌아가기
     const nextTurn = currentTurn + 1;
+    console.log("[RecordingPage] 다음 턴으로 이동:", {
+      currentTurn,
+      nextTurn,
+      roomId,
+      roomCode,
+    });
+
     navigate("/together/talk", {
       replace: true,
       state: {
         ...state,
         roomInfo: {
           ...roomInfo,
+          roomId: roomId, // roomId 명시적으로 전달
+          roomCode: roomCode, // roomCode도 전달
           currentTurn: nextTurn, // 다음 턴 번호 전달
         },
+        myUserId, // myUserId도 전달
       },
     });
   };
@@ -256,22 +287,41 @@ export default function RecordingPage() {
 
   const handleBookmarkToggle = useCallback(async (sentenceId, isBookmarked) => {
     try {
-      await toggleScriptLike(sentenceId);
+      // sentenceId는 order_no가 아니라 실제 scriptId여야 함
+      // currentTurnSentences에서 해당 문장 찾기
+      const sentence = currentTurnSentences.find(s => s.id === sentenceId);
+      const scriptIdToUse = sentence?.scriptId || sentenceId;
+
+      //현재 보고 있는 턴 번호 계산 (리포트 화면이면 선택된 턴, 아니면 현재 턴)
+      const targetTurn = selectedTurnForReport || currentTurn;
+
+      console.log("[RecordingPage] 북마크 토글:", {
+        sentenceId,
+        scriptIdToUse,
+        roomId, // roomId 확인용 로그 추가
+        isBookmarked,
+        turnNo: targetTurn
+      });
+
+      await toggleScriptLike(scriptIdToUse, roomId, targetTurn);
+
       setBookmarkedSentences((prev) => {
         const next = isBookmarked
           ? [...new Set([...prev, sentenceId])]
           : prev.filter((id) => id !== sentenceId);
         localStorage.setItem("bookmarkedSentences", JSON.stringify(next));
+        console.log("[RecordingPage] 북마크 업데이트:", next);
         return next;
       });
     } catch (error) {
       console.error("북마크 실패:", error);
+      alert("북마크 저장에 실패했습니다.");
     }
-  }, []);
+  }, [currentTurnSentences, roomId, selectedTurnForReport]);
 
   const handleRoomClosed = useCallback(() => {
     console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
-    navigate("/", {
+    navigate("/main", {
       replace: true,
       state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
@@ -303,40 +353,128 @@ export default function RecordingPage() {
   useEffect(() => {
     const fetchTurnScripts = async () => {
       // 이미 로드된 경우 스킵
-      if (conversations[currentTurn]) return;
+      if (conversations[currentTurn]) {
+        console.log(`[RecordingPage] turn ${currentTurn} 스크립트 이미 로드됨`);
+        return;
+      }
+
+      setIsLoadingScript(true);
+      setScriptError(null);
 
       // roomId가 없으면 더미 데이터 사용
       if (!roomId) {
+        console.warn(`[RecordingPage] roomId 없음 - 더미 데이터 사용`);
         setConversations((prev) => ({
           ...prev,
           [currentTurn]: DUMMY_CONVERSATIONS[currentTurn] || [],
         }));
+        setIsLoadingScript(false);
         return;
       }
 
       // roomId가 있으면 API로 스크립트 로드
       try {
+        console.log(`[RecordingPage] turn ${currentTurn} 스크립트 로드 시작`);
+        console.log(`[RecordingPage] API 호출 파라미터: roomId=${roomId}, turnNo=${currentTurn}`);
+        console.log(`[RecordingPage] API URL: /api/v1/session/${roomId}/turns/${currentTurn}/scripts`);
+
         const response = await getTurnScripts(roomId, currentTurn);
+
+        console.log(`[RecordingPage] turn ${currentTurn} 스크립트 API 응답:`, response);
+        console.log(`[RecordingPage] 응답 타입:`, typeof response, Array.isArray(response) ? '배열' : '객체');
+
         const scripts = Array.isArray(response) ? response : [response];
+
+        if (scripts.length === 0 || (scripts.length === 1 && !scripts[0]?.scriptId)) {
+          const errorMsg = `턴 ${currentTurn}의 스크립트를 불러올 수 없습니다.\n대화 내용이 저장되지 않았을 수 있습니다.`;
+          console.error(`[RecordingPage] ${errorMsg}`);
+          setScriptError(errorMsg);
+          setConversations((prev) => ({ ...prev, [currentTurn]: [] }));
+          setIsLoadingScript(false);
+          return;
+        }
+
         const formatted = scripts
+          .filter(s => s && s.scriptId) // null/undefined 필터링
           .sort((a, b) => (a.order_no || 0) - (b.order_no || 0))
-          .map((s, i) => ({
-            id: s.order_no ?? i + 1,
-            scriptId: s.scriptId,
-            speaker: s.speakerName || "참여자",
-            korean: s.korean || "",
-            english: s.english || "",
-            blankWords: s.blank_script
-              ? s.blank_script
-                  .match(/\[([^\]]+)\]/g)
-                  ?.map((w) => w.slice(1, -1)) || []
-              : [],
-            score: null,
-            tts_url: s.tts_url || null,
-          }));
+          .map((s, i) => {
+            console.log(`[RecordingPage] ===== 스크립트 ${i + 1} 원본 데이터 =====`);
+            console.log("[RecordingPage] 전체 객체:", JSON.stringify(s, null, 2));
+            console.log("[RecordingPage] 모든 키:", Object.keys(s));
+
+            // 발화자 이름 추출 (speakerName만 사용, speakerId는 없음)
+            let speakerName =
+              s.speakerName ||
+              s.speaker ||
+              s.userName ||
+              s.nickname ||
+              s.name ||
+              s.speaker_name ||
+              s.user_name ||
+              s.memberName ||
+              s.member_name ||
+              null;
+
+            console.log("[RecordingPage] 백엔드에서 받은 speakerName:", speakerName);
+
+            // speakerName이 없으면 participants에서 가져오기
+            if (!speakerName && participants && participants.length > 0) {
+              console.log("[RecordingPage] speakerName이 없어서 participants 사용");
+              const firstParticipant = participants[0];
+              speakerName = firstParticipant?.name || firstParticipant?.nickname || "참여자";
+            }
+
+            // 여전히 이름이 없으면 기본값
+            if (!speakerName || speakerName === "Unknown") {
+              speakerName = "참여자";
+            }
+
+            // 본인인지 판단: participants의 isMe로 확인
+            // (speakerId가 없으므로 participants 배열에서 isMe === true인지 확인)
+            let isMe = false;
+            if (participants && participants.length > 0) {
+              const myParticipant = participants.find(p => p.isMe === true);
+              if (myParticipant) {
+                // 내가 유일한 참여자이면 모든 발화가 내 것
+                isMe = participants.length === 1 && myParticipant.isMe;
+              }
+            }
+
+            const displayName = isMe ? `${speakerName}(나)` : speakerName;
+
+            console.log(`[RecordingPage] 스크립트 ${i + 1} 발화자 최종 결과:`, {
+              speakerName,
+              myUserId,
+              isMe,
+              displayName,
+              participantsCount: participants?.length || 0,
+            });
+
+            return {
+              id: s.order_no ?? i + 1,
+              scriptId: s.scriptId,
+              speaker: displayName,
+              korean: s.korean || "",
+              english: s.english || "",
+              blankWords: s.blank_script
+                ? s.blank_script
+                    .match(/\[([^\]]+)\]/g)
+                    ?.map((w) => w.slice(1, -1)) || []
+                : [],
+              score: null,
+              tts_url: s.tts_url || null,
+            };
+          });
+
+        console.log(`[RecordingPage] turn ${currentTurn} 스크립트 포맷팅 완료 (${formatted.length}개):`, formatted);
         setConversations((prev) => ({ ...prev, [currentTurn]: formatted }));
+        setIsLoadingScript(false);
       } catch (e) {
-        console.error("스크립트 로드 실패:", e);
+        console.error(`[RecordingPage] turn ${currentTurn} 스크립트 로드 실패:`, e);
+        const errorMsg = `턴 ${currentTurn}의 스크립트를 불러오는 중 오류가 발생했습니다.\n${e.message || '네트워크 오류'}`;
+        setScriptError(errorMsg);
+        setConversations((prev) => ({ ...prev, [currentTurn]: [] }));
+        setIsLoadingScript(false);
       }
     };
     fetchTurnScripts();
@@ -344,34 +482,39 @@ export default function RecordingPage() {
 
   // 메인 타이머 및 자동 흐름 제어
   useEffect(() => {
+    console.log("🎬 ========== useEffect 실행 ==========");
+    console.log("[RecordingPage] 현재 step:", step);
+    console.log("[RecordingPage] currentTurn:", currentTurn);
+    console.log("[RecordingPage] conversations[currentTurn]:", conversations[currentTurn]);
+    console.log("[RecordingPage] currentSentence:", currentSentence);
+    console.log("[RecordingPage] currentSentenceIndex:", currentSentenceIndex);
+    console.log("======================================");
+
     clearAllTimers();
 
     if (step === STEP.AI_TIMER) {
+      console.log("📍 [STEP] AI_TIMER 단계 진입");
+
       // ★ 스크립트가 아직 로드되지 않은 경우 대기
       if (conversations[currentTurn] === undefined) {
-        console.log(`[RecordingPage] turn ${currentTurn} 스크립트 로드 대기 중...`);
+        console.log(`⏳ [RecordingPage] turn ${currentTurn} 스크립트 로드 대기 중...`);
         return;
       }
 
-      // ★ 해당 턴의 스크립트가 빈 배열인 경우 (대화가 없었던 턴)
+      // ★ 해당 턴의 스크립트가 빈 배열인 경우 (스크립트 없음)
       if (conversations[currentTurn].length === 0) {
-        console.log(`[RecordingPage] turn ${currentTurn} 스크립트가 없음 → 다음 턴으로`);
-        if (currentTurn >= TURNS) {
-          // 마지막 턴이면 완료
-          setStep(STEP.ALL_DONE);
-        } else {
-          // 아니면 다음 턴으로
-          setCurrentTurn((t) => t + 1);
-          setCurrentSentenceIndex(0);
-        }
+        console.error(`❌ [RecordingPage] turn ${currentTurn} 스크립트가 없어서 진행 불가`);
+        // 에러가 있으면 그대로 대기 (자동으로 넘어가지 않음)
         return;
       }
 
       // 정상: 3초 카운트다운 시작
+      console.log("✅ [STEP] AI_TIMER 카운트다운 시작 (3초)");
       setCountdown(3);
       intervalRef.current = setInterval(() => {
         setCountdown((c) => {
           if (c <= 1) {
+            console.log("⏰ [STEP] AI_TIMER 카운트다운 종료 → AI_PLAYING으로 전환");
             clearAllTimers();
             setStep(STEP.AI_PLAYING);
             return 0;
@@ -380,6 +523,7 @@ export default function RecordingPage() {
         });
       }, 1000);
     } else if (step === STEP.RECORD_TIMER) {
+      console.log("📍 [STEP] RECORD_TIMER 단계 진입");
       setCountdown(3);
       intervalRef.current = setInterval(() => {
         setCountdown((c) => {
@@ -393,11 +537,81 @@ export default function RecordingPage() {
       }, 1000);
     } else if (step === STEP.AI_PLAYING) {
       if (currentSentence?.tts_url) {
-        const audio = new Audio(currentSentence.tts_url);
-        audioRef.current = audio;
-        audio.play().catch(() => setStep(STEP.RECORD_TIMER));
-        audio.onended = () => setStep(STEP.RECORD_TIMER);
+        // ✅ TTS URL: Vite 프록시를 통해 상대 경로로 사용
+        const ttsUrl = currentSentence.tts_url; // 이미 /audio/... 형태
+
+        console.log("🔊 ========== TTS 재생 시작 ==========");
+        console.log("[RecordingPage] 원본 tts_url:", currentSentence.tts_url);
+        console.log("[RecordingPage] 사용할 URL (프록시 통과):", ttsUrl);
+        console.log("======================================");
+
+        // ✅ fetch로 오디오 파일 다운로드 (프록시를 통해 CORS 우회)
+        const accessToken = localStorage.getItem("accessToken");
+
+        console.log("📥 [TTS] fetch로 오디오 파일 다운로드 시작...");
+
+        fetch(ttsUrl, {
+          headers: accessToken ? {
+            'Authorization': `Bearer ${accessToken}`
+          } : {}
+        })
+          .then(response => {
+            console.log("📥 [TTS] fetch 응답:", response.status, response.statusText);
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return response.blob();
+          })
+          .then(blob => {
+            console.log("✅ [TTS] Blob 생성 완료:", blob.size, "bytes, type:", blob.type);
+
+            // Blob URL 생성
+            const blobUrl = URL.createObjectURL(blob);
+            console.log("✅ [TTS] Blob URL 생성:", blobUrl);
+
+            const audio = new Audio(blobUrl);
+            audioRef.current = audio;
+
+            // 재생 완료 시 Blob URL 해제
+            audio.onended = () => {
+              console.log("✅ [TTS] 재생 완료");
+              URL.revokeObjectURL(blobUrl);
+              setStep(STEP.RECORD_TIMER);
+            };
+
+            // 에러 핸들링
+            audio.onerror = (event) => {
+              console.error("❌ [TTS] 오디오 재생 에러:", {
+                event,
+                error: audio.error,
+                errorCode: audio.error?.code,
+              });
+              URL.revokeObjectURL(blobUrl);
+              setStep(STEP.RECORD_TIMER);
+            };
+
+            // 재생 시작
+            audio.play()
+              .then(() => {
+                console.log("✅ [TTS] 재생 시작 성공!");
+              })
+              .catch((err) => {
+                console.error("❌ [TTS] play() 실패:", err.message);
+                URL.revokeObjectURL(blobUrl);
+                setStep(STEP.RECORD_TIMER);
+              });
+          })
+          .catch((err) => {
+            console.error("❌ [TTS] fetch 실패:", {
+              에러: err.message,
+              URL: ttsUrl,
+            });
+            setStep(STEP.RECORD_TIMER);
+          });
       } else {
+        console.warn("⚠️ [RecordingPage] TTS URL이 없어서 기본 타이머 사용");
         timerRef.current = setTimeout(
           () => setStep(STEP.RECORD_TIMER),
           AI_PLAYING_MS,
@@ -442,6 +656,7 @@ export default function RecordingPage() {
     const isReportMode = step === STEP.TURN_REPORT || step === STEP.ALL_DONE;
     return currentTurnSentences.map((s, i) => ({
       ...s,
+      scriptId: s.scriptId, // scriptId 명시적으로 포함
       score: sentenceScores[s.id],
       isActive: isReportMode ? true : i === currentSentenceIndex,
       currentSentence: i + 1,
@@ -457,6 +672,57 @@ export default function RecordingPage() {
   ]);
 
   const bottomContent = () => {
+    // 스크립트 로딩 중
+    if (isLoadingScript) {
+      return (
+        <div
+          style={{
+            padding: "20px",
+            textAlign: "center",
+            background: "#fff",
+            borderTop: "1px solid #e5e7eb",
+          }}
+        >
+          <p style={{ fontSize: "16px", color: "#666" }}>
+            스크립트를 불러오는 중입니다...
+          </p>
+        </div>
+      );
+    }
+
+    // 스크립트 로드 실패
+    if (scriptError) {
+      return (
+        <div
+          style={{
+            padding: "20px",
+            textAlign: "center",
+            background: "#fff",
+            borderTop: "1px solid #e5e7eb",
+          }}
+        >
+          <p style={{ fontSize: "14px", color: "#ef4444", whiteSpace: "pre-line", marginBottom: "16px" }}>
+            {scriptError}
+          </p>
+          <button
+            onClick={() => navigate("/together/talk", { replace: true, state })}
+            style={{
+              padding: "12px 32px",
+              fontSize: "16px",
+              fontWeight: "600",
+              color: "#fff",
+              background: "#6b7280",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            대화 페이지로 돌아가기
+          </button>
+        </div>
+      );
+    }
+
     switch (step) {
       case STEP.IDLE:
         return <BottomIdle onNext={startFlow} onStart={startFlow} />;

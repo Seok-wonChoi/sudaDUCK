@@ -5,6 +5,10 @@ import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
 
 import duckImg from "@/assets/images/duck.png";
+import duckProfile1 from "@/assets/images/duck_profile1.png";
+import duckProfile2 from "@/assets/images/duck_profile2.png";
+import duckProfile3 from "@/assets/images/duck_profile3.png";
+import duckProfile4 from "@/assets/images/duck_profile4.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 import usersIcon from "@/assets/icons/users_icon.png";
@@ -23,6 +27,60 @@ import {
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
+
+const DUCK_PROFILE_IMAGES = {
+  profile1: duckProfile1,
+  profile2: duckProfile2,
+  profile3: duckProfile3,
+  profile4: duckProfile4,
+};
+
+const COLOR_MAP = {
+  white: "#ffffff",
+  yellow: "#fef08a",
+  blue: "#93c5fd",
+  pink: "#f9a8d4",
+  green: "#86efac",
+  purple: "#c4b5fd",
+  orange: "#fdba74",
+};
+
+const ACCESSORY_MAP = {
+  hat: "🎩",
+  sunglasses: "🕶️",
+  ribbon: "🎀",
+  crown: "👑",
+  none: null,
+};
+
+function safeParseJson(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
+}
+
+function getDuckProfileInfo(duckCustomJson) {
+  const parsed = safeParseJson(duckCustomJson);
+  if (!parsed) {
+    return {
+      image: duckProfile1,
+      color: "#ffffff",
+      accessory: null,
+    };
+  }
+
+  const style = parsed.style || "profile1";
+  const color = parsed.color || "white";
+  const accessory = parsed.accessory || "none";
+
+  return {
+    image: DUCK_PROFILE_IMAGES[style] || duckProfile1,
+    color: COLOR_MAP[color] || "#ffffff",
+    accessory: ACCESSORY_MAP[accessory] || null,
+  };
+}
 
 function PlayIcon() {
   return (
@@ -172,7 +230,6 @@ export default function WaitingRoomPage() {
   const [myMicOn, setMyMicOn] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
 
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
 
   const [editPopupOpen, setEditPopupOpen] = useState(false);
@@ -268,7 +325,6 @@ export default function WaitingRoomPage() {
     a.level = 0;
     a.lastUiAt = 0;
 
-    setIsSpeaking(false);
     setVoiceLevel(0);
   }, []);
 
@@ -318,7 +374,6 @@ export default function WaitingRoomPage() {
 
           if (speaking !== a.speakingNow) {
             a.speakingNow = speaking;
-            setIsSpeaking(speaking);
           }
 
           const raw = Math.max(0, Math.min(1, (rms - 0.005) / 0.08));
@@ -341,7 +396,6 @@ export default function WaitingRoomPage() {
 
       tick();
     } catch {
-      setIsSpeaking(false);
       setVoiceLevel(0);
     }
   }, []);
@@ -416,6 +470,10 @@ export default function WaitingRoomPage() {
           isReady: serverReady,
           micOn: m.micOn ?? prev?.micOn ?? true,
           voiceLevel: prev?.voiceLevel ?? 0,
+          isSpeaking: prev?.isSpeaking ?? false,
+          avatarCustomJson: m.avatarCustomJson ?? null,
+          duckCustomJson: m.duckCustomJson ?? null,
+          aiDuckbotCustomJson: m.aiDuckbotCustomJson ?? null,
         };
       });
 
@@ -484,6 +542,12 @@ export default function WaitingRoomPage() {
 
   const hasNavigatedRef = useRef(false);
 
+  const sendMicRef = useRef(null);
+  const myMicOnRef = useRef(myMicOn);
+  useEffect(() => {
+    myMicOnRef.current = myMicOn;
+  }, [myMicOn]);
+
   const handleMemberJoined = useCallback((payload, senderKey) => {
     console.log("[WaitingRoom] 🟢 MEMBER_JOINED 수신:", {
       payload,
@@ -491,12 +555,34 @@ export default function WaitingRoomPage() {
       currentParticipants: participantsRef.current.length
     });
 
-    // 즉시 fetchLobby 호출하고, 100ms 후에 한번 더 호출 (서버 상태 동기화)
-    fetchLobbyRef.current?.();
-    setTimeout(() => {
-      console.log("[WaitingRoom] fetchLobby 재호출 (MEMBER_JOINED 100ms 후)");
-      fetchLobbyRef.current?.();
-    }, 100);
+    if (!senderKey) return;
+
+    const newMember = {
+      key: String(senderKey),
+      nickname: payload?.nickname ?? "참여자",
+      isHost: payload?.isHost ?? false,
+      isReady: payload?.isReady ?? false,
+      micOn: payload?.micOn ?? false,
+      voiceLevel: 0,
+      isSpeaking: false,
+    };
+
+    setParticipants((prev) => {
+      // 이미 존재하는 참여자면 업데이트, 없으면 추가
+      const exists = prev.some((p) => p.key === String(senderKey));
+      if (exists) {
+        return prev.map((p) => p.key === String(senderKey) ? { ...p, ...newMember } : p);
+      }
+      return [...prev, newMember];
+    });
+
+    if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
+
+    // 새로운 멤버가 입장했을 때 내 마이크 상태를 전송하여 동기화
+    if (sendMicRef.current) {
+      console.log("[WaitingRoom] 새 멤버 입장 - 내 마이크 상태 전송:", myMicOnRef.current);
+      sendMicRef.current(myMicOnRef.current);
+    }
   }, []);
 
   const handleMemberLeft = useCallback((payload, senderKey) => {
@@ -506,12 +592,11 @@ export default function WaitingRoomPage() {
       currentParticipants: participantsRef.current.length
     });
 
-    // 즉시 fetchLobby 호출하고, 100ms 후에 한번 더 호출 (서버 상태 동기화)
-    fetchLobbyRef.current?.();
-    setTimeout(() => {
-      console.log("[WaitingRoom] fetchLobby 재호출 (MEMBER_LEFT 100ms 후)");
-      fetchLobbyRef.current?.();
-    }, 100);
+    if (!senderKey) return;
+
+    setParticipants((prev) => prev.filter((p) => p.key !== String(senderKey)));
+
+    if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
   }, []);
 
   const handleRoomClosed = useCallback(() => {
@@ -583,9 +668,18 @@ export default function WaitingRoomPage() {
       if (k === myKey) return;
 
       setParticipants((prev) =>
-        prev.map((p) =>
-          p.key === k ? { ...p, micOn: payload?.micOn ?? p.micOn } : p,
-        ),
+        prev.map((p) => {
+          if (p.key === k) {
+            const newMicOn = payload?.micOn ?? p.micOn;
+            // 마이크가 꺼지면 isSpeaking도 false로 설정
+            return {
+              ...p,
+              micOn: newMicOn,
+              isSpeaking: newMicOn ? p.isSpeaking : false,
+            };
+          }
+          return p;
+        }),
       );
     },
     [myKey],
@@ -598,9 +692,15 @@ export default function WaitingRoomPage() {
       if (k === myKey) return;
 
       setParticipants((prev) =>
-        prev.map((p) =>
-          p.key === k ? { ...p, voiceLevel: payload?.level ?? 0 } : p,
-        ),
+        prev.map((p) => {
+          if (p.key === k) {
+            const level = payload?.level ?? 0;
+            // 마이크가 켜져있고 voiceLevel이 임계값 이상일 때만 발화 중으로 표시
+            const isSpeaking = p.micOn && level > 0.03;
+            return { ...p, voiceLevel: level, isSpeaking };
+          }
+          return p;
+        }),
       );
     },
     [myKey],
@@ -722,10 +822,23 @@ export default function WaitingRoomPage() {
     },
   });
 
-  // WebSocket 연결 상태 로그
+  // sendMic을 ref에 저장
+  useEffect(() => {
+    sendMicRef.current = sendMic;
+  }, [sendMic]);
+
+  // WebSocket 연결 상태 로그 및 초기 마이크 상태 전송 (처음 1번만)
+  const initialMicSentRef = useRef(false);
   useEffect(() => {
     console.log("[WaitingRoom] WebSocket 연결 상태:", isConnected ? "✅ 연결됨" : "❌ 끊김");
-  }, [isConnected]);
+
+    // WebSocket 연결 시 초기 마이크 상태 전송
+    if (isConnected && sendMic && !initialMicSentRef.current) {
+      console.log("[WaitingRoom] 초기 마이크 상태 전송:", myMicOn);
+      sendMic(myMicOn);
+      initialMicSentRef.current = true;
+    }
+  }, [isConnected, sendMic, myMicOn]);
 
   const lastLocalSentRef = useRef({ at: 0, level: 0 });
   useEffect(() => {
@@ -805,11 +918,7 @@ export default function WaitingRoomPage() {
       console.warn("[WaitingRoom] ⚠️ sendReady가 없어서 WebSocket 전송 불가");
     }
 
-    // 100ms 후 서버 상태와 동기화
-    setTimeout(() => {
-      console.log("[WaitingRoom] fetchLobby 호출 (toggleMyReady 동기화)");
-      fetchLobbyRef.current?.();
-    }, 100);
+    // 웹소켓 READY_CHANGED 메시지로 상태 동기화 (fetchLobby 제거로 깜빡임 방지)
   }, [myKey, myReady, inviteCode, sendReady, showToast, isConnected]);
 
   const handleCopy = useCallback(async () => {
@@ -1109,15 +1218,27 @@ export default function WaitingRoomPage() {
                   const isMe = p.key === myKey;
                   const micOn = isMe ? myMicOn : (p.micOn ?? false);
 
+                  // 프로필 커스터마이징 정보 파싱
+                  const profileInfo = getDuckProfileInfo(p.duckCustomJson);
+
                   return (
                     <div key={p.key || index} className={styles.ParticipantRow}>
                       <div className={styles.ParticipantLeft}>
-                        <div className={styles.UserIconWrap} aria-hidden="true">
+                        <div
+                          className={styles.UserIconWrap}
+                          style={{ background: profileInfo.color }}
+                          aria-hidden="true"
+                        >
                           <img
                             className={styles.UserIconImg}
-                            src={usersIcon}
+                            src={profileInfo.image}
                             alt=""
                           />
+                          {profileInfo.accessory && (
+                            <span className={styles.ProfileAccessory}>
+                              {profileInfo.accessory}
+                            </span>
+                          )}
                         </div>
 
                         <div className={styles.InfoColumn}>
