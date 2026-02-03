@@ -191,7 +191,7 @@ export default function WaitingRoomPage() {
   const { state } = useLocation();
 
   // 👇 오픈비두우우우 Context에서 함수 꺼내오기
-  const { joinSession, leaveSession, isConnected: isOvConnected , subscribers } = useOpenVidu();
+  const { joinSession, leaveSession, isConnected: isOvConnected, subscribers, publisher } = useOpenVidu();
   
   // 👇  오픈비듀우우우 브라우저 뒤로가기/새로고침 시 연결 끊기
   useEffect(() => {
@@ -928,17 +928,26 @@ export default function WaitingRoomPage() {
   }, [voiceLevel, myMicOn, sendVoiceLevel]);
 
   const toggleMyMic = useCallback(async () => {
-    if (myMicOn) {
-      setMyMicOn(false);
-      await stopAudioAnalysis();
-      if (sendMic) sendMic(false);
-      return;
+    const nextState = !myMicOn;
+    
+    // 1. OpenVidu 실제 마이크 제어
+    if (publisher) {
+      publisher.publishAudio(nextState);
+      console.log(`🎤 [OpenVidu] 마이크 ${nextState ? "ON" : "OFF"}`);
     }
 
-    setMyMicOn(true);
-    await startAudioAnalysis();
-    if (sendMic) sendMic(true);
-  }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
+    // 2. UI 상태 및 오디오 분석기 제어
+    setMyMicOn(nextState);
+
+    if (nextState) {
+      await startAudioAnalysis();
+    } else {
+      await stopAudioAnalysis();
+    }
+
+    // 3. 웹소켓으로 서버/다른 사람에게 알림
+    if (sendMic) sendMic(nextState);
+  }, [myMicOn, publisher, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
   const toggleMyReady = useCallback(async () => {
     console.log("[WaitingRoom] 🔘 toggleMyReady 호출:", {
