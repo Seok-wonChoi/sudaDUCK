@@ -190,7 +190,7 @@ export default function WaitingRoomPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
 
-  // 👇 오픈비듀우우우 Context에서 함수 꺼내오기
+  // 👇 오픈비두우우우 Context에서 함수 꺼내오기
   const { joinSession, leaveSession, isConnected: isOvConnected , subscribers } = useOpenVidu();
   
   // 👇  오픈비듀우우우 브라우저 뒤로가기/새로고침 시 연결 끊기
@@ -543,6 +543,10 @@ export default function WaitingRoomPage() {
   useEffect(() => {
     fetchLobby();
   }, [fetchLobby]);
+
+  // 👇 오픈비두 연결 중복 방지용 Ref
+  const isConnectingRef = useRef(false);
+
   useEffect(() => {
     const connectToOpenVidu = async () => {
       const ovSessionId = roomInfo.openviduSessionId;
@@ -556,8 +560,16 @@ export default function WaitingRoomPage() {
           return;
       }
 
+      // 1-2. 이미 연결 시도 중이라면 중단 (중복 호출 방지)
+      if (isConnectingRef.current) {
+        console.log("🔒 [OpenVidu] 이미 연결을 시도 중입니다. (Skip)");
+        return;
+      }
+
       try {
+        isConnectingRef.current = true; // 잠금 🔒
         console.log("🚀 [OpenVidu] 토큰 발급 요청 중...");
+        
         // 2. 백엔드 API로 토큰 발급
         const token = await createToken(ovSessionId);
         console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
@@ -570,6 +582,7 @@ export default function WaitingRoomPage() {
         
       } catch (e) {
         console.error("❌ [OpenVidu] 연결 실패:", e);
+        isConnectingRef.current = false; // 실패 시 잠금 해제 🔓
       }
     };
 
@@ -1317,7 +1330,7 @@ export default function WaitingRoomPage() {
 
                             {!p.isHost ? (
                               <span
-                                className={`${styles.ReadyTag} ${
+                                className={`${styles.ReadyTag} ${ 
                                   p.isReady
                                     ? styles.ReadyTagOn
                                     : styles.ReadyTagOff
@@ -1364,7 +1377,7 @@ export default function WaitingRoomPage() {
 
             <button
               type="button"
-              className={`${styles.StartButton} ${
+              className={`${styles.StartButton} ${ 
                 primaryDisabled ? styles.StartButtonDisabled : ""
               } ${!isHost && myReady ? styles.StartButtonReady : ""}`}
               onClick={handlePrimary}
@@ -1472,7 +1485,7 @@ export default function WaitingRoomPage() {
                       <button
                         key={t}
                         type="button"
-                        className={`${styles.PopupTopicChip} ${
+                        className={`${styles.PopupTopicChip} ${ 
                           active ? styles.PopupTopicChipActive : ""
                         }`}
                         onClick={() => handlePickEditTopic(t)}
@@ -1495,7 +1508,7 @@ export default function WaitingRoomPage() {
                       <button
                         key={n}
                         type="button"
-                        className={`${styles.PopupTurnCard} ${
+                        className={`${styles.PopupTurnCard} ${ 
                           active ? styles.PopupTurnCardActive : ""
                         }`}
                         onClick={() => setEditTurn(n)}
