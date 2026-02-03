@@ -6,6 +6,7 @@ import {
   saveAssessment,
   toggleScriptLike,
   getTurnScripts,
+  getTurnResults,
 } from "@/api/shadowing";
 import { leaveRoom } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
@@ -97,6 +98,7 @@ export default function RecordingPage() {
   const [selectedTurnForReport, setSelectedTurnForReport] = useState(null);
   const [scriptError, setScriptError] = useState(null);
   const [isLoadingScript, setIsLoadingScript] = useState(false);
+  const [turnResults, setTurnResults] = useState({});
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
@@ -349,6 +351,46 @@ export default function RecordingPage() {
       }
     }
   }, [roomCode]);
+
+  const fetchTurnResults = useCallback(async (turnNo = currentTurn) => {
+    if (!roomId || !turnNo) {
+      console.warn('[RecordingPage] roomId 또는 turnNo가 없어 점수 조회 불가');
+      return;
+    }
+
+    try {
+      console.log(`🔍 [RecordingPage] 턴 ${turnNo} 점수 조회 시작`);
+      const results = await getTurnResults(roomId, turnNo);
+      
+      console.log('📊 [RecordingPage] 점수 조회 결과:', results);
+      
+      if (!Array.isArray(results) || results.length === 0) {
+        console.warn('⚠️ [RecordingPage] 점수 데이터가 비어있음');
+        return;
+      }
+      
+      setTurnResults(prev => ({
+        ...prev,
+        [turnNo]: results
+      }));
+      
+      const targetConversations = conversations[turnNo] || currentTurnSentences;
+      const scores = {};
+      
+      results.forEach(result => {
+        const sentence = targetConversations.find(s => s.scriptId === result.scriptId);
+        if (sentence) {
+          scores[sentence.id] = result.score;
+        }
+      });
+      
+      console.log('✅ [RecordingPage] 점수 업데이트:', scores);
+      setSentenceScores(prev => ({ ...prev, ...scores }));
+      
+    } catch (error) {
+      console.error('❌ [RecordingPage] 점수 조회 실패:', error);
+    }
+  }, [roomId, currentTurn, conversations, currentTurnSentences]);
 
   // --- Effect 로직 ---
 
@@ -719,24 +761,52 @@ export default function RecordingPage() {
     goNextSentence,
   ]);
 
+  useEffect(() => {
+    if (step === STEP.TURN_REPORT && roomId && currentTurn) {
+      console.log('[RecordingPage] TURN_REPORT 진입 → 점수 조회');
+      fetchTurnResults(currentTurn);
+    }
+  }, [step, currentTurn, roomId, fetchTurnResults]);
+
   // UI 데이터 가공
   const sentenceCardsData = useMemo(() => {
     const isReportMode = step === STEP.TURN_REPORT || step === STEP.ALL_DONE;
-    return currentTurnSentences.map((s, i) => ({
-      ...s,
-      scriptId: s.scriptId, // scriptId 명시적으로 포함
-      score: sentenceScores[s.id],
-      isActive: isReportMode ? true : i === currentSentenceIndex,
-      currentSentence: i + 1,
-      totalSentences: currentTurnSentences.length,
-      isBookmarked: bookmarkedSentences.includes(s.id),
-    }));
+    const targetTurn = selectedTurnForReport || currentTurn;
+    
+    let resultsMap = {};
+    if (isReportMode && turnResults[targetTurn]) {
+      turnResults[targetTurn].forEach(result => {
+        resultsMap[result.scriptId] = {
+          score: result.score,
+          averageScore: result.averageScore
+        };
+      });
+    }
+    
+    return currentTurnSentences.map((s, i) => {
+      const resultData = resultsMap[s.scriptId];
+      const finalScore = resultData?.score ?? sentenceScores[s.id];
+      
+      return {
+        ...s,
+        scriptId: s.scriptId,
+        score: finalScore,
+        averageScore: resultData?.averageScore,
+        isActive: isReportMode ? true : i === currentSentenceIndex,
+        currentSentence: i + 1,
+        totalSentences: currentTurnSentences.length,
+        isBookmarked: bookmarkedSentences.includes(s.id),
+      };
+    });
   }, [
     currentTurnSentences,
     currentSentenceIndex,
     sentenceScores,
     bookmarkedSentences,
     step,
+    turnResults,
+    currentTurn,
+    selectedTurnForReport,
   ]);
 
   const bottomContent = () => {
@@ -869,7 +939,14 @@ export default function RecordingPage() {
       onBookmarkToggle={handleBookmarkToggle}
       totalTurns={TURNS}
       isAllDone={step === STEP.ALL_DONE}
-      onTurnClick={(t) => step === STEP.ALL_DONE && setSelectedTurnForReport(t)}
+      onTurnClick={(t) => {
+        if (step === STEP.ALL_DONE) {
+          setSelectedTurnForReport(t);
+          if (!turnResults[t]) {
+            fetchTurnResults(t);
+          }
+        }
+      }}
       selectedTurnForReport={selectedTurnForReport}
       logoExitMessage="메인 화면으로 나가시겠습니까?"
       onLogoExit={handleLogoExit}
