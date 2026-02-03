@@ -3,68 +3,79 @@ import BlankDetail from './BlankDetail';
 
 export default function ReviewCard({
   questionNumber,
-  correctCount,
-  totalBlanks,
-  koreanSentence,
-  englishParts,
-  blanks
+  korean,
+  english,
+  blanks = [],
+  englishParts = []
 }) {
-  const isAllCorrect = correctCount === totalBlanks;
+  // 정답 개수 계산
+  const correctCount = blanks.filter(b => b.isCorrect).length;
+  const totalCount = blanks.length;
 
   return (
-    <div className={`${styles.card} ${isAllCorrect ? styles.correct : styles.wrong}`}>
+    <div className={styles.container}>
+      {/* 헤더 - 문제 번호 */}
       <div className={styles.header}>
-        <span className={`${styles.badge} ${isAllCorrect ? styles.badgeCorrect : styles.badgeWrong}`}>
-          {isAllCorrect ? (
-            <>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              {correctCount}/{totalBlanks} 정답
-            </>
-          ) : (
-            <>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M3 3L9 9M9 3L3 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              {correctCount}/{totalBlanks} 오답
-            </>
-          )}
-        </span>
-        <span className={styles.questionNum}>문제 #{questionNumber}</span>
-      </div>
-
-      <div className={styles.section}>
-        <span className={styles.label}>한국어 의미</span>
-        <p className={styles.koreanText}>{koreanSentence}</p>
-      </div>
-
-      <div className={styles.section}>
-        <span className={styles.label}>완성된 영어 문장</span>
-        <div className={styles.englishSentence}>
-          {englishParts.map((part, idx) => (
-            <span key={idx}>
-              {part}
-              {idx < blanks.length && (
-                <span className={`${styles.blankWord} ${blanks[idx].isCorrect ? styles.blankCorrect : styles.blankWrong}`}>
-                  {blanks[idx].answer}
-                </span>
-              )}
-            </span>
-          ))}
+        <div className={styles.questionNumber}>
+          문제 {questionNumber}
         </div>
       </div>
 
-      <div className={styles.section}>
-        <span className={styles.label}>빈칸 상세</span>
-        {blanks.map((blank, idx) => (
-          <BlankDetail
-            key={idx}
-            isCorrect={blank.isCorrect}
-            answer={blank.answer}
-            userAnswer={blank.userAnswer}
-          />
-        ))}
+      <div className={styles.card}>
+        {/* 한국어 */}
+        <div className={styles.section}>
+          <div className={styles.sectionLabel}>한국어</div>
+          <div className={styles.korean}>
+            {korean}
+          </div>
+        </div>
+
+        {/* 정답 문장 */}
+        <div className={styles.section}>
+          <div className={styles.sectionLabel}>정답 문장</div>
+          <div className={styles.english}>
+            {english}
+          </div>
+        </div>
+
+        {/* 빈칸 분석 */}
+        <div className={styles.section}>
+          <div className={styles.blankHeader}>
+            <span className={styles.sectionLabel}>빈칸 분석 ({correctCount}/{totalCount})</span>
+          </div>
+          <div className={styles.blanks}>
+            {blanks.map((blank, idx) => (
+              <BlankDetail
+                key={idx}
+                number={idx + 1}
+                answer={blank.answer}
+                userAnswer={blank.userAnswer}
+                isCorrect={blank.isCorrect}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* 내가 쓴 문장 */}
+        <div className={styles.section}>
+          <div className={styles.sectionLabel}>내가 쓴 답</div>
+          <div className={styles.userSentence}>
+            {englishParts.map((part, idx) => (
+              <span key={idx}>
+                {part}
+                {idx < blanks.length && (
+                  <span 
+                    className={`${styles.userBlank} ${
+                      blanks[idx].isCorrect ? styles.correctBlank : styles.wrongBlank
+                    }`}
+                  >
+                    {blanks[idx].userAnswer || '(입력 없음)'}
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

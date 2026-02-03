@@ -14,9 +14,9 @@ export async function submitReviewAnswers(roomId, answers) {
   return data;
 }
 
-// 미니게임1 결과 랭킹 조회: GET /api/v1/mini_game/{roomId}/review/ranking
+// 미니게임1 결과 랭킹 조회: POST /api/v1/mini_game/{roomId}/review/ranking
 export async function getReviewRanking(roomId) {
-  const { data } = await api.get(`/api/v1/mini_game/${roomId}/review/ranking`);
+  const { data } = await api.post(`/api/v1/mini_game/${roomId}/review/ranking`, {});
   return data;
 }
 

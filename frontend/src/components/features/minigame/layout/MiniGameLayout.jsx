@@ -12,7 +12,9 @@ export default function MiniGameLayout({
   progress = 0,
   totalProgress = 100,
   participants = [],
+  voiceLevels = {},
   userName = 'user',
+  onExit,
   // 로고 클릭 나가기 관련 props
   logoExitMessage,
   onLogoExit,
@@ -22,7 +24,7 @@ export default function MiniGameLayout({
       <AppHeader
         userName={userName}
         logoExitMessage={logoExitMessage}
-        onLogoExit={onLogoExit}
+        onLogoExit={onLogoExit || onExit}
       />
 
       <main className={styles.main}>
@@ -39,7 +41,10 @@ export default function MiniGameLayout({
       </main>
 
       <footer className={styles.footer}>
-        <ParticipantList participants={participants} />
+        <ParticipantList 
+          participants={participants} 
+          voiceLevels={voiceLevels}
+        />
       </footer>
     </div>
   );
