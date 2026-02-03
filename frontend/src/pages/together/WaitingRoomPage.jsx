@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
+import NicknameBadge from "@/components/features/mypage/ProfileSection/NicknameBadge";
 
 import duckImg from "@/assets/images/duck.png";
 import duckProfile1 from "@/assets/images/duck_profile1.png";
@@ -16,7 +17,7 @@ import usersIcon from "@/assets/icons/users_icon.png";
 import styles from "./WaitingRoomPage.module.css";
 // 👇오픈비두 관련 임포트!!
 import { useOpenVidu } from "@/context/OpenViduContext";
-import { createToken } from "@/api/openVidu";
+import { createToken, createSession } from "@/api/openVidu";
 import {
   leaveRoom,
   getRoomLobby,
@@ -81,6 +82,21 @@ function getDuckProfileInfo(duckCustomJson) {
     image: DUCK_PROFILE_IMAGES[style] || duckProfile1,
     color: COLOR_MAP[color] || "#ffffff",
     accessory: ACCESSORY_MAP[accessory] || null,
+  };
+}
+
+function getNicknameStyle(avatarCustomJson) {
+  const parsed = safeParseJson(avatarCustomJson);
+  if (!parsed) {
+    return {
+      background: "default",
+      effect: null,
+    };
+  }
+
+  return {
+    background: parsed.bgStyle || "default",
+    effect: parsed.effect || null,
   };
 }
 
@@ -256,6 +272,7 @@ export default function WaitingRoomPage() {
   const [editTitle, setEditTitle] = useState(roomTitle);
   const [editTopic, setEditTopic] = useState(topic);
   const [editTurn, setEditTurn] = useState(turnCount);
+  const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
   const hotTopics = useMemo(
     () => [
@@ -569,17 +586,36 @@ export default function WaitingRoomPage() {
       try {
         isConnectingRef.current = true; // 잠금 🔒
         console.log("🚀 [OpenVidu] 토큰 발급 요청 중...");
-        
-        // 2. 백엔드 API로 토큰 발급
-        const token = await createToken(ovSessionId);
-        console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
-        
+
+        let token;
+        try {
+          // 2. 백엔드 API로 토큰 발급
+          token = await createToken(ovSessionId);
+          console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
+        } catch (tokenError) {
+          // 202 에러: 세션이 존재하지 않음 → 세션 재생성 후 재시도
+          if (tokenError?.response?.status === 404 || tokenError?.message?.includes("202") || tokenError?.message?.includes("not found")) {
+            console.warn("⚠️ [OpenVidu] 세션이 존재하지 않아 재생성 중...");
+            try {
+              await createSession(ovSessionId);
+              console.log("✅ [OpenVidu] 세션 재생성 완료, 토큰 재요청 중...");
+              token = await createToken(ovSessionId);
+              console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
+            } catch (retryError) {
+              console.error("❌ [OpenVidu] 세션 재생성 실패:", retryError);
+              throw retryError;
+            }
+          } else {
+            throw tokenError;
+          }
+        }
+
         // 3. 내 닉네임 찾기
         const myNickname = participants.find(p => p.key === myKey)?.nickname || "Guest";
 
         // 4. 오픈비두 연결 (Context 함수)
         await joinSession(token, myNickname);
-        
+
       } catch (e) {
         console.error("❌ [OpenVidu] 연결 실패:", e);
         isConnectingRef.current = false; // 실패 시 잠금 해제 🔓
@@ -1052,21 +1088,28 @@ export default function WaitingRoomPage() {
   }, []);
 
   const handleAiRecommend = useCallback(async () => {
+    setIsLoadingAiRecommend(true);
     try {
       const data = await getTopics();
       const topics = data?.topics || [];
       if (topics.length > 0) {
         const randomTopic = topics[Math.floor(Math.random() * topics.length)];
         setEditTopic(randomTopic);
-        return;
+      } else {
+        // API 응답은 받았지만 topics가 비어있을 때 fallback
+        if (hotTopics.length > 0) {
+          const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+          setEditTopic(next);
+        }
       }
     } catch {
-      // ignore
-    }
-
-    if (hotTopics.length > 0) {
-      const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
-      setEditTopic(next);
+      // API 실패 시 fallback
+      if (hotTopics.length > 0) {
+        const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+        setEditTopic(next);
+      }
+    } finally {
+      setIsLoadingAiRecommend(false);
     }
   }, [hotTopics]);
 
@@ -1300,6 +1343,7 @@ export default function WaitingRoomPage() {
 
                   // 프로필 커스터마이징 정보 파싱
                   const profileInfo = getDuckProfileInfo(p.duckCustomJson);
+                  const nicknameStyleInfo = getNicknameStyle(p.avatarCustomJson);
 
                   return (
                     <div key={p.key || index} className={styles.ParticipantRow}>
@@ -1323,10 +1367,14 @@ export default function WaitingRoomPage() {
 
                         <div className={styles.InfoColumn}>
                           <div className={styles.NameRow}>
-                            <div className={styles.ParticipantName}>
-                              {p.nickname}
-                              {isMe ? " (나)" : ""}
-                            </div>
+                            <NicknameBadge
+                              nickname={p.nickname}
+                              style={nicknameStyleInfo}
+                              size="small"
+                            />
+                            {isMe && (
+                              <span className={styles.MeTag}>(나)</span>
+                            )}
 
                             {!p.isHost ? (
                               <span
@@ -1468,8 +1516,16 @@ export default function WaitingRoomPage() {
                     type="button"
                     className={styles.PopupAiButton}
                     onClick={handleAiRecommend}
+                    disabled={isLoadingAiRecommend}
                   >
-                    AI 추천
+                    {isLoadingAiRecommend ? (
+                      <span className={styles.PopupAiButtonContent}>
+                        <span className={styles.PopupAiSpinner} />
+                        AI 추천
+                      </span>
+                    ) : (
+                      "AI 추천"
+                    )}
                   </button>
                 </div>
 

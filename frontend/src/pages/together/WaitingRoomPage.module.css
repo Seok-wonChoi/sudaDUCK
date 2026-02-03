@@ -396,6 +396,13 @@
   color: #111827;
 }
 
+/* 본인 표시 태그 */
+.MeTag {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+}
+
 /* 준비 상태 태그 공통 */
 .ReadyTag {
   padding: 5px 10px;
@@ -1023,6 +1030,7 @@
 
 .PopupAiButton {
   height: clamp(42px, 4.5vw, 46px);
+  min-width: 96px;
   padding: 0 clamp(14px, 1.8vw, 18px);
   border: 1px solid rgba(79, 70, 229, 0.35);
   border-radius: clamp(10px, 1.2vw, 12px);
@@ -1033,11 +1041,45 @@
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .PopupAiButton:hover {
   background: rgba(79, 70, 229, 0.14);
   border-color: rgba(79, 70, 229, 0.45);
+}
+
+.PopupAiButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.PopupAiButtonContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.PopupAiSpinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(79, 70, 229, 0.3);
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: popupAiSpinnerRotate 0.8s linear infinite;
+}
+
+@keyframes popupAiSpinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .PopupHotRow {
