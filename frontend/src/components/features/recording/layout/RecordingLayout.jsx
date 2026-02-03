@@ -1,13 +1,13 @@
-import AppHeader from '@/components/layout/AppHeader/AppHeader';
-import ScriptHeader from '../common/ScriptHeader';
-import TurnTabs from '../common/TurnTabs';
-import SentenceCard from '../common/SentenceCard';
-import styles from './RecordingLayout.module.css';
+import AppHeader from "@/components/layout/AppHeader/AppHeader";
+import ScriptHeader from "../common/ScriptHeader";
+import TurnTabs from "../common/TurnTabs";
+import SentenceCard from "../common/SentenceCard";
+import styles from "./RecordingLayout.module.css";
 
 export default function RecordingLayout({
   currentTurn,
   sentenceCards = [],
-  activeCardState = 'idle',
+  activeCardState = "idle",
   countdown = 3,
   recordingTime = 0,
   recordingCountdown = 10, // 녹음 카운트다운
@@ -24,10 +24,7 @@ export default function RecordingLayout({
   return (
     <div className={styles.page}>
       <div className={styles.shell}>
-        <AppHeader
-          logoExitMessage={logoExitMessage}
-          onLogoExit={onLogoExit}
-        />
+        <AppHeader logoExitMessage={logoExitMessage} onLogoExit={onLogoExit} />
 
         <main className={styles.content}>
           <ScriptHeader />
@@ -53,6 +50,7 @@ export default function RecordingLayout({
                   english={card.english}
                   blankWords={card.blankWords}
                   score={card.score}
+                  averageScore={card.averageScore}
                   isActive={card.isActive}
                   cardState={activeCardState}
                   countdown={countdown}
