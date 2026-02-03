@@ -21,9 +21,12 @@ export const OpenViduProvider = ({ children }) => {
             return;
         }
 
+        let newSession = null;
+        let newPublisher = null;
+
         try {
             const OV = new OpenVidu();
-            const newSession = OV.initSession();
+            newSession = OV.initSession();
 
             // 스트림 리스너 (상대방 들어오면 소리/화면 받기)
             newSession.on('streamCreated', (event) => {
@@ -39,7 +42,7 @@ export const OpenViduProvider = ({ children }) => {
             await newSession.connect(token, { clientData: nickname });
 
             // 내 마이크 설정 (오디오만 ON)
-            const newPublisher = await OV.initPublisherAsync(undefined, {
+            newPublisher = await OV.initPublisherAsync(undefined, {
                 audioSource: undefined,
                 videoSource: false, 
                 publishAudio: true,
