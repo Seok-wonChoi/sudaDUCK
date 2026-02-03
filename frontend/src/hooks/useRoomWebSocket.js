@@ -102,6 +102,52 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     [roomCode],
   );
 
+  // 돌발 퀘스트 시작 브로드캐스트
+  const sendUnexpectedQuest = useCallback(
+    (questData) => {
+      const client = clientRef.current;
+      if (!client?.connected) {
+        console.warn("[WebSocket] sendUnexpectedQuest 실패: 연결되지 않음");
+        return;
+      }
+
+      console.log("[WebSocket] sendUnexpectedQuest 전송:", {
+        roomCode,
+        questData,
+        destination: `/app/rooms/${roomCode}/unexpected-quest`,
+      });
+
+      client.publish({
+        destination: `/app/rooms/${roomCode}/unexpected-quest`,
+        body: JSON.stringify(questData),
+      });
+    },
+    [roomCode],
+  );
+
+  // 돌발 퀘스트 결과 확인 후 이어하기 준비 상태 전송
+  const sendQuestContinueReady = useCallback(
+    (ready) => {
+      const client = clientRef.current;
+      if (!client?.connected) {
+        console.warn("[WebSocket] sendQuestContinueReady 실패: 연결되지 않음");
+        return;
+      }
+
+      console.log("[WebSocket] sendQuestContinueReady 전송:", {
+        roomCode,
+        ready,
+        destination: `/app/rooms/${roomCode}/quest-continue-ready`,
+      });
+
+      client.publish({
+        destination: `/app/rooms/${roomCode}/quest-continue-ready`,
+        body: JSON.stringify({ ready }),
+      });
+    },
+    [roomCode],
+  );
+
   useEffect(() => {
     if (!roomCode) return;
 
@@ -172,6 +218,8 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               onTimerSync,
               onQuizReceived,
               onQuizResultReceived,
+              onUnexpectedQuestReceived,
+              onQuestContinueReady,
               onError,
             } = handlersRef.current;
 
@@ -291,6 +339,24 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                 onQuizResultReceived?.(payload);
                 break;
 
+              case "UNEXPECTED_QUEST":
+              case "SUDDEN_QUEST":
+                console.log("[WebSocket] UNEXPECTED_QUEST 수신:", {
+                  payload,
+                  type,
+                });
+                onUnexpectedQuestReceived?.(payload);
+                break;
+
+              case "QUEST_CONTINUE_READY":
+                console.log("[WebSocket] QUEST_CONTINUE_READY 수신:", {
+                  payload,
+                  senderKey,
+                  type,
+                });
+                onQuestContinueReady?.(payload, senderKey);
+                break;
+
               case "ERROR":
                 onError?.(payload);
                 break;
@@ -405,5 +471,5 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     };
   }, [roomCode, roomId]);
 
-  return { sendReady, sendMic, sendVoiceLevel, sendEndRoom, isConnected };
+  return { sendReady, sendMic, sendVoiceLevel, sendEndRoom, sendUnexpectedQuest, sendQuestContinueReady, isConnected };
 }

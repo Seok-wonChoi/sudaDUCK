@@ -450,8 +450,10 @@ export default function RecordingPage() {
           scripts.length === 0 ||
           (scripts.length === 1 && !scripts[0]?.scriptId)
         ) {
-          const errorMsg = `턴 ${currentTurn}의 스크립트를 불러올 수 없습니다.\n대화 내용이 저장되지 않았을 수 있습니다.`;
-          console.error(`[RecordingPage] ${errorMsg}`);
+          const errorMsg = currentTurn >= TURNS
+            ? `턴 ${currentTurn}에 대화 내용이 없습니다.\n잠시 후 결과 화면으로 이동합니다.`
+            : `턴 ${currentTurn}에 대화 내용이 없습니다.\n잠시 후 다음 턴으로 이동합니다.`;
+          console.log(`[RecordingPage] ${errorMsg}`);
           setScriptError(errorMsg);
           setConversations((prev) => ({ ...prev, [currentTurn]: [] }));
           setIsLoadingScript(false);
@@ -591,10 +593,13 @@ export default function RecordingPage() {
 
       // ★ 해당 턴의 스크립트가 빈 배열인 경우 (스크립트 없음)
       if (conversations[currentTurn].length === 0) {
-        console.error(
-          `❌ [RecordingPage] turn ${currentTurn} 스크립트가 없어서 진행 불가`,
+        console.log(
+          `⚠️ [RecordingPage] turn ${currentTurn} 스크립트가 없음 - 다음 턴으로 자동 진행`,
         );
-        // 에러가 있으면 그대로 대기 (자동으로 넘어가지 않음)
+        // 스크립트가 없어도 다음 턴으로 진행
+        setTimeout(() => {
+          goNextTurn();
+        }, 2000); // 2초 대기 후 다음 턴으로
         return;
       }
 
@@ -833,37 +838,38 @@ export default function RecordingPage() {
       return (
         <div
           style={{
-            padding: "20px",
+            padding: "40px 20px",
             textAlign: "center",
             background: "#fff",
             borderTop: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "200px",
           }}
         >
           <p
             style={{
-              fontSize: "14px",
-              color: "#ef4444",
+              fontSize: "16px",
+              color: "#6b7280",
               whiteSpace: "pre-line",
-              marginBottom: "16px",
+              marginBottom: "24px",
+              lineHeight: "1.6",
             }}
           >
             {scriptError}
           </p>
-          <button
-            onClick={() => navigate("/together/talk", { replace: true, state })}
+          <div
             style={{
-              padding: "12px 32px",
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#fff",
-              background: "#6b7280",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
+              width: "40px",
+              height: "40px",
+              border: "4px solid #e5e7eb",
+              borderTopColor: "#4f46e5",
+              borderRadius: "50%",
+              animation: "spin 0.8s linear infinite",
             }}
-          >
-            대화 페이지로 돌아가기
-          </button>
+          />
         </div>
       );
     }
