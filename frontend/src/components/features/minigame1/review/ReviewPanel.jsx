@@ -23,67 +23,62 @@ export default function ReviewPanel({
 
   const currentQuestion = questions[currentIndex];
 
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-    }
+  const handleDotClick = (index) => {
+    setCurrentIndex(index);
   };
 
   return (
     <div className={styles.container}>
       {/* 헤더 */}
       <div className={styles.header}>
-        <button className={styles.backLink} onClick={onBack}>
-          ← 결과로 돌아가기
-        </button>
         <h2 className={styles.title}>전체 문제 리뷰</h2>
-        <div className={styles.progress}>
-          {currentIndex + 1} / {questions.length}
-        </div>
+        <p className={styles.subtitle}>
+          모든 문제의 정답 풀이를 다시 확인해보세요
+        </p>
+        <button className={styles.backLink} onClick={onBack}>
+          결과로 돌아가기
+        </button>
       </div>
 
       {/* 문제 카드 */}
-      <ReviewCard
-        questionNumber={currentIndex + 1}
-        korean={currentQuestion.koreanSentence}
-        english={currentQuestion.englishSentence}
-        blanks={currentQuestion.blanks}
-        englishParts={currentQuestion.englishParts}
-      />
+      <div className={styles.cardWrapper}>
+        <ReviewCard
+          questionNumber={currentIndex + 1}
+          korean={currentQuestion.koreanSentence}
+          english={currentQuestion.englishSentence}
+          blanks={currentQuestion.blanks}
+          englishParts={currentQuestion.englishParts}
+        />
+      </div>
 
-      {/* 네비게이션 */}
+      {/* 하단 네비게이션 */}
       <div className={styles.navigation}>
-        <button 
-          className={`${styles.navButton} ${currentIndex === 0 ? styles.disabled : ''}`}
-          onClick={handlePrev}
-          disabled={currentIndex === 0}
-        >
-          이전 문제
-        </button>
-        
+        {/* 점 인디케이터 */}
         <div className={styles.dots}>
-          {questions.map((_, idx) => (
-            <button
-              key={idx}
-              className={`${styles.dot} ${idx === currentIndex ? styles.activeDot : ''}`}
-              onClick={() => setCurrentIndex(idx)}
-              aria-label={`문제 ${idx + 1}로 이동`}
-            />
-          ))}
+          {questions.map((_, idx) => {
+            // 정답 여부 확인
+            const question = questions[idx];
+            const allCorrect = question.blanks.every(b => b.isCorrect);
+            const hasWrong = question.blanks.some(b => !b.isCorrect);
+            
+            return (
+              <button
+                key={idx}
+                className={`${styles.dot} ${
+                  idx === currentIndex ? styles.activeDot : ''
+                } ${allCorrect ? styles.correctDot : hasWrong ? styles.wrongDot : ''}`}
+                onClick={() => handleDotClick(idx)}
+                aria-label={`문제 ${idx + 1}로 이동`}
+              >
+                <span className={styles.dotInner} />
+              </button>
+            );
+          })}
         </div>
-        
-        <button 
-          className={`${styles.navButton} ${currentIndex === questions.length - 1 ? styles.disabled : ''}`}
-          onClick={handleNext}
-          disabled={currentIndex === questions.length - 1}
-        >
-          다음 문제
+
+        {/* 완료 버튼 */}
+        <button className={styles.completeButton} onClick={onBack}>
+          완료
         </button>
       </div>
     </div>

@@ -291,7 +291,13 @@ export default function RecordingPage() {
   };
 
   const handleComplete = () => {
-    navigate("/minigame1", { state: { roomId } });
+    navigate("/minigame1", { 
+      state: { 
+        roomId: roomId,
+        roomCode: roomCode,
+        isHost: roomInfo.isHost || false
+      } 
+    });
   };
 
   const handleBookmarkToggle = useCallback(

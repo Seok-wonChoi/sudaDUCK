@@ -80,13 +80,15 @@ export default function MiniGame1Page() {
   const [myProfile, setMyProfile] = useState(null);
   const [submitResult, setSubmitResult] = useState(null);
 
+  // ✅ roomId와 roomCode를 모두 받을 수 있도록 수정
   const roomId = location.state?.roomId;
+  const roomCode = location.state?.roomCode;
   const isHost = location.state?.isHost || false;
 
   const {
     participants: wsParticipants,
     voiceLevels,
-  } = useRoomWebSocket(roomId);
+  } = useRoomWebSocket(roomCode || roomId);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -131,11 +133,16 @@ export default function MiniGame1Page() {
         setQuestions(formattedQuestions);
         console.log('✅ 변환된 문제:', formattedQuestions);
 
-        const roomData = await getRoomLobby(roomId);
-        setParticipants(roomData.participants || []);
-        
-        const me = roomData.participants?.find(p => p.isMe);
-        setMyProfile(me);
+        // ✅ roomCode를 사용하여 로비 정보 조회
+        if (roomCode) {
+          const roomData = await getRoomLobby(roomCode);
+          setParticipants(roomData.participants || []);
+          
+          const me = roomData.participants?.find(p => p.isMe);
+          setMyProfile(me);
+        } else {
+          console.warn('roomCode가 없어 참가자 정보를 불러올 수 없습니다.');
+        }
 
         setIsLoading(false);
       } catch (error) {
@@ -145,7 +152,7 @@ export default function MiniGame1Page() {
     };
 
     fetchData();
-  }, [roomId, navigate]);
+  }, [roomId, roomCode, navigate]);
 
   const initQuestion = useCallback((qIdx) => {
     const q = questions[qIdx];
@@ -344,7 +351,10 @@ export default function MiniGame1Page() {
         console.log('✅ 미니게임 데이터 정리 완료');
       }
 
-      await leaveRoom(roomId);
+      // ✅ roomCode를 사용하여 방 나가기
+      if (roomCode) {
+        await leaveRoom({ roomCode });
+      }
       navigate('/together');
     } catch (error) {
       console.error('❌ 나가기 실패:', error);
