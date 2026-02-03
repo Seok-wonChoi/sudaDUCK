@@ -251,31 +251,37 @@ export default function RecordingPage() {
   const goNextTurn = () => {
     if (currentTurn >= TURNS) {
       // 마지막 턴이면 ALL_DONE으로 이동
+      console.log("[RecordingPage] 마지막 턴 완료 - ALL_DONE으로 전환");
       setStep(STEP.ALL_DONE);
       return;
     }
 
     // 다음 턴이 있으면 TogetherTalkPage로 돌아가기
     const nextTurn = currentTurn + 1;
+    const navigationState = {
+      ...state,
+      currentTurn: nextTurn, // 최상위 레벨에도 턴 번호 전달
+      roomInfo: {
+        ...roomInfo,
+        roomId: roomId,
+        roomCode: roomCode,
+        currentTurn: nextTurn, // roomInfo 내부에도 턴 번호 전달
+      },
+      myUserId,
+    };
+
     console.log("[RecordingPage] 다음 턴으로 이동:", {
       currentTurn,
       nextTurn,
+      TURNS,
       roomId,
       roomCode,
+      전달할State: navigationState,
     });
 
     navigate("/together/talk", {
       replace: true,
-      state: {
-        ...state,
-        roomInfo: {
-          ...roomInfo,
-          roomId: roomId, // roomId 명시적으로 전달
-          roomCode: roomCode, // roomCode도 전달
-          currentTurn: nextTurn, // 다음 턴 번호 전달
-        },
-        myUserId, // myUserId도 전달
-      },
+      state: navigationState,
     });
   };
 
@@ -785,6 +791,17 @@ export default function RecordingPage() {
       fetchTurnResults(currentTurn);
     }
   }, [step, currentTurn, roomId, fetchTurnResults]);
+
+  // 스크립트 에러 발생 시 자동으로 다음 턴으로 진행
+  useEffect(() => {
+    if (scriptError) {
+      console.log("[RecordingPage] 스크립트 오류 발생 - 3초 후 자동 진행");
+      const timer = setTimeout(() => {
+        goNextTurn();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [scriptError, goNextTurn]);
 
   // UI 데이터 가공
   const sentenceCardsData = useMemo(() => {

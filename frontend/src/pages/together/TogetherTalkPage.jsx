@@ -277,16 +277,30 @@ export default function TogetherTalkPage() {
 
   // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
   const [currentTurn, setCurrentTurn] = useState(() => {
-    return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+    const turn = roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+    console.log("[TogetherTalkPage] currentTurn 초기화:", {
+      roomInfo,
+      turn,
+    });
+    return turn;
   });
 
   // [수정 2] 데이터 동기화 추가: 페이지 이동으로 hydratedInfo가 바뀌면 턴 번호도 업데이트
   useEffect(() => {
     const nextTurn = hydratedInfo?.currentTurn ?? hydratedInfo?.roomInfo?.currentTurn;
-    if (nextTurn) {
+    console.log("[TogetherTalkPage] hydratedInfo 변경 감지:", {
+      hydratedInfo,
+      currentTurnFromState: hydratedInfo?.currentTurn,
+      currentTurnFromRoomInfo: hydratedInfo?.roomInfo?.currentTurn,
+      nextTurn,
+      currentCurrentTurn: currentTurn,
+    });
+
+    if (nextTurn !== undefined && nextTurn !== null && nextTurn !== currentTurn) {
+      console.log(`[TogetherTalkPage] 턴 번호 업데이트: ${currentTurn} → ${nextTurn}`);
       setCurrentTurn(nextTurn);
     }
-  }, [hydratedInfo]);
+  }, [hydratedInfo, currentTurn]);
 
 
   const myUserId = useMemo(() => {
