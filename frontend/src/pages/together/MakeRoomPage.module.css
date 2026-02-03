@@ -155,6 +155,32 @@
   filter: brightness(1.02);
 }
 
+.AiButtonContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.AiSpinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: aiSpinnerRotate 0.8s linear infinite;
+}
+
+@keyframes aiSpinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .HotRow {
   display: flex;
   align-items: center;

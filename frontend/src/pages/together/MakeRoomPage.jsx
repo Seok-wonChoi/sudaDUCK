@@ -28,6 +28,7 @@ export default function MakeRoomPage() {
   const [topic, setTopic] = useState("");
   const [turn, setTurn] = useState(3);
   const [loading, setLoading] = useState(false);
+  const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
   const titleCount = title.length;
 
@@ -50,6 +51,7 @@ export default function MakeRoomPage() {
   };
 
   const handleAiRecommend = async () => {
+    setIsLoadingAiRecommend(true);
     try {
       const data = await getTopics();
       const topics = data.topics || [];
@@ -65,6 +67,8 @@ export default function MakeRoomPage() {
         const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
         setTopic(next);
       }
+    } finally {
+      setIsLoadingAiRecommend(false);
     }
   };
 
@@ -191,9 +195,16 @@ export default function MakeRoomPage() {
                   type="button"
                   className={styles.AiButton}
                   onClick={handleAiRecommend}
-                  disabled={loading}
+                  disabled={loading || isLoadingAiRecommend}
                 >
-                  AI 추천
+                  {isLoadingAiRecommend ? (
+                    <span className={styles.AiButtonContent}>
+                      <span className={styles.AiSpinner} />
+                      AI 추천
+                    </span>
+                  ) : (
+                    "AI 추천"
+                  )}
                 </button>
               </div>
 

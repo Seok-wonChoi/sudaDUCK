@@ -285,7 +285,7 @@ export default function TogetherTalkPage() {
       id: p.id ?? p.email ?? "unknown",
       name: p.name ?? p.nickname ?? "참여자",
       isMe: p.isMe === true,
-      micOn: p.micOn ?? false,
+      micOn: p.micOn ?? true,
       isHost: p.isHost ?? false,
       voiceLevel: p.voiceLevel ?? 0,
       isSpeaking: false,
@@ -346,7 +346,7 @@ export default function TogetherTalkPage() {
           id: idStr || "unknown",
           name: m.nickname ?? "참여자",
           isMe: myIdStr ? idStr === myIdStr : false,
-          micOn: m.micOn ?? false,
+          micOn: m.micOn ?? true,
           isHost: m.isHost ?? false,
           voiceLevel: 0,
           isSpeaking: false,
@@ -450,7 +450,7 @@ export default function TogetherTalkPage() {
     setParticipants((prev) =>
       prev.map((p) => {
         if (p.id === k) {
-          const newMicOn = payload?.micOn ?? false;
+          const newMicOn = payload?.micOn ?? true;
           // 마이크가 꺼지면 isSpeaking도 false로 설정
           return {
             ...p,
@@ -760,6 +760,7 @@ export default function TogetherTalkPage() {
     }
   }, []);
 
+  // 마이크와 정적 감지 초기화 (컴포넌트 마운트 시에만)
   useEffect(() => {
     startAudioAnalysis();
 
@@ -975,6 +976,9 @@ export default function TogetherTalkPage() {
         console.error("[Quest] 정적 감지 재시작 실패:", e);
       }
     }
+
+    // STT는 questStep이 "idle"이 되면 기존 useEffect에서 자동으로 재시작됨
+    console.log("[Quest] 퀘스트 종료 - STT는 자동으로 재시작됩니다");
   }, [micStateBeforeQuest, micOn, sendMic, startAudioAnalysis, stopAudioAnalysis, roomId, currentTurn]);
 
   const startQuest = useCallback(
@@ -1086,7 +1090,7 @@ export default function TogetherTalkPage() {
     setQuestStep("q1speaking");
   }, [questStep, activeQuest]);
 
-  // 퀘스트 1: 각 참여자 차례에서 마이크 자동 제어
+  // 퀘스트 1: 각 참여자 차례에서 마이크 자동 제어 및 녹음 시작
   useEffect(() => {
     if (questStep !== "q1speaking" || currentSpeakerIndex < 0) return;
 
@@ -1100,6 +1104,34 @@ export default function TogetherTalkPage() {
           setMicOn(true);
           sendMic(true);
           await startAudioAnalysis();
+        }
+
+        // 녹음 시작
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mediaRecorder = new MediaRecorder(stream);
+          mediaRecorderRef.current = mediaRecorder;
+          audioChunksRef.current = [];
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
+            }
+          };
+
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunksRef.current, {
+              type: "audio/webm",
+            });
+            setRecordedAudio(audioBlob);
+            stream.getTracks().forEach((track) => track.stop());
+          };
+
+          mediaRecorder.start();
+          setIsRecording(true);
+          console.log("[Quest] 내 차례 - 녹음 시작");
+        } catch (error) {
+          console.error("[Quest] 녹음 시작 실패:", error);
         }
       } else {
         // 다른 사람 차례: 마이크 끄기
@@ -1219,9 +1251,50 @@ export default function TogetherTalkPage() {
       setSpeakerTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // 15초 종료 - 다음 참여자로 자동 전환
-          const nextIndex = currentSpeakerIndex + 1;
+
+          // 15초 종료 - 현재 참여자의 녹음 중지 및 제출
           const latestParticipants = participantsRef.current;
+          const myIndex = latestParticipants.findIndex((p) => p.isMe === true);
+          const isMyTurn = myIndex === currentSpeakerIndex;
+
+          if (isMyTurn) {
+            // 내 차례였으면 녹음 중지 및 제출
+            if (
+              mediaRecorderRef.current &&
+              mediaRecorderRef.current.state !== "inactive"
+            ) {
+              mediaRecorderRef.current.stop();
+              setIsRecording(false);
+              console.log("[Quest] 녹음 중지");
+
+              // 녹음 데이터로 Blob 생성 및 제출
+              setTimeout(async () => {
+                const audioBlob = new Blob(audioChunksRef.current, {
+                  type: "audio/webm",
+                });
+
+                if (audioBlob.size > 0 && quizId) {
+                  const currentUser = latestParticipants[currentSpeakerIndex];
+                  const userId = currentUser?.userId || currentUser?.id;
+
+                  console.log("[Quest] 답변 제출:", { quizId, userId, blobSize: audioBlob.size });
+
+                  try {
+                    const audioFile = new File([audioBlob], "answer.webm", {
+                      type: "audio/webm",
+                    });
+                    await submitQuizAnswer(quizId, userId, audioFile);
+                    console.log("[Quest] 답변 제출 완료 - WebSocket으로 결과 수신 대기");
+                  } catch (error) {
+                    console.error("[Quest] 답변 제출 실패:", error);
+                  }
+                }
+              }, 100);
+            }
+          }
+
+          // 다음 참여자로 자동 전환
+          const nextIndex = currentSpeakerIndex + 1;
           if (nextIndex < latestParticipants.length) {
             console.log(
               `[타이머] 시간 종료 - 다음 참여자: ${latestParticipants[nextIndex]?.name}`,
@@ -1241,7 +1314,7 @@ export default function TogetherTalkPage() {
     return () => {
       clearInterval(timer);
     };
-  }, [questStep, currentSpeakerIndex]);
+  }, [questStep, currentSpeakerIndex, quizId]);
 
   // 퀴즈 답변 제출 (각 참여자가 15초 차례 후 자동 제출)
   const submitParticipantAnswer = useCallback(async (audioBlob, participantUserId) => {
@@ -1438,6 +1511,8 @@ export default function TogetherTalkPage() {
   const showQuest2Intro = questStep === "intro" && activeQuest === 2;
   const showQuest2Game = questStep === "q2game" && activeQuest === 2;
 
+  const showWaitingResult = questStep === "waitingResult" && activeQuest === 1;
+
   const showResultOverlay =
     (questStep === "resultFail" || questStep === "resultSuccess") &&
     (activeQuest === 1 || activeQuest === 2);
@@ -1470,6 +1545,9 @@ export default function TogetherTalkPage() {
                 onDone={handleDone}
                 startTimeMs={timerStartedAt}
               />
+              <div className={styles.TurnIndicator}>
+                {currentTurn} / {roomInfo.turnCount || roomInfo.turnCnt || 3}
+              </div>
             </div>
           </div>
 
@@ -1557,7 +1635,7 @@ export default function TogetherTalkPage() {
 
                   const p = slot.p;
                   const isMe = p.isMe === true;
-                  const participantMicOn = isMe ? micOn : (p.micOn ?? false);
+                  const participantMicOn = isMe ? micOn : (p.micOn ?? true);
                   const participantVoiceLevel = isMe
                     ? voiceLevel
                     : (p.voiceLevel ?? 0);
@@ -1746,6 +1824,21 @@ export default function TogetherTalkPage() {
           open={showQuest2Game}
           duckSrc={duckBombImg}
           onSubmit={handleSubmitQuest2}
+          participants={participants}
+        />
+
+        {/* 평가 대기 중 */}
+        <UnexpectedQuestOverlay
+          open={showWaitingResult}
+          onClose={() => {}} // 평가 중에는 닫을 수 없음
+          duckSrc={duckHappyImg}
+          bubbleText="답변을 평가하고 있어요..."
+          subText="잠시만 기다려 주세요!"
+          subTone="normal"
+          countdownNumber={undefined}
+          clickAnywhere={false}
+          showCloseButton={false}
+          escToClose={false}
         />
 
         {/* 결과 */}

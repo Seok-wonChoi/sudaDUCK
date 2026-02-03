@@ -166,11 +166,6 @@ export default function SentenceCard({
     <div className={`${styles.sentenceCard} ${isActive ? styles.active : ''}`}>
       <div className={styles.header}>
         <div className={styles.speakerInfo}>
-          <div className={styles.speakerIcon}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 10C12.21 10 14 8.21 14 6C14 3.79 12.21 2 10 2C7.79 2 6 3.79 6 6C6 8.21 7.79 10 10 10ZM10 12C7.33 12 2 13.34 2 16V18H18V16C18 13.34 12.67 12 10 12Z" fill="white"/>
-            </svg>
-          </div>
           <span className={styles.speakerName}>{speaker}</span>
         </div>
         <div className={styles.headerRight}>
