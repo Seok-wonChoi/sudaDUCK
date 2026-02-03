@@ -130,6 +130,7 @@ function getDuckProfileInfo(duckCustomJson) {
   };
 }
 
+
 function getUserIdFromToken() {
   try {
     const token = localStorage.getItem("accessToken");
@@ -1278,9 +1279,22 @@ export default function TogetherTalkPage() {
   ========================= */
   const recognitionRef = useRef(null);
 
+  const currentTurnRef = useRef(currentTurn);
+
+  useEffect(() => {
+    currentTurnRef.current = currentTurn;
+  }, [currentTurn]);
+
   // STT 시작
+// STT 시작
   const startSTT = useCallback(() => {
     try {
+      // [수정] 이미 실행 중이면 중단 (중복 생성 방지)
+      if (recognitionRef.current) {
+        console.log("[STT] 이미 실행 중입니다.");
+        return;
+      }
+
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -1297,33 +1311,38 @@ export default function TogetherTalkPage() {
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
-            console.log("[STT] 인식된 텍스트:", transcript);
+            console.log("🎤 [STT 인식됨]:", transcript);
 
-            // ★ STT로 텍스트가 인식되면 정적 감지 카운트 초기화
+            // [수정] Ref에서 최신 턴 번호 가져오기
+            const currentTurnVal = currentTurnRef.current; 
+
+            // 조건 체크
             if (
               roomId &&
               myUserId &&
-              currentTurn &&
+              currentTurnVal && 
               transcript &&
               transcript.trim().length > 0
             ) {
-              recordVoiceActivity(roomId, myUserId, currentTurn).catch((e) => {
+              // 정적 감지 해제 신호 전송
+              recordVoiceActivity(roomId, myUserId, currentTurnVal).catch((e) => {
                 console.error("[STT] 음성 활동 기록 실패:", e);
               });
             }
 
-            // ★ 짧은 텍스트는 백엔드 전처리에서 필터링될 어차피이므로 아예 호출하지 않음
-            // 백엔드 minLength=4, isMeaningful은 단어 2개 이상 필요
-            if (!roomId || !transcript || transcript.trim().length < 4) {
-              console.log("[STT] 텍스트가 짧아서 번역 건너뜀:", transcript);
+            // [수정] 테스트를 위해 글자 수 제한을 4 -> 2로 완화
+            if (!roomId || !transcript || transcript.trim().length < 2) {
+              console.log("[STT] 텍스트가 너무 짧아 번역 건너뜀:", transcript);
               continue;
             }
 
             try {
+              console.log(`🚀 [STT] 번역 요청 (Turn: ${currentTurnVal}):`, transcript);
+              
               const response = await translateToEnglish(
                 roomId,
                 transcript,
-                currentTurn,
+                currentTurnVal, // Ref 값 사용
                 myUserId,
               );
               console.log("[STT] 번역 결과:", response);
@@ -1336,15 +1355,19 @@ export default function TogetherTalkPage() {
 
       recognition.onerror = (event) => {
         console.error("[STT] 오류:", event.error);
+        // 에러 발생 시 재시작 로직이 필요할 수도 있음 (선택 사항)
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            stopSTT();
+        }
       };
 
       recognition.start();
       recognitionRef.current = recognition;
-      console.log("[STT] 음성 인식 시작");
+      console.log("🟢 [STT] 음성 인식 시작됨");
     } catch (error) {
       console.error("[STT] 시작 실패:", error);
     }
-  }, [roomId, currentTurn, myUserId]);
+  }, [roomId, myUserId]); // [중요] currentTurn 제거!
 
   // STT 중지
   const stopSTT = useCallback(() => {
