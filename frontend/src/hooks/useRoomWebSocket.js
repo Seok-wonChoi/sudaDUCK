@@ -372,9 +372,14 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     };
 
     client.onStompError = (frame) => {
-      console.error("[WebSocket] ❌ STOMP 에러:", frame);
+      console.error("[WebSocket] ❌ STOMP 에러 상세:", {
+        command: frame.command,
+        headers: frame.headers,
+        body: frame.body,
+        message: frame.headers?.message || "에러 메시지 없음",
+      });
       setIsConnected(false);
-      handlersRef.current.onError?.("STOMP 인증 에러");
+      handlersRef.current.onError?.(frame.headers?.message || "STOMP 연결 에러");
     };
 
     client.onWebSocketError = (event) => {

@@ -16,7 +16,7 @@ import usersIcon from "@/assets/icons/users_icon.png";
 import styles from "./WaitingRoomPage.module.css";
 // 👇오픈비두 관련 임포트!!
 import { useOpenVidu } from "@/context/OpenViduContext";
-import { createToken } from "@/api/openVidu";
+import { createToken, createSession } from "@/api/openVidu";
 import {
   leaveRoom,
   getRoomLobby,
@@ -558,16 +558,36 @@ export default function WaitingRoomPage() {
 
       try {
         console.log("🚀 [OpenVidu] 토큰 발급 요청 중...");
-        // 2. 백엔드 API로 토큰 발급
-        const token = await createToken(ovSessionId);
-        console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
-        
+
+        let token;
+        try {
+          // 2. 백엔드 API로 토큰 발급
+          token = await createToken(ovSessionId);
+          console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
+        } catch (tokenError) {
+          // 202 에러: 세션이 존재하지 않음 → 세션 재생성 후 재시도
+          if (tokenError?.response?.status === 404 || tokenError?.message?.includes("202") || tokenError?.message?.includes("not found")) {
+            console.warn("⚠️ [OpenVidu] 세션이 존재하지 않아 재생성 중...");
+            try {
+              await createSession(ovSessionId);
+              console.log("✅ [OpenVidu] 세션 재생성 완료, 토큰 재요청 중...");
+              token = await createToken(ovSessionId);
+              console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
+            } catch (retryError) {
+              console.error("❌ [OpenVidu] 세션 재생성 실패:", retryError);
+              throw retryError;
+            }
+          } else {
+            throw tokenError;
+          }
+        }
+
         // 3. 내 닉네임 찾기
         const myNickname = participants.find(p => p.key === myKey)?.nickname || "Guest";
 
         // 4. 오픈비두 연결 (Context 함수)
         await joinSession(token, myNickname);
-        
+
       } catch (e) {
         console.error("❌ [OpenVidu] 연결 실패:", e);
       }

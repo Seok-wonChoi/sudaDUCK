@@ -1354,11 +1354,32 @@ export default function TogetherTalkPage() {
       };
 
       recognition.onerror = (event) => {
-        console.error("[STT] 오류:", event.error);
-        // 에러 발생 시 재시작 로직이 필요할 수도 있음 (선택 사항)
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            stopSTT();
+        // no-speech: 음성 감지 안됨 (정상, 무시)
+        if (event.error === 'no-speech') {
+          console.log("[STT] 💤 음성이 감지되지 않음 (정상, 계속 대기 중)");
+          return;
         }
+
+        // aborted: 의도적 중지 (정상)
+        if (event.error === 'aborted') {
+          console.log("[STT] 🛑 음성 인식 중지됨");
+          return;
+        }
+
+        // not-allowed: 마이크 권한 거부
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          console.error("[STT] ❌ 마이크 권한 거부!");
+          alert("🎤 마이크 권한을 허용해주세요.\n\n브라우저 설정 > 개인정보 보호 > 마이크에서 권한을 허용하세요.");
+          // 권한 거부 시 recognition 정리
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+          }
+          return;
+        }
+
+        // 기타 에러: 로그만 출력
+        console.error("[STT] ⚠️ 에러:", event.error);
       };
 
       recognition.start();
@@ -1368,7 +1389,7 @@ export default function TogetherTalkPage() {
       console.error("[STT] 시작 실패:", error);
     }
   }, [roomId, myUserId]); // [중요] currentTurn 제거!
-
+  
   // STT 중지
   const stopSTT = useCallback(() => {
     if (recognitionRef.current) {
