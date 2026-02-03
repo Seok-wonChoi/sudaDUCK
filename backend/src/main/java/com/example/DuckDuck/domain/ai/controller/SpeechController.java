@@ -26,7 +26,7 @@ public class SpeechController {
 
     private final AzureSpeechService azureSpeechService;
     private final SpeechExceptionHandler exceptionHandler;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final JwtTokenProvider jwtTokenProvider;
 
     private final int timeoutSeconds = 15;
@@ -89,7 +89,7 @@ public class SpeechController {
 
                     // 2. [추가] 유저별 개별 점수 저장용 Hash (누적 기록)
                     String userScoreKey = detailKey + ":scores";
-                    redisTemplate.opsForHash().put(userScoreKey, userId.toString(), score.toString());
+                    redisTemplate.opsForHash().put(userScoreKey, String.valueOf(userId), String.valueOf(score));
                     redisTemplate.expire(userScoreKey, 120, TimeUnit.MINUTES); // 스크립트와 동일한 TTL 설정
 
 
