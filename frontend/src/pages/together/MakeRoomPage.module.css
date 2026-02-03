@@ -55,6 +55,7 @@
 
 .Title {
   margin: clamp(6px, 0.8vw, 8px) 0 0;
+  padding: 0 clamp(16px, 2.5vw, 34px);
   font-size: clamp(24px, 3vw, 30px);
   font-weight: 900;
   letter-spacing: -0.4px;
@@ -113,6 +114,7 @@
   border: 1px solid rgba(229, 231, 235, 1);
   background: rgba(243, 244, 246, 0.7);
   padding: 0 14px;
+  box-sizing: border-box;
 
   font-size: 13px;
   font-weight: 800;

@@ -350,8 +350,9 @@ export default function TogetherTalkPage() {
           if (resolvedRoomCode) {
             sessionStorage.setItem(
               `timer_started_${resolvedRoomCode}`,
-              String(serverTime),
-          );
+              String(serverTime)
+            );
+          }
         }
       }
 
