@@ -74,8 +74,8 @@ const DUMMY_CONVERSATIONS = {
 export default function RecordingPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  // 👇 OpenVidu Publisher, Subscribers 가져오기
-  const { publisher, subscribers } = useOpenVidu(); 
+  // 👇 OpenVidu Publisher, Subscribers, leaveSession 가져오기
+  const { publisher, subscribers, leaveSession } = useOpenVidu(); 
 
   const roomInfo = state?.roomInfo || {};
   const myUserId = state?.myUserId; // 본인 userId
@@ -329,11 +329,14 @@ export default function RecordingPage() {
 
   const handleRoomClosed = useCallback(() => {
     console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
+    // 👇 강제 퇴장 시에도 세션 종료
+    if (leaveSession) leaveSession();
+    
     navigate("/main", {
       replace: true,
       state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
-  }, [navigate]);
+  }, [navigate, leaveSession]);
 
   useRoomWebSocket(
     roomCode,
@@ -344,6 +347,9 @@ export default function RecordingPage() {
   );
 
   const handleLogoExit = useCallback(async () => {
+    // 👇 진짜 방을 나갈 때는 세션 종료
+    if (leaveSession) leaveSession();
+
     if (roomCode) {
       try {
         await leaveRoom({ roomCode });
@@ -352,7 +358,7 @@ export default function RecordingPage() {
         console.error("[RecordingPage] 방 퇴장 실패:", e);
       }
     }
-  }, [roomCode]);
+  }, [roomCode, leaveSession]);
 
   // --- Effect 로직 ---
 

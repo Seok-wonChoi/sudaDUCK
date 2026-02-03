@@ -193,6 +193,9 @@ export default function WaitingRoomPage() {
   // 👇 오픈비두우우우 Context에서 함수 꺼내오기
   const { joinSession, leaveSession, isConnected: isOvConnected, subscribers, publisher } = useOpenVidu();
   
+  // 👇 게임 시작 등으로 페이지 이동 시에는 세션을 끊지 않도록 플래그 설정
+  const isTransitioningRef = useRef(false);
+
   // 👇  오픈비듀우우우 브라우저 뒤로가기/새로고침 시 연결 끊기
   useEffect(() => {
       const handleBeforeUnload = () => leaveSession();
@@ -200,7 +203,13 @@ export default function WaitingRoomPage() {
 
       return () => {
           window.removeEventListener('beforeunload', handleBeforeUnload);
-          if (isOvConnected) leaveSession(); // 컴포넌트 죽을 때 끊기
+          // 게임 시작으로 이동하는 경우(isTransitioningRef.current === true)에는 끊지 않음!
+          if (isOvConnected && !isTransitioningRef.current) {
+             console.log("👋 [WaitingRoom] 대기실 퇴장 -> 세션 종료");
+             leaveSession(); 
+          } else {
+             console.log("🚀 [WaitingRoom] 게임 시작 -> 세션 유지하며 이동");
+          }
       };
   }, [leaveSession, isOvConnected]);
 
@@ -832,6 +841,9 @@ export default function WaitingRoomPage() {
     (payloadOrData) => {
       if (hasNavigatedRef.current) return;
       hasNavigatedRef.current = true;
+      
+      // 👇 게임 화면으로 이동하므로 세션 유지 플래그 ON
+      isTransitioningRef.current = true;
 
       navigate("/together/talk", {
         replace: true,

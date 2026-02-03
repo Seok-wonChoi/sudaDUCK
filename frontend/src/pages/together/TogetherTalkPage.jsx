@@ -165,7 +165,7 @@ function getUserIdFromToken() {
 export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { publisher, subscribers } = useOpenVidu(); // 👈 Publisher, Subscribers 가져오기
+  const { publisher, subscribers, leaveSession } = useOpenVidu(); // 👈 leaveSession 추가
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
@@ -771,6 +771,9 @@ export default function TogetherTalkPage() {
 
   const doLeaveRoom = useCallback(async () => {
     await stopAudioAnalysis();
+    
+    // 👇 진짜 방을 나갈 때는 세션 종료
+    if (leaveSession) leaveSession();
 
     if (resolvedRoomCode) {
       try {
@@ -779,7 +782,7 @@ export default function TogetherTalkPage() {
         console.error("방 퇴장 API 호출 실패:", e);
       }
     }
-  }, [stopMediaProcessing, resolvedRoomCode]);
+  }, [stopMediaProcessing, resolvedRoomCode, leaveSession]);
 
 
   // ★ handleEnd: sendEndRoom(WS) 대신 endRoom REST API 호출
