@@ -17,7 +17,7 @@ public class SessionService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final JwtTokenProvider jwtTokenProvider;
 
-    public List<ScriptResponse> getScriptsByTurn(String email, Long roomId, Integer turnNo){
+    public List<ScriptResponse> getScriptsByTurn(Long userId, Long roomId, Integer turnNo){
 
         // 해당 방의 맴버 정보를 먼저 가져옴
         String memberKey = "room:" + roomId + ":member";
