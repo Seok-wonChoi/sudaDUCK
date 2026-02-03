@@ -66,10 +66,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (memberOptional.isPresent()) {
             // ===== 기존 회원 =====
             Member member = memberOptional.get();
-            member.setName(name);
-            member.setNickname(nickname);
-            member.setProfileImageUrl(imageUrl);
+
             member.setUpdatedAt(LocalDateTime.now());
+            member.setProfileImageUrl(imageUrl);
 
             Profile profile = member.getProfile();
 

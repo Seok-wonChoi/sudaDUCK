@@ -49,6 +49,9 @@ public class SessionController {
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long roomId,
             @PathVariable Integer turnNo) {
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenProvider.getUserId(token);
+
 
         String token = authHeader.substring(7);
         Long userId = jwtTokenProvider.getUserId(token);
