@@ -170,6 +170,8 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               onRoomEnded,
               onSilenceDetected,
               onTimerSync,
+              onQuizReceived,
+              onQuizResultReceived,
               onError,
             } = handlersRef.current;
 
@@ -271,6 +273,24 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                 onTimerSync?.(payload);
                 break;
 
+              case "QUIZ_START":
+              case "QUIZ_STARTED":
+                console.log("[WebSocket] QUIZ_START 수신:", {
+                  payload,
+                  type,
+                });
+                onQuizReceived?.(payload);
+                break;
+
+              case "QUIZ_RESULT":
+              case "QUIZ_COMPLETED":
+                console.log("[WebSocket] QUIZ_RESULT 수신:", {
+                  payload,
+                  type,
+                });
+                onQuizResultReceived?.(payload);
+                break;
+
               case "ERROR":
                 onError?.(payload);
                 break;
@@ -312,6 +332,40 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
           // 핸들러는 있는데 roomId가 없는 경우에만 경고 출력
           console.warn("[WebSocket] ⚠️ roomId가 없어서 정적감지 구독 불가");
         }
+      }
+
+      // ★ 퀴즈 구독 추가
+      if (roomId) {
+        console.log(`[WebSocket] 🎯 퀴즈 구독 시작: /topic/room/${roomId}/quiz`);
+
+        // 퀴즈 문제 수신
+        const quizSubRef = client.subscribe(
+          `/topic/room/${roomId}/quiz`,
+          (message) => {
+            try {
+              const data = JSON.parse(message.body);
+              console.log("[WebSocket] ✅ QUIZ 수신:", data);
+              handlersRef.current.onQuizReceived?.(data);
+            } catch (e) {
+              console.error("Quiz Msg Parsing Error", e);
+            }
+          }
+        );
+        console.log("[WebSocket] ✅ 퀴즈 구독 완료");
+
+        // 퀴즈 결과 수신
+        const quizResultSubRef = client.subscribe(
+          `/topic/room/${roomId}/quiz-result`,
+          (message) => {
+            try {
+              const data = JSON.parse(message.body);
+              console.log("[WebSocket] ✅ QUIZ_RESULT 수신:", data);
+              handlersRef.current.onQuizResultReceived?.(data);
+            } catch (e) {
+              console.error("Quiz Result Msg Parsing Error", e);
+            }
+          }
+        );
       }
 
       handlersRef.current.onConnected?.();
