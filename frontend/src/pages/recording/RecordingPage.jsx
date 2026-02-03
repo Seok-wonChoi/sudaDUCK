@@ -799,11 +799,16 @@ export default function RecordingPage() {
           averageScore: result.averageScore,
         };
       });
+      console.log("🔍 [RecordingPage] resultsMap:", resultsMap); // ← 이 줄 추가!
     }
 
     return currentTurnSentences.map((s, i) => {
       const resultData = resultsMap[s.scriptId];
       const finalScore = resultData?.score ?? sentenceScores[s.id];
+
+      console.log(
+        `🔍 [Card ${i}] scriptId:${s.scriptId}, score:${finalScore}, averageScore:${resultData?.averageScore}`,
+      );
 
       return {
         ...s,
