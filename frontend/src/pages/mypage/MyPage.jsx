@@ -167,7 +167,18 @@ export default function MyPage() {
 
   const initialProfile = getInitialProfile();
 
-  const [nickname, setNickname] = useState("영어 마스터");
+  // localStorage에서 닉네임 읽어오기 (초기 렌더링 플래시 방지)
+  const getInitialNickname = () => {
+    try {
+      const savedNickname = localStorage.getItem('userNickname');
+      return savedNickname || "영어 마스터";
+    } catch (e) {
+      console.error("localStorage 닉네임 읽기 실패:", e);
+      return "영어 마스터";
+    }
+  };
+
+  const [nickname, setNickname] = useState(getInitialNickname());
   const [nicknameStyle, setNicknameStyle] = useState({
     background: "gradient",
     effect: "none",
@@ -257,7 +268,12 @@ export default function MyPage() {
         // 3. 프로필 정보 조회
         const profileData = await getMyProfileCustom();
 
-        if (profileData.nickname) setNickname(profileData.nickname);
+        if (profileData.nickname) {
+          setNickname(profileData.nickname);
+          // localStorage에 닉네임 저장 (다른 페이지에서 사용)
+          localStorage.setItem('userNickname', profileData.nickname);
+          window.dispatchEvent(new Event('nicknameUpdated'));
+        }
         if (profileData.coins !== undefined) setCoins(profileData.coins);
         if (profileData.totalTime !== undefined) setTotalPlaytime(profileData.totalTime);
         if (profileData.attendanceDays !== undefined) setConsecutiveDays(profileData.attendanceDays);
@@ -367,7 +383,12 @@ export default function MyPage() {
         console.log('닉네임 변경 시도:', newNickname);
         const response = await updateNickname({ nickname: newNickname });
         console.log('닉네임 변경 응답:', response);
-        if (response?.nickname) setNickname(response.nickname);
+        if (response?.nickname) {
+          setNickname(response.nickname);
+          // localStorage에 닉네임 저장 (다른 페이지에서 사용)
+          localStorage.setItem('userNickname', response.nickname);
+          window.dispatchEvent(new Event('nicknameUpdated'));
+        }
       }
 
       // 스타일 변경

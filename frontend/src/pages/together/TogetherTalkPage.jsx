@@ -310,6 +310,7 @@ export default function TogetherTalkPage() {
 
   //participants를 추적하는 ref 생성
   const participantsRef = useRef(participants);
+  const timerSyncedRef = useRef(false); // 타이머 동기화 여부 추적
 
   //participants가 변할 때마다 ref 업데이트
   useEffect(() => {
@@ -331,22 +332,27 @@ export default function TogetherTalkPage() {
       if (data?.topic) setTopic(data.topic);
       if (data?.roomId) setRoomId(data.roomId);
 
-      // 타이머 시작 시간 설정 (서버 값으로 한 번만 동기화)
-      if (data?.timerStartedAt != null && !timerSyncedRef.current) {
+      // 타이머 시작 시간 설정 (서버 값으로 동기화)
+      if (data?.timerStartedAt != null) {
         const serverTime = Number(data.timerStartedAt);
-        console.log(
-          "[TogetherTalkPage] 서버로부터 타이머 시작 시간 설정:",
-          serverTime,
-        );
-        setTimerStartedAt(serverTime);
-        timerSyncedRef.current = true;
 
-        // sessionStorage에도 저장 (새로고침 시 참고용)
-        if (resolvedRoomCode) {
-          sessionStorage.setItem(
-            `timer_started_${resolvedRoomCode}`,
-            String(serverTime),
+        // 새로고침 시에도 서버 타이머와 동기화
+        if (!timerSyncedRef.current || timerStartedAt !== serverTime) {
+          console.log(
+            "[TogetherTalkPage] 서버로부터 타이머 시작 시간 동기화:",
+            serverTime,
+            "(새로고침 시에도 동기화)"
           );
+          setTimerStartedAt(serverTime);
+          timerSyncedRef.current = true;
+
+          // sessionStorage에도 저장 (새로고침 시 참고용)
+          if (resolvedRoomCode) {
+            sessionStorage.setItem(
+              `timer_started_${resolvedRoomCode}`,
+              String(serverTime)
+            );
+          }
         }
       }
 
@@ -384,6 +390,18 @@ export default function TogetherTalkPage() {
     }
   }, [resolvedRoomCode, myUserId]);
 
+  // 페이지 로드/새로고침 시 타이머 동기화를 위해 ref 초기화
+  useEffect(() => {
+    // 타이머가 sessionStorage에 없으면 동기화 필요
+    if (resolvedRoomCode) {
+      const saved = sessionStorage.getItem(`timer_started_${resolvedRoomCode}`);
+      if (!saved) {
+        timerSyncedRef.current = false;
+        console.log("[TogetherTalkPage] 타이머 동기화 필요 - ref 초기화");
+      }
+    }
+  }, [resolvedRoomCode]);
+
   useEffect(() => {
     syncLobby();
   }, [syncLobby]);
@@ -406,6 +424,7 @@ export default function TogetherTalkPage() {
   // 퀘스트 관련 상태 (WebSocket 핸들러에서 사용하므로 핸들러보다 먼저 선언)
   const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | null
   const [questStep, setQuestStep] = useState("idle");
+  const [questContinueReady, setQuestContinueReady] = useState({}); // userId -> boolean (돌발 퀘스트 결과 확인 후 이어하기 준비 상태)
   const [quizId, setQuizId] = useState(null);
   const [quizQuestion, setQuizQuestion] = useState(
     "AI가 질문을 생성하고 있습니다...", // WebSocket으로 AI 생성 질문 수신 대기 중
@@ -481,21 +500,26 @@ export default function TogetherTalkPage() {
 
   const handleTimerSync = useCallback(
     (payload) => {
-      if (payload?.startTimeMs != null && !timerSyncedRef.current) {
+      if (payload?.startTimeMs != null) {
         const startTime = Number(payload.startTimeMs);
-        console.log(
-          "[TogetherTalkPage] 웹소켓으로 타이머 시작 시간 설정 (처음 1번만):",
-          startTime,
-        );
-        setTimerStartedAt(startTime);
-        timerSyncedRef.current = true;
 
-        // sessionStorage에도 저장 (새로고침 시 참고용)
-        if (resolvedRoomCode) {
-          sessionStorage.setItem(
-            `timer_started_${resolvedRoomCode}`,
-            String(startTime),
+        // 새로고침 시에도 WebSocket 타이머와 동기화
+        if (!timerSyncedRef.current || timerStartedAt !== startTime) {
+          console.log(
+            "[TogetherTalkPage] 웹소켓으로 타이머 시작 시간 동기화:",
+            startTime,
+            "(새로고침 시에도 동기화)"
           );
+          setTimerStartedAt(startTime);
+          timerSyncedRef.current = true;
+
+          // sessionStorage에도 저장 (새로고침 시 참고용)
+          if (resolvedRoomCode) {
+            sessionStorage.setItem(
+              `timer_started_${resolvedRoomCode}`,
+              String(startTime),
+            );
+          }
         }
       }
     },
@@ -620,8 +644,57 @@ export default function TogetherTalkPage() {
     }
   }, []);
 
+  // WebSocket 돌발 퀘스트 수신 핸들러 (모든 참여자가 동시에 시작)
+  const handleUnexpectedQuestReceived = useCallback((payload) => {
+    console.log("[UnexpectedQuest] ✅ 돌발 퀘스트 수신:", payload);
+
+    const questId = payload?.questId || payload?.id || 1;
+    const questType = payload?.type;
+
+    console.log("[UnexpectedQuest] 퀘스트 시작:", { questId, questType });
+
+    // 퀘스트가 이미 진행 중이면 무시
+    if (questStep !== "idle") {
+      console.log("[UnexpectedQuest] ⚠️ 이미 퀘스트 진행 중, 무시");
+      return;
+    }
+
+    // startQuest는 아래에서 정의되므로, 직접 로직을 여기에 구현하거나
+    // ref를 사용해야 합니다. 여기서는 payload로 받은 정보로 직접 시작
+    setMicStateBeforeQuest(micOn);
+    setAiSuggestion("");
+
+    // 정적 감지 중지
+    if (roomId) {
+      stopSilenceMonitoring(roomId)
+        .then(() => console.log("[UnexpectedQuest] 정적 감지 중지"))
+        .catch((e) => console.error("[UnexpectedQuest] 정적 감지 중지 실패:", e));
+    }
+
+    setActiveQuest(questId);
+    setIsRoomTimerRunning(false);
+
+    if (questId === 1) {
+      setQuestStep("q1intro");
+    } else if (questId === 2) {
+      setQuestStep("intro");
+    }
+  }, [questStep, micOn, roomId]);
+
+  // WebSocket 돌발 퀘스트 이어하기 준비 상태 변경 핸들러
+  const handleQuestContinueReady = useCallback((payload, senderKey) => {
+    console.log("[Quest] 이어하기 준비 상태 변경:", { payload, senderKey });
+
+    const ready = payload?.ready ?? false;
+
+    setQuestContinueReady((prev) => ({
+      ...prev,
+      [senderKey]: ready,
+    }));
+  }, []);
+
   // ★ useRoomWebSocket에 roomId 전달 (정적감지 구독용)
-  const { sendEndRoom, sendVoiceLevel, sendMic, isConnected } =
+  const { sendEndRoom, sendVoiceLevel, sendMic, sendUnexpectedQuest, sendQuestContinueReady, isConnected } =
     useRoomWebSocket(
       resolvedRoomCode,
       {
@@ -635,6 +708,8 @@ export default function TogetherTalkPage() {
         onTimerSync: handleTimerSync, // 웹소켓으로 타이머 동기화 (처음 1번만)
         onQuizReceived: handleQuizReceived, // 퀴즈 수신
         onQuizResultReceived: handleQuizResultReceived, // 퀴즈 결과 수신
+        onUnexpectedQuestReceived: handleUnexpectedQuestReceived, // 돌발 퀘스트 수신
+        onQuestContinueReady: handleQuestContinueReady, // 돌발 퀘스트 이어하기 준비 상태
         onConnected: () => console.log("WebSocket 연결됨 (TogetherTalkPage)"),
         onDisconnected: () =>
           console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
@@ -965,6 +1040,7 @@ export default function TogetherTalkPage() {
     setRecordedAudio(null);
     setCurrentSpeakerIndex(-1);
     setSpeakerTimeLeft(15);
+    setQuestContinueReady({}); // 이어하기 준비 상태 초기화
     if (
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state !== "inactive"
@@ -1054,6 +1130,21 @@ export default function TogetherTalkPage() {
     }
   }, [questStep, activeQuest, endQuestAndResume]);
 
+  // 돌발 퀘스트 결과 확인 후 이어하기 버튼 클릭
+  const handleQuestContinue = useCallback(() => {
+    console.log("[Quest] 이어하기 버튼 클릭");
+    sendQuestContinueReady(true);
+
+    // 로컬 상태도 즉시 업데이트 (자신의 ready 상태)
+    const myParticipant = participants.find((p) => p.isMe === true);
+    if (myParticipant?.userId) {
+      setQuestContinueReady((prev) => ({
+        ...prev,
+        [myParticipant.userId]: true,
+      }));
+    }
+  }, [sendQuestContinueReady, participants]);
+
   // 퀘스트 1: 인트로 화면 자동 진행 (3초 후 다음 단계)
   useEffect(() => {
     if (questStep !== "q1intro" || activeQuest !== 1) return;
@@ -1096,6 +1187,32 @@ export default function TogetherTalkPage() {
 
     return () => clearTimeout(timer);
   }, [questStep, activeQuest]);
+
+  // 퀘스트 2: 인트로 화면 자동 진행 (3초 후 게임 시작)
+  useEffect(() => {
+    if (questStep !== "intro" || activeQuest !== 2) return;
+
+    const timer = setTimeout(() => {
+      setQuestStep("q2game");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [questStep, activeQuest]);
+
+  // 돌발 퀘스트 결과: 모두가 이어하기 준비되면 퀘스트 종료
+  useEffect(() => {
+    if (questStep !== "resultFail" && questStep !== "resultSuccess") return;
+
+    // 모든 참여자가 준비됐는지 확인
+    const allReady = participants.every((p) => {
+      return questContinueReady[p.userId] === true;
+    });
+
+    if (allReady && participants.length > 0) {
+      console.log("[Quest] 모든 참여자가 이어하기 준비 완료, 퀘스트 종료");
+      endQuestAndResume();
+    }
+  }, [questStep, questContinueReady, participants, endQuestAndResume]);
 
   // 퀘스트 1: answering 화면 표시 후 즉시 첫 번째 참여자 차례 시작
   useEffect(() => {
@@ -1567,22 +1684,6 @@ export default function TogetherTalkPage() {
             </div>
           </div>
 
-          {/* 돌발퀘스트 수동 시작 버튼 */}
-          <div className={styles.QuestTestButtons}>
-            <button
-              className={styles.QuestTestButton}
-              onClick={() => {
-                console.log("[수동] 돌발퀘스트 1 시작");
-                setIsRoomTimerRunning(false); // 메인 타이머 정지
-                setActiveQuest(1);
-                setQuestStep("q1intro");
-              }}
-              disabled={questRunning}
-            >
-              퀘스트 1
-            </button>
-          </div>
-
           <div className={styles.Stage}>
             <div className={styles.LeftStage}>
 
@@ -1792,7 +1893,7 @@ export default function TogetherTalkPage() {
           subTone="danger"
           countdownNumber={undefined}
           speechBubbleType={2}
-          clickAnywhere
+          clickAnywhere={false}
           showCloseButton={false}
           escToClose={false}
         />
@@ -1838,7 +1939,7 @@ export default function TogetherTalkPage() {
           subTone="normal"
           countdownNumber={undefined}
           speechBubbleType={2}
-          clickAnywhere
+          clickAnywhere={false}
           showCloseButton={false}
           escToClose={false}
         />
@@ -1866,19 +1967,56 @@ export default function TogetherTalkPage() {
           </div>
         )}
 
-        {/* 결과 */}
-        <UnexpectedQuestOverlay
-          open={showResultOverlay}
-          onClose={handleOverlayClickNext}
-          duckSrc={resultDuckSrc}
-          bubbleText={resultBubbleText}
-          subText={null}
-          subTone="normal"
-          countdownNumber={undefined}
-          clickAnywhere
-          showCloseButton={false}
-          escToClose={false}
-        />
+        {/* 결과 - 이어하기 버튼 포함 */}
+        {showResultOverlay && (
+          <div className={styles.QuestResultOverlay}>
+            <div className={styles.QuestResultContent}>
+              <div className={styles.QuestResultBubbleWrap}>
+                <img
+                  src={resultDuckSrc}
+                  alt="결과 오리"
+                  className={styles.QuestResultDuck}
+                />
+                <div className={styles.QuestResultBubble}>
+                  <div className={styles.QuestResultText}>{resultBubbleText}</div>
+                </div>
+              </div>
+
+              <div className={styles.QuestResultButtonArea}>
+                {participants.map((p) => {
+                  const isMe = p.isMe === true;
+                  const isReady = questContinueReady[p.userId] === true;
+                  return (
+                    <div key={p.userId} className={styles.QuestResultParticipant}>
+                      <span className={styles.QuestResultParticipantName}>
+                        {p.name || "참여자"}
+                      </span>
+                      <span className={`${styles.QuestResultParticipantStatus} ${isReady ? styles.Ready : ""}`}>
+                        {isReady ? "✓ 준비 완료" : "대기 중..."}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                <button
+                  className={styles.QuestContinueButton}
+                  onClick={handleQuestContinue}
+                  disabled={
+                    questContinueReady[
+                      participants.find((p) => p.isMe === true)?.userId
+                    ] === true
+                  }
+                >
+                  {questContinueReady[
+                    participants.find((p) => p.isMe === true)?.userId
+                  ] === true
+                    ? "준비 완료!"
+                    : "이어하기"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
