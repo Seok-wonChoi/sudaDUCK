@@ -7,9 +7,7 @@ export const API_BASE_URL = rawBaseUrl.trim().replace(/\/$/, "");
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // ✅ 기본 Content-Type 제거 (FormData 처리를 위해)
   withCredentials: true,
 });
 
@@ -41,6 +39,12 @@ function setAuthHeader(config, token) {
 api.interceptors.request.use(
   async (config) => {
     let token = localStorage.getItem("accessToken");
+
+    // ✅ FormData가 아닌 경우에만 Content-Type 설정
+    if (!(config.data instanceof FormData)) {
+      config.headers = config.headers || {};
+      config.headers["Content-Type"] = "application/json";
+    }
 
     if (!token) {
       console.warn("[API] accessToken이 없습니다. 로그인이 필요합니다.");
@@ -137,11 +141,11 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // ✅ FormData는 재시도 불가 (사용자에게 안내)
+      // ✅ FormData는 재시도 불가 (그냥 실패로 처리)
       if (originalRequest.data instanceof FormData) {
-        console.error("[API] ❌ FormData 재시도 불가 - 다시 녹음해주세요");
-        alert("인증이 만료되었습니다.\n다시 녹음해주세요.");
-        return Promise.reject(new Error("FormData 재시도 불가"));
+        console.warn("[API] FormData 401 에러 - 재시도 불가");
+        // 백엔드가 처리 중일 수 있으므로 alert 제거
+        return Promise.reject(error);
       }
 
       originalRequest._retry = true;
