@@ -17,6 +17,18 @@ const api = axios.create({
 function setAuthHeader(config, token) {
   if (!token) return config;
 
+  // ✅ 수정: 기존 Authorization 헤더 명시적으로 삭제
+  if (config.headers) {
+    // axios v1의 AxiosHeaders 타입 체크
+    if (typeof config.headers.delete === "function") {
+      config.headers.delete("Authorization");
+      config.headers.delete("authorization");
+    } else {
+      delete config.headers.Authorization;
+      delete config.headers.authorization;
+    }
+  }
+
   // axios v1에서 headers가 AxiosHeaders인 경우 set이 가장 안전
   if (config.headers && typeof config.headers.set === "function") {
     config.headers.set("Authorization", `Bearer ${token}`);
@@ -112,9 +124,25 @@ api.interceptors.response.use(
 
         const newAccessToken = await refreshPromise;
 
-        // 새 토큰으로 원래 요청 재시도 (헤더 확실히 세팅)
+        // ✅ 수정: 새 토큰으로 원래 요청 재시도 (기존 헤더 완전히 제거 후 세팅)
         console.log("[API] 새 토큰으로 재시도:", originalRequest.url);
+        console.log("[API] 새 토큰 길이:", newAccessToken.length);
+        
+        // 기존 헤더 완전 삭제
+        if (originalRequest.headers) {
+          if (typeof originalRequest.headers.delete === "function") {
+            originalRequest.headers.delete("Authorization");
+            originalRequest.headers.delete("authorization");
+          } else {
+            delete originalRequest.headers.Authorization;
+            delete originalRequest.headers.authorization;
+          }
+        }
+        
+        // 새 토큰으로 헤더 설정
         setAuthHeader(originalRequest, newAccessToken);
+        
+        console.log("[API] 재시도 헤더 설정 완료");
         return api(originalRequest);
       } catch (refreshErr) {
         console.error("[API] 토큰 재발급 실패. 로그인 페이지로 이동합니다.", refreshErr);
