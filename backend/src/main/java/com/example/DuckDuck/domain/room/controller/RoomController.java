@@ -13,9 +13,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,7 +38,7 @@ public class RoomController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
     @PostMapping
-    public ResponseEntity<RoomCreateResponse> createRoom(
+    public ResponseEntity<?> createRoom(
             @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody RoomCreateRequest request
     ) {
@@ -43,11 +46,23 @@ public class RoomController {
             return ResponseEntity.status(401).build();
         }
 
-        // JwtAuthenticationFilter에서 principal=email로 넣어둔 상태
         String email = (String) authentication.getPrincipal();
 
-        RoomCreateResponse response = roomService.createRoomByEmail(email, request);
-        return ResponseEntity.ok(response);
+        try {
+            // 서비스 내부에서 validateText()가 실행되며 욕설 시 IllegalArgumentException 발생
+            RoomCreateResponse response = roomService.createRoomByEmail(email, request);
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            // 서비스에서 적어준 "방 주제에 부적절한 표현이..." 메시지가 e.getMessage()에 담김
+            // 이를 그대로 프론트에 400 에러와 함께 반환
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "status", 400,
+                            "error", "Bad Request",
+                            "message", e.getMessage() // <- 이 부분이 핵심!
+                    ));
+        }
     }
 
     // 방 참가(코드 입력)

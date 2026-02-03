@@ -1,5 +1,6 @@
 package com.example.DuckDuck.domain.ai.controller;
 
+import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.example.DuckDuck.domain.ai.service.AzureSpeechService;
@@ -25,7 +26,8 @@ public class SpeechController {
 
     private final AzureSpeechService azureSpeechService;
     private final SpeechExceptionHandler exceptionHandler;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final JwtTokenProvider jwtTokenProvider;
 
     private final int timeoutSeconds = 15;
     private static final long TTL_MINUTES = 120;
@@ -42,12 +44,16 @@ public class SpeechController {
      */
     @PostMapping("/assessment")
     public CompletableFuture<ResponseEntity<Map<String, String>>> assessPronunciation(
+            @RequestHeader("Authorization") String authHeader,
             @RequestParam("audio") MultipartFile audioFile,
             @RequestParam("roomId") Long roomId,
             @RequestParam("turnNo") Long turnNo,
             @RequestParam("scriptId") String scriptId) throws IOException {
 
         log.info("발음 평가 요청 - room:{}, turn:{}, script:{}", roomId, turnNo, scriptId);
+
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenProvider.getUserId(token);
 
         // 1. 파라미터 검증
         if (audioFile.isEmpty()) {
@@ -81,8 +87,15 @@ public class SpeechController {
                     log.info("✅ 발음 평가 완료 - room:{}, turn:{}, script:{}, score: {}",
                             roomId, turnNo, scriptId, score);
 
+                    // 2. [추가] 유저별 개별 점수 저장용 Hash (누적 기록)
+                    String userScoreKey = detailKey + ":scores";
+                    redisTemplate.opsForHash().put(userScoreKey, String.valueOf(userId), String.valueOf(score));
+                    redisTemplate.expire(userScoreKey, 120, TimeUnit.MINUTES); // 스크립트와 동일한 TTL 설정
+
+
                     // 5. 성공 응답
-                    return ResponseEntity.ok(Map.of("message", "평가 완료"));
+                    return ResponseEntity.ok(Map.of("message", "평가 완료",
+                            "score", String.valueOf(score)));
                 })
                 .exceptionally(ex -> exceptionHandler.handle(ex, scriptId));
     }

@@ -29,7 +29,12 @@ public class RoomLobbyResponse {
     public static class ParticipantInfo {
         private Long userId;
         private String nickname;
-        private String profileImageUrl;
+
+        // 커스텀
+        private String avatarCustomJson;
+        private String duckCustomJson;
+        private String aiDuckbotCustomJson;
+
         private Boolean isHost;
         private String readyStatus; // READY / NOT_READY
     }

@@ -167,7 +167,18 @@ export default function MyPage() {
 
   const initialProfile = getInitialProfile();
 
-  const [nickname, setNickname] = useState("영어 마스터");
+  // localStorage에서 닉네임 읽어오기 (초기 렌더링 플래시 방지)
+  const getInitialNickname = () => {
+    try {
+      const savedNickname = localStorage.getItem('userNickname');
+      return savedNickname || "영어 마스터";
+    } catch (e) {
+      console.error("localStorage 닉네임 읽기 실패:", e);
+      return "영어 마스터";
+    }
+  };
+
+  const [nickname, setNickname] = useState(getInitialNickname());
   const [nicknameStyle, setNicknameStyle] = useState({
     background: "gradient",
     effect: "none",
@@ -178,6 +189,10 @@ export default function MyPage() {
     accessory: initialProfile.accessory,
   });
   const [duckBotId, setDuckBotId] = useState("cyan");
+
+  // 통계 데이터
+  const [totalPlaytime, setTotalPlaytime] = useState(0); // 총 플레이 타임 (초)
+  const [consecutiveDays, setConsecutiveDays] = useState(0); // 연속 학습 일수
 
   // 코인 시스템
   const [coins, setCoins] = useState(200); // 초기 코인 (테스트용 200코인)
@@ -253,8 +268,15 @@ export default function MyPage() {
         // 3. 프로필 정보 조회
         const profileData = await getMyProfileCustom();
 
-        if (profileData.nickname) setNickname(profileData.nickname);
+        if (profileData.nickname) {
+          setNickname(profileData.nickname);
+          // localStorage에 닉네임 저장 (다른 페이지에서 사용)
+          localStorage.setItem('userNickname', profileData.nickname);
+          window.dispatchEvent(new Event('nicknameUpdated'));
+        }
         if (profileData.coins !== undefined) setCoins(profileData.coins);
+        if (profileData.totalTime !== undefined) setTotalPlaytime(profileData.totalTime);
+        if (profileData.attendanceDays !== undefined) setConsecutiveDays(profileData.attendanceDays);
 
         // JSON 문자열 파싱
         if (profileData.duckCustomJson) {
@@ -328,9 +350,19 @@ export default function MyPage() {
     fetchMyScripts();
   }, []);
 
+  // 총 플레이 타임을 "시간:분" 형식으로 변환
+  const formatPlaytime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}시간 ${minutes}분`;
+    }
+    return `${minutes}분`;
+  };
+
   const stats = [
-    { value: 0, label: "총 플레이 타임", unit: "" },
-    { value: 0, label: "연속 학습", unit: "일" },
+    { value: formatPlaytime(totalPlaytime), label: "총 플레이 타임", unit: "" },
+    { value: consecutiveDays, label: "연속 학습", unit: "일" },
     { value: sentences.length, label: "저장된 문장", unit: "개" },
   ];
 
@@ -346,153 +378,119 @@ export default function MyPage() {
 
   const handleSaveNicknameStyle = async ({ nickname: newNickname, background, effect }) => {
     try {
-      // 닉네임 변경 API 호출 (토큰 만료 시 자동 재시도)
+      // 닉네임 변경
       if (newNickname && newNickname !== nickname) {
-        let retryCount = 0;
-        let response = null;
-
-        while (retryCount < 2) {
-          try {
-            response = await updateNickname({ nickname: newNickname });
-            break; // 성공하면 루프 탈출
-          } catch (err) {
-            if (err.response?.status === 401 && retryCount === 0) {
-              // 첫 번째 401 에러는 토큰 갱신 후 재시도
-              retryCount++;
-              await new Promise(resolve => setTimeout(resolve, 500)); // 토큰 갱신 대기
-            } else {
-              throw err; // 다른 에러나 두 번째 401은 그대로 throw
-            }
-          }
-        }
-
-        // API 응답에서 실제 변경된 닉네임으로 state 업데이트
-        if (response && response.nickname) {
+        console.log('닉네임 변경 시도:', newNickname);
+        const response = await updateNickname({ nickname: newNickname });
+        console.log('닉네임 변경 응답:', response);
+        if (response?.nickname) {
           setNickname(response.nickname);
+          // localStorage에 닉네임 저장 (다른 페이지에서 사용)
+          localStorage.setItem('userNickname', response.nickname);
+          window.dispatchEvent(new Event('nicknameUpdated'));
         }
       }
 
-      // 닉네임 스타일(배경, 효과) 변경 API 호출 - bgStyle 필드 사용
+      // 스타일 변경
+      console.log('스타일 변경 시도:', { bgStyle: background, effect });
       const styleResponse = await updateAvatarCustom({ bgStyle: background, effect });
+      console.log('스타일 변경 응답:', styleResponse);
 
-      // API 응답에서 실제 변경된 스타일로 state 업데이트
-      if (styleResponse && styleResponse.avatarCustomJson) {
-        try {
-          const avatarCustom = JSON.parse(styleResponse.avatarCustomJson);
-          setNicknameStyle({
-            background: avatarCustom.bgStyle || background,
-            effect: avatarCustom.effect || effect
-          });
-        } catch (e) {
-          console.error("avatarCustomJson 파싱 실패:", e);
-          setNicknameStyle({ background, effect });
-        }
+      // 응답 파싱 및 state 업데이트
+      if (styleResponse?.avatarCustomJson) {
+        const avatarCustom = JSON.parse(styleResponse.avatarCustomJson);
+        setNicknameStyle({
+          background: avatarCustom.bgStyle || background,
+          effect: avatarCustom.effect || effect
+        });
       } else {
         setNicknameStyle({ background, effect });
       }
+
+      console.log('저장 완료');
     } catch (error) {
-      console.error("닉네임 커스터마이징 저장 실패:", error);
-      alert("닉네임 저장에 실패했습니다. 다시 시도해주세요.");
+      console.error("저장 실패:", error);
+      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
+      alert(`저장 실패: ${errorMsg}`);
     }
   };
 
   const handleSaveDuckStyle = async ({ profileId, color, accessory }) => {
     try {
-      // API 호출 - style 필드 사용
-      await updateDuckCustom({
-        style: profileId,
-        color,
-        accessory,
-      });
+      await updateDuckCustom({ style: profileId, color, accessory });
 
-      // 성공 시 로컬 state 업데이트
+      // State 업데이트
       if (profileId) setDuckProfileId(profileId);
       setDuckStyle({ color, accessory });
 
-      // localStorage에 프로필 정보 저장 (AppHeader 연동)
-      const profileInfo = {
+      // localStorage 저장 (AppHeader 연동)
+      localStorage.setItem('userProfile', JSON.stringify({
         profileId: profileId || duckProfileId,
-        color: color || duckStyle.color,
-        accessory: accessory !== undefined ? accessory : duckStyle.accessory,
-      };
-      localStorage.setItem('userProfile', JSON.stringify(profileInfo));
-
-      // AppHeader 업데이트를 위한 이벤트 발생
+        color, accessory
+      }));
       window.dispatchEvent(new Event('profileUpdated'));
     } catch (error) {
-      console.error("오리 커스터마이징 저장 실패:", error);
-      alert("오리 커스터마이징 저장에 실패했습니다.");
+      console.error("저장 실패:", error);
+      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
+      alert(`오리 커스터마이징 저장 실패: ${errorMsg}`);
     }
   };
 
   const handleSaveDuckBot = async (id) => {
     try {
-      // AI 오리봇 변경 API 호출 - model 필드 사용
       await updateAiDuckBot({ model: id });
-
-      // 성공 시 로컬 state 업데이트
       setDuckBotId(id);
     } catch (error) {
-      console.error('AI 오리봇 변경 실패:', error);
-      alert('AI 오리봇 변경에 실패했습니다.');
+      console.error('저장 실패:', error);
+      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
+      alert(`AI 오리봇 변경 실패: ${errorMsg}`);
     }
   };
 
   const handleLogout = async () => {
     try {
       await logout();
-      // 로컬 스토리지에서 토큰 제거
       localStorage.removeItem('accessToken');
-      // 로그인 페이지로 이동
       window.location.href = '/login';
     } catch (error) {
       console.error('로그아웃 실패:', error);
-      alert('로그아웃에 실패했습니다.');
+      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
+      alert(`로그아웃 실패: ${errorMsg}`);
     }
   };
 
-  // 아이템 구매 함수
   const handlePurchase = async (itemType, itemKey, cost) => {
     if (coins < cost) {
       alert('코인이 부족합니다!');
       return false;
     }
 
-    // itemKey를 itemId로 변환
     const numericItemId = itemKeyToIdMap[itemKey];
     if (!numericItemId) {
-      console.error('아이템 ID를 찾을 수 없습니다:', itemKey);
       alert('아이템 정보를 찾을 수 없습니다.');
       return false;
     }
 
     try {
-      // API 호출 (숫자 itemId 사용, request body 없음)
       const response = await purchaseItem(numericItemId);
+      if (response.remainingCoins !== undefined) setCoins(response.remainingCoins);
 
-      // 성공 시 로컬 state 업데이트
-      if (response.remainingCoins !== undefined) {
-        setCoins(response.remainingCoins);
-      }
-
-      if (itemType === 'profile') {
-        setUnlockedProfiles((prev) => [...prev, itemKey]);
-      } else if (itemType === 'color') {
-        setUnlockedColors((prev) => [...prev, itemKey]);
-      } else if (itemType === 'accessory') {
-        setUnlockedAccessories((prev) => [...prev, itemKey]);
-      } else if (itemType === 'duckBot') {
-        setUnlockedDuckBots((prev) => [...prev, itemKey]);
-      } else if (itemType === 'background') {
-        setUnlockedBackgrounds((prev) => [...prev, itemKey]);
-      } else if (itemType === 'effect') {
-        setUnlockedEffects((prev) => [...prev, itemKey]);
-      }
+      // itemType별 unlock 처리
+      const unlockMap = {
+        profile: setUnlockedProfiles,
+        color: setUnlockedColors,
+        accessory: setUnlockedAccessories,
+        duckBot: setUnlockedDuckBots,
+        background: setUnlockedBackgrounds,
+        effect: setUnlockedEffects
+      };
+      unlockMap[itemType]?.((prev) => [...prev, itemKey]);
 
       return true;
     } catch (error) {
-      console.error('아이템 구매 실패:', error);
-      alert('아이템 구매에 실패했습니다.');
+      console.error('구매 실패:', error);
+      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
+      alert(`아이템 구매 실패: ${errorMsg}`);
       return false;
     }
   };

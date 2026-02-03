@@ -68,7 +68,7 @@ public class TranslateService {
             Long turnNo,
             Long speakerId) {
 
-        // 🔥 Redis 기반 sequence 생성 (턴별)
+        // Redis 기반 sequence 생성 (턴별)
         Long orderNo = generateSequence(roomId, turnNo);
 
         log.info("📊 [ORDER-{}] 처리 시작 - roomId: {}, turn: {}, speaker: {}",
@@ -77,11 +77,14 @@ public class TranslateService {
         try {
             Long roomIdLong = Long.parseLong(roomId);
 
+            // 원본 텍스트를 별도 변수로 저장 (로그용)
+            String originalText = text;
             text = preprocessingService.preprocess(text);
 
             if (text == null) {
+                // 원본 텍스트를 로그에 출력 (기존: text가 이미 null이어서 항상 "null" 출력됨)
                 log.warn("[ASYNC-{}] 전처리 필터링됨 - 원본: '{}'",
-                        orderNo, text);
+                        orderNo, originalText);
                 return CompletableFuture.completedFuture(false);
             }
 
@@ -89,9 +92,15 @@ public class TranslateService {
             GptScriptResponse script = gptService.generateScript(text);
             log.info("📊 [ORDER-{}] GPT 완료 - en: {}", orderNo, script.getEn());
 
-            // 2. TTS 생성
-            String ttsUrl = azureSpeechService.generateTTS(script.getEn(), roomId);
-            log.info("📊 [ORDER-{}] TTS 완료: {}", orderNo, ttsUrl);
+            // 2. TTS 생성 (영어 텍스트로 생성)
+            String ttsUrl = null;
+            try {
+                ttsUrl = azureSpeechService.generateTTS(script.getEn(), roomId);
+                log.info("📊 [ORDER-{}] TTS 완료 - url: {}", orderNo, ttsUrl);
+            } catch (Exception e) {
+                log.error("📊 [ORDER-{}] ❌ TTS 생성 실패 - 기본값(null) 사용", orderNo, e);
+                // ttsUrl은 null로 유지
+            }
 
             // 3. scriptId 생성 (timestamp_orderNo)
             String scriptId = System.currentTimeMillis() + "_" + orderNo;
@@ -131,7 +140,7 @@ public class TranslateService {
             scriptData.put("score", "0");
             scriptData.put("blank_script", script.getBlankScript());
             scriptData.put("similarity_phrases", String.join(",", script.getSimilarityPhrases()));
-            scriptData.put("tts_url", ttsUrl);
+            scriptData.put("tts_url", ttsUrl != null ? ttsUrl : "");  // null이면 빈 문자열
             scriptData.put("created_at", LocalDateTime.now().toString());
 
             redisTemplate.opsForHash().putAll(detailKey, scriptData);

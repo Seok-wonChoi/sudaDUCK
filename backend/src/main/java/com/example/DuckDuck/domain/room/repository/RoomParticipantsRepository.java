@@ -1,6 +1,7 @@
 package com.example.DuckDuck.domain.room.repository;
 
 import com.example.DuckDuck.domain.room.entity.RoomParticipants;
+import com.example.DuckDuck.domain.user.entity.Member;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -36,4 +37,8 @@ public interface RoomParticipantsRepository extends JpaRepository<RoomParticipan
                     "AND rp.is_left = false",
             nativeQuery = true)
     boolean isUserActiveParticipant(@Param("roomId") Long roomId, @Param("userId") Long userId);
+
+
+    @Query("SELECT rp.user FROM RoomParticipants rp JOIN rp.user u WHERE rp.room.roomId = :roomId AND rp.isLeft = false")
+    List<Member> findMembersByRoomId(@Param("roomId") Long roomId);
 }

@@ -4,6 +4,7 @@ import com.example.DuckDuck.domain.user.entity.Member;
 import com.example.DuckDuck.domain.user.entity.Profile;
 import com.example.DuckDuck.domain.user.repository.MemberRepository;
 import com.example.DuckDuck.domain.user.repository.ProfileRepository;
+import com.example.DuckDuck.domain.user.service.ProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -21,6 +22,7 @@ import java.util.Optional;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final MemberRepository memberRepository;
+    private final ProfileService profileService;
 
     private static final String DEFAULT_DUCK_JSON =
             "{\"v\":1,\"style\":\"profile1\",\"color\":\"white\",\"accessory\":\"none\"}";
@@ -66,10 +68,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (memberOptional.isPresent()) {
             // ===== 기존 회원 =====
             Member member = memberOptional.get();
-            member.setName(name);
-            member.setNickname(nickname);
-            member.setProfileImageUrl(imageUrl);
+
             member.setUpdatedAt(LocalDateTime.now());
+            member.setProfileImageUrl(imageUrl);
 
             Profile profile = member.getProfile();
 
@@ -77,7 +78,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 profile = Profile.builder()
                         .user(member)
                         .coins(0)
-                        .attendanceDays(0)
+                        .attendanceDays(1)
                         .duckCustomJson(DEFAULT_DUCK_JSON)
                         .avatarCustomJson(DEFAULT_AVATAR_JSON)
                         .aiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON)
@@ -95,9 +96,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 if (profile.getAiDuckbotCustomJson() == null) {
                     profile.setAiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON);
                 }
-                profile.setLastLoginAt(LocalDateTime.now());
+                // 여기서 연속일 계산 + lastLoginAt 갱신
+                profileService.updateAttendanceOnLogin(profile);
+                //profile.setLastLoginAt(LocalDateTime.now());
             }
-
+            memberRepository.save(member);
         } else {
             // ===== 신규 카카오 회원 =====
             Member newMember = Member.builder()
@@ -111,8 +114,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
             Profile newProfile = Profile.builder()
                     .user(newMember)
-                    .coins(0)
-                    .attendanceDays(0)
+                    .coins(40)
+                    .attendanceDays(1)
                     .duckCustomJson(DEFAULT_DUCK_JSON)
                     .avatarCustomJson(DEFAULT_AVATAR_JSON)
                     .aiDuckbotCustomJson(DEFAULT_AI_DUCKBOT_JSON)

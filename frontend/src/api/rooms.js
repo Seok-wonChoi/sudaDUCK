@@ -2,11 +2,12 @@ import api from "./api";
 
 
 // 방 만들기: POST /api/v1/rooms
-export async function createRoom({ title, topic, turnCnt }) {
+export async function createRoom({ title, topic, turnCnt, openviduSessionId }) {
   const { data } = await api.post("/api/v1/rooms", {
     title,
     topic,
     turnCnt: turnCnt ?? 3,
+    openviduSessionId, // 👈 [NEW] 오픈비두 세션 ID 추가
   });
   return data;
 }
@@ -44,8 +45,10 @@ export async function getRoomLobby(roomCode) {
 }
 
 // 준비 상태 토글-참여자: PATCH /api/v1/rooms/{roomCode}/ready
-export async function toggleReady(roomCode) {
-  const { data } = await api.patch(`/api/v1/rooms/${roomCode}/ready`);
+export async function toggleReady(roomCode, isReady) {
+  const { data } = await api.patch(`/api/v1/rooms/${roomCode}/ready`, {
+    ready: isReady  
+  });
   return data;
 }
 

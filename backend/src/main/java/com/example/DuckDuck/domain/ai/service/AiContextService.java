@@ -38,18 +38,18 @@ public class AiContextService {
         try {
             // Redis Key: room:{roomId}:turn:{turn}:scripts
             String key = String.format("room:%d:turn:%d:scripts", roomId, turn);
+
+            Set<String> scriptIds = redisTemplate.opsForZSet().range(key, 0, -1);
             
-            Set<String> scripts = redisTemplate.opsForSet().members(key);
-            
-            if (scripts == null || scripts.isEmpty()) {
+            if (scriptIds == null || scriptIds.isEmpty()) {
                 log.warn("대화 스크립트 없음 - roomId: {}, turn: {}", roomId, turn);
                 return Collections.emptyList();
             }
             
             log.info("대화 스크립트 조회 완료 - roomId: {}, turn: {}, count: {}", 
-                    roomId, turn, scripts.size());
+                    roomId, turn, scriptIds.size());
             
-            return new ArrayList<>(scripts);
+            return new ArrayList<>(scriptIds);
             
         } catch (Exception e) {
             log.error("Redis 조회 실패 - roomId: {}, turn: {}, error: {}", 

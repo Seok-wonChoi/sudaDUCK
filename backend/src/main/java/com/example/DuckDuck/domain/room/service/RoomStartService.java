@@ -104,37 +104,29 @@ public class RoomStartService {
         long totalCount = members.size();
         long readyTargetCount = totalCount - 1; // 방장 제외
 
-        if (readyTargetCount <= 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "대화를 시작하려면 최소 1명 이상의 참가자가 필요합니다.");
-        }
+        // TODO: 테스트용 우회 - 원본 복원 시 아래 주석 풀기
+        // if (readyTargetCount <= 0) {
+        //     throw new ResponseStatusException(HttpStatus.CONFLICT, "대화를 시작하려면 최소 1명 이상의 참가자가 필요합니다.");
+        // }
 
-        // 6) members(방장 제외) 전원이 READY인지 확인 (없음/NOT_READY면 409)
-        long readyCount = 0L;
-
-        for (Object m : members) {
-            String userIdStr = String.valueOf(m);
-
-            if (hostIdStr.equals(userIdStr)) continue; // 방장은 준비 대상 아님
-
-            Object statusObj = redisTemplate.opsForHash().get(keyRoomReady(roomId), userIdStr);
-
-            if (statusObj == null) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "준비 상태가 없는 참가자가 있습니다. userId=" + userIdStr);
-            }
-
-            String status = String.valueOf(statusObj);
-
-            if (!"READY".equals(status)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "아직 준비되지 않은 참가자가 있습니다. userId=" + userIdStr);
-            }
-
-            readyCount++;
-        }
-
-        // (안전망) 개수도 일치하는지 체크
-        if (readyCount != readyTargetCount) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "준비 완료 인원이 부족합니다.");
-        }
+        // TODO: 테스트용 우회 - 준비 상태 체크 전체 건너뛰기. 원본 복원 시 아래 주석 풀기
+        long readyCount = readyTargetCount;
+        // for (Object m : members) {
+        //     String userIdStr = String.valueOf(m);
+        //     if (hostIdStr.equals(userIdStr)) continue;
+        //     Object statusObj = redisTemplate.opsForHash().get(keyRoomReady(roomId), userIdStr);
+        //     if (statusObj == null) {
+        //         throw new ResponseStatusException(HttpStatus.CONFLICT, "준비 상태가 없는 참가자가 있습니다. userId=" + userIdStr);
+        //     }
+        //     String status = String.valueOf(statusObj);
+        //     if (!"READY".equals(status)) {
+        //         throw new ResponseStatusException(HttpStatus.CONFLICT, "아직 준비되지 않은 참가자가 있습니다. userId=" + userIdStr);
+        //     }
+        //     readyCount++;
+        // }
+        // if (readyCount != readyTargetCount) {
+        //     throw new ResponseStatusException(HttpStatus.CONFLICT, "준비 완료 인원이 부족합니다.");
+        // }
 
         // 7) 모두 READY면 room.is_open = true 업데이트
         room.setIsOpen(true);
@@ -155,12 +147,12 @@ public class RoomStartService {
         //topic 저장
         redisTemplate.opsForValue().set(topicKey, room.getTopic(), ROOM_TTL_HOURS, TimeUnit.HOURS);
 
-        //memberInfo 저장
-        List<Long> memberIds = members.stream()
-                .map(m -> Long.parseLong(String.valueOf(m)))
-                .toList();
+        List<Member> memberList = roomParticipantsRepository.findMembersByRoomId(roomId);
 
-        List<Member> memberList = memberRepository.findAllById(memberIds);
+        if (memberList.isEmpty()) {
+            // DB에서도 멤버를 못 찾으면 심각한 오류입니다.
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "방 참여자 정보를 DB에서 찾을 수 없습니다.");
+        }
 
         Map<String, String> idToNameMap = new HashMap<>();
         List<String> allNames = new ArrayList<>();

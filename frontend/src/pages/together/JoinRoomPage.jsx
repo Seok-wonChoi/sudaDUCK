@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./JoinRoomPage.module.css";
 
@@ -10,6 +10,7 @@ import { joinRoom } from "@/api/rooms";
 
 const CODE_LEN = 6;
 const ROOM_INFO_KEY = "together_room_info";
+const MAX_PARTICIPANTS = 4;
 
 function normalizeCode(raw) {
   return (raw || "")
@@ -24,9 +25,15 @@ export default function JoinRoomPage() {
   const [codeArr, setCodeArr] = useState(() => Array(CODE_LEN).fill(""));
   const inputsRef = useRef([]);
   const [loading, setLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   const code = useMemo(() => codeArr.join(""), [codeArr]);
   const isComplete = codeArr.every((c) => c.length === 1);
+
+  const showToast = useCallback((message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(""), 3000);
+  }, []);
 
   useEffect(() => {
     inputsRef.current?.[0]?.focus?.();
@@ -111,18 +118,23 @@ export default function JoinRoomPage() {
 
     setLoading(true);
     try {
+      console.log("[JoinRoom] 방 참가 시도:", roomCode);
+
       // POST /api/v1/rooms/join
       const res = await joinRoom({ roomCode });
 
+      console.log("[JoinRoom] 방 참가 성공:", res);
+
       const roomInfo = {
         isHost: false,
-        maxCount: 4,
+        maxCount: MAX_PARTICIPANTS,
 
         roomId: res.roomId,
         joinCode: res.roomCode,
         readyStatus: res.readyStatus,
         alreadyJoined: res.alreadyJoined,
-
+        // ★ [추가] 백엔드 응답에서 받은 세션 ID 저장!
+        openviduSessionId: res.openviduSessionId, // 백엔드 RoomJoinResponse에서 옴
         roomTitle: "-",
         topic: "-",
         turnCount: "-",
@@ -131,7 +143,26 @@ export default function JoinRoomPage() {
       sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));
       navigate("/together/waiting", { state: roomInfo });
     } catch (e) {
-      alert(e.message || "방 참가에 실패했습니다.");
+      console.error("[JoinRoom] 방 참가 실패:", e);
+
+      // 에러 메시지에서 인원 초과 여부 확인
+      const errorMsg = e?.response?.data?.message || e?.message || "";
+
+      if (
+        errorMsg.includes("인원") ||
+        errorMsg.includes("가득") ||
+        errorMsg.includes("full") ||
+        errorMsg.includes("maximum") ||
+        e?.response?.status === 400
+      ) {
+        showToast("인원이 가득 찬 방입니다.");
+      } else if (errorMsg.includes("존재하지 않") || errorMsg.includes("not found")) {
+        showToast("존재하지 않는 방입니다.");
+      } else if (errorMsg) {
+        showToast(errorMsg);
+      } else {
+        showToast("방 참가에 실패했습니다.");
+      }
     } finally {
       setLoading(false);
     }
@@ -198,6 +229,8 @@ export default function JoinRoomPage() {
             <div className={styles.DuckText}>친구들이 기다리고 있어요!</div>
           </div>
         </main>
+
+        {toastMessage ? <div className={styles.Toast}>{toastMessage}</div> : null}
       </div>
     </div>
   );

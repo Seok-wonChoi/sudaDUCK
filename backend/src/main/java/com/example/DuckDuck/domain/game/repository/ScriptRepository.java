@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ScriptRepository extends JpaRepository<Sentence, String> {
     List<Sentence> findAllByUserEmailOrderByCreatedAtDesc(String email);
+    long countByUserEmail(String email);
 }

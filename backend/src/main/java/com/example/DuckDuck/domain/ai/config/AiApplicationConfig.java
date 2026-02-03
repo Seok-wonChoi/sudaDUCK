@@ -8,10 +8,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.resource.PathResourceResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.io.File;
 import java.util.concurrent.Executor;
 
 /**
@@ -37,35 +39,35 @@ public class AiApplicationConfig implements WebMvcConfigurer {
     @Bean(name = "chatTaskExecutor")
     public Executor chatTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        
+
         // 기본 쓰레드 5개 (항상 대기)
         executor.setCorePoolSize(5);
-        
+
         // 최대 쓰레드 10개 (피크 타임 대응)
         executor.setMaxPoolSize(10);
-        
+
         // 대기 큐 100개 (쓰레드가 모자랄 때 대기)
         executor.setQueueCapacity(100);
-        
+
         // 쓰레드 이름 (로그 추적용)
         executor.setThreadNamePrefix("Chat-Async-");
-        
+
         // 거부 정책: 큐가 가득 차면 호출한 쓰레드가 직접 실행
         executor.setRejectedExecutionHandler(
-            new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy()
+                new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy()
         );
-        
+
         // 쓰레드가 idle 상태일 때 유지 시간 (초)
         executor.setKeepAliveSeconds(60);
-        
+
         // 종료 시 남은 작업 완료 대기
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
-        
+
         executor.initialize();
         return executor;
     }
-    
+
     /**
      * TTS 생성용 ThreadPool (선택사항)
      * - Azure Speech API 호출 전용
@@ -79,26 +81,24 @@ public class AiApplicationConfig implements WebMvcConfigurer {
         executor.setQueueCapacity(50);
         executor.setThreadNamePrefix("TTS-Async-");
         executor.setRejectedExecutionHandler(
-            new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy()
+                new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy()
         );
         executor.initialize();
         return executor;
     }
-    
+
     // ==================== Web MVC 설정 ====================
-    
+
     /**
      * 정적 리소스 핸들러 설정
-     * - TTS 오디오 파일을 웹에서 접근 가능하도록 설정
-     * - URL: /audio/** → 파일 경로: storage/audio/**
+     * - TTS 오디오 파일은 AudioController에서 직접 처리하므로 여기서는 제거
+     * - 정적 리소스 매핑이 AudioController와 충돌하는 문제 해결
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/audio/**")
-                .addResourceLocations("file:storage/audio/")
-                .setCachePeriod(3600);  // 1시간 캐싱
+        // /audio는 AudioController가 처리
     }
-    
+
     /**
      * CORS 설정
      * - 프론트엔드에서 API 호출 가능하도록 허용

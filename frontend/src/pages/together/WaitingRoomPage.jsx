@@ -3,14 +3,21 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
+import NicknameBadge from "@/components/features/mypage/ProfileSection/NicknameBadge";
 
 import duckImg from "@/assets/images/duck.png";
+import duckProfile1 from "@/assets/images/duck_profile1.png";
+import duckProfile2 from "@/assets/images/duck_profile2.png";
+import duckProfile3 from "@/assets/images/duck_profile3.png";
+import duckProfile4 from "@/assets/images/duck_profile4.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 import usersIcon from "@/assets/icons/users_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
-
+// 👇오픈비두 관련 임포트!!
+import { useOpenVidu } from "@/context/OpenViduContext";
+import { createToken, createSession } from "@/api/openVidu";
 import {
   leaveRoom,
   getRoomLobby,
@@ -23,6 +30,75 @@ import {
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 
 const ROOM_INFO_KEY = "together_room_info";
+
+const DUCK_PROFILE_IMAGES = {
+  profile1: duckProfile1,
+  profile2: duckProfile2,
+  profile3: duckProfile3,
+  profile4: duckProfile4,
+};
+
+const COLOR_MAP = {
+  white: "#ffffff",
+  yellow: "#fef08a",
+  blue: "#93c5fd",
+  pink: "#f9a8d4",
+  green: "#86efac",
+  purple: "#c4b5fd",
+  orange: "#fdba74",
+};
+
+const ACCESSORY_MAP = {
+  hat: "🎩",
+  sunglasses: "🕶️",
+  ribbon: "🎀",
+  crown: "👑",
+  none: null,
+};
+
+function safeParseJson(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
+}
+
+function getDuckProfileInfo(duckCustomJson) {
+  const parsed = safeParseJson(duckCustomJson);
+  if (!parsed) {
+    return {
+      image: duckProfile1,
+      color: "#ffffff",
+      accessory: null,
+    };
+  }
+
+  const style = parsed.style || "profile1";
+  const color = parsed.color || "white";
+  const accessory = parsed.accessory || "none";
+
+  return {
+    image: DUCK_PROFILE_IMAGES[style] || duckProfile1,
+    color: COLOR_MAP[color] || "#ffffff",
+    accessory: ACCESSORY_MAP[accessory] || null,
+  };
+}
+
+function getNicknameStyle(avatarCustomJson) {
+  const parsed = safeParseJson(avatarCustomJson);
+  if (!parsed) {
+    return {
+      background: "default",
+      effect: null,
+    };
+  }
+
+  return {
+    background: parsed.bgStyle || "default",
+    effect: parsed.effect || null,
+  };
+}
 
 function PlayIcon() {
   return (
@@ -130,6 +206,33 @@ export default function WaitingRoomPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
 
+  // 👇 오픈비두우우우 Context에서 함수 꺼내오기
+  const { joinSession, leaveSession, isConnected: isOvConnected, subscribers, publisher } = useOpenVidu();
+  
+  // 👇 게임 시작 등으로 페이지 이동 시에는 세션을 끊지 않도록 플래그 설정
+  const isTransitioningRef = useRef(false);
+
+  // 👇  오픈비듀우우우 브라우저 뒤로가기/새로고침 시 연결 끊기
+  useEffect(() => {
+      const handleBeforeUnload = () => leaveSession();
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+          window.removeEventListener('beforeunload', handleBeforeUnload);
+          // 게임 시작으로 이동하는 경우(isTransitioningRef.current === true)에는 끊지 않음!
+          if (isOvConnected && !isTransitioningRef.current) {
+             console.log("👋 [WaitingRoom] 대기실 퇴장 -> 세션 종료");
+             leaveSession(); 
+          } else {
+             console.log("🚀 [WaitingRoom] 게임 시작 -> 세션 유지하며 이동");
+          }
+      };
+  }, [leaveSession, isOvConnected]);
+
+
+
+
+
   const initialRoomInfo = useMemo(() => {
     if (state) return state;
     try {
@@ -172,13 +275,13 @@ export default function WaitingRoomPage() {
   const [myMicOn, setMyMicOn] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
 
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
 
   const [editPopupOpen, setEditPopupOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(roomTitle);
   const [editTopic, setEditTopic] = useState(topic);
   const [editTurn, setEditTurn] = useState(turnCount);
+  const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
   const hotTopics = useMemo(
     () => [
@@ -268,7 +371,6 @@ export default function WaitingRoomPage() {
     a.level = 0;
     a.lastUiAt = 0;
 
-    setIsSpeaking(false);
     setVoiceLevel(0);
   }, []);
 
@@ -318,7 +420,6 @@ export default function WaitingRoomPage() {
 
           if (speaking !== a.speakingNow) {
             a.speakingNow = speaking;
-            setIsSpeaking(speaking);
           }
 
           const raw = Math.max(0, Math.min(1, (rms - 0.005) / 0.08));
@@ -341,7 +442,6 @@ export default function WaitingRoomPage() {
 
       tick();
     } catch {
-      setIsSpeaking(false);
       setVoiceLevel(0);
     }
   }, []);
@@ -397,15 +497,35 @@ export default function WaitingRoomPage() {
       const mapped = members.map((m) => {
         const key = String(m.userId ?? "");
         const prev = prevMap.get(key);
+        const serverReady = m.readyStatus === "READY";
+
+        // 서버 상태와 이전 상태가 다르면 로그 출력
+        if (prev && prev.isReady !== serverReady) {
+          console.log("[WaitingRoom] fetchLobby - 준비 상태 변경 감지:", {
+            key,
+            nickname: m.nickname,
+            prevReady: prev.isReady,
+            serverReady,
+          });
+        }
 
         return {
           key,
           nickname: m.nickname ?? "참여자",
           isHost: m.isHost ?? false,
-          isReady: m.readyStatus === "READY",
+          isReady: serverReady,
           micOn: m.micOn ?? prev?.micOn ?? true,
           voiceLevel: prev?.voiceLevel ?? 0,
+          isSpeaking: prev?.isSpeaking ?? false,
+          avatarCustomJson: m.avatarCustomJson ?? null,
+          duckCustomJson: m.duckCustomJson ?? null,
+          aiDuckbotCustomJson: m.aiDuckbotCustomJson ?? null,
         };
+      });
+
+      console.log("[WaitingRoom] fetchLobby 완료:", {
+        participantCount: mapped.length,
+        readyCount: mapped.filter((p) => p.isReady && !p.isHost).length,
       });
 
       setParticipants(mapped);
@@ -450,6 +570,47 @@ export default function WaitingRoomPage() {
     fetchLobby();
   }, [fetchLobby]);
 
+  // 👇 오픈비두 연결 중복 방지용 Ref
+  const isConnectingRef = useRef(false);
+  const hasAttemptedConnectionRef = useRef(false); // 👈 [핵심] 연결 시도 여부를 기억하는 잠금 장치
+
+  useEffect(() => {
+    const connectToOpenVidu = async () => {
+      const ovSessionId = roomInfo.openviduSessionId;
+      
+      // 1. 이미 연결됐거나, 세션 ID가 없거나, 이미 연결을 시도 중이거나, 이미 시도했었다면 즉시 중단!
+      if (isOvConnected || !ovSessionId || isConnectingRef.current || hasAttemptedConnectionRef.current) {
+          return;
+      }
+
+      try {
+        isConnectingRef.current = true; // 🔒 잠금 시작
+        hasAttemptedConnectionRef.current = true; // ✅ 시도 기록 (성공/실패 상관없이 다시 안 함)
+        
+        console.log("🚀 [OpenVidu] 최초 1회 연결 시도...");
+        
+        const token = await createToken(ovSessionId);
+        const myNickname = participants.find(p => p.key === myKey)?.nickname || "Guest";
+
+        await joinSession(token, myNickname);
+        console.log("✅ [OpenVidu] 최초 연결 성공");
+        
+      } catch (e) {
+        console.error("❌ [OpenVidu] 연결 실패:", e);
+        // 실패 시에는 다음 기회에 다시 시도할 수 있도록 잠금을 해제합니다.
+        hasAttemptedConnectionRef.current = false;
+      } finally {
+        isConnectingRef.current = false; // 🔓 잠금 해제
+      }
+    };
+
+    // 조건: 참가자 목록이 있고 내 키가 확인되었을 때만 실행
+    if (participants.length > 0 && myKey) {
+        connectToOpenVidu();
+    }
+    
+  }, [roomInfo.openviduSessionId, isOvConnected, participants, myKey, joinSession]);
+
   const currentCount = totalCount || participants.length;
 
   const me = useMemo(
@@ -468,27 +629,121 @@ export default function WaitingRoomPage() {
 
   const hasNavigatedRef = useRef(false);
 
-  const handleMemberJoined = useCallback(() => {
-    fetchLobbyRef.current?.();
+  const sendMicRef = useRef(null);
+  const myMicOnRef = useRef(myMicOn);
+  useEffect(() => {
+    myMicOnRef.current = myMicOn;
+  }, [myMicOn]);
+
+  const handleMemberJoined = useCallback((payload, senderKey) => {
+    console.log("[WaitingRoom] 🟢 MEMBER_JOINED 수신:", {
+      payload,
+      senderKey,
+      currentParticipants: participantsRef.current.length
+    });
+
+    if (!senderKey) return;
+
+    const newMember = {
+      key: String(senderKey),
+      nickname: payload?.nickname ?? "참여자",
+      isHost: payload?.isHost ?? false,
+      isReady: payload?.isReady ?? false,
+      micOn: payload?.micOn ?? false,
+      voiceLevel: 0,
+      isSpeaking: false,
+    };
+
+    setParticipants((prev) => {
+      // 이미 존재하는 참여자면 업데이트, 없으면 추가
+      const exists = prev.some((p) => p.key === String(senderKey));
+      if (exists) {
+        return prev.map((p) => p.key === String(senderKey) ? { ...p, ...newMember } : p);
+      }
+      return [...prev, newMember];
+    });
+
+    if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
+
+    // 새로운 멤버가 입장했을 때 내 마이크 상태를 전송하여 동기화
+    if (sendMicRef.current) {
+      console.log("[WaitingRoom] 새 멤버 입장 - 내 마이크 상태 전송:", myMicOnRef.current);
+      sendMicRef.current(myMicOnRef.current);
+    }
   }, []);
 
-  const handleMemberLeft = useCallback(() => {
-    fetchLobbyRef.current?.();
+  const handleMemberLeft = useCallback((payload, senderKey) => {
+    console.log("[WaitingRoom] 🔴 MEMBER_LEFT 수신:", {
+      payload,
+      senderKey,
+      currentParticipants: participantsRef.current.length
+    });
+
+    if (!senderKey) return;
+
+    setParticipants((prev) => prev.filter((p) => p.key !== String(senderKey)));
+
+    if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
   }, []);
+
+  const handleRoomClosed = useCallback(() => {
+    console.log("[WaitingRoom] ROOM_CLOSED - 방장이 퇴장하여 방 종료");
+
+    // 세션 정리
+    sessionStorage.removeItem(ROOM_INFO_KEY);
+
+    // 메인 화면으로 이동하면서 토스트 메시지 전달
+    navigate("/together", {
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+    });
+  }, [navigate]);
 
   const handleReadyChanged = useCallback((payload, senderKey) => {
+    console.log("[WaitingRoom] 🔄 READY_CHANGED 수신:", {
+      payload,
+      senderKey,
+      currentParticipants: participantsRef.current.map(p => ({
+        key: p.key,
+        nickname: p.nickname,
+        isReady: p.isReady
+      }))
+    });
+
     if (payload?.readyCount !== undefined) setReadyCount(payload.readyCount);
     if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
 
     if (senderKey) {
-      const newReady =
-        payload?.myReadyStatus === "READY" || payload?.ready === true;
+      // payload에서 준비 상태 확인 (여러 형식 지원)
+      let newReady = false;
+      if (payload?.myReadyStatus === "READY" || payload?.readyStatus === "READY") {
+        newReady = true;
+      } else if (payload?.myReadyStatus === "NOT_READY" || payload?.readyStatus === "NOT_READY") {
+        newReady = false;
+      } else if (payload?.ready !== undefined) {
+        newReady = payload.ready === true;
+      } else if (payload?.isReady !== undefined) {
+        newReady = payload.isReady === true;
+      }
 
-      setParticipants((prev) =>
-        prev.map((p) =>
+      console.log("[WaitingRoom] ✅ 준비 상태 업데이트 적용:", {
+        senderKey: String(senderKey),
+        newReady,
+        payload,
+      });
+
+      setParticipants((prev) => {
+        const updated = prev.map((p) =>
           p.key === String(senderKey) ? { ...p, isReady: newReady } : p,
-        ),
-      );
+        );
+        console.log("[WaitingRoom] 업데이트 후 participants:", updated.map(p => ({
+          key: p.key,
+          nickname: p.nickname,
+          isReady: p.isReady
+        })));
+        return updated;
+      });
+    } else {
+      console.warn("[WaitingRoom] ⚠️ senderKey가 없어서 준비 상태 업데이트 불가", payload);
     }
   }, []);
 
@@ -500,9 +755,18 @@ export default function WaitingRoomPage() {
       if (k === myKey) return;
 
       setParticipants((prev) =>
-        prev.map((p) =>
-          p.key === k ? { ...p, micOn: payload?.micOn ?? p.micOn } : p,
-        ),
+        prev.map((p) => {
+          if (p.key === k) {
+            const newMicOn = payload?.micOn ?? p.micOn;
+            // 마이크가 꺼지면 isSpeaking도 false로 설정
+            return {
+              ...p,
+              micOn: newMicOn,
+              isSpeaking: newMicOn ? p.isSpeaking : false,
+            };
+          }
+          return p;
+        }),
       );
     },
     [myKey],
@@ -515,13 +779,22 @@ export default function WaitingRoomPage() {
       if (k === myKey) return;
 
       setParticipants((prev) =>
-        prev.map((p) =>
-          p.key === k ? { ...p, voiceLevel: payload?.level ?? 0 } : p,
-        ),
+        prev.map((p) => {
+          if (p.key === k) {
+            const level = payload?.level ?? 0;
+            // 마이크가 켜져있고 voiceLevel이 임계값 이상일 때만 발화 중으로 표시
+            const isSpeaking = p.micOn && level > 0.03;
+            return { ...p, voiceLevel: level, isSpeaking };
+          }
+          return p;
+        }),
       );
     },
     [myKey],
   );
+
+  
+
 
   const handleSettingsChanged = useCallback(
     (payload) => {
@@ -577,6 +850,9 @@ export default function WaitingRoomPage() {
     (payloadOrData) => {
       if (hasNavigatedRef.current) return;
       hasNavigatedRef.current = true;
+      
+      // 👇 게임 화면으로 이동하므로 세션 유지 플래그 ON
+      isTransitioningRef.current = true;
 
       navigate("/together/talk", {
         replace: true,
@@ -620,7 +896,7 @@ export default function WaitingRoomPage() {
     ],
   );
 
-  const { sendReady, sendMic, sendVoiceLevel } = useRoomWebSocket(inviteCode, {
+  const { sendReady, sendMic, sendVoiceLevel, isConnected } = useRoomWebSocket(inviteCode, {
     onReadyChanged: handleReadyChanged,
     onMicChanged: handleMicChanged,
     onMemberJoined: handleMemberJoined,
@@ -628,9 +904,34 @@ export default function WaitingRoomPage() {
     onVoiceLevelChanged: handleVoiceLevelChanged,
     onSettingsChanged: handleSettingsChanged,
     onRoomStarted,
+    onRoomClosed: handleRoomClosed,
     onError: handleWebSocketError,
-    onConnected: () => fetchLobbyRef.current?.(),
+    onConnected: () => {
+      console.log("[WaitingRoom] ✅ WebSocket 연결 성공! roomCode:", inviteCode);
+      fetchLobbyRef.current?.();
+    },
+    onDisconnected: () => {
+      console.log("[WaitingRoom] ❌ WebSocket 연결 해제됨");
+    },
   });
+
+  // sendMic을 ref에 저장
+  useEffect(() => {
+    sendMicRef.current = sendMic;
+  }, [sendMic]);
+
+  // WebSocket 연결 상태 로그 및 초기 마이크 상태 전송 (처음 1번만)
+  const initialMicSentRef = useRef(false);
+  useEffect(() => {
+    console.log("[WaitingRoom] WebSocket 연결 상태:", isConnected ? "✅ 연결됨" : "❌ 끊김");
+
+    // WebSocket 연결 시 초기 마이크 상태 전송
+    if (isConnected && sendMic && !initialMicSentRef.current) {
+      console.log("[WaitingRoom] 초기 마이크 상태 전송:", myMicOn);
+      sendMic(myMicOn);
+      initialMicSentRef.current = true;
+    }
+  }, [isConnected, sendMic, myMicOn]);
 
   const lastLocalSentRef = useRef({ at: 0, level: 0 });
   useEffect(() => {
@@ -648,37 +949,79 @@ export default function WaitingRoomPage() {
   }, [voiceLevel, myMicOn, sendVoiceLevel]);
 
   const toggleMyMic = useCallback(async () => {
-    if (myMicOn) {
-      setMyMicOn(false);
+    const nextState = !myMicOn;
+    
+    // 1. OpenVidu 실제 마이크 제어
+    if (publisher) {
+      publisher.publishAudio(nextState);
+      console.log(`🎤 [OpenVidu] 마이크 ${nextState ? "ON" : "OFF"}`);
+    }
+
+    // 2. UI 상태 및 오디오 분석기 제어
+    setMyMicOn(nextState);
+
+    if (nextState) {
+      await startAudioAnalysis();
+    } else {
       await stopAudioAnalysis();
-      if (sendMic) sendMic(false);
+    }
+
+    // 3. 웹소켓으로 서버/다른 사람에게 알림
+    if (sendMic) sendMic(nextState);
+  }, [myMicOn, publisher, startAudioAnalysis, stopAudioAnalysis, sendMic]);
+
+  const toggleMyReady = useCallback(async () => {
+    console.log("[WaitingRoom] 🔘 toggleMyReady 호출:", {
+      myKey,
+      myReady,
+      isConnected,
+      inviteCode
+    });
+
+    if (!isConnected) {
+      console.warn("[WaitingRoom] ⚠️ WebSocket 미연결 상태 - 준비 불가");
+      showToast("서버와 연결되지 않았습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
-    setMyMicOn(true);
-    await startAudioAnalysis();
-    if (sendMic) sendMic(true);
-  }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
-
-  const toggleMyReady = useCallback(async () => {
-    const next = !myReady;
-
-    setParticipants((prev) =>
-      prev.map((p) => (p.key === myKey ? { ...p, isReady: next } : p)),
-    );
+    // 함수형 업데이트로 최신 상태 기반 토글
+    let nextReady = null;
+    setParticipants((prev) => {
+      const me = prev.find((p) => p.key === myKey);
+      nextReady = !(me?.isReady ?? false);
+      console.log("[WaitingRoom] ✨ Optimistic update:", {
+        myKey,
+        before: me?.isReady,
+        after: nextReady,
+        me: me ? { key: me.key, nickname: me.nickname } : null
+      });
+      return prev.map((p) => (p.key === myKey ? { ...p, isReady: nextReady } : p));
+    });
 
     try {
-      await toggleReady(inviteCode);
-    } catch {
+      console.log("[WaitingRoom] 📡 API 호출 시작:", { inviteCode, nextReady });
+      const response = await toggleReady(inviteCode, nextReady);
+      console.log("[WaitingRoom] ✅ API 호출 성공:", response);
+    } catch (error) {
+
+      // Rollback
       setParticipants((prev) =>
-        prev.map((p) => (p.key === myKey ? { ...p, isReady: !next } : p)),
+        prev.map((p) => (p.key === myKey ? { ...p, isReady: !nextReady } : p)),
       );
       showToast("준비 상태 변경에 실패했습니다.");
       return;
     }
 
-    if (sendReady) sendReady(next);
-  }, [myReady, myKey, inviteCode, sendReady, showToast]);
+    // WebSocket으로 다른 참여자들에게 전송
+    if (sendReady) {
+      console.log("[WaitingRoom] 📤 WebSocket 전송:", { nextReady, destination: `/app/rooms/${inviteCode}/ready` });
+      sendReady(nextReady);
+    } else {
+      console.warn("[WaitingRoom] ⚠️ sendReady가 없어서 WebSocket 전송 불가");
+    }
+
+    // 웹소켓 READY_CHANGED 메시지로 상태 동기화 (fetchLobby 제거로 깜빡임 방지)
+  }, [myKey, myReady, inviteCode, sendReady, showToast, isConnected]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -739,21 +1082,28 @@ export default function WaitingRoomPage() {
   }, []);
 
   const handleAiRecommend = useCallback(async () => {
+    setIsLoadingAiRecommend(true);
     try {
       const data = await getTopics();
       const topics = data?.topics || [];
       if (topics.length > 0) {
         const randomTopic = topics[Math.floor(Math.random() * topics.length)];
         setEditTopic(randomTopic);
-        return;
+      } else {
+        // API 응답은 받았지만 topics가 비어있을 때 fallback
+        if (hotTopics.length > 0) {
+          const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+          setEditTopic(next);
+        }
       }
     } catch {
-      // ignore
-    }
-
-    if (hotTopics.length > 0) {
-      const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
-      setEditTopic(next);
+      // API 실패 시 fallback
+      if (hotTopics.length > 0) {
+        const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+        setEditTopic(next);
+      }
+    } finally {
+      setIsLoadingAiRecommend(false);
     }
   }, [hotTopics]);
 
@@ -804,7 +1154,7 @@ export default function WaitingRoomPage() {
     fetchLobbyRef.current?.();
     showToast("방 설정이 변경되었습니다.");
   }, [editTitle, editTopic, editTurn, showToast, inviteCode]);
-
+  
   const handleStart = useCallback(async () => {
     if (!canStart) return;
 
@@ -840,6 +1190,9 @@ export default function WaitingRoomPage() {
       // ignore
     }
 
+    // 👇 👇 여기서 오픈비두 연결 확실히 끊기!
+    leaveSession();
+
     if (inviteCode && inviteCode !== "000000") {
       try {
         await leaveRoom({ roomCode: inviteCode });
@@ -849,11 +1202,16 @@ export default function WaitingRoomPage() {
     }
 
     sessionStorage.removeItem(ROOM_INFO_KEY);
-  }, [inviteCode, stopAudioAnalysis]);
+  }, [inviteCode, stopAudioAnalysis, leaveSession]); // 👈 의존성 배열에 leaveSession 추가
 
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
+        {subscribers.map((sub, i) => (
+            <div key={i} style={{ display: 'none' }}>
+                <UserAudioComponent streamManager={sub} />
+            </div>
+        ))}
         <AppHeader
           userName="user"
           notifications={[]}
@@ -977,27 +1335,44 @@ export default function WaitingRoomPage() {
                   const isMe = p.key === myKey;
                   const micOn = isMe ? myMicOn : (p.micOn ?? false);
 
+                  // 프로필 커스터마이징 정보 파싱
+                  const profileInfo = getDuckProfileInfo(p.duckCustomJson);
+                  const nicknameStyleInfo = getNicknameStyle(p.avatarCustomJson);
+
                   return (
                     <div key={p.key || index} className={styles.ParticipantRow}>
                       <div className={styles.ParticipantLeft}>
-                        <div className={styles.UserIconWrap} aria-hidden="true">
+                        <div
+                          className={styles.UserIconWrap}
+                          style={{ background: profileInfo.color }}
+                          aria-hidden="true"
+                        >
                           <img
                             className={styles.UserIconImg}
-                            src={usersIcon}
+                            src={profileInfo.image}
                             alt=""
                           />
+                          {profileInfo.accessory && (
+                            <span className={styles.ProfileAccessory}>
+                              {profileInfo.accessory}
+                            </span>
+                          )}
                         </div>
 
                         <div className={styles.InfoColumn}>
                           <div className={styles.NameRow}>
-                            <div className={styles.ParticipantName}>
-                              {p.nickname}
-                              {isMe ? " (나)" : ""}
-                            </div>
+                            <NicknameBadge
+                              nickname={p.nickname}
+                              style={nicknameStyleInfo}
+                              size="small"
+                            />
+                            {isMe && (
+                              <span className={styles.MeTag}>(나)</span>
+                            )}
 
                             {!p.isHost ? (
                               <span
-                                className={`${styles.ReadyTag} ${
+                                className={`${styles.ReadyTag} ${ 
                                   p.isReady
                                     ? styles.ReadyTagOn
                                     : styles.ReadyTagOff
@@ -1044,7 +1419,7 @@ export default function WaitingRoomPage() {
 
             <button
               type="button"
-              className={`${styles.StartButton} ${
+              className={`${styles.StartButton} ${ 
                 primaryDisabled ? styles.StartButtonDisabled : ""
               } ${!isHost && myReady ? styles.StartButtonReady : ""}`}
               onClick={handlePrimary}
@@ -1135,8 +1510,16 @@ export default function WaitingRoomPage() {
                     type="button"
                     className={styles.PopupAiButton}
                     onClick={handleAiRecommend}
+                    disabled={isLoadingAiRecommend}
                   >
-                    AI 추천
+                    {isLoadingAiRecommend ? (
+                      <span className={styles.PopupAiButtonContent}>
+                        <span className={styles.PopupAiSpinner} />
+                        AI 추천
+                      </span>
+                    ) : (
+                      "AI 추천"
+                    )}
                   </button>
                 </div>
 
@@ -1152,7 +1535,7 @@ export default function WaitingRoomPage() {
                       <button
                         key={t}
                         type="button"
-                        className={`${styles.PopupTopicChip} ${
+                        className={`${styles.PopupTopicChip} ${ 
                           active ? styles.PopupTopicChipActive : ""
                         }`}
                         onClick={() => handlePickEditTopic(t)}
@@ -1175,7 +1558,7 @@ export default function WaitingRoomPage() {
                       <button
                         key={n}
                         type="button"
-                        className={`${styles.PopupTurnCard} ${
+                        className={`${styles.PopupTurnCard} ${ 
                           active ? styles.PopupTurnCardActive : ""
                         }`}
                         onClick={() => setEditTurn(n)}
@@ -1216,3 +1599,16 @@ export default function WaitingRoomPage() {
     </div>
   );
 }
+
+// 👇 소리 재생용 컴포넌트 !!!!!!
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};

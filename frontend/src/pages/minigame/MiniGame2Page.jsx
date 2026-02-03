@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { leaveRoom } from '@/api/rooms';
+import useRoomWebSocket from '@/hooks/useRoomWebSocket';
 
 import MiniGameLayout from '@/components/features/minigame/layout/MiniGameLayout';
 import CountdownOverlay from '@/components/features/minigame/countdown/CountdownOverlay';
@@ -47,8 +49,10 @@ const GAME_TIME = 30;
 
 export default function MiniGame2Page() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const currentUserId = 1; // 현재 사용자 ID
+  const roomId = location.state?.roomId;
 
   // ✅ phase를 state로 두지 않고, 아래 상태들로 "계산"해서 사용
   const [countdown, setCountdown] = useState(3);
@@ -127,8 +131,33 @@ export default function MiniGame2Page() {
     setShowGuide(true);
   };
 
+  // 방장 퇴장 시 메인 화면으로 강제 이동
+  const handleRoomClosed = useCallback(() => {
+    console.log("[MiniGame2Page] ROOM_CLOSED 수신 - 방장 퇴장");
+    navigate("/main", {
+      replace: true,
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+    });
+  }, [navigate]);
+
+  useRoomWebSocket(roomId, {
+    onRoomClosed: handleRoomClosed,
+  }, roomId);
+
+  // 로고 클릭 시 나가기 핸들러
+  const handleLogoExit = useCallback(async () => {
+    if (roomId) {
+      try {
+        await leaveRoom({ roomCode: roomId });
+        console.log("[MiniGame2Page] 방 퇴장 성공");
+      } catch (e) {
+        console.error("[MiniGame2Page] 방 퇴장 실패:", e);
+      }
+    }
+  }, [roomId]);
+
   const handleComplete = () => {
-    navigate('/');
+    navigate('/main');
   };
 
   if (phase === GAME_PHASE.COUNTDOWN) {
@@ -154,6 +183,8 @@ export default function MiniGame2Page() {
       progress={progress}
       totalProgress={100}
       participants={MOCK_PARTICIPANTS}
+      logoExitMessage="메인 화면으로 나가시겠습니까?"
+      onLogoExit={handleLogoExit}
     >
       {phase === GAME_PHASE.PLAYING && (
         <div className="flex flex-col h-full">
