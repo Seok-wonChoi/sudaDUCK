@@ -555,47 +555,39 @@ export default function WaitingRoomPage() {
 
   // 👇 오픈비두 연결 중복 방지용 Ref
   const isConnectingRef = useRef(false);
+  const hasAttemptedConnectionRef = useRef(false); // 👈 [핵심] 연결 시도 여부를 기억하는 잠금 장치
 
   useEffect(() => {
     const connectToOpenVidu = async () => {
       const ovSessionId = roomInfo.openviduSessionId;
       
-      console.log("🔍 [디버깅] 세션 ID:", ovSessionId); 
-      console.log("🔍 [디버깅] 내 Key:", myKey);
-
-      // 1. 이미 연결됐거나(isOvConnected), 세션 ID가 없으면 중단
-      if (isOvConnected || !ovSessionId) {
-          if (!ovSessionId) console.warn("🚨 [OpenVidu] 세션 ID가 없어서 연결 중단됨!");
+      // 1. 이미 연결됐거나, 세션 ID가 없거나, 이미 연결을 시도 중이거나, 이미 시도했었다면 즉시 중단!
+      if (isOvConnected || !ovSessionId || isConnectingRef.current || hasAttemptedConnectionRef.current) {
           return;
       }
 
-      // 1-2. 이미 연결 시도 중이라면 중단 (중복 호출 방지)
-      if (isConnectingRef.current) {
-        console.log("🔒 [OpenVidu] 이미 연결을 시도 중입니다. (Skip)");
-        return;
-      }
-
       try {
-        isConnectingRef.current = true; // 잠금 🔒
-        console.log("🚀 [OpenVidu] 토큰 발급 요청 중...");
+        isConnectingRef.current = true; // 🔒 잠금 시작
+        hasAttemptedConnectionRef.current = true; // ✅ 시도 기록 (성공/실패 상관없이 다시 안 함)
         
-        // 2. 백엔드 API로 토큰 발급
+        console.log("🚀 [OpenVidu] 최초 1회 연결 시도...");
+        
         const token = await createToken(ovSessionId);
-        console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
-        
-        // 3. 내 닉네임 찾기
         const myNickname = participants.find(p => p.key === myKey)?.nickname || "Guest";
 
-        // 4. 오픈비두 연결 (Context 함수)
         await joinSession(token, myNickname);
+        console.log("✅ [OpenVidu] 최초 연결 성공");
         
       } catch (e) {
         console.error("❌ [OpenVidu] 연결 실패:", e);
-        isConnectingRef.current = false; // 실패 시 잠금 해제 🔓
+        // 실패 시에는 다음 기회에 다시 시도할 수 있도록 잠금을 해제합니다.
+        hasAttemptedConnectionRef.current = false;
+      } finally {
+        isConnectingRef.current = false; // 🔓 잠금 해제
       }
     };
 
-    // 조건: 참여자 목록 로딩 완료 && 내 키 확인됨 && 아직 연결 안됨
+    // 조건: 참가자 목록이 있고 내 키가 확인되었을 때만 실행
     if (participants.length > 0 && myKey) {
         connectToOpenVidu();
     }

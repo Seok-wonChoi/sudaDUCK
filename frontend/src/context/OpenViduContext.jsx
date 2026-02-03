@@ -15,6 +15,12 @@ export const OpenViduProvider = ({ children }) => {
     const joinSession = useCallback(async (token, nickname) => {
         if (!token) return;
         
+        // 👇 이미 세션이 있으면 중복 연결을 방지합니다.
+        if (session) {
+            console.log("🔒 [OpenVidu] 이미 세션에 연결되어 있습니다.");
+            return;
+        }
+
         try {
             const OV = new OpenVidu();
             const newSession = OV.initSession();
@@ -50,7 +56,7 @@ export const OpenViduProvider = ({ children }) => {
         } catch (error) {
             console.error("❌ 연결 실패:", error);
         }
-    }, []);
+    }, [session]); // 👈 session 상태 감시
 
     // 2. 나가기 (연결 끊기)
     const leaveSession = useCallback(() => {
