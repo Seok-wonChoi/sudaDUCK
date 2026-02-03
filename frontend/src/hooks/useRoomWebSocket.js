@@ -102,6 +102,52 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     [roomCode],
   );
 
+  // 돌발 퀘스트 시작 브로드캐스트
+  const sendUnexpectedQuest = useCallback(
+    (questData) => {
+      const client = clientRef.current;
+      if (!client?.connected) {
+        console.warn("[WebSocket] sendUnexpectedQuest 실패: 연결되지 않음");
+        return;
+      }
+
+      console.log("[WebSocket] sendUnexpectedQuest 전송:", {
+        roomCode,
+        questData,
+        destination: `/app/rooms/${roomCode}/unexpected-quest`,
+      });
+
+      client.publish({
+        destination: `/app/rooms/${roomCode}/unexpected-quest`,
+        body: JSON.stringify(questData),
+      });
+    },
+    [roomCode],
+  );
+
+  // 돌발 퀘스트 결과 확인 후 이어하기 준비 상태 전송
+  const sendQuestContinueReady = useCallback(
+    (ready) => {
+      const client = clientRef.current;
+      if (!client?.connected) {
+        console.warn("[WebSocket] sendQuestContinueReady 실패: 연결되지 않음");
+        return;
+      }
+
+      console.log("[WebSocket] sendQuestContinueReady 전송:", {
+        roomCode,
+        ready,
+        destination: `/app/rooms/${roomCode}/quest-continue-ready`,
+      });
+
+      client.publish({
+        destination: `/app/rooms/${roomCode}/quest-continue-ready`,
+        body: JSON.stringify({ ready }),
+      });
+    },
+    [roomCode],
+  );
+
   useEffect(() => {
     if (!roomCode) return;
 
@@ -170,6 +216,10 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               onRoomEnded,
               onSilenceDetected,
               onTimerSync,
+              onQuizReceived,
+              onQuizResultReceived,
+              onUnexpectedQuestReceived,
+              onQuestContinueReady,
               onError,
             } = handlersRef.current;
 
@@ -271,6 +321,42 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                 onTimerSync?.(payload);
                 break;
 
+              case "QUIZ_START":
+              case "QUIZ_STARTED":
+                console.log("[WebSocket] QUIZ_START 수신:", {
+                  payload,
+                  type,
+                });
+                onQuizReceived?.(payload);
+                break;
+
+              case "QUIZ_RESULT":
+              case "QUIZ_COMPLETED":
+                console.log("[WebSocket] QUIZ_RESULT 수신:", {
+                  payload,
+                  type,
+                });
+                onQuizResultReceived?.(payload);
+                break;
+
+              case "UNEXPECTED_QUEST":
+              case "SUDDEN_QUEST":
+                console.log("[WebSocket] UNEXPECTED_QUEST 수신:", {
+                  payload,
+                  type,
+                });
+                onUnexpectedQuestReceived?.(payload);
+                break;
+
+              case "QUEST_CONTINUE_READY":
+                console.log("[WebSocket] QUEST_CONTINUE_READY 수신:", {
+                  payload,
+                  senderKey,
+                  type,
+                });
+                onQuestContinueReady?.(payload, senderKey);
+                break;
+
               case "ERROR":
                 onError?.(payload);
                 break;
@@ -314,13 +400,52 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
         }
       }
 
+      // ★ 퀴즈 구독 추가
+      if (roomId) {
+        console.log(`[WebSocket] 🎯 퀴즈 구독 시작: /topic/room/${roomId}/quiz`);
+
+        // 퀴즈 문제 수신
+        const quizSubRef = client.subscribe(
+          `/topic/room/${roomId}/quiz`,
+          (message) => {
+            try {
+              const data = JSON.parse(message.body);
+              console.log("[WebSocket] ✅ QUIZ 수신:", data);
+              handlersRef.current.onQuizReceived?.(data);
+            } catch (e) {
+              console.error("Quiz Msg Parsing Error", e);
+            }
+          }
+        );
+        console.log("[WebSocket] ✅ 퀴즈 구독 완료");
+
+        // 퀴즈 결과 수신
+        const quizResultSubRef = client.subscribe(
+          `/topic/room/${roomId}/quiz-result`,
+          (message) => {
+            try {
+              const data = JSON.parse(message.body);
+              console.log("[WebSocket] ✅ QUIZ_RESULT 수신:", data);
+              handlersRef.current.onQuizResultReceived?.(data);
+            } catch (e) {
+              console.error("Quiz Result Msg Parsing Error", e);
+            }
+          }
+        );
+      }
+
       handlersRef.current.onConnected?.();
     };
 
     client.onStompError = (frame) => {
-      console.error("[WebSocket] ❌ STOMP 에러:", frame);
+      console.error("[WebSocket] ❌ STOMP 에러 상세:", {
+        command: frame.command,
+        headers: frame.headers,
+        body: frame.body,
+        message: frame.headers?.message || "에러 메시지 없음",
+      });
       setIsConnected(false);
-      handlersRef.current.onError?.("STOMP 인증 에러");
+      handlersRef.current.onError?.(frame.headers?.message || "STOMP 연결 에러");
     };
 
     client.onWebSocketError = (event) => {
@@ -346,5 +471,5 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     };
   }, [roomCode, roomId]);
 
-  return { sendReady, sendMic, sendVoiceLevel, sendEndRoom, isConnected };
+  return { sendReady, sendMic, sendVoiceLevel, sendEndRoom, sendUnexpectedQuest, sendQuestContinueReady, isConnected };
 }

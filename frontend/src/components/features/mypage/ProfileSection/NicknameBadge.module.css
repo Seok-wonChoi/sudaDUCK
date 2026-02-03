@@ -8,6 +8,16 @@
   font-weight: 800;
 }
 
+.BadgeSmall {
+  padding: 4px 12px;
+  font-size: 13px;
+  gap: 4px;
+}
+
+.BadgeSmall .Effect {
+  font-size: 11px;
+}
+
 .Nickname {
   color: inherit;
 }

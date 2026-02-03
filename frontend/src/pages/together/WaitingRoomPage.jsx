@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
+import NicknameBadge from "@/components/features/mypage/ProfileSection/NicknameBadge";
 
 import duckImg from "@/assets/images/duck.png";
 import duckProfile1 from "@/assets/images/duck_profile1.png";
@@ -16,7 +17,7 @@ import usersIcon from "@/assets/icons/users_icon.png";
 import styles from "./WaitingRoomPage.module.css";
 // 👇오픈비두 관련 임포트!!
 import { useOpenVidu } from "@/context/OpenViduContext";
-import { createToken } from "@/api/openVidu";
+import { createToken, createSession } from "@/api/openVidu";
 import {
   leaveRoom,
   getRoomLobby,
@@ -81,6 +82,21 @@ function getDuckProfileInfo(duckCustomJson) {
     image: DUCK_PROFILE_IMAGES[style] || duckProfile1,
     color: COLOR_MAP[color] || "#ffffff",
     accessory: ACCESSORY_MAP[accessory] || null,
+  };
+}
+
+function getNicknameStyle(avatarCustomJson) {
+  const parsed = safeParseJson(avatarCustomJson);
+  if (!parsed) {
+    return {
+      background: "default",
+      effect: null,
+    };
+  }
+
+  return {
+    background: parsed.bgStyle || "default",
+    effect: parsed.effect || null,
   };
 }
 
@@ -265,6 +281,7 @@ export default function WaitingRoomPage() {
   const [editTitle, setEditTitle] = useState(roomTitle);
   const [editTopic, setEditTopic] = useState(topic);
   const [editTurn, setEditTurn] = useState(turnCount);
+  const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
   const hotTopics = useMemo(
     () => [
@@ -1065,21 +1082,28 @@ export default function WaitingRoomPage() {
   }, []);
 
   const handleAiRecommend = useCallback(async () => {
+    setIsLoadingAiRecommend(true);
     try {
       const data = await getTopics();
       const topics = data?.topics || [];
       if (topics.length > 0) {
         const randomTopic = topics[Math.floor(Math.random() * topics.length)];
         setEditTopic(randomTopic);
-        return;
+      } else {
+        // API 응답은 받았지만 topics가 비어있을 때 fallback
+        if (hotTopics.length > 0) {
+          const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+          setEditTopic(next);
+        }
       }
     } catch {
-      // ignore
-    }
-
-    if (hotTopics.length > 0) {
-      const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
-      setEditTopic(next);
+      // API 실패 시 fallback
+      if (hotTopics.length > 0) {
+        const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
+        setEditTopic(next);
+      }
+    } finally {
+      setIsLoadingAiRecommend(false);
     }
   }, [hotTopics]);
 
@@ -1313,6 +1337,7 @@ export default function WaitingRoomPage() {
 
                   // 프로필 커스터마이징 정보 파싱
                   const profileInfo = getDuckProfileInfo(p.duckCustomJson);
+                  const nicknameStyleInfo = getNicknameStyle(p.avatarCustomJson);
 
                   return (
                     <div key={p.key || index} className={styles.ParticipantRow}>
@@ -1336,10 +1361,14 @@ export default function WaitingRoomPage() {
 
                         <div className={styles.InfoColumn}>
                           <div className={styles.NameRow}>
-                            <div className={styles.ParticipantName}>
-                              {p.nickname}
-                              {isMe ? " (나)" : ""}
-                            </div>
+                            <NicknameBadge
+                              nickname={p.nickname}
+                              style={nicknameStyleInfo}
+                              size="small"
+                            />
+                            {isMe && (
+                              <span className={styles.MeTag}>(나)</span>
+                            )}
 
                             {!p.isHost ? (
                               <span
@@ -1481,8 +1510,16 @@ export default function WaitingRoomPage() {
                     type="button"
                     className={styles.PopupAiButton}
                     onClick={handleAiRecommend}
+                    disabled={isLoadingAiRecommend}
                   >
-                    AI 추천
+                    {isLoadingAiRecommend ? (
+                      <span className={styles.PopupAiButtonContent}>
+                        <span className={styles.PopupAiSpinner} />
+                        AI 추천
+                      </span>
+                    ) : (
+                      "AI 추천"
+                    )}
                   </button>
                 </div>
 
