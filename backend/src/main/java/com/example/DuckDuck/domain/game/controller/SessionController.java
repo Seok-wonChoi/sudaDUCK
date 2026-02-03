@@ -3,6 +3,7 @@ package com.example.DuckDuck.domain.game.controller;
 import com.example.DuckDuck.domain.game.dto.response.ScriptResponse;
 import com.example.DuckDuck.domain.game.dto.response.SessionResultResponse;
 import com.example.DuckDuck.domain.game.service.SessionService;
+import com.example.DuckDuck.global.security.jwt.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +21,7 @@ import java.util.List;
 public class SessionController {
 
     private final SessionService sessionService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Operation(
             summary = "session별 쉐도잉 문제를 조회합니다.",
@@ -47,8 +49,12 @@ public class SessionController {
     )
     @GetMapping("/room/{roomId}/turn/{turnNo}/results")
     public ResponseEntity<List<SessionResultResponse>> getTurnResults(
+            @RequestHeader("Authorization") String authHeader,
             @PathVariable Long roomId,
             @PathVariable Integer turnNo) {
+        String token = authHeader.substring(7);
+        Long userId = jwtTokenProvider.getUserId(token);
+
 
         List<SessionResultResponse> results = sessionService.getSessionResults(roomId, turnNo);
         return ResponseEntity.ok(results);
