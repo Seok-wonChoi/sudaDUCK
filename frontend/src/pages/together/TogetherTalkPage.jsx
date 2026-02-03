@@ -165,7 +165,7 @@ function getUserIdFromToken() {
 export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { publisher } = useOpenVidu(); // 👈 Publisher 가져오기
+  const { publisher, subscribers } = useOpenVidu(); // 👈 Publisher, Subscribers 가져오기
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
@@ -1321,6 +1321,12 @@ export default function TogetherTalkPage() {
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
+        {/* 👇 소리 재생용 컴포넌트 추가 */}
+        {subscribers.map((sub, i) => (
+          <div key={i} style={{ display: 'none' }}>
+            <UserAudioComponent streamManager={sub} />
+          </div>
+        ))}
         <ExitGuard />
 
         <AppHeader
@@ -1687,3 +1693,16 @@ export default function TogetherTalkPage() {
     </div>
   );
 }
+
+// 👇 소리 재생용 컴포넌트
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};

@@ -74,8 +74,8 @@ const DUMMY_CONVERSATIONS = {
 export default function RecordingPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  // 👇 OpenVidu Publisher 가져오기
-  const { publisher } = useOpenVidu(); 
+  // 👇 OpenVidu Publisher, Subscribers 가져오기
+  const { publisher, subscribers } = useOpenVidu(); 
 
   const roomInfo = state?.roomInfo || {};
   const myUserId = state?.myUserId; // 본인 userId
@@ -356,19 +356,21 @@ export default function RecordingPage() {
 
   // --- Effect 로직 ---
 
-  // 👇 [New] OpenVidu 마이크 제어 로직 (쉐도잉 녹음 시 음소거)
+  // 👇 [New] OpenVidu 마이크 제어 로직 (쉐도잉 진행 중에는 음소거, 결과 리포트 시에만 해제)
   useEffect(() => {
     if (!publisher) return;
 
-    if (step === STEP.RECORDING) {
-      // 녹음 중일 때는 내 목소리가 상대방에게 들리지 않도록 OpenVidu 마이크 뮤트
-      console.log("🎤 [OpenVidu] 쉐도잉 녹음 중 -> 마이크 Mute");
-      publisher.publishAudio(false);
-    } else {
-      // 그 외 상황(대기, 결과 화면 등)에서는 대화를 위해 마이크 Unmute
-      // (단, RecordingPage에서는 기본적으로 대화가 가능해야 하므로 켬)
-      console.log("🎤 [OpenVidu] 대화 모드 -> 마이크 Unmute");
+    // 대화가 허용되는 단계: 결과 리포트 화면 또는 완전히 종료된 화면
+    const isConversationStep = (step === STEP.TURN_REPORT || step === STEP.ALL_DONE || step === STEP.IDLE);
+
+    if (isConversationStep) {
+      // 결과 화면에서는 팀원들과 대화할 수 있도록 마이크 Unmute
+      console.log(`🎤 [OpenVidu] 결과 확인 단계(${step}) -> 마이크 Unmute`);
       publisher.publishAudio(true);
+    } else {
+      // 쉐도잉 진행 중(AI 재생, 녹음 대기, 실제 녹음 등)에는 집중과 에코 방지를 위해 항상 Mute
+      console.log(`🎤 [OpenVidu] 쉐도잉 진행 단계(${step}) -> 마이크 Mute`);
+      publisher.publishAudio(false);
     }
   }, [step, publisher]);
 
@@ -868,8 +870,15 @@ export default function RecordingPage() {
   };
 
   return (
-    <Recordinglayout
-      currentTurn={selectedTurnForReport || currentTurn}
+    <>
+      {/* 👇 소리 재생용 컴포넌트 추가 */}
+      {subscribers.map((sub, i) => (
+        <div key={i} style={{ display: 'none' }}>
+          <UserAudioComponent streamManager={sub} />
+        </div>
+      ))}
+      <Recordinglayout
+        currentTurn={selectedTurnForReport || currentTurn}
       sentenceCards={sentenceCardsData}
       activeCardState={
         step === STEP.AI_PLAYING
@@ -893,6 +902,20 @@ export default function RecordingPage() {
       selectedTurnForReport={selectedTurnForReport}
       logoExitMessage="메인 화면으로 나가시겠습니까?"
       onLogoExit={handleLogoExit}
-    />
+      />
+    </>
   );
 }
+
+// 👇 소리 재생용 컴포넌트
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};
