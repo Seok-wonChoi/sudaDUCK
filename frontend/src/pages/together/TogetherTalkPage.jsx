@@ -233,37 +233,59 @@ export default function TogetherTalkPage() {
     return AI_DUCKBOT_IMAGES[key] || duckBotCyanImg;
   }
 
-  // 타이머 시작 시간 (절대 timestamp) - 웹소켓으로 동기화
+  // 타이머 시작 시간 (절대 timestamp) - 절대 시간 고정 로직
   const [timerStartedAt, setTimerStartedAt] = useState(() => {
     try {
-      // resolvedRoomCode는 아직 정의되지 않았으므로 roomInfo에서 직접 추출
-      const roomCode =
+      // 1. 방 코드 확보 (없으면 세션에서 비상 복구)
+      let code =
         roomInfo.roomCode ||
         roomInfo.inviteCode ||
         roomInfo.joinCode ||
         roomInfo.code ||
-        roomInfo.roomInfo?.roomCode ||
-        "";
-      const saved = sessionStorage.getItem(`timer_started_${roomCode}`);
-      return saved ? parseInt(saved, 10) : null;
+        roomInfo.roomInfo?.roomCode;
+      
+      if (!code) {
+        code = sessionStorage.getItem("last_active_room_code");
+      } else {
+        // 코드 있으면 무조건 백업
+        sessionStorage.setItem("last_active_room_code", code);
+      }
+
+      if (!code) return Date.now(); 
+
+      // 2. 현재 턴에 대한 고유 키 생성
+      // 주의: currentTurn 상태 변수 대신 roomInfo 값을 직접 사용 (초기화 순서 문제 방지)
+      const turnVal = roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+      const storageKey = `timer_start_${code}_turn_${turnVal}`;
+
+      // 3. 박제된 시간 있나 확인
+      const saved = sessionStorage.getItem(storageKey);
+      if (saved) {
+        console.log(`[Timer] 💾 복구된 시간: ${saved} (턴: ${turnVal})`);
+        return parseInt(saved, 10);
+      }
+
+      // 4. 없으면 지금 시간을 박제하고 시작
+      const now = Date.now();
+      sessionStorage.setItem(storageKey, String(now));
+      console.log(`[Timer] 📌 시간 박제: ${now} (턴: ${turnVal})`);
+      return now;
     } catch {
-      return null;
+      return Date.now();
     }
   });
 
-  // 타이머 시작 시간 sessionStorage 저장
+  // 턴이 바뀔 때마다 새로운 시간 박제
   useEffect(() => {
-    if (resolvedRoomCode && timerStartedAt) {
-      try {
-        sessionStorage.setItem(
-          `timer_started_${resolvedRoomCode}`,
-          String(timerStartedAt),
-        );
-      } catch {
-        // ignore
-      }
-    }
-  }, [resolvedRoomCode, timerStartedAt]);
+    if (!resolvedRoomCode) return;
+    
+    // 여기서는 currentTurn 상태를 안전하게 사용 가능 (useEffect 내부이므로)
+    // 하지만 의존성 배열에 currentTurn이 없으므로 roomInfo나 내부 변수로 접근해야 함
+    // 편의상 별도의 상태 관리가 아닌 roomInfo나 timerStartedAt 업데이트 로직에서 처리 권장
+    // 여기서는 초기화 로직이 강력하므로 추가적인 useEffect는 최소화
+  }, [resolvedRoomCode]);
+
+  // 타이머 시작 시간 sessionStorage 저장 (기존 코드 제거됨)
 
   const [topic, setTopic] = useState(roomInfo.topic ?? "좋아하는 음식");
   const [maxCount, setMaxCount] = useState(roomInfo.maxCount ?? 4);
@@ -289,6 +311,28 @@ export default function TogetherTalkPage() {
       setCurrentTurn(nextTurn);
     }
   }, [hydratedInfo]);
+
+  // [추가] 턴이 변경될 때마다(또는 방 코드가 확보될 때마다) 해당 턴의 시작 시간을 박제
+  useEffect(() => {
+    if (!resolvedRoomCode) return;
+    
+    const storageKey = `timer_start_${resolvedRoomCode}_turn_${currentTurn}`;
+    const saved = sessionStorage.getItem(storageKey);
+
+    // 이미 저장된 시간이 없으면(새 턴 시작) 현재 시간을 박제
+    if (!saved) {
+       const now = Date.now();
+       sessionStorage.setItem(storageKey, String(now));
+       setTimerStartedAt(now);
+       console.log(`[Timer] 🔄 새 턴(${currentTurn}) 시작, 시간 박제: ${now}`);
+    } else {
+       // 이미 있으면(새로고침 시) 그거 씀
+       const parsed = parseInt(saved, 10);
+       // 현재 state와 다르면 업데이트 (불필요한 렌더링 방지)
+       setTimerStartedAt((prev) => (prev !== parsed ? parsed : prev));
+       console.log(`[Timer] 💾 턴 ${currentTurn} 시간 유지: ${parsed}`);
+    }
+  }, [currentTurn, resolvedRoomCode]);
 
 
   const myUserId = useMemo(() => {
@@ -334,29 +378,15 @@ export default function TogetherTalkPage() {
       if (data?.topic) setTopic(data.topic);
       if (data?.roomId) setRoomId(data.roomId);
 
-      // 타이머 시작 시간 설정 (서버 값으로 동기화)
+      // 타이머 시작 시간 설정 (서버 값으로 동기화) - 로컬 스토리지 우선 정책으로 제거
+      /* 
       if (data?.timerStartedAt != null) {
         const serverTime = Number(data.timerStartedAt);
-
-        // 새로고침 시에도 서버 타이머와 동기화
         if (!timerSyncedRef.current || timerStartedAt !== serverTime) {
-          console.log(
-            "[TogetherTalkPage] 서버로부터 타이머 시작 시간 동기화:",
-            serverTime,
-            "(새로고침 시에도 동기화)"
-          );
-          setTimerStartedAt(serverTime);
-          timerSyncedRef.current = true;
-
-          // sessionStorage에도 저장 (새로고침 시 참고용)
-          if (resolvedRoomCode) {
-            sessionStorage.setItem(
-              `timer_started_${resolvedRoomCode}`,
-              String(serverTime)
-            );
-          }
+           // 서버 시간 덮어쓰기 방지
         }
-      }
+      } 
+      */
 
       const members = Array.isArray(data?.participants)
         ? data.participants
