@@ -8,6 +8,14 @@ export async function getTurnScripts(roomId, turnNo) {
   return data;
 }
 
+// ✅ 추가: 턴별 점수 조회 (score + averageScore 포함)
+export async function getTurnResults(roomId, turnNo) {
+  const { data } = await api.get(
+    `/api/v1/session/room/${roomId}/turn/${turnNo}/results`
+  );
+  return data;
+}
+
 // 발음/정확도 점수 저장하기
 export async function saveAssessment(audioBlob, roomId, turnNo, scriptId) {
   const formData = new FormData();
