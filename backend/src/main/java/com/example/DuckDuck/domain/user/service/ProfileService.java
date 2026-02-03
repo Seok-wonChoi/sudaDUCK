@@ -1,5 +1,7 @@
 package com.example.DuckDuck.domain.user.service;
 
+import com.example.DuckDuck.domain.game.repository.ScriptRepository;
+import com.example.DuckDuck.domain.user.dto.response.MyPageSummaryResponse;
 import com.example.DuckDuck.domain.user.entity.Profile;
 import com.example.DuckDuck.domain.user.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import java.time.ZoneId;
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
+    private final ScriptRepository scriptRepository;
 
     /**
      * 로그인 기준 연속 출석(플레이 연속일) 갱신
@@ -49,5 +52,21 @@ public class ProfileService {
         profile.setAttendanceDays(newDays);
         profile.setLastLoginAt(now);
         profileRepository.save(profile);
+    }
+
+
+    @Transactional(readOnly = true)
+    public MyPageSummaryResponse getMyPageSummary(Long userId, String email) {
+
+        Profile profile = profileRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Profile not found"));
+
+        int attendanceDays = profile.getAttendanceDays() == null ? 0 : profile.getAttendanceDays();
+        long sentenceCount = scriptRepository.countByUserEmail(email);
+
+        return MyPageSummaryResponse.builder()
+                .attendanceDays(attendanceDays)
+                .sentenceCount(sentenceCount)
+                .build();
     }
 }
