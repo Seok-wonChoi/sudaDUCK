@@ -53,7 +53,7 @@ public class SessionController {
         String token = authHeader.substring(7);
         Long userId = jwtTokenProvider.getUserId(token);
 
-        List<SessionResultResponse> results = sessionService.getSessionResults(roomId, turnNo);
+        List<SessionResultResponse> results = sessionService.getSessionResults(roomId, turnNo, userId);
         return ResponseEntity.ok(results);
     }
 }
