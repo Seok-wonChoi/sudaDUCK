@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import api from "@/api/api"; // 추가사항
+import api from "@/api/api";
+import { useOpenVidu } from "@/context/OpenViduContext"; // 👈 OpenVidu Hook 추가
 import Recordinglayout from "@/components/features/recording/layout/RecordingLayout";
 import {
   saveAssessment,
@@ -73,6 +74,9 @@ const DUMMY_CONVERSATIONS = {
 export default function RecordingPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  // 👇 OpenVidu Publisher 가져오기
+  const { publisher } = useOpenVidu(); 
+
   const roomInfo = state?.roomInfo || {};
   const myUserId = state?.myUserId; // 본인 userId
   const participants = state?.participants || []; // 참여자 목록
@@ -351,6 +355,22 @@ export default function RecordingPage() {
   }, [roomCode]);
 
   // --- Effect 로직 ---
+
+  // 👇 [New] OpenVidu 마이크 제어 로직 (쉐도잉 녹음 시 음소거)
+  useEffect(() => {
+    if (!publisher) return;
+
+    if (step === STEP.RECORDING) {
+      // 녹음 중일 때는 내 목소리가 상대방에게 들리지 않도록 OpenVidu 마이크 뮤트
+      console.log("🎤 [OpenVidu] 쉐도잉 녹음 중 -> 마이크 Mute");
+      publisher.publishAudio(false);
+    } else {
+      // 그 외 상황(대기, 결과 화면 등)에서는 대화를 위해 마이크 Unmute
+      // (단, RecordingPage에서는 기본적으로 대화가 가능해야 하므로 켬)
+      console.log("🎤 [OpenVidu] 대화 모드 -> 마이크 Unmute");
+      publisher.publishAudio(true);
+    }
+  }, [step, publisher]);
 
   useEffect(() => {
     const saved = localStorage.getItem("bookmarkedSentences");

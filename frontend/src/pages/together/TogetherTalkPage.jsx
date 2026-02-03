@@ -17,6 +17,7 @@ import {
 import { scheduleQuiz, submitQuizAnswer } from "@/api/quiz";
 import { translateToEnglish } from "@/api/translate";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
+import { useOpenVidu } from "@/context/OpenViduContext"; // 👈 OpenVidu Hook 추가
 
 import duckImg from "@/assets/images/duck.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
@@ -164,6 +165,7 @@ function getUserIdFromToken() {
 export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { publisher } = useOpenVidu(); // 👈 Publisher 가져오기
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
@@ -569,9 +571,14 @@ export default function TogetherTalkPage() {
     if (isConnected && sendMic && !initialMicSentRef.current) {
       console.log("[TogetherTalkPage] 초기 마이크 상태 전송:", micOn);
       sendMic(micOn);
+      // 👇 페이지 진입 시 OpenVidu 마이크 상태 동기화
+      if (publisher) {
+        console.log("[TogetherTalkPage] OpenVidu 마이크 초기화:", micOn);
+        publisher.publishAudio(micOn);
+      }
       initialMicSentRef.current = true;
     }
-  }, [isConnected, sendMic, micOn]);
+  }, [isConnected, sendMic, micOn, publisher]);
 
   const audioRef = useRef({
     stream: null,
@@ -740,13 +747,15 @@ export default function TogetherTalkPage() {
     if (micOn) {
       setMicOn(false);
       sendMic(false);
+      if (publisher) publisher.publishAudio(false); // 👈 OpenVidu Mute
       await stopAudioAnalysis();
       return;
     }
     setMicOn(true);
     sendMic(true);
+    if (publisher) publisher.publishAudio(true); // 👈 OpenVidu Unmute
     await startAudioAnalysis();
-  }, [micOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
+  }, [micOn, startAudioAnalysis, stopAudioAnalysis, sendMic, publisher]);
 
   // [추가] API 호출 없이 오디오/정적감지만 멈추는 헬퍼 함수
   const stopMediaProcessing = useCallback(async () => {
