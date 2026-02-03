@@ -299,6 +299,13 @@
   gap: 10px;
 }
 
+/* 본인 표시 태그 */
+.MeTag {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+}
+
 .MeLabel {
   font-size: 13px;
   font-weight: 900;
@@ -779,4 +786,64 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+}
+
+/* 평가 대기 중 오버레이 */
+.WaitingResultOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.WaitingResultContent {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+}
+
+.WaitingResultSpinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid #e5e7eb;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.WaitingResultText {
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 900;
+  color: #111827;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.WaitingResultSubText {
+  font-size: clamp(14px, 1.5vw, 16px);
+  font-weight: 700;
+  color: #6b7280;
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

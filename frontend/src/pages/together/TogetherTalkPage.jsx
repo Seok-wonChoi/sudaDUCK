@@ -5,6 +5,7 @@ import styles from "./TogetherTalkPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitGuard from "@/components/common/ExitGuard/ExitGuard";
 import TimerGauge from "@/components/common/TimerGauge/TimerGauge";
+import NicknameBadge from "@/components/features/mypage/ProfileSection/NicknameBadge";
 
 import {
   leaveRoom,
@@ -127,6 +128,21 @@ function getDuckProfileInfo(duckCustomJson) {
     image: DUCK_PROFILE_IMAGES[style] || duckProfile1,
     color: COLOR_MAP[color] || "#ffffff",
     accessory: ACCESSORY_MAP[accessory] || null,
+  };
+}
+
+function getNicknameStyle(avatarCustomJson) {
+  const parsed = safeParseJson(avatarCustomJson);
+  if (!parsed) {
+    return {
+      background: "default",
+      effect: null,
+    };
+  }
+
+  return {
+    background: parsed.bgStyle || "default",
+    effect: parsed.effect || null,
   };
 }
 
@@ -1646,6 +1662,7 @@ export default function TogetherTalkPage() {
 
                   // 프로필 커스터마이징 정보 파싱
                   const profileInfo = getDuckProfileInfo(p.duckCustomJson);
+                  const nicknameStyleInfo = getNicknameStyle(p.avatarCustomJson);
 
                   return (
                     <div
@@ -1676,7 +1693,14 @@ export default function TogetherTalkPage() {
 
                       <div className={styles.VideoFooter}>
                         <div className={styles.VideoFooterLeft}>
-                          <span className={styles.MeLabel}>{p.name}</span>
+                          <NicknameBadge
+                            nickname={p.name}
+                            style={nicknameStyleInfo}
+                            size="small"
+                          />
+                          {isMe && (
+                            <span className={styles.MeTag}>(나)</span>
+                          )}
                           <img
                             className={styles.MicMini}
                             src={participantMicOn ? micOffIcon : micOnIcon}
@@ -1828,18 +1852,19 @@ export default function TogetherTalkPage() {
         />
 
         {/* 평가 대기 중 */}
-        <UnexpectedQuestOverlay
-          open={showWaitingResult}
-          onClose={() => {}} // 평가 중에는 닫을 수 없음
-          duckSrc={duckHappyImg}
-          bubbleText="답변을 평가하고 있어요..."
-          subText="잠시만 기다려 주세요!"
-          subTone="normal"
-          countdownNumber={undefined}
-          clickAnywhere={false}
-          showCloseButton={false}
-          escToClose={false}
-        />
+        {showWaitingResult && (
+          <div className={styles.WaitingResultOverlay}>
+            <div className={styles.WaitingResultContent}>
+              <div className={styles.WaitingResultSpinner} />
+              <div className={styles.WaitingResultText}>
+                답변을 평가하고 있어요
+              </div>
+              <div className={styles.WaitingResultSubText}>
+                잠시만 기다려 주세요!
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 결과 */}
         <UnexpectedQuestOverlay
