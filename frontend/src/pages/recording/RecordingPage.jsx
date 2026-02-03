@@ -10,6 +10,7 @@ import {
 } from "@/api/shadowing";
 import { leaveRoom } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
+import { convertWebMToWav } from "@/utils/audioConverter";
 
 import BottomIdle from "@/components/features/recording/bottom/BottomIdle";
 import BottomAITimer from "@/components/features/recording/bottom/BottomAITimer";
@@ -214,12 +215,17 @@ export default function RecordingPage() {
       setTimeout(async () => {
         if (currentSentence && recordedChunksRef.current.length > 0) {
           try {
-            const audioBlob = new Blob(recordedChunksRef.current, {
+            const webmBlob = new Blob(recordedChunksRef.current, {
               type: mimeType || "audio/webm",
             });
+
+            console.log("🎤 녹음 파일 변환 시작...", webmBlob.size, "bytes");
+            const wavBlob = await convertWebMToWav(webmBlob);
+            console.log("✅ WAV 변환 완료:", wavBlob.size, "bytes");
+
             if (roomId) {
               await saveAssessment(
-                audioBlob,
+                wavBlob,
                 roomId,
                 currentTurn,
                 currentSentence.scriptId,
@@ -352,45 +358,52 @@ export default function RecordingPage() {
     }
   }, [roomCode]);
 
-  const fetchTurnResults = useCallback(async (turnNo = currentTurn) => {
-    if (!roomId || !turnNo) {
-      console.warn('[RecordingPage] roomId 또는 turnNo가 없어 점수 조회 불가');
-      return;
-    }
-
-    try {
-      console.log(`🔍 [RecordingPage] 턴 ${turnNo} 점수 조회 시작`);
-      const results = await getTurnResults(roomId, turnNo);
-      
-      console.log('📊 [RecordingPage] 점수 조회 결과:', results);
-      
-      if (!Array.isArray(results) || results.length === 0) {
-        console.warn('⚠️ [RecordingPage] 점수 데이터가 비어있음');
+  const fetchTurnResults = useCallback(
+    async (turnNo = currentTurn) => {
+      if (!roomId || !turnNo) {
+        console.warn(
+          "[RecordingPage] roomId 또는 turnNo가 없어 점수 조회 불가",
+        );
         return;
       }
-      
-      setTurnResults(prev => ({
-        ...prev,
-        [turnNo]: results
-      }));
-      
-      const targetConversations = conversations[turnNo] || currentTurnSentences;
-      const scores = {};
-      
-      results.forEach(result => {
-        const sentence = targetConversations.find(s => s.scriptId === result.scriptId);
-        if (sentence) {
-          scores[sentence.id] = result.score;
+
+      try {
+        console.log(`🔍 [RecordingPage] 턴 ${turnNo} 점수 조회 시작`);
+        const results = await getTurnResults(roomId, turnNo);
+
+        console.log("📊 [RecordingPage] 점수 조회 결과:", results);
+
+        if (!Array.isArray(results) || results.length === 0) {
+          console.warn("⚠️ [RecordingPage] 점수 데이터가 비어있음");
+          return;
         }
-      });
-      
-      console.log('✅ [RecordingPage] 점수 업데이트:', scores);
-      setSentenceScores(prev => ({ ...prev, ...scores }));
-      
-    } catch (error) {
-      console.error('❌ [RecordingPage] 점수 조회 실패:', error);
-    }
-  }, [roomId, currentTurn, conversations, currentTurnSentences]);
+
+        setTurnResults((prev) => ({
+          ...prev,
+          [turnNo]: results,
+        }));
+
+        const targetConversations =
+          conversations[turnNo] || currentTurnSentences;
+        const scores = {};
+
+        results.forEach((result) => {
+          const sentence = targetConversations.find(
+            (s) => s.scriptId === result.scriptId,
+          );
+          if (sentence) {
+            scores[sentence.id] = result.score;
+          }
+        });
+
+        console.log("✅ [RecordingPage] 점수 업데이트:", scores);
+        setSentenceScores((prev) => ({ ...prev, ...scores }));
+      } catch (error) {
+        console.error("❌ [RecordingPage] 점수 조회 실패:", error);
+      }
+    },
+    [roomId, currentTurn, conversations, currentTurnSentences],
+  );
 
   // --- Effect 로직 ---
 
@@ -768,7 +781,7 @@ export default function RecordingPage() {
 
   useEffect(() => {
     if (step === STEP.TURN_REPORT && roomId && currentTurn) {
-      console.log('[RecordingPage] TURN_REPORT 진입 → 점수 조회');
+      console.log("[RecordingPage] TURN_REPORT 진입 → 점수 조회");
       fetchTurnResults(currentTurn);
     }
   }, [step, currentTurn, roomId, fetchTurnResults]);
@@ -777,21 +790,21 @@ export default function RecordingPage() {
   const sentenceCardsData = useMemo(() => {
     const isReportMode = step === STEP.TURN_REPORT || step === STEP.ALL_DONE;
     const targetTurn = selectedTurnForReport || currentTurn;
-    
+
     let resultsMap = {};
     if (isReportMode && turnResults[targetTurn]) {
-      turnResults[targetTurn].forEach(result => {
+      turnResults[targetTurn].forEach((result) => {
         resultsMap[result.scriptId] = {
           score: result.score,
-          averageScore: result.averageScore
+          averageScore: result.averageScore,
         };
       });
     }
-    
+
     return currentTurnSentences.map((s, i) => {
       const resultData = resultsMap[s.scriptId];
       const finalScore = resultData?.score ?? sentenceScores[s.id];
-      
+
       return {
         ...s,
         scriptId: s.scriptId,
