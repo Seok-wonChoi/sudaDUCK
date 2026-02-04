@@ -111,37 +111,6 @@
   text-overflow: ellipsis;
 }
 
-.QuestButtons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.QuestBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid rgba(79, 70, 229, 0.25);
-  background: rgba(79, 70, 229, 0.08);
-  color: #4f46e5;
-  cursor: pointer;
-  font-weight: 900;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.QuestBtn:hover {
-  background: rgba(79, 70, 229, 0.14);
-  border-color: rgba(79, 70, 229, 0.35);
-}
-
-.QuestBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .Stage {
   margin-top: clamp(14px, 2vw, 18px);
   display: grid;

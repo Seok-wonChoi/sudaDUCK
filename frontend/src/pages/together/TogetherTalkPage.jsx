@@ -1099,10 +1099,6 @@ export default function TogetherTalkPage() {
     else navigate("/together");
   }, [navigate]);
 
-  /* =========================
-     돌발 퀘스트 (수동 시작 1/2)
-  ========================= */
-
   // 퀘스트 주요 상태는 위에서 이미 선언됨 (WebSocket 핸들러보다 먼저 필요)
   const [isCorrect, setIsCorrect] = useState(false);
   const [countdown, setCountdown] = useState(3);
@@ -1159,41 +1155,6 @@ export default function TogetherTalkPage() {
     // STT는 questStep이 "idle"이 되면 기존 useEffect에서 자동으로 재시작됨
     console.log("[Quest] 퀘스트 종료 - STT는 자동으로 재시작됩니다");
   }, [micStateBeforeQuest, micOn, sendMic, startAudioAnalysis, stopAudioAnalysis, roomId, currentTurn]);
-
-  const startQuest = useCallback(
-    async (id) => {
-      if (questRunning) return;
-      if (id !== 1 && id !== 2) return;
-
-      // 퀘스트 시작 전 마이크 상태 저장
-      setMicStateBeforeQuest(micOn);
-
-      // AI 추천 주제 초기화
-      setAiSuggestion("");
-
-      // 정적 감지 중지
-      if (roomId) {
-        try {
-          await stopSilenceMonitoring(roomId);
-          console.log("[Quest] 정적 감지 중지");
-        } catch (e) {
-          console.error("[Quest] 정적 감지 중지 실패:", e);
-        }
-      }
-
-      setActiveQuest(id);
-      setIsRoomTimerRunning(false);
-
-      if (id === 1) {
-        setQuestStep("q1intro");
-        return;
-      }
-
-      // id === 2
-      setQuestStep("intro");
-    },
-    [questRunning, micOn, roomId],
-  );
 
   const handleOverlayClickNext = useCallback(() => {
     if (questStep === "q1intro" && activeQuest === 1) {
