@@ -344,10 +344,17 @@ export default function MiniGame1Page() {
         koreanSentence: q.korean,
         englishSentence: q.english,
         englishParts: q.englishParts,
-        blanks: q.blanks.map((b, idx) => ({
-          answer: b.answer,
-          userAnswer: blanksState[idx]?.value || '',
-        })),
+        blanks: q.blanks.map((b, idx) => {
+          const userAns = blanksState[idx]?.value || '';
+          const correctAns = b.answer;
+          // 대소문자 무시, 앞뒤 공백 제거하여 비교
+          const isCorrect = userAns.trim().toLowerCase() === correctAns.trim().toLowerCase();
+          return {
+            answer: correctAns,
+            userAnswer: userAns,
+            isCorrect: isCorrect,
+          };
+        }),
       };
 
       setAnsweredQuestions((prev) => [...prev, answered]);
@@ -371,10 +378,17 @@ export default function MiniGame1Page() {
         koreanSentence: q.korean,
         englishSentence: q.english,
         englishParts: q.englishParts,
-        blanks: q.blanks.map((b, idx) => ({
-          answer: b.answer,
-          userAnswer: blanksState[idx]?.value || '',
-        })),
+        blanks: q.blanks.map((b, idx) => {
+          const userAns = blanksState[idx]?.value || '';
+          const correctAns = b.answer;
+          // 대소문자 무시, 앞뒤 공백 제거하여 비교
+          const isCorrect = userAns.trim().toLowerCase() === correctAns.trim().toLowerCase();
+          return {
+            answer: correctAns,
+            userAnswer: userAns,
+            isCorrect: isCorrect,
+          };
+        }),
       };
       finalAnswers.push(answered);
     }
