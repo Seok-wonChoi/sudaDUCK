@@ -334,14 +334,25 @@ export default function TogetherTalkPage() {
   const [topic, setTopic] = useState(roomInfo.topic ?? "좋아하는 음식");
   const [maxCount, setMaxCount] = useState(roomInfo.maxCount ?? 4);
 
-  const [roomId, setRoomId] = useState(roomInfo.roomId ?? null);
+  const [roomId, setRoomId] = useState(() => {
+    const id = roomInfo.roomId ?? roomInfo.roomInfo?.roomId ?? null;
+    console.log("[TogetherTalkPage] roomId 초기화:", {
+      "roomInfo.roomId": roomInfo.roomId,
+      "roomInfo.roomInfo?.roomId": roomInfo.roomInfo?.roomId,
+      "최종 roomId": id,
+      roomInfo,
+    });
+    return id;
+  });
 
   // ★ hydratedInfo 변경 시 roomId 업데이트 (RecordingPage에서 돌아올 때)
   useEffect(() => {
-    if (hydratedInfo?.roomInfo?.roomId) {
-      setRoomId(hydratedInfo.roomInfo.roomId);
+    const newRoomId = hydratedInfo?.roomInfo?.roomId ?? hydratedInfo?.roomId;
+    if (newRoomId && newRoomId !== roomId) {
+      console.log("[TogetherTalkPage] roomId 업데이트:", roomId, "->", newRoomId);
+      setRoomId(newRoomId);
     }
-  }, [hydratedInfo]);
+  }, [hydratedInfo, roomId]);
 
   // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
   const [currentTurn, setCurrentTurn] = useState(() => {
@@ -1317,6 +1328,10 @@ export default function TogetherTalkPage() {
   useEffect(() => {
     if (currentTurn !== 3) return;
     if (questRunning || activeQuest !== null) return;
+    if (!roomId) {
+      console.warn("[Quiz] ⚠️ roomId가 없어서 퀴즈 스케줄을 건너뜁니다.");
+      return;
+    }
 
     const scheduleRandomQuiz = async () => {
       try {

@@ -347,27 +347,33 @@ console.log(`📤 발음 평가 전송 시작`, {
           return;
         }
 
+        const targetTurn = selectedTurnForReport || currentTurn;
+
         console.log("[RecordingPage] 북마크 토글:", {
           id,
           realScriptId,
           roomId,
           isBookmarked,
-          turnNo: selectedTurnForReport || currentTurn,
+          turnNo: targetTurn,
         });
 
-        // API 호출
-        await toggleScriptLike(
+        // API 호출 - 응답에서 isLiked 상태를 받아옴
+        const response = await toggleScriptLike(
           realScriptId,
           roomId,
-          selectedTurnForReport || currentTurn
+          targetTurn
         );
 
+        console.log("[RecordingPage] 북마크 API 응답:", response);
+
         // 턴별로 구분되는 복합 키 사용 (turn-sentenceId)
-        const bookmarkKey = `${targetTurn}-${sentenceId}`;
+        const bookmarkKey = `${targetTurn}-${id}`;
+
+        // API 응답의 isLiked 값을 기준으로 로컬 상태 업데이트
         setBookmarkedSentences((prev) => {
-          const next = isBookmarked
-            ? [...new Set([...prev, bookmarkKey])]
-            : prev.filter((id) => id !== bookmarkKey);
+          const next = response.isLiked
+            ? [...new Set([...prev, bookmarkKey])]  // API가 저장됨(true)을 반환하면 추가
+            : prev.filter((key) => key !== bookmarkKey);  // API가 삭제됨(false)을 반환하면 제거
           localStorage.setItem("bookmarkedSentences", JSON.stringify(next));
           return next;
         });
@@ -782,7 +788,9 @@ console.log(`📤 발음 평가 전송 시작`, {
       );
 
       // 턴별로 구분되는 복합 키 사용 (turn-sentenceId)
-      const bookmarkKey = `${currentTurn}-${s.id}`;
+      // 다른 턴의 리포트를 볼 때는 selectedTurnForReport 사용
+      const targetTurn = selectedTurnForReport || currentTurn;
+      const bookmarkKey = `${targetTurn}-${s.id}`;
       return {
         ...s,
         scriptId: s.scriptId,

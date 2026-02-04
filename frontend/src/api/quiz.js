@@ -3,6 +3,11 @@ import api from "./api";
 // 퀴즈 스케줄 (3번째 턴 시작 시 호출, 15-40초 후 랜덤 발생)
 // POST /api/v1/quiz/schedule
 export async function scheduleQuiz(roomId, turn, participantCount) {
+  if (!roomId) {
+    console.error("[Quiz API] roomId가 없습니다:", { roomId, turn, participantCount });
+    throw new Error("roomId is required for scheduling quiz");
+  }
+
   const { data } = await api.post("/api/v1/quiz/schedule", null, {
     params: { roomId, turn, participantCount }
   });
