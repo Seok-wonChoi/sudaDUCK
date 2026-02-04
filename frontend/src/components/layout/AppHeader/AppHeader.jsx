@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./AppHeader.module.css";
-import bellIcon from "@/assets/icons/notice_bell.png";
 import gearIcon from "@/assets/icons/gear.png";
 import duckLogo from "@/assets/images/duck_logo.png";
 
@@ -53,7 +52,6 @@ export default function AppHeader({
   const navigate = useNavigate();
   const rootRef = useRef(null);
 
-  const [notifOpen, setNotifOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [logoExitModalOpen, setLogoExitModalOpen] = useState(false);
   const [logoExitProcessing, setLogoExitProcessing] = useState(false);
@@ -102,11 +100,7 @@ export default function AppHeader({
     };
   }, []);
 
-  const count =
-    typeof notificationCount === "number" ? notificationCount : notifications.length;
-
   const closeAll = () => {
-    setNotifOpen(false);
     setSettingsOpen(false);
   };
 
@@ -131,13 +125,8 @@ export default function AppHeader({
     if (typeof onChangeSound === "function") onChangeSound(next);
   };
 
-  const toggleNotif = () => {
-    setSettingsOpen(false);
-    setNotifOpen((v) => !v);
-  };
 
   const toggleSettings = () => {
-    setNotifOpen(false);
     setSettingsOpen((v) => !v);
   };
 
@@ -237,42 +226,6 @@ export default function AppHeader({
             )}
           </div>
         </button>
-
-        <div className={styles.IconWrap}>
-          <button
-            type="button"
-            className={`${styles.IconButton} ${notifOpen ? styles.Active : ""}`}
-            onClick={toggleNotif}
-            aria-label="알림"
-            aria-expanded={notifOpen}
-          >
-            <img className={styles.IconImage} src={bellIcon} alt="" />
-            {count > 0 && <span className={styles.Badge}>{count}</span>}
-          </button>
-
-          {notifOpen && (
-            <div className={styles.Popover} role="dialog" aria-label="알림 목록">
-              <div className={styles.PopoverTitle}>알림</div>
-              <div className={styles.PopoverBody}>
-                {notifications.length === 0 ? (
-                  <div className={styles.EmptyText}>새 알림이 없습니다.</div>
-                ) : (
-                  notifications.slice(0, 6).map((n) => (
-                    <div className={styles.NotifItem} key={n.id ?? n.text}>
-                      <div className={styles.NotifText}>{n.text}</div>
-                      {n.time && <div className={styles.NotifTime}>{n.time}</div>}
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className={styles.PopoverFooter}>
-                <button type="button" className={styles.FooterButton} onClick={closeAll}>
-                  닫기
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
 
         <div className={styles.IconWrap}>
           <button

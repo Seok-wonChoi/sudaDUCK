@@ -1271,15 +1271,15 @@ export default function TogetherTalkPage() {
     return () => clearTimeout(timer);
   }, [questStep, activeQuest]);
 
-  // 돌발 퀘스트 결과: 3초 후 자동으로 퀘스트 종료
+  // 돌발 퀘스트 결과: 5초 후 자동으로 퀘스트 종료
   useEffect(() => {
     if (questStep !== "resultFail" && questStep !== "resultSuccess") return;
 
-    console.log("[Quest] 결과 화면 표시 - 3초 후 자동으로 대화 재개");
+    console.log("[Quest] 결과 화면 표시 - 5초 후 자동으로 대화 재개");
     const timer = setTimeout(() => {
-      console.log("[Quest] 3초 경과 - 퀘스트 종료하고 대화 재개");
+      console.log("[Quest] 5초 경과 - 퀘스트 종료하고 대화 재개");
       endQuestAndResume();
-    }, 3000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [questStep, endQuestAndResume]);
@@ -1717,7 +1717,7 @@ const stopSTT = useCallback(() => {
   const quest2IntroSub = "가장 빠른 사람이 점수를 얻어!";
 
   const isSuccess = questStep === "resultSuccess";
-  const failText = "아쉽게도 정답하지 못했어요\n다음 번 기회를 노려봐요!";
+  const failText = "아쉽게도 정답을 맞히지 못했어요\n다음 번 기회를 노려봐요!";
   const successText = "대단해요!! 점수를 획득했어요!!";
 
   const resultBubbleText = isSuccess ? successText : failText;

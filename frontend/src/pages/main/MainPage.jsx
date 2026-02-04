@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import styles from "./MainPage.module.css";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -7,7 +6,6 @@ import MainHero from "@/components/features/main/MainHero/MainHero";
 import ModeSelectSection from "@/components/features/main/ModeSelectSection/ModeSelectSection";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 import StatsSection from "@/components/features/main/StatsSection/StatsSection";
-import { getMyProfileCustom, getMypageSummary } from "@/api/mypage";
 
 export default function MainPage() {
   const navigate = useNavigate();
@@ -37,32 +35,33 @@ export default function MainPage() {
     }
   }, [location, navigate]);
 
-  // 로그인 후 사용자 프로필 및 요약 정보 로드
+
+  // 로그인 후 사용자 프로필 로드 (닉네임 등)
   useEffect(() => {
-    const loadUserData = async () => {
+    const loadUserProfile = async () => {
       try {
-        // 프로필 정보 로드
         const profileData = await getMyProfileCustom();
         if (profileData.nickname) {
           localStorage.setItem('userNickname', profileData.nickname);
           window.dispatchEvent(new Event('nicknameUpdated'));
         }
 
-        // 요약 정보 로드
         const summaryData = await getMypageSummary();
-        setSummary({
-          attendanceDays: summaryData.attendanceDays || 0,
-          sentenceCount: summaryData.sentenceCount || 0,
-        });
+        if (summaryData?.attendanceDays !== undefined) {
+          setConsecutiveDays(summaryData.attendanceDays);
+        }
+        if (summaryData?.sentenceCount !== undefined) {
+          setSentenceCount(summaryData.sentenceCount);
+        }
       } catch (error) {
-        console.error("사용자 데이터 로드 실패:", error);
+        console.error("프로필 로드 실패:", error);
       }
     };
 
-    // accessToken이 있으면 데이터 로드
+    // accessToken이 있으면 프로필 로드
     const token = localStorage.getItem('accessToken');
     if (token) {
-      loadUserData();
+      loadUserProfile();
     }
   }, []);
 
