@@ -31,13 +31,21 @@ public class ScriptService {
 
     //스크립트 좋아요 + 취소
     @Transactional
-    public Map<String, Object> likeSentence(Long userId, Long roomId, int turnNo, String scriptId){
+    public Map<String, Object> likeSentence(Long userId, Long roomId, Integer turnNo, String scriptId){
 
         //좋아요 누른 유저 객체 조회
         Member member = memberRepository.findById(userId)
                 .orElseThrow(()-> new RuntimeException("존재하지 않는 사용자입니다."));
 
-        String sentenceId = member.getId() + "_" + scriptId;
+        String prefix = userId + "_";
+        String sentenceId;
+
+        if (scriptId.startsWith(prefix)) {
+            sentenceId = scriptId;
+        } else {
+            sentenceId = prefix + scriptId;
+        }
+
         Optional<Sentence> existingSentence = scriptRepository.findById(sentenceId);
 
         //이미 있다면 좋아요 취소
@@ -45,6 +53,11 @@ public class ScriptService {
             scriptRepository.delete(existingSentence.get());
             return Map.of("message", "좋아요가 취소되었습니다.", "isLiked", false);
         }
+
+        if (roomId == null || turnNo == null) {
+            throw new RuntimeException("저장을 위해서는 방 정보(roomId, turnNo)가 필요합니다.");
+        }
+
         String redisKey = String.format("room:%d:turn:%d:script:%s", roomId, turnNo, scriptId);
         Map<Object, Object> data = redisTemplate.opsForHash().entries(redisKey);
 

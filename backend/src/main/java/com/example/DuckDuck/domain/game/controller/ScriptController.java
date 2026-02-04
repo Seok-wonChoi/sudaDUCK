@@ -40,8 +40,8 @@ public class ScriptController {
     @PostMapping("/{scriptId}/like")
     public ResponseEntity<Map<String, Object>> like(
             @RequestHeader("Authorization") String authHeader,
-                                       @RequestParam Long roomId,
-                                       @RequestParam int turnNo,
+                                       @RequestParam(required = false) Long roomId,
+                                       @RequestParam(required = false) Integer turnNo,
                                        @PathVariable String scriptId){
 
         String token = authHeader.substring(7);
