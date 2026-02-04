@@ -34,20 +34,16 @@
   margin: 0;
 }
 
-/* 카드 리스트 - 세로 스크롤 */
+/* 카드 리스트 - 세로 스크롤, 중앙 정렬 */
 .cardList {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
   align-items: center;
-}
-
-.cardItem {
-  width: 100%;
-  max-width: 800px;
+  justify-content: flex-start;
 }
 
 /* 스크롤바 스타일 */
@@ -84,7 +80,7 @@
   }
 
   .cardList {
-    padding: 16px;
-    gap: 16px;
+    padding: 20px 16px;
+    gap: 20px;
   }
 }

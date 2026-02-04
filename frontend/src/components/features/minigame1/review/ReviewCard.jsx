@@ -56,21 +56,21 @@ export default function ReviewCard({
               </div>
               <div className={styles.blankContent}>
                 {blank.isCorrect ? (
-                  // 정답일 때는 답만 표시
+                  // 정답일 때는 답만 표시 (레이블 없음)
                   <div className={styles.answerOnly}>
                     {blank.answer}
                   </div>
                 ) : (
-                  // 오답일 때는 내 답변 + 정답 표시
+                  // 오답일 때는 "내 답변"과 "정답" 표시
                   <>
                     <div className={styles.answerRow}>
-                      <span className={styles.answerLabel}>입력 없음:</span>
+                      <span className={styles.answerLabel}>내 답변</span>
                       <span className={styles.wrongAnswer}>
-                        {blank.userAnswer || '입력 없음'}
+                        {blank.userAnswer ? blank.userAnswer : '(입력하지 않음)'}
                       </span>
                     </div>
                     <div className={styles.answerRow}>
-                      <span className={styles.answerLabel}>정답:</span>
+                      <span className={styles.answerLabel}>정답</span>
                       <span className={styles.correctAnswer}>
                         {blank.answer}
                       </span>

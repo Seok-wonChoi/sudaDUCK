@@ -28,15 +28,14 @@ export default function ReviewPanel({
       {/* 문제 카드 리스트 - 세로 스크롤 */}
       <div className={styles.cardList}>
         {questions.map((question, idx) => (
-          <div key={idx} className={styles.cardItem}>
-            <ReviewCard
-              questionNumber={idx + 1}
-              korean={question.koreanSentence}
-              english={question.englishSentence}
-              blanks={question.blanks}
-              englishParts={question.englishParts}
-            />
-          </div>
+          <ReviewCard
+            key={idx}
+            questionNumber={idx + 1}
+            korean={question.koreanSentence}
+            english={question.englishSentence}
+            blanks={question.blanks}
+            englishParts={question.englishParts}
+          />
         ))}
       </div>
     </div>
