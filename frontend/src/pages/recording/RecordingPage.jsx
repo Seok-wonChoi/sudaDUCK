@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import api from "@/api/api"; // 추가사항
+import api from "@/api/api";
+import { useOpenVidu } from "@/context/OpenViduContext"; // 👈 OpenVidu Hook 추가
 import Recordinglayout from "@/components/features/recording/layout/RecordingLayout";
 import {
   saveAssessment,
@@ -75,6 +76,9 @@ const DUMMY_CONVERSATIONS = {
 export default function RecordingPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  // 👇 OpenVidu Publisher, Subscribers, leaveSession 가져오기
+  const { publisher, subscribers, leaveSession } = useOpenVidu(); 
+
   const roomInfo = state?.roomInfo || {};
   const myUserId = state?.myUserId; // 본인 userId
   const participants = state?.participants || []; // 참여자 목록
@@ -339,11 +343,14 @@ export default function RecordingPage() {
 
   const handleRoomClosed = useCallback(() => {
     console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
+    // 👇 강제 퇴장 시에도 세션 종료
+    if (leaveSession) leaveSession();
+    
     navigate("/main", {
       replace: true,
       state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
-  }, [navigate]);
+  }, [navigate, leaveSession]);
 
   useRoomWebSocket(
     roomCode,
@@ -354,6 +361,9 @@ export default function RecordingPage() {
   );
 
   const handleLogoExit = useCallback(async () => {
+    // 👇 진짜 방을 나갈 때는 세션 종료
+    if (leaveSession) leaveSession();
+
     if (roomCode) {
       try {
         await leaveRoom({ roomCode });
@@ -362,7 +372,7 @@ export default function RecordingPage() {
         console.error("[RecordingPage] 방 퇴장 실패:", e);
       }
     }
-  }, [roomCode]);
+  }, [roomCode, leaveSession]);
 
   const fetchTurnResults = useCallback(
     async (turnNo = currentTurn) => {
@@ -412,6 +422,24 @@ export default function RecordingPage() {
   );
 
   // --- Effect 로직 ---
+
+  // 👇 [New] OpenVidu 마이크 제어 로직 (쉐도잉 진행 중에는 음소거, 결과 리포트 시에만 해제)
+  useEffect(() => {
+    if (!publisher) return;
+
+    // 대화가 허용되는 단계: 결과 리포트 화면 또는 완전히 종료된 화면
+    const isConversationStep = (step === STEP.TURN_REPORT || step === STEP.ALL_DONE || step === STEP.IDLE);
+
+    if (isConversationStep) {
+      // 결과 화면에서는 팀원들과 대화할 수 있도록 마이크 Unmute
+      console.log(`🎤 [OpenVidu] 결과 확인 단계(${step}) -> 마이크 Unmute`);
+      publisher.publishAudio(true);
+    } else {
+      // 쉐도잉 진행 중(AI 재생, 녹음 대기, 실제 녹음 등)에는 집중과 에코 방지를 위해 항상 Mute
+      console.log(`🎤 [OpenVidu] 쉐도잉 진행 단계(${step}) -> 마이크 Mute`);
+      publisher.publishAudio(false);
+    }
+  }, [step, publisher]);
 
   useEffect(() => {
     const saved = localStorage.getItem("bookmarkedSentences");
@@ -959,8 +987,15 @@ export default function RecordingPage() {
   };
 
   return (
-    <Recordinglayout
-      currentTurn={selectedTurnForReport || currentTurn}
+    <>
+      {/* 👇 소리 재생용 컴포넌트 추가 */}
+      {subscribers.map((sub, i) => (
+        <div key={i} style={{ display: 'none' }}>
+          <UserAudioComponent streamManager={sub} />
+        </div>
+      ))}
+      <Recordinglayout
+        currentTurn={selectedTurnForReport || currentTurn}
       sentenceCards={sentenceCardsData}
       activeCardState={
         step === STEP.AI_PLAYING
@@ -991,6 +1026,20 @@ export default function RecordingPage() {
       selectedTurnForReport={selectedTurnForReport}
       logoExitMessage="메인 화면으로 나가시겠습니까?"
       onLogoExit={handleLogoExit}
-    />
+      />
+    </>
   );
 }
+
+// 👇 소리 재생용 컴포넌트
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};
