@@ -10,7 +10,7 @@ import ReviewPanel from '@/components/features/minigame1/review/ReviewPanel';
 import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
 import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
 import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewData } from '@/api/miniGame';
-import { leaveRoom } from '@/api/rooms';
+import { leaveRoom, getRoomLobby } from '@/api/rooms';
 import useMicAnalyzer from '@/hooks/useMicAnalyzer';
 
 const GAME_PHASE = {
@@ -124,9 +124,41 @@ export default function MiniGame1Page() {
     return () => clearTimeout(timeout);
   }, [isSpeaking, voiceLevel, lastVoiceUpdate]);
 
-  // 참가자 목록은 ranking API에서 업데이트됨 (profileImageUrl 포함)
-  
-  // 대기 중 제출 상태 확인 (3초마다)
+  // 🔥 문제 5 해결: 방 참가자 정보 초기 로드
+  useEffect(() => {
+    const loadRoomParticipants = async () => {
+      if (!roomCode) return;
+      
+      try {
+        const lobbyData = await getRoomLobby(roomCode);
+        console.log('📊 방 참가자 정보 로드:', lobbyData);
+        
+        if (lobbyData && lobbyData.members && Array.isArray(lobbyData.members)) {
+          const participantsList = lobbyData.members.map(member => ({
+            id: member.userId || member.memberId,
+            userId: member.userId || member.memberId,
+            name: member.nickname,
+            nickname: member.nickname,
+            profileImageUrl: member.profileImageUrl,
+            avatar: member.profileImageUrl,
+            isActive: true,
+            isMe: member.isMe || false,
+            voiceLevel: 0,
+          }));
+          
+          console.log('✅ 참가자 목록 설정:', participantsList);
+          setParticipants(participantsList);
+          setTotalParticipants(participantsList.length);
+        }
+      } catch (error) {
+        console.error('❌ 방 참가자 정보 로드 실패:', error);
+      }
+    };
+
+    loadRoomParticipants();
+  }, [roomCode]);
+
+  // 🔥 문제 3 해결: 대기 중 제출 상태 확인 (3초마다)
   useEffect(() => {
     if (phase !== GAME_PHASE.WAITING) return;
 
@@ -134,10 +166,18 @@ export default function MiniGame1Page() {
       try {
         const rankingData = await getReviewRanking(roomId);
         
+        console.log('📊 대기 상태 확인:', {
+          rankingData: rankingData.length,
+          totalParticipants,
+          제출여부: rankingData.map(r => ({ 이름: r.nickname, 점수: r.score }))
+        });
+        
         if (rankingData && Array.isArray(rankingData)) {
-          setSubmittedCount(rankingData.length);
+          // 제출한 사람 수 계산 (점수가 있는 사람)
+          const submittedUsers = rankingData.filter(r => r.score > 0 || r.hasSubmitted);
+          setSubmittedCount(submittedUsers.length);
           
-          // 랭킹 데이터로 참가자 정보 업데이트 (profileImageUrl 포함)
+          // 랭킹 데이터로 참가자 정보 업데이트
           const updatedParticipants = rankingData.map(rank => ({
             id: rank.userId || rank.nickname,
             userId: rank.userId || rank.nickname,
@@ -146,21 +186,26 @@ export default function MiniGame1Page() {
             profileImageUrl: rank.profileImageUrl,
             avatar: rank.profileImageUrl,
             isActive: true,
-            isMe: rank.me || false,
+            isMe: rank.isMe || false,
             voiceLevel: 0,
           }));
           
-          // 참가자 목록 업데이트
-          if (updatedParticipants.length > 0) {
-            setParticipants(updatedParticipants);
+          // 기존 참가자 정보와 병합
+          setParticipants(prevParticipants => {
+            const updatedMap = new Map();
             
-            // totalParticipants도 실제 참가자 수로 업데이트
-            if (totalParticipants === 0 || totalParticipants < updatedParticipants.length) {
-              setTotalParticipants(updatedParticipants.length);
-            }
-          }
+            prevParticipants.forEach(p => {
+              updatedMap.set(p.userId, p);
+            });
+            
+            updatedParticipants.forEach(p => {
+              updatedMap.set(p.userId, { ...updatedMap.get(p.userId), ...p });
+            });
+            
+            return Array.from(updatedMap.values());
+          });
           
-          // 모든 참가자가 제출했으면 결과 화면으로 이동
+          // 모든 참가자가 제출했으면 결과 화면으로
           if (rankingData.length >= totalParticipants && totalParticipants > 0) {
             setRankings(rankingData);
             setPhase(GAME_PHASE.RESULT);
@@ -171,10 +216,7 @@ export default function MiniGame1Page() {
       }
     };
 
-    // 즉시 한 번 확인
     checkSubmissionStatus();
-    
-    // 3초마다 확인
     const interval = setInterval(checkSubmissionStatus, 3000);
     
     return () => clearInterval(interval);
@@ -192,6 +234,8 @@ export default function MiniGame1Page() {
         setIsLoading(true);
 
         const questionsData = await getReviewQuestions(roomId);
+        
+        console.log('📊 받아온 문제 데이터:', questionsData);
 
         // 유효한 문제 필터링
         const validQuestions = questionsData.filter(
@@ -206,6 +250,8 @@ export default function MiniGame1Page() {
             return hasBlanks;
           }
         );
+
+        console.log('📊 필터링 후 문제 수:', validQuestions.length);
 
         const formattedQuestions = validQuestions.map((item) => {
           const { parts, answers } = parseBlankScript(item.blank_script);
@@ -317,7 +363,6 @@ export default function MiniGame1Page() {
   }, []);
 
   const handleBlankClick = useCallback((blankIdx) => {
-    // 클릭한 빈칸으로 currentBlank 변경
     setCurrentBlank(blankIdx);
   }, []);
 
@@ -347,7 +392,6 @@ export default function MiniGame1Page() {
         blanks: q.blanks.map((b, idx) => {
           const userAns = blanksState[idx]?.value || '';
           const correctAns = b.answer;
-          // 대소문자 무시, 앞뒤 공백 제거하여 비교
           const isCorrect = userAns.trim().toLowerCase() === correctAns.trim().toLowerCase();
           return {
             answer: correctAns,
@@ -381,7 +425,6 @@ export default function MiniGame1Page() {
         blanks: q.blanks.map((b, idx) => {
           const userAns = blanksState[idx]?.value || '';
           const correctAns = b.answer;
-          // 대소문자 무시, 앞뒤 공백 제거하여 비교
           const isCorrect = userAns.trim().toLowerCase() === correctAns.trim().toLowerCase();
           return {
             answer: correctAns,
