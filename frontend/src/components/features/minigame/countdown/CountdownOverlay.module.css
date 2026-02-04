@@ -1,7 +1,8 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: #e8ecf4;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,16 +15,20 @@
   flex-direction: column;
   align-items: center;
   padding: 40px;
+  z-index: 10;
+  margin-left: 15%; /* 오리를 피해서 오른쪽으로 이동 */
+  margin-top: -5%; /* 살짝 위로 이동 */
 }
 
 .speechBubble {
   background: #f5f5f0;
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 24px 48px;
   text-align: center;
   position: relative;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 40px; /* 숫자와의 간격 확보 */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  z-index: 11;
 }
 
 .speechBubble::after {
@@ -39,16 +44,20 @@
 }
 
 .title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #111827;
-  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: #1e1b4b; /* 진한 남색으로 무게감 부여 */
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: 18px;
+  font-weight: 500;
+  color: #4338ca; /* 보라빛 도는 파란색으로 포인트 */
   margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
 }
 
 .countCircle {
@@ -77,4 +86,5 @@
   width: 360px;
   height: auto;
   z-index: 1;
+  opacity: 0.9; /* 살짝 투명하게 해서 뒤에 있음을 강조 */
 }
