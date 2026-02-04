@@ -230,27 +230,64 @@ export default function MyPage() {
     const fetchMyScripts = async () => {
       try {
         const data = await getMyScripts();
+        console.log("[MyPage] API 응답 전체 데이터:", data);
+        console.log("[MyPage] API 응답 타입:", typeof data, Array.isArray(data));
 
         // 백엔드 응답을 컴포넌트 형식으로 변환
-        const formattedSentences = Array.isArray(data) ? data.map(item => ({
-          id: item.sentenceId || item.id,
-          english: item.englishSentence || item.english || '',
-          korean: item.koreanSentence || item.korean || '',
-          topic: item.topic || '',
-          score: item.score,
-          date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
-          bookmarked: true,
-          // 추가 정보
-          speakerName: item.speakerName,
-          participants: item.participants
+        const formattedSentences = Array.isArray(data) ? data.map((item, index) => {
+          console.log(`[MyPage] 문장 ${index} 원본 데이터:`, item);
+          console.log(`[MyPage] topic 필드:`, item.topic, item.scriptTopic, item.script?.topic);
+          console.log(`[MyPage] participants 필드:`, item.participants, item.participantNames, item.script?.participants);
+          console.log(`[MyPage] blank_script 필드:`, item.blank_script, item.blankScript);
 
-        })) : [];
+          // topic 필드 확인 (여러 가능성 고려)
+          const topic = item.topic || item.scriptTopic || item.script?.topic || '';
 
+          // participants 필드 확인 (여러 가능성 고려)
+          let participants = [];
+          if (Array.isArray(item.participants)) {
+            participants = item.participants;
+          } else if (Array.isArray(item.participantNames)) {
+            participants = item.participantNames;
+          } else if (Array.isArray(item.script?.participants)) {
+            participants = item.script.participants;
+          }
+
+          // blank_script 필드 확인 및 파싱
+          const blankScript = item.blank_script || item.blankScript || '';
+          let blankWords = [];
+          if (blankScript) {
+            // [단어] 형식의 빈칸 추출
+            const matches = blankScript.match(/\[([^\]]+)\]/g);
+            if (matches) {
+              blankWords = matches.map(match => match.slice(1, -1));
+            }
+          }
+
+          const formatted = {
+            id: item.sentenceId || item.id || item.scriptId,
+            english: item.englishSentence || item.english || '',
+            korean: item.koreanSentence || item.korean || '',
+            topic: topic,
+            score: item.score,
+            date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
+            bookmarked: true,
+            speakerName: item.speakerName,
+            participants: participants,
+            blankScript: blankScript,
+            blankWords: blankWords
+          };
+
+          console.log(`[MyPage] 문장 ${index} 포맷 결과:`, formatted);
+          return formatted;
+        }) : [];
+
+        console.log("[MyPage] 최종 포맷된 문장 목록:", formattedSentences);
         setSentences(formattedSentences);
       } catch (error) {
         console.error("스크립트 조회 실패:", error);
-        // 실패 시 MOCK 데이터 사용
-        setSentences(MOCK_SENTENCES);
+        // 실패 시 빈 배열로 설정
+        setSentences([]);
       }
     };
     fetchMyScripts();
@@ -264,6 +301,9 @@ export default function MyPage() {
   ];
 
   const handleSentenceClick = (sentence) => {
+    console.log("[MyPage] 선택된 문장:", sentence);
+    console.log("[MyPage] 주제:", sentence.topic);
+    console.log("[MyPage] 참여자:", sentence.participants);
     setSelectedSentence(sentence);
   };
 

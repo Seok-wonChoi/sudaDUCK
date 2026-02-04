@@ -17,6 +17,14 @@ export default function SentenceItem({ sentence, onClick, onDelete }) {
     onDelete?.();
   };
 
+  // 점수에 따른 variant 결정
+  const getScoreVariant = (scoreValue) => {
+    if (scoreValue < 40) return 'scoreRed';
+    if (scoreValue < 60) return 'scoreOrange';
+    if (scoreValue < 80) return 'scoreYellow';
+    return 'scoreGreen';
+  };
+
   return (
     <div className={styles.Item} onClick={onClick}>
       <div className={styles.BookmarkIcon}>
@@ -35,7 +43,7 @@ export default function SentenceItem({ sentence, onClick, onDelete }) {
           <div className={styles.Tags}>
             {topic && <Tag variant="topic">{topic}</Tag>}
             {score !== undefined && (
-              <Tag variant="score">{score}점</Tag>
+              <Tag variant={getScoreVariant(score)}>{score}점</Tag>
             )}
             {needsReview && <Tag variant="review">복습필요</Tag>}
           </div>
