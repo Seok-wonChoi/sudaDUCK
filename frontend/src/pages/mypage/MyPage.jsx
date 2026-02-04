@@ -37,109 +37,6 @@ const DUCK_PROFILE_IMAGES = {
   profile4: duckProfile4,
 };
 
-const MOCK_SENTENCES = [
-  {
-    id: 1,
-    english: "I couldn't agree with you more on that point.",
-    korean: "그 점에 대해서 당신 말에 전적으로 동의합니다.",
-    topic: "비즈니스 미팅",
-    score: 85,
-    needsReview: false,
-    date: "2026.01.15",
-    bookmarked: true,
-    participants: ["John", "Sarah", "David"],
-    similarExpressions: [
-      { english: "I totally agree with you.", korean: "완전히 동의합니다." },
-      { english: "You're absolutely right.", korean: "정말 맞는 말씀이에요." },
-      { english: "I'm completely on board with that.", korean: "그것에 완전히 찬성합니다." },
-      { english: "That's exactly what I think.", korean: "그게 바로 제 생각입니다." },
-    ],
-    quizQuestion: "I ______ agree ______ you more on that point.",
-    quizAnswer: "couldn't with",
-  },
-  {
-    id: 2,
-    english: "Would you mind giving me a hand with this project?",
-    korean: "이 프로젝트 좀 도와주실 수 있으신가요?",
-    topic: "팀 협업",
-    score: 45,
-    needsReview: true,
-    date: "2026.01.14",
-    bookmarked: true,
-    participants: ["Emma", "Mike"],
-    similarExpressions: [
-      { english: "Could you help me with this?", korean: "이것 좀 도와주실 수 있나요?" },
-      { english: "I could use some assistance.", korean: "도움이 좀 필요합니다." },
-    ],
-    quizQuestion: "Would you mind ______ me a hand with this project?",
-    quizAnswer: "giving",
-  },
-  {
-    id: 3,
-    english: "I'm afraid I have to disagree with your assessment.",
-    korean: "죄송하지만 당신의 평가에 동의할 수 없습니다.",
-    topic: "프로젝트 리뷰",
-    score: 92,
-    needsReview: false,
-    date: "2026.01.13",
-    bookmarked: true,
-    participants: ["Alex"],
-    similarExpressions: [
-      { english: "I see it differently.", korean: "저는 다르게 봅니다." },
-      { english: "I have a different perspective.", korean: "다른 관점을 가지고 있습니다." },
-    ],
-    quizQuestion: "I'm afraid I have to ______ with your assessment.",
-    quizAnswer: "disagree",
-  },
-  {
-    id: 4,
-    english: "Let me get back to you on that as soon as possible.",
-    korean: "그 건에 대해 가능한 한 빨리 답변드리겠습니다.",
-    topic: "고객 서비스",
-    score: 55,
-    needsReview: true,
-    date: "2026.01.12",
-    bookmarked: true,
-    participants: ["Customer", "Support"],
-    similarExpressions: [
-      { english: "I'll follow up with you shortly.", korean: "곧 연락드리겠습니다." },
-    ],
-    quizQuestion: "Let me get ______ to you on that as soon as possible.",
-    quizAnswer: "back",
-  },
-  {
-    id: 5,
-    english: "It's been a pleasure working with you all these years.",
-    korean: "지난 몇 년간 여러분과 함께 일할 수 있어서 기뻤습니다.",
-    topic: "송별회",
-    score: 78,
-    needsReview: false,
-    date: "2026.01.11",
-    bookmarked: true,
-    participants: ["Team"],
-    similarExpressions: [],
-    quizQuestion: "It's been a ______ working with you all these years.",
-    quizAnswer: "pleasure",
-  },
-  {
-    id: 6,
-    english: "I'm looking forward to hearing from you soon.",
-    korean: "곧 소식 듣기를 기대하겠습니다.",
-    topic: "이메일 작성",
-    score: 95,
-    needsReview: false,
-    date: "2026.01.09",
-    bookmarked: true,
-    participants: [],
-    similarExpressions: [
-      { english: "I hope to hear from you soon.", korean: "곧 연락 주시길 바랍니다." },
-      { english: "Looking forward to your reply.", korean: "답장 기다리겠습니다." },
-    ],
-    quizQuestion: "I'm looking ______ to hearing from you soon.",
-    quizAnswer: "forward",
-  },
-];
-
 export default function MyPage() {
   const [sentences, setSentences] = useState([]);
   const [selectedSentence, setSelectedSentence] = useState(null);
@@ -350,18 +247,9 @@ export default function MyPage() {
     fetchMyScripts();
   }, []);
 
-  // 총 플레이 타임을 "시간:분" 형식으로 변환
-  const formatPlaytime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}시간 ${minutes}분`;
-    }
-    return `${minutes}분`;
-  };
 
   const stats = [
-    { value: formatPlaytime(totalPlaytime), label: "총 플레이 타임", unit: "" },
+    { value: "✨", label: "수다DUCK과 함께 한 문장 연습!" },
     { value: consecutiveDays, label: "연속 학습", unit: "일" },
     { value: sentences.length, label: "저장된 문장", unit: "개" },
   ];
