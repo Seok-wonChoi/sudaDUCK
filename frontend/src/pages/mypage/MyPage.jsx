@@ -217,11 +217,6 @@ export default function MyPage() {
         if (summaryData.attendanceDays !== undefined) setConsecutiveDays(summaryData.attendanceDays);
         if (summaryData.sentenceCount !== undefined) setSentenceCount(summaryData.sentenceCount);
 
-        // 4. 요약 정보 조회
-        const summaryData = await getMypageSummary();
-        if (summaryData.attendanceDays !== undefined) setConsecutiveDays(summaryData.attendanceDays);
-        if (summaryData.sentenceCount !== undefined) setSentenceCount(summaryData.sentenceCount);
-
       } catch (error) {
         console.error("데이터 로드 실패:", error);
       }
