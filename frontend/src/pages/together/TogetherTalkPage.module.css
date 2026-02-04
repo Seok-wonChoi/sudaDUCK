@@ -262,7 +262,7 @@
 
 .VideoFooterLeft {
   display: inline-flex;
-  align-items: flex-end;
+  align-items: baseline;
   gap: 10px;
 }
 
@@ -289,6 +289,7 @@
   width: 18px;
   height: 18px;
   object-fit: contain;
+  align-self: center;
 }
 
 .MicMuted {
@@ -434,6 +435,12 @@
   line-height: 1.35;
 }
 
+.AiMainTextLarge {
+  margin-top: 16px;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
 .AiSubText {
   margin-top: 8px;
   text-align: center;
@@ -457,10 +464,11 @@
 
 .BigDuck {
   position: absolute;
-  right: clamp(-8px, -0.8vw, -6px);
-  bottom: clamp(-10px, -1vw, -8px);
-  width: clamp(220px, 28vw, 280px);
-  height: clamp(220px, 28vw, 280px);
+  left: 50%;
+  bottom: clamp(-20px, -2vw, -15px);
+  transform: translateX(-50%);
+  width: clamp(280px, 35vw, 360px);
+  height: clamp(280px, 35vw, 360px);
   object-fit: contain;
   z-index: 1;
   filter: drop-shadow(0 18px 30px rgba(17, 24, 39, 0.12));

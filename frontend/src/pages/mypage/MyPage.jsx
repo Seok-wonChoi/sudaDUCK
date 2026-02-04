@@ -258,7 +258,7 @@ export default function MyPage() {
   const stats = [
     { value: "✨", label: "수다DUCK과 함께 한 문장 연습!" },
     { value: consecutiveDays, label: "연속 학습", unit: "일" },
-    { value: sentences.length, label: "저장된 문장", unit: "개" },
+    { value: sentenceCount, label: "저장된 문장", unit: "개" },
   ];
 
   const handleSentenceClick = (sentence) => {
