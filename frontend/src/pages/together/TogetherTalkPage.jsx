@@ -1165,114 +1165,127 @@ export default function TogetherTalkPage() {
      한국어→영어 번역 (Chrome STT)
   ========================= */
   const recognitionRef = useRef(null);
-
+  
+  // [필수] 턴 번호 최신화 Ref
   const currentTurnRef = useRef(currentTurn);
-
   useEffect(() => {
     currentTurnRef.current = currentTurn;
   }, [currentTurn]);
 
-  // STT 시작
+// [추가] 의도적으로 STT를 껐는지 확인하는 플래그
+  const isSTTIntentionallyStopped = useRef(false);
+
 // STT 시작
+// STT 시작 함수 (완성본)
   const startSTT = useCallback(() => {
+    // 1. 이미 실행 중이면 중복 실행 방지
+    if (recognitionRef.current) return;
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.warn("[STT] 미지원 브라우저");
+      return;
+    }
+
     try {
-      // [수정] 이미 실행 중이면 중단 (중복 생성 방지)
-      if (recognitionRef.current) {
-        console.log("[STT] 이미 실행 중입니다.");
-        return;
-      }
-
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        console.warn("[STT] Web Speech API를 지원하지 않는 브라우저입니다.");
-        return;
-      }
-
       const recognition = new SpeechRecognition();
       recognition.lang = "ko-KR";
-      recognition.continuous = true;
+      recognition.continuous = true; 
       recognition.interimResults = false;
+
+      // 시작 시 "의도적 중지" 플래그 해제
+      isSTTIntentionallyStopped.current = false;
 
       recognition.onresult = async (event) => {
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
-            console.log("🎤 [STT 인식됨]:", transcript);
+            
+            // 공백이거나 너무 짧으면(1글자 미만) 무시 (로그 과다 방지)
+            if (!transcript || transcript.trim().length < 2) continue;
 
-            // [수정] Ref에서 최신 턴 번호 가져오기
-            const currentTurnVal = currentTurnRef.current; 
+            // [로그] 인식된 내용만 심플하게 출력
+            console.log("🎤", transcript);
 
-            // 조건 체크
-            if (
-              roomId &&
-              myUserId &&
-              currentTurnVal && 
-              transcript &&
-              transcript.trim().length > 0
-            ) {
-              // 정적 감지 해제 신호 전송
-              recordVoiceActivity(roomId, myUserId, currentTurnVal).catch((e) => {
-                console.error("[STT] 음성 활동 기록 실패:", e);
-              });
-            }
+            // Ref를 통해 최신 턴 번호 조회
+            const currentTurnVal = currentTurnRef.current;
 
-            // [수정] 테스트를 위해 글자 수 제한을 4 -> 2로 완화
-            if (!roomId || !transcript || transcript.trim().length < 2) {
-              console.log("[STT] 텍스트가 너무 짧아 번역 건너뜀:", transcript);
-              continue;
+            // 말했으니 정적 감지 리셋 신호 전송
+            if (roomId && myUserId && currentTurnVal) {
+               recordVoiceActivity(roomId, myUserId, currentTurnVal).catch(() => {});
             }
 
             try {
-              console.log(`🚀 [STT] 번역 요청 (Turn: ${currentTurnVal}):`, transcript);
-              
-              const response = await translateToEnglish(
+              // 번역 API 호출
+              await translateToEnglish(
                 roomId,
                 transcript,
-                currentTurnVal, // Ref 값 사용
-                myUserId,
+                currentTurnVal, 
+                myUserId
               );
-              console.log("[STT] 번역 결과:", response);
             } catch (error) {
-              console.error("[STT] 번역 실패:", error);
+              console.error("[STT] 번역 전송 실패");
             }
           }
         }
       };
 
       recognition.onerror = (event) => {
-        console.error("[STT] 오류:", event.error);
-        // 에러 발생 시 재시작 로직이 필요할 수도 있음 (선택 사항)
+        // [중요] 'no-speech'나 'aborted'는 재시작하면 되므로 에러 로그 출력 안 함
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+            return; 
+        }
+        
+        console.warn("[STT] 상태:", event.error);
+
+        // 권한 없음 등 치명적 에러일 때만 종료
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            stopSTT();
+             isSTTIntentionallyStopped.current = true;
+             stopSTT();
+        }
+      };
+
+      recognition.onend = () => {
+        recognitionRef.current = null;
+
+        // [핵심] 내가 끈 게 아니고 + 방에 있다면 -> 무조건 재시작 (좀비 모드)
+        if (!isSTTIntentionallyStopped.current && roomId && !questRunning) {
+            setTimeout(() => {
+                startSTT();
+            }, 200); 
         }
       };
 
       recognition.start();
       recognitionRef.current = recognition;
-      console.log("🟢 [STT] 음성 인식 시작됨");
+
     } catch (error) {
-      console.error("[STT] 시작 실패:", error);
+      console.error("[STT] 시작 오류");
     }
-  }, [roomId, myUserId]); // [중요] currentTurn 제거!
+  }, [roomId, myUserId, questRunning]); // currentTurn 의존성 제거됨
 
   // STT 중지
-  const stopSTT = useCallback(() => {
+const stopSTT = useCallback(() => {
+    isSTTIntentionallyStopped.current = true; // 재시작 방지 플래그 설정
+    
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
-      console.log("[STT] 음성 인식 중지");
     }
   }, []);
 
-  // 한국어 대화 시작 시 STT 자동 시작
+// 한국어 대화 시작 시 STT 자동 시작
   useEffect(() => {
+    // 퀘스트 중이 아니고, roomId가 있을 때만 STT 켜기
     if (!questRunning && roomId) {
       startSTT();
     } else {
       stopSTT();
     }
 
+    // 컴포넌트 언마운트 시 중지
     return () => {
       stopSTT();
     };
