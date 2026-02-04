@@ -22,6 +22,7 @@ import duckProfile1 from "@/assets/images/duck_profile1.png";
 import duckProfile2 from "@/assets/images/duck_profile2.png";
 import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
+import { toggleScriptLike } from "@/api/shadowing.js";
 
 const DUCK_BOT_IMAGES = {
   cyan: duckBotCyan,
@@ -241,7 +242,8 @@ export default function MyPage() {
           bookmarked: true,
           // 추가 정보
           speakerName: item.speakerName,
-          participants: item.participants,
+          participants: item.participants
+
         })) : [];
 
         setSentences(formattedSentences);
@@ -265,10 +267,20 @@ export default function MyPage() {
     setSelectedSentence(sentence);
   };
 
-  const handleDeleteSentence = (id) => {
-    if (window.confirm("이 문장을 삭제하시겠습니까?")) {
-      setSentences((prev) => prev.filter((s) => s.id !== id));
+  const handleDeleteSentence = async (sentenceId) => {
+
+    if (window.confirm("이 문장을 저장 목록에서 삭제하시겠습니까?")) {
+    try {
+      // roomId와 turnNo 없이 호출해도 백엔드에서 알아서 삭제 처리함
+      await toggleScriptLike(sentenceId, null, null); 
+      
+      setSentences((prev) => prev.filter((s) => s.id !== sentenceId));
+      setSentenceCount(prev => Math.max(0, prev - 1));
+      alert("삭제되었습니다.");
+    } catch (error) {
+      console.error("삭제 실패:", error);
     }
+  }
   };
 
   const handleSaveNicknameStyle = async ({ nickname: newNickname, background, effect }) => {

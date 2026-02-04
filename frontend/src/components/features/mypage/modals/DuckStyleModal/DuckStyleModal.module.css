@@ -109,6 +109,10 @@
   outline-offset: 2px;
 }
 
+.ColorButton.WhiteBorder {
+  border: 2px solid #e5e7eb;
+}
+
 .AccessoriesRow {
   display: flex;
   justify-content: center;

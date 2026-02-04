@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import api from "@/api/api";
 import { useOpenVidu } from "@/context/OpenViduContext"; // 👈 OpenVidu Hook 추가
 import Recordinglayout from "@/components/features/recording/layout/RecordingLayout";
+import styles from "./RecordingPage.module.css";
 import {
   saveAssessment,
   toggleScriptLike,
@@ -334,7 +335,13 @@ console.log(`📤 발음 평가 전송 시작`, {
   };
 
   const handleComplete = () => {
-    navigate("/minigame1", { state: { roomId } });
+    navigate("/minigame1", { 
+      state: { 
+        roomId: roomId,
+        roomCode: roomCode,
+        isHost: roomInfo.isHost || false
+      } 
+    });
   };
 
   // [수정] 북마크 토글: scriptId 기준으로 동작하도록 수정
@@ -351,27 +358,33 @@ console.log(`📤 발음 평가 전송 시작`, {
           return;
         }
 
+        const targetTurn = selectedTurnForReport || currentTurn;
+
         console.log("[RecordingPage] 북마크 토글:", {
           id,
           realScriptId,
           roomId,
           isBookmarked,
-          turnNo: selectedTurnForReport || currentTurn,
+          turnNo: targetTurn,
         });
 
-        // API 호출
-        await toggleScriptLike(
+        // API 호출 - 응답에서 isLiked 상태를 받아옴
+        const response = await toggleScriptLike(
           realScriptId,
           roomId,
-          selectedTurnForReport || currentTurn
+          targetTurn
         );
 
-        // 상태 업데이트: scriptId 기준으로 저장
-        setBookmarkedSentences((prev) => {
-          const next = isBookmarked
-            ? [...new Set([...prev, realScriptId])] // scriptId 저장
-            : prev.filter((bkId) => bkId !== realScriptId);
+        console.log("[RecordingPage] 북마크 API 응답:", response);
 
+        // scriptId는 고유하므로 scriptId를 북마크 키로 사용
+        const bookmarkKey = realScriptId;
+
+        // API 응답의 isLiked 값을 기준으로 로컬 상태 업데이트
+        setBookmarkedSentences((prev) => {
+          const next = response.isLiked
+            ? [...new Set([...prev, bookmarkKey])]  // API가 저장됨(true)을 반환하면 추가
+            : prev.filter((key) => key !== bookmarkKey);  // API가 삭제됨(false)을 반환하면 제거
           localStorage.setItem("bookmarkedSentences", JSON.stringify(next));
           return next;
         });
@@ -782,9 +795,11 @@ console.log(`📤 발음 평가 전송 시작`, {
       const finalScore = resultData?.score ?? sentenceScores[s.id];
 
       console.log(
-        `🔍 [Card ${i}] scriptId:${s.scriptId}, score:${finalScore}, averageScore:${resultData?.averageScore}`,
+        `🔍 [Card ${i}] scriptId:${s.scriptId}, id:${s.id}, score:${finalScore}, averageScore:${resultData?.averageScore}`,
       );
 
+      // scriptId는 고유하므로 scriptId만 사용 (턴 번호 불필요)
+      const bookmarkKey = s.scriptId;
       return {
         ...s,
         scriptId: s.scriptId,
@@ -793,7 +808,7 @@ console.log(`📤 발음 평가 전송 시작`, {
         isActive: isReportMode ? true : i === currentSentenceIndex,
         currentSentence: i + 1,
         totalSentences: currentTurnSentences.length,
-        isBookmarked: bookmarkedSentences.includes(s.id),
+        isBookmarked: bookmarkedSentences.includes(bookmarkKey),
       };
     });
   }, [
@@ -851,16 +866,7 @@ console.log(`📤 발음 평가 전송 시작`, {
           >
             {scriptError}
           </p>
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              border: "4px solid #e5e7eb",
-              borderTopColor: "#4f46e5",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-            }}
-          />
+          <div className={styles.spinner} />
         </div>
       );
     }

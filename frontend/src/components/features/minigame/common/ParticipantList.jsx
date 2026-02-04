@@ -1,6 +1,34 @@
+import { useMemo } from 'react';
 import styles from './ParticipantList.module.css';
 
-export default function ParticipantList({ participants = [] }) {
+export default function ParticipantList({ 
+  participants = [],
+  voiceLevels = {}
+}) {
+  // 참가자 데이터와 음성 레벨 매칭
+  const participantsWithVoice = useMemo(() => {
+    // Participants
+    // Voice levels
+    
+    return participants.map(p => {
+      const level = voiceLevels[p.id] || voiceLevels[p.userId] || 0;
+      const isSpeaking = level > 0.05; // threshold 낮춤: 5% 이상이면 말하는 중
+      
+      if (level > 0) {
+      }
+      
+      return {
+        ...p,
+        voiceLevel: level,
+        isSpeaking
+      };
+    });
+  }, [participants, voiceLevels]);
+
+  if (!participants || participants.length === 0) {
+    return null;
+  }
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.label}>
@@ -10,21 +38,36 @@ export default function ParticipantList({ participants = [] }) {
         <span>참여자</span>
       </div>
       <div className={styles.list}>
-        {participants.map((p, idx) => (
-          <div key={idx} className={styles.participant}>
-            <div className={`${styles.avatar} ${p.isActive ? styles.active : styles.inactive}`}>
-              {p.avatar ? (
-                <img src={p.avatar} alt={p.name} />
-              ) : (
-                <div className={styles.avatarPlaceholder} />
+        {participantsWithVoice.map((p, idx) => (
+          <div key={p.id || p.userId || idx} className={styles.participant}>
+            <div className={styles.avatar}>
+              {/* 음성 레벨에 따른 빛 효과 */}
+              {p.isSpeaking && (
+                <div 
+                  className={styles.voiceGlow}
+                  style={{
+                    opacity: Math.min(p.voiceLevel * 1.5, 1),
+                  }}
+                />
               )}
-              <div className={`${styles.micIcon} ${p.isActive ? styles.micActive : styles.micInactive}`}>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path d="M5 1V6M5 6C3.89543 6 3 5.10457 3 4M5 6C6.10457 6 7 5.10457 7 4M2 4V5C2 6.65685 3.34315 8 5 8C6.65685 8 8 6.65685 8 5V4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                </svg>
-              </div>
+
+              {/* 아바타 이미지 */}
+              {p.avatar || p.profileImageUrl ? (
+                <img 
+                  src={p.avatar || p.profileImageUrl} 
+                  alt={p.name || p.nickname} 
+                  className={styles.avatarImage}
+                />
+              ) : (
+                <div className={styles.avatarPlaceholder}>
+                  {(p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+              )}
             </div>
-            <span className={styles.name}>{p.name}</span>
+            <span className={styles.name}>
+              {p.name || p.nickname}
+              {p.isMe && <span className={styles.meBadge}>나</span>}
+            </span>
           </div>
         ))}
       </div>
