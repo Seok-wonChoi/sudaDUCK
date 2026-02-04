@@ -32,6 +32,13 @@ export default function BlankFillSentence({
     }
   };
 
+  // 빈칸 클릭 핸들러 - 마우스로 클릭 시 해당 빈칸으로 포커스 이동
+  const handleBlankClick = (idx) => {
+    if (inputRefs.current[idx]) {
+      inputRefs.current[idx].focus();
+    }
+  };
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.label}>
@@ -52,6 +59,8 @@ export default function BlankFillSentence({
                       ? styles.correct
                       : blanks[idx].status === 'wrong'
                       ? styles.wrong
+                      : blanks[idx].status === 'filled'
+                      ? styles.filled
                       : idx === currentBlankIndex
                       ? styles.active
                       : styles.empty
@@ -59,8 +68,10 @@ export default function BlankFillSentence({
                   value={blanks[idx].value || ''}
                   onChange={(e) => handleChange(e, idx)}
                   onKeyDown={(e) => handleKeyDown(e, idx)}
-                  disabled={blanks[idx].status !== 'empty' || idx !== currentBlankIndex}
-                  placeholder={idx === currentBlankIndex ? '' : ''}
+                  onClick={() => handleBlankClick(idx)}
+                  placeholder=""
+                  autoComplete="off"
+                  spellCheck="false"
                 />
               )}
             </span>

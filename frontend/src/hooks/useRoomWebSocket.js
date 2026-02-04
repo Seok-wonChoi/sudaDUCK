@@ -8,6 +8,8 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
   const subRef = useRef(null);
   const suggestionSubRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [participants, setParticipants] = useState([]);
+  const [voiceLevels, setVoiceLevels] = useState({});
 
   const handlersRef = useRef(handlers);
   useEffect(() => {
@@ -250,6 +252,14 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                   senderKey,
                   type,
                 });
+                // 참가자 추가
+                if (payload) {
+                  setParticipants(prev => {
+                    const exists = prev.find(p => p.id === payload.id || p.userId === payload.userId);
+                    if (exists) return prev;
+                    return [...prev, payload];
+                  });
+                }
                 onMemberJoined?.(payload, senderKey);
                 break;
 
@@ -260,22 +270,43 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                   senderKey,
                   type,
                 });
+                // 참가자 제거
+                if (payload?.userId || payload?.id) {
+                  setParticipants(prev => 
+                    prev.filter(p => p.id !== payload.userId && p.id !== payload.id && p.userId !== payload.userId)
+                  );
+                }
                 onMemberLeft?.(payload, senderKey);
                 break;
 
               case "VOICE_LEVEL_CHANGED":
+                // 음성 레벨 업데이트
+                if (payload?.userId && typeof payload?.level === 'number') {
+                  setVoiceLevels(prev => ({
+                    ...prev,
+                    [payload.userId]: payload.level
+                  }));
+                }
                 onVoiceLevelChanged?.(payload, senderKey);
                 break;
 
               case "SETTINGS_CHANGED":
               case "ROOM_SETTINGS_CHANGED":
               case "ROOM_UPDATED":
+                // 참가자 전체 업데이트
+                if (payload?.participants) {
+                  setParticipants(payload.participants);
+                }
                 onSettingsChanged?.(payload, senderKey);
                 break;
 
               case "ROOM_STARTED":
               case "ROOM_OPENED":
               case "ROOM_START":
+                // 방 시작 시 참가자 정보 업데이트
+                if (payload?.participants) {
+                  setParticipants(payload.participants);
+                }
                 onRoomStarted?.(payload ?? data, senderKey);
                 break;
 
@@ -471,5 +502,15 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     };
   }, [roomCode, roomId]);
 
-  return { sendReady, sendMic, sendVoiceLevel, sendEndRoom, sendUnexpectedQuest, sendQuestContinueReady, isConnected };
+  return { 
+    sendReady, 
+    sendMic, 
+    sendVoiceLevel, 
+    sendEndRoom, 
+    sendUnexpectedQuest, 
+    sendQuestContinueReady, 
+    isConnected,
+    participants,
+    voiceLevels
+  };
 }

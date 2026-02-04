@@ -329,7 +329,13 @@ console.log(`📤 발음 평가 전송 시작`, {
   };
 
   const handleComplete = () => {
-    navigate("/minigame1", { state: { roomId } });
+    navigate("/minigame1", { 
+      state: { 
+        roomId: roomId,
+        roomCode: roomCode,
+        isHost: roomInfo.isHost || false
+      } 
+    });
   };
 
   // [수정] 북마크 토글: scriptId 기준으로 동작하도록 수정

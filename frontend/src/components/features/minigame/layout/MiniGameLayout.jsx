@@ -12,17 +12,22 @@ export default function MiniGameLayout({
   progress = 0,
   totalProgress = 100,
   participants = [],
+  voiceLevels = {},
   userName = 'user',
+  onExit,
   // 로고 클릭 나가기 관련 props
   logoExitMessage,
   onLogoExit,
+  // 리뷰 모드 관련
+  isReviewMode = false,
+  onComplete,
 }) {
   return (
     <div className={styles.layout}>
       <AppHeader
         userName={userName}
         logoExitMessage={logoExitMessage}
-        onLogoExit={onLogoExit}
+        onLogoExit={onLogoExit || onExit}
       />
 
       <main className={styles.main}>
@@ -39,7 +44,16 @@ export default function MiniGameLayout({
       </main>
 
       <footer className={styles.footer}>
-        <ParticipantList participants={participants} />
+        <ParticipantList 
+          participants={participants} 
+          voiceLevels={voiceLevels}
+        />
+        {/* 리뷰 모드일 때 완료 버튼 표시 */}
+        {isReviewMode && onComplete && (
+          <button className={styles.completeButton} onClick={onComplete}>
+            완료
+          </button>
+        )}
       </footer>
     </div>
   );
