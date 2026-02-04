@@ -4,14 +4,18 @@ import com.example.DuckDuck.domain.game.dto.response.ReviewQuestionResponse;
 import com.example.DuckDuck.domain.game.dto.request.ReviewSubmitRequest;
 import com.example.DuckDuck.domain.game.dto.response.ReviewRankingResponse;
 import com.example.DuckDuck.domain.game.dto.response.ReviewSubmitResponse;
+import com.example.DuckDuck.domain.room.repository.RoomParticipantsRepository;
 import com.example.DuckDuck.domain.user.entity.Member;
 import com.example.DuckDuck.domain.user.repository.MemberRepository;
+import com.example.DuckDuck.domain.user.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -22,6 +26,8 @@ public class MiniGameService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final MemberRepository memberRepository;
+    private final ProfileRepository profileRepository;
+    private final RoomParticipantsRepository roomParticipantsRepository;
 
     public List<ReviewQuestionResponse> getReviewQuestions(Long userId, Long roomId){
 
@@ -63,16 +69,28 @@ public class MiniGameService {
 
         for(Object keyObj : keys){
             String key = (String) keyObj;
+
+            // "scores" 키 필터링 추가
+            if (key.endsWith(":scores")) {
+                continue;
+            }
             Map<Object, Object> data = redisTemplate.opsForHash().entries(key);
 
-            if (!data.isEmpty()){
-                questions.add(ReviewQuestionResponse.builder()
-                        .scriptId(key.substring(key.lastIndexOf(":") + 1))
-                        .korean((String) data.get("korean"))
-                        .english((String) data.get("english"))
-                        .blank_script((String) data.get("blank_script"))
-                        .build());
+            // 빈 데이터 필터링
+            if (data.isEmpty() ||
+                    data.get("korean") == null ||
+                    data.get("english") == null ||
+                    data.get("blank_script") == null) {
+                    continue;
             }
+
+            questions.add(ReviewQuestionResponse.builder()
+                    .scriptId(key.substring(key.lastIndexOf(":") + 1))
+                    .korean((String) data.get("korean"))
+                    .english((String) data.get("english"))
+                    .blank_script((String) data.get("blank_script"))
+                    .build());
+
         }
         return questions;
     }
@@ -128,6 +146,7 @@ public class MiniGameService {
                 .build();
     }
 
+    @Transactional
     public List<ReviewRankingResponse> getReviewRanking(Long userId, Long roomId) {
         // 1. Redis에서 복습 게임 점수 데이터 조회 (userId -> score)
         String scoreKey = "room:" + roomId + ":review:scores";
@@ -158,6 +177,7 @@ public class MiniGameService {
             Member m = memberMap.get(entryUserId);
 
             ranking.add(ReviewRankingResponse.builder()
+                    .userId(entryUserId)
                     .nickname(m != null ? m.getNickname() : "알 수 없음")
                     .profileImageUrl(m != null ? m.getProfileImageUrl() : null)
                     .score(score)
@@ -166,9 +186,18 @@ public class MiniGameService {
         }
 
         // 6. 점수 높은 순(내림차순)으로 정렬
-        return ranking.stream()
-                .sorted(Comparator.comparing(ReviewRankingResponse::getScore).reversed())
-                .collect(Collectors.toList());
+        ranking.sort(Comparator.comparing(ReviewRankingResponse::getScore).reversed());
+
+        String rewardKey = "room:" + roomId + ":reward:completed";
+        Boolean alreadyRewarded = redisTemplate.hasKey(rewardKey);
+
+        if (Boolean.FALSE.equals(alreadyRewarded)) {
+            rewardCoins(ranking);
+            // 보상 완료 플래그 설정 (예: 1시간 후 만료)
+            redisTemplate.opsForValue().set(rewardKey, "true", 1, TimeUnit.HOURS);
+        }
+
+        return ranking;
     }
 
     private List<String> extractWordsInBrackets(String text) {
@@ -221,4 +250,89 @@ public class MiniGameService {
             }
         }
     }
+
+    //코인 지급 처리 메서드
+    private void rewardCoins(List<ReviewRankingResponse> ranking) {
+
+        // [조건 1] 참여자가 1명 이하이면 지급 안 함
+        if (ranking.size() <= 1) return;
+
+        // [조건 2] 1등 점수 확인 및 0점 제외
+        int maxScore = ranking.get(0).getScore();
+        if (maxScore <= 0) return;
+
+        // 공동 1등에게 2코인 지급
+        ranking.stream()
+                .filter(r -> r.getScore() == maxScore)
+                .forEach(r -> profileRepository.updateCoins(r.getUserId(), 2));
+
+        // [조건 3] 2등 점수 확인 (1등보다 낮으면서 0보다 큰 점수)
+        ranking.stream()
+                .map(ReviewRankingResponse::getScore)
+                .filter(score -> score < maxScore && score > 0)
+                .findFirst()
+                .ifPresent(secondScore -> {
+                    // 공동 2등에게 1코인 지급
+                    ranking.stream()
+                            .filter(r -> r.getScore() == secondScore)
+                            .forEach(r -> profileRepository.updateCoins(r.getUserId(), 1));
+                });
+    }
+
+    // 기존 랭킹 리스트 생성 로직 (조회만 수행)
+    public List<ReviewRankingResponse> getReviewRankingList(Long userId, Long roomId) {
+        String scoreKey = "room:" + roomId + ":review:scores";
+        Map<Object, Object> scores = redisTemplate.opsForHash().entries(scoreKey);
+
+        if (scores.isEmpty()) return Collections.emptyList();
+
+        List<Long> userIds = scores.keySet().stream()
+                .map(id -> Long.parseLong(id.toString()))
+                .collect(Collectors.toList());
+
+        Map<Long, Member> memberMap = memberRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(Member::getId, m -> m));
+
+        return scores.entrySet().stream()
+                .map(entry -> {
+                    Long entryUserId = Long.parseLong(entry.getKey().toString());
+                    Member m = memberMap.get(entryUserId);
+                    return ReviewRankingResponse.builder()
+                            .userId(entryUserId)
+                            .nickname(m != null ? m.getNickname() : "알 수 없음")
+                            .profileImageUrl(m != null ? m.getProfileImageUrl() : null)
+                            .score(Integer.parseInt(entry.getValue().toString()))
+                            .isMe(entryUserId.equals(userId))
+                            .build();
+                })
+                .sorted(Comparator.comparing(ReviewRankingResponse::getScore).reversed())
+                .collect(Collectors.toList());
+    }
+    // 랭킹 리스트 변환 로직
+    private List<ReviewRankingResponse> convertToRankingList(Map<Object, Object> scores, Long currentUserId) {
+        List<Long> userIds = scores.keySet().stream()
+                .map(id -> Long.parseLong(id.toString()))
+                .collect(Collectors.toList());
+
+        Map<Long, Member> memberMap = memberRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(Member::getId, m -> m));
+
+        return scores.entrySet().stream()
+                .map(entry -> {
+                    Long uid = Long.parseLong(entry.getKey().toString());
+                    int score = Integer.parseInt(entry.getValue().toString());
+                    Member m = memberMap.get(uid);
+                    return ReviewRankingResponse.builder()
+                            .userId(uid)
+                            .nickname(m != null ? m.getNickname() : "(알수없음)")
+                            .profileImageUrl(m != null ? m.getProfileImageUrl() : null)
+                            .score(score)
+                            .isMe(uid.equals(currentUserId))
+                            .build();
+                })
+                .sorted(Comparator.comparing(ReviewRankingResponse::getScore).reversed())
+                .collect(Collectors.toList());
+    }
+
+
 }

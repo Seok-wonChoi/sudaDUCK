@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 @Builder
 public class ReviewRankingResponse {
+    private Long userId;
     private String nickname;
     private String profileImageUrl;
     private int score;

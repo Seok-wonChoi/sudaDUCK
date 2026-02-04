@@ -30,7 +30,7 @@ public class MiniGameController {
     @GetMapping("/{roomId}/review/questions")
     public ResponseEntity<List<ReviewQuestionResponse>> getQuestions(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long roomId){
+            @PathVariable Long roomId) {
 
         String token = authHeader.substring(7);
         Long userId = jwtTokenProvider.getUserId(token);
@@ -47,7 +47,7 @@ public class MiniGameController {
     public ResponseEntity<ReviewSubmitResponse> submitReview(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long roomId,
-            @RequestBody ReviewSubmitRequest request){
+            @RequestBody ReviewSubmitRequest request) {
 
         String token = authHeader.substring(7);
         Long userId = jwtTokenProvider.getUserId(token);
@@ -58,8 +58,8 @@ public class MiniGameController {
     }
 
     @Operation(
-            summary = "복습 게임 랭킹 조회",
-            description = "복습 게임 종료 후 참여자들의 점수와 프로필 정보를 순위별로 조회합니다."
+            summary = "복습 게임 랭킹 조회 (코인 지급)",
+            description = "복습 게임 종료 후 참여자들의 점수와 프로필 정보를 순위별로 조회합니다. 최초 조회 시 등수에 따라 코인이 자동 지급됩니다. "
     )
     @GetMapping("/{roomId}/review/ranking")
     public ResponseEntity<List<ReviewRankingResponse>> getRanking(
@@ -73,4 +73,5 @@ public class MiniGameController {
 
         return ResponseEntity.ok(ranking);
     }
+
 }
