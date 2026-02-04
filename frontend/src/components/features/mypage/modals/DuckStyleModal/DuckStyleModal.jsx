@@ -322,7 +322,7 @@ export default function DuckStyleModal({
                       isSelected ? styles.Selected : ""
                     } ${!isUnlocked ? styles.Locked : ""} ${
                       isPending ? styles.PendingPurchase : ""
-                    }`}
+                    } ${option.id === "white" ? styles.WhiteBorder : ""}`}
                     style={{ backgroundColor: option.color }}
                     onClick={() =>
                       handleClickOption("color", option.id, option.cost)

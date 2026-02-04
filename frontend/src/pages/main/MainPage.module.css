@@ -3,11 +3,42 @@
 .Page {
   min-height: 100vh;
   background: #f6f8ff;
-  padding: 20px 16px;
+  padding: clamp(12px, 2vh, 28px) clamp(8px, 1.5vw, 16px);
+  position: relative;
+}
+
+/* 토스트 메시지 (화면 상단) */
+.Toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  animation: slideDown 0.3s ease-out;
+  max-width: 90%;
+  text-align: center;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .Shell {
-  max-width: 1200px;
+  max-width: min(1400px, 95vw);
   width: 100%;
   margin: 0 auto;
   background: #ffffff;
@@ -33,10 +64,17 @@
     linear-gradient(180deg, rgba(99, 102, 241, 0.06), rgba(236, 233, 255, 0.45));
 }
 
+/* 중형 화면 (1024px ~ 1440px) */
+@media (max-width: 1440px) {
+  .Shell {
+    max-width: min(1200px, 92vw);
+  }
+}
+
 /* 태블릿 화면 (768px ~ 1024px) */
 @media (max-width: 1024px) {
   .Shell {
-    max-width: 900px;
+    max-width: min(900px, 90vw);
   }
 
   .Top {
@@ -50,12 +88,8 @@
 
 /* 작은 태블릿 (600px ~ 768px) */
 @media (max-width: 768px) {
-  .Page {
-    padding: 16px 12px;
-  }
-
   .Shell {
-    max-width: 100%;
+    max-width: 96vw;
     border-radius: 20px;
   }
 
@@ -68,13 +102,14 @@
   }
 }
 
-/* 모바일 화면 (~ 600px) */
+/* 모바일 화면 (480px ~ 600px) */
 @media (max-width: 600px) {
   .Page {
-    padding: 12px 8px;
+    padding: clamp(8px, 1.5vh, 16px) clamp(6px, 1vw, 12px);
   }
 
   .Shell {
+    max-width: 98vw;
     border-radius: 18px;
   }
 
@@ -89,11 +124,8 @@
 
 /* 작은 모바일 (~ 480px) */
 @media (max-width: 480px) {
-  .Page {
-    padding: 8px 4px;
-  }
-
   .Shell {
+    max-width: 100vw;
     border-radius: 16px;
   }
 

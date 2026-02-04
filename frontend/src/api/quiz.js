@@ -9,15 +9,12 @@ export async function scheduleQuiz(roomId, turn, participantCount) {
   return data;
 }
 
-// 음성 파일로 영어 답변 제출
+// 영어 답변 텍스트 제출
 // POST /api/v1/quiz/submit
-export async function submitQuizAnswer(quizId, userId, audioFile) {
-  const formData = new FormData();
-  formData.append('audiofile', audioFile);
-
-  const { data } = await api.post("/api/v1/quiz/submit", formData, {
+export async function submitQuizAnswer(quizId, userId, answerText) {
+  const { data } = await api.post("/api/v1/quiz/submit", answerText, {
     params: { quizId, userId },
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'text/plain' }
   });
   return data;
 }

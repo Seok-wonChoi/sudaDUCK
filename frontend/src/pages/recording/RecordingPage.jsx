@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import api from "@/api/api";
 import { useOpenVidu } from "@/context/OpenViduContext"; // 👈 OpenVidu Hook 추가
 import Recordinglayout from "@/components/features/recording/layout/RecordingLayout";
+import styles from "./RecordingPage.module.css";
 import {
   saveAssessment,
   toggleScriptLike,
@@ -325,10 +326,12 @@ export default function RecordingPage() {
 
         await toggleScriptLike(scriptIdToUse, roomId, targetTurn);
 
+        // 턴별로 구분되는 복합 키 사용 (turn-sentenceId)
+        const bookmarkKey = `${targetTurn}-${sentenceId}`;
         setBookmarkedSentences((prev) => {
           const next = isBookmarked
-            ? [...new Set([...prev, sentenceId])]
-            : prev.filter((id) => id !== sentenceId);
+            ? [...new Set([...prev, bookmarkKey])]
+            : prev.filter((id) => id !== bookmarkKey);
           localStorage.setItem("bookmarkedSentences", JSON.stringify(next));
           console.log("[RecordingPage] 북마크 업데이트:", next);
           return next;
@@ -855,6 +858,8 @@ export default function RecordingPage() {
         `🔍 [Card ${i}] scriptId:${s.scriptId}, score:${finalScore}, averageScore:${resultData?.averageScore}`,
       );
 
+      // 턴별로 구분되는 복합 키 사용 (turn-sentenceId)
+      const bookmarkKey = `${currentTurn}-${s.id}`;
       return {
         ...s,
         scriptId: s.scriptId,
@@ -863,7 +868,7 @@ export default function RecordingPage() {
         isActive: isReportMode ? true : i === currentSentenceIndex,
         currentSentence: i + 1,
         totalSentences: currentTurnSentences.length,
-        isBookmarked: bookmarkedSentences.includes(s.id),
+        isBookmarked: bookmarkedSentences.includes(bookmarkKey),
       };
     });
   }, [
@@ -923,16 +928,7 @@ export default function RecordingPage() {
           >
             {scriptError}
           </p>
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              border: "4px solid #e5e7eb",
-              borderTopColor: "#4f46e5",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-            }}
-          />
+          <div className={styles.spinner} />
         </div>
       );
     }
