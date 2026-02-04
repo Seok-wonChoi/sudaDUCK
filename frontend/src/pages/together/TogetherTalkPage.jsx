@@ -2151,18 +2151,10 @@ const stopSTT = useCallback(() => {
           </div>
         )}
 
-        {/* 결과 - 3초 후 자동 복귀 (팀원 추가분) */}
+        {/* 결과 - 3초 후 자동 복귀 */}
         <UnexpectedQuestOverlay
           open={showResultOverlay}
           onClose={() => {}}
-          duckSrc={resultDuckSrc}
-          bubbleText={resultBubbleText}
-          bubbleTitle={null}
-          subText={null}
-          subTone="normal"
-          countdownNumber={undefined}
-          speechBubbleType={3}
-          clickAnywhere={false}
           showCloseButton={false}
           escToClose={false}
         />

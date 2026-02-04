@@ -9,10 +9,8 @@ export default function LoadingOverlay({
   return (
     <div className={styles.overlay}>
       <div className={styles.content}>
-        <div className={styles.speechBubble}>
-          <p className={styles.title}>{title}</p>
-          <p className={styles.subtitle}>{subtitle}</p>
-        </div>
+        <h2 className={styles.title}>{title}</h2>
+        <p className={styles.subtitle}>{subtitle}</p>
       </div>
 
       <img src={image} alt="Background Duck" className={styles.duck} />
