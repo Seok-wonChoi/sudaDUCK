@@ -207,18 +207,42 @@ export default function WaitingRoomPage() {
   const { state } = useLocation();
 
   // 👇 오픈비두우우우 Context에서 함수 꺼내오기
-  const { joinSession, leaveSession, isConnected: isOvConnected , subscribers } = useOpenVidu();
+  const { joinSession, leaveSession, isConnected: isOvConnected, subscribers, publisher } = useOpenVidu();
   
+  // 👇 게임 시작 등으로 페이지 이동 시에는 세션을 끊지 않도록 플래그 설정
+  const isTransitioningRef = useRef(false);
+
+  // 👇 [버그 수정] useEffect 내부에서 최신 상태를 참조하기 위한 Ref
+  const isOvConnectedRef = useRef(isOvConnected);
+  const leaveSessionRef = useRef(leaveSession);
+
+  useEffect(() => {
+    isOvConnectedRef.current = isOvConnected;
+  }, [isOvConnected]);
+
+  useEffect(() => {
+    leaveSessionRef.current = leaveSession;
+  }, [leaveSession]);
+
   // 👇  오픈비듀우우우 브라우저 뒤로가기/새로고침 시 연결 끊기
   useEffect(() => {
-      const handleBeforeUnload = () => leaveSession();
+      const handleBeforeUnload = () => {
+          if (leaveSessionRef.current) leaveSessionRef.current();
+      };
       window.addEventListener('beforeunload', handleBeforeUnload);
 
       return () => {
           window.removeEventListener('beforeunload', handleBeforeUnload);
-          if (isOvConnected) leaveSession(); // 컴포넌트 죽을 때 끊기
+          // 게임 시작으로 이동하는 경우(isTransitioningRef.current === true)에는 끊지 않음!
+          // [수정] 의존성 배열을 비우고([]) Ref를 사용하여, 불필요한 재실행(연결 끊김) 방지
+          if (isOvConnectedRef.current && !isTransitioningRef.current) {
+             console.log("👋 [WaitingRoom] 대기실 퇴장 -> 세션 종료");
+             if (leaveSessionRef.current) leaveSessionRef.current(); 
+          } else {
+             console.log("🚀 [WaitingRoom] 게임 시작 -> 세션 유지하며 이동");
+          }
       };
-  }, [leaveSession, isOvConnected]);
+  }, []); // 👈 [중요] 빈 배열로 설정하여 언마운트 시에만 실행!
 
 
 
@@ -446,14 +470,14 @@ export default function WaitingRoomPage() {
 
   const fetchLobbyRef = useRef(null);
 
-  const fetchLobby = useCallback(async () => {
+  const fetchLobby = useCallback(async (isSilent = false) => {
     if (!inviteCode || inviteCode === "000000") {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
       return;
     }
 
     try {
-      setIsLoading(true);
+      if (!isSilent) setIsLoading(true);
       const data = await getRoomLobby(inviteCode);
 
       const members = data.participants ?? [];
@@ -542,7 +566,7 @@ export default function WaitingRoomPage() {
     } catch {
       showToast("참여자 목록을 불러오는데 실패했습니다.");
     } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
   }, [
     inviteCode,
@@ -563,66 +587,39 @@ export default function WaitingRoomPage() {
 
   // 👇 오픈비두 연결 중복 방지용 Ref
   const isConnectingRef = useRef(false);
+  const hasAttemptedConnectionRef = useRef(false); // 👈 [핵심] 연결 시도 여부를 기억하는 잠금 장치
 
   useEffect(() => {
     const connectToOpenVidu = async () => {
       const ovSessionId = roomInfo.openviduSessionId;
       
-      console.log("🔍 [디버깅] 세션 ID:", ovSessionId); 
-      console.log("🔍 [디버깅] 내 Key:", myKey);
-
-      // 1. 이미 연결됐거나(isOvConnected), 세션 ID가 없으면 중단
-      if (isOvConnected || !ovSessionId) {
-          if (!ovSessionId) console.warn("🚨 [OpenVidu] 세션 ID가 없어서 연결 중단됨!");
+      // 1. 이미 연결됐거나, 세션 ID가 없거나, 이미 연결을 시도 중이거나, 이미 시도했었다면 즉시 중단!
+      if (isOvConnected || !ovSessionId || isConnectingRef.current || hasAttemptedConnectionRef.current) {
           return;
       }
 
-      // 1-2. 이미 연결 시도 중이라면 중단 (중복 호출 방지)
-      if (isConnectingRef.current) {
-        console.log("🔒 [OpenVidu] 이미 연결을 시도 중입니다. (Skip)");
-        return;
-      }
-
       try {
-        isConnectingRef.current = true; // 잠금 🔒
-        console.log("🚀 [OpenVidu] 토큰 발급 요청 중...");
-
-        let token;
-        try {
-          // 2. 백엔드 API로 토큰 발급
-          token = await createToken(ovSessionId);
-          console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
-        } catch (tokenError) {
-          // 202 에러: 세션이 존재하지 않음 → 세션 재생성 후 재시도
-          if (tokenError?.response?.status === 404 || tokenError?.message?.includes("202") || tokenError?.message?.includes("not found")) {
-            console.warn("⚠️ [OpenVidu] 세션이 존재하지 않아 재생성 중...");
-            try {
-              await createSession(ovSessionId);
-              console.log("✅ [OpenVidu] 세션 재생성 완료, 토큰 재요청 중...");
-              token = await createToken(ovSessionId);
-              console.log("✅ [OpenVidu] 토큰 발급 성공:", token);
-            } catch (retryError) {
-              console.error("❌ [OpenVidu] 세션 재생성 실패:", retryError);
-              throw retryError;
-            }
-          } else {
-            throw tokenError;
-          }
-        }
-
-        // 3. 내 닉네임 찾기
+        isConnectingRef.current = true; // 🔒 잠금 시작
+        hasAttemptedConnectionRef.current = true; // ✅ 시도 기록 (성공/실패 상관없이 다시 안 함)
+        
+        console.log("🚀 [OpenVidu] 최초 1회 연결 시도...");
+        
+        const token = await createToken(ovSessionId);
         const myNickname = participants.find(p => p.key === myKey)?.nickname || "Guest";
 
-        // 4. 오픈비두 연결 (Context 함수)
         await joinSession(token, myNickname);
-
+        console.log("✅ [OpenVidu] 최초 연결 성공");
+        
       } catch (e) {
         console.error("❌ [OpenVidu] 연결 실패:", e);
-        isConnectingRef.current = false; // 실패 시 잠금 해제 🔓
+        // 실패 시에는 다음 기회에 다시 시도할 수 있도록 잠금을 해제합니다.
+        hasAttemptedConnectionRef.current = false;
+      } finally {
+        isConnectingRef.current = false; // 🔓 잠금 해제
       }
     };
 
-    // 조건: 참여자 목록 로딩 완료 && 내 키 확인됨 && 아직 연결 안됨
+    // 조건: 참가자 목록이 있고 내 키가 확인되었을 때만 실행
     if (participants.length > 0 && myKey) {
         connectToOpenVidu();
     }
@@ -667,9 +664,12 @@ export default function WaitingRoomPage() {
       nickname: payload?.nickname ?? "참여자",
       isHost: payload?.isHost ?? false,
       isReady: payload?.isReady ?? false,
-      micOn: payload?.micOn ?? false,
+      micOn: payload?.micOn ?? true,
       voiceLevel: 0,
       isSpeaking: false,
+      avatarCustomJson: payload?.avatarCustomJson ?? null,
+      duckCustomJson: payload?.duckCustomJson ?? null,
+      aiDuckbotCustomJson: payload?.aiDuckbotCustomJson ?? null,
     };
 
     setParticipants((prev) => {
@@ -682,6 +682,9 @@ export default function WaitingRoomPage() {
     });
 
     if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
+
+    // 새로운 멤버가 입장했을 때 최신 정보를 다시 가져옴 (프로필 커스터마이징 동기화)
+    fetchLobbyRef.current?.(true);
 
     // 새로운 멤버가 입장했을 때 내 마이크 상태를 전송하여 동기화
     if (sendMicRef.current) {
@@ -868,6 +871,9 @@ export default function WaitingRoomPage() {
     (payloadOrData) => {
       if (hasNavigatedRef.current) return;
       hasNavigatedRef.current = true;
+      
+      // 👇 게임 화면으로 이동하므로 세션 유지 플래그 ON
+      isTransitioningRef.current = true;
 
       navigate("/together/talk", {
         replace: true,
@@ -964,17 +970,26 @@ export default function WaitingRoomPage() {
   }, [voiceLevel, myMicOn, sendVoiceLevel]);
 
   const toggleMyMic = useCallback(async () => {
-    if (myMicOn) {
-      setMyMicOn(false);
-      await stopAudioAnalysis();
-      if (sendMic) sendMic(false);
-      return;
+    const nextState = !myMicOn;
+    
+    // 1. OpenVidu 실제 마이크 제어
+    if (publisher) {
+      publisher.publishAudio(nextState);
+      console.log(`🎤 [OpenVidu] 마이크 ${nextState ? "ON" : "OFF"}`);
     }
 
-    setMyMicOn(true);
-    await startAudioAnalysis();
-    if (sendMic) sendMic(true);
-  }, [myMicOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
+    // 2. UI 상태 및 오디오 분석기 제어
+    setMyMicOn(nextState);
+
+    if (nextState) {
+      await startAudioAnalysis();
+    } else {
+      await stopAudioAnalysis();
+    }
+
+    // 3. 웹소켓으로 서버/다른 사람에게 알림
+    if (sendMic) sendMic(nextState);
+  }, [myMicOn, publisher, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
   const toggleMyReady = useCallback(async () => {
     console.log("[WaitingRoom] 🔘 toggleMyReady 호출:", {
@@ -1213,8 +1228,8 @@ export default function WaitingRoomPage() {
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        {subscribers.map((sub, i) => (
-            <div key={i} style={{ display: 'none' }}>
+        {subscribers.map((sub) => (
+            <div key={sub.stream.connection.connectionId} style={{ display: 'none' }}>
                 <UserAudioComponent streamManager={sub} />
             </div>
         ))}

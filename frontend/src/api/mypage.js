@@ -49,3 +49,9 @@ export async function getMyScripts() {
   const { data } = await api.get("/api/v1/script/my");
   return data;
 }
+
+// 마이페이지 요약 정보 조회: GET /api/v1/mypage/summary
+export async function getMypageSummary() {
+  const { data } = await api.get("/api/v1/mypage/summary");
+  return data;
+}

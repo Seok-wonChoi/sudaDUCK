@@ -2,7 +2,6 @@
 import { Routes, Route } from "react-router-dom";
 import { OpenViduProvider } from "@/context/OpenViduContext";
 import LandingPage from "./pages/landing/LandingPage";
-import LoginPage from "./pages/auth/LoginPage";
 import OAuth2RedirectHandler from "./pages/auth/OAuth2RedirectHandler";
 import MainPage from "./pages/main/MainPage";
 import PracticePage from "./pages/practice/PracticePage";
@@ -24,7 +23,6 @@ export default function App() {
     <OpenViduProvider>
       <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
       <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
       <Route path="/main" element={<MainPage />} />
 

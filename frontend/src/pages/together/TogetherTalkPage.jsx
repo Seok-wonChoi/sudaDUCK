@@ -15,9 +15,11 @@ import {
   getRoomLobby,
   endRoom,
 } from "@/api/rooms";
+import { createToken } from "@/api/openVidu"; // 👈 [추가] 재접속용 API
 import { scheduleQuiz, submitQuizAnswer } from "@/api/quiz";
 import { translateToEnglish } from "@/api/translate";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
+import { useOpenVidu } from "@/context/OpenViduContext"; // 👈 OpenVidu Hook 추가
 
 import duckImg from "@/assets/images/duck.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
@@ -180,6 +182,7 @@ function getUserIdFromToken() {
 export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { publisher, subscribers, leaveSession, session, joinSession } = useOpenVidu(); // 👈 session, joinSession 추가
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
@@ -190,6 +193,49 @@ export default function TogetherTalkPage() {
     const parsed = saved ? safeParseJson(saved) : null;
     return parsed ?? null;
   });
+
+  // 👇 [추가] 새로고침 시 세션 복구 로직 (구조대)
+  const isRecoveringRef = useRef(false);
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      // 1. 이미 세션이 있거나, 복구 시도 중이면 패스
+      if (session || isRecoveringRef.current) return;
+      
+      // 2. 방 정보가 없으면 복구 불가
+      const info = hydratedInfo || safeParseJson(sessionStorage.getItem(ROOM_INFO_KEY));
+      const ovSessionId = info?.openviduSessionId || info?.roomInfo?.openviduSessionId;
+      
+      if (!ovSessionId) {
+        console.warn("[TogetherTalkPage] ⚠️ 복구할 오픈비두 세션 ID가 없습니다.");
+        return;
+      }
+
+      console.log("🚑 [TogetherTalkPage] 새로고침 감지! 세션 복구를 시도합니다...", ovSessionId);
+      isRecoveringRef.current = true;
+
+      try {
+        // 3. 내 닉네임 찾기
+        const myId = info.myUserId ?? getUserIdFromToken();
+        const myName = Array.isArray(info.participants) 
+            ? info.participants.find(p => String(p.id || p.userId) === String(myId))?.nickname 
+            : "복구된유저";
+
+        // 4. 토큰 재발급 및 접속
+        const token = await createToken(ovSessionId);
+        await joinSession(token, myName || "User");
+        
+        console.log("✅ [TogetherTalkPage] 세션 복구 성공!");
+      } catch (e) {
+        console.error("❌ [TogetherTalkPage] 세션 복구 실패:", e);
+        // 실패 시 메인으로 튕기게 할 수도 있지만, 일단 로그만 출력
+      } finally {
+        isRecoveringRef.current = false;
+      }
+    };
+
+    restoreSession();
+  }, [session, hydratedInfo, joinSession]);
 
   useEffect(() => {
     if (location.state) {
@@ -231,37 +277,59 @@ export default function TogetherTalkPage() {
     return AI_DUCKBOT_IMAGES[key] || duckBotCyanImg;
   }
 
-  // 타이머 시작 시간 (절대 timestamp) - 웹소켓으로 동기화
+  // 타이머 시작 시간 (절대 timestamp) - 절대 시간 고정 로직
   const [timerStartedAt, setTimerStartedAt] = useState(() => {
     try {
-      // resolvedRoomCode는 아직 정의되지 않았으므로 roomInfo에서 직접 추출
-      const roomCode =
+      // 1. 방 코드 확보 (없으면 세션에서 비상 복구)
+      let code =
         roomInfo.roomCode ||
         roomInfo.inviteCode ||
         roomInfo.joinCode ||
         roomInfo.code ||
-        roomInfo.roomInfo?.roomCode ||
-        "";
-      const saved = sessionStorage.getItem(`timer_started_${roomCode}`);
-      return saved ? parseInt(saved, 10) : null;
+        roomInfo.roomInfo?.roomCode;
+      
+      if (!code) {
+        code = sessionStorage.getItem("last_active_room_code");
+      } else {
+        // 코드 있으면 무조건 백업
+        sessionStorage.setItem("last_active_room_code", code);
+      }
+
+      if (!code) return Date.now(); 
+
+      // 2. 현재 턴에 대한 고유 키 생성
+      // 주의: currentTurn 상태 변수 대신 roomInfo 값을 직접 사용 (초기화 순서 문제 방지)
+      const turnVal = roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+      const storageKey = `timer_start_${code}_turn_${turnVal}`;
+
+      // 3. 박제된 시간 있나 확인
+      const saved = sessionStorage.getItem(storageKey);
+      if (saved) {
+        console.log(`[Timer] 💾 복구된 시간: ${saved} (턴: ${turnVal})`);
+        return parseInt(saved, 10);
+      }
+
+      // 4. 없으면 지금 시간을 박제하고 시작
+      const now = Date.now();
+      sessionStorage.setItem(storageKey, String(now));
+      console.log(`[Timer] 📌 시간 박제: ${now} (턴: ${turnVal})`);
+      return now;
     } catch {
-      return null;
+      return Date.now();
     }
   });
 
-  // 타이머 시작 시간 sessionStorage 저장
+  // 턴이 바뀔 때마다 새로운 시간 박제
   useEffect(() => {
-    if (resolvedRoomCode && timerStartedAt) {
-      try {
-        sessionStorage.setItem(
-          `timer_started_${resolvedRoomCode}`,
-          String(timerStartedAt),
-        );
-      } catch {
-        // ignore
-      }
-    }
-  }, [resolvedRoomCode, timerStartedAt]);
+    if (!resolvedRoomCode) return;
+    
+    // 여기서는 currentTurn 상태를 안전하게 사용 가능 (useEffect 내부이므로)
+    // 하지만 의존성 배열에 currentTurn이 없으므로 roomInfo나 내부 변수로 접근해야 함
+    // 편의상 별도의 상태 관리가 아닌 roomInfo나 timerStartedAt 업데이트 로직에서 처리 권장
+    // 여기서는 초기화 로직이 강력하므로 추가적인 useEffect는 최소화
+  }, [resolvedRoomCode]);
+
+  // 타이머 시작 시간 sessionStorage 저장 (기존 코드 제거됨)
 
   const [topic, setTopic] = useState(roomInfo.topic ?? "좋아하는 음식");
   const [maxCount, setMaxCount] = useState(roomInfo.maxCount ?? 4);
@@ -277,16 +345,52 @@ export default function TogetherTalkPage() {
 
   // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
   const [currentTurn, setCurrentTurn] = useState(() => {
-    return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+    const turn = roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+    console.log("[TogetherTalkPage] currentTurn 초기화:", {
+      roomInfo,
+      turn,
+    });
+    return turn;
   });
 
   // [수정 2] 데이터 동기화 추가: 페이지 이동으로 hydratedInfo가 바뀌면 턴 번호도 업데이트
   useEffect(() => {
     const nextTurn = hydratedInfo?.currentTurn ?? hydratedInfo?.roomInfo?.currentTurn;
-    if (nextTurn) {
+    console.log("[TogetherTalkPage] hydratedInfo 변경 감지:", {
+      hydratedInfo,
+      currentTurnFromState: hydratedInfo?.currentTurn,
+      currentTurnFromRoomInfo: hydratedInfo?.roomInfo?.currentTurn,
+      nextTurn,
+      currentCurrentTurn: currentTurn,
+    });
+
+    if (nextTurn !== undefined && nextTurn !== null && nextTurn !== currentTurn) {
+      console.log(`[TogetherTalkPage] 턴 번호 업데이트: ${currentTurn} → ${nextTurn}`);
       setCurrentTurn(nextTurn);
     }
-  }, [hydratedInfo]);
+  }, [hydratedInfo, currentTurn]);
+
+  // [추가] 턴이 변경될 때마다(또는 방 코드가 확보될 때마다) 해당 턴의 시작 시간을 박제
+  useEffect(() => {
+    if (!resolvedRoomCode) return;
+    
+    const storageKey = `timer_start_${resolvedRoomCode}_turn_${currentTurn}`;
+    const saved = sessionStorage.getItem(storageKey);
+
+    // 이미 저장된 시간이 없으면(새 턴 시작) 현재 시간을 박제
+    if (!saved) {
+       const now = Date.now();
+       sessionStorage.setItem(storageKey, String(now));
+       setTimerStartedAt(now);
+       console.log(`[Timer] 🔄 새 턴(${currentTurn}) 시작, 시간 박제: ${now}`);
+    } else {
+       // 이미 있으면(새로고침 시) 그거 씀
+       const parsed = parseInt(saved, 10);
+       // 현재 state와 다르면 업데이트 (불필요한 렌더링 방지)
+       setTimerStartedAt((prev) => (prev !== parsed ? parsed : prev));
+       console.log(`[Timer] 💾 턴 ${currentTurn} 시간 유지: ${parsed}`);
+    }
+  }, [currentTurn, resolvedRoomCode]);
 
 
   const myUserId = useMemo(() => {
@@ -332,29 +436,15 @@ export default function TogetherTalkPage() {
       if (data?.topic) setTopic(data.topic);
       if (data?.roomId) setRoomId(data.roomId);
 
-      // 타이머 시작 시간 설정 (서버 값으로 동기화)
+      // 타이머 시작 시간 설정 (서버 값으로 동기화) - 로컬 스토리지 우선 정책으로 제거
+      /* 
       if (data?.timerStartedAt != null) {
         const serverTime = Number(data.timerStartedAt);
-
-        // 새로고침 시에도 서버 타이머와 동기화
         if (!timerSyncedRef.current || timerStartedAt !== serverTime) {
-          console.log(
-            "[TogetherTalkPage] 서버로부터 타이머 시작 시간 동기화:",
-            serverTime,
-            "(새로고침 시에도 동기화)"
-          );
-          setTimerStartedAt(serverTime);
-          timerSyncedRef.current = true;
-
-          // sessionStorage에도 저장 (새로고침 시 참고용)
-          if (resolvedRoomCode) {
-            sessionStorage.setItem(
-              `timer_started_${resolvedRoomCode}`,
-              String(serverTime)
-            );
-          }
+           // 서버 시간 덮어쓰기 방지
         }
-      }
+      } 
+      */
 
       const members = Array.isArray(data?.participants)
         ? data.participants
@@ -728,9 +818,14 @@ export default function TogetherTalkPage() {
     if (isConnected && sendMic && !initialMicSentRef.current) {
       console.log("[TogetherTalkPage] 초기 마이크 상태 전송:", micOn);
       sendMic(micOn);
+      // 👇 페이지 진입 시 OpenVidu 마이크 상태 동기화
+      if (publisher) {
+        console.log("[TogetherTalkPage] OpenVidu 마이크 초기화:", micOn);
+        publisher.publishAudio(micOn);
+      }
       initialMicSentRef.current = true;
     }
-  }, [isConnected, sendMic, micOn]);
+  }, [isConnected, sendMic, micOn, publisher]);
 
   const audioRef = useRef({
     stream: null,
@@ -900,13 +995,15 @@ export default function TogetherTalkPage() {
     if (micOn) {
       setMicOn(false);
       sendMic(false);
+      if (publisher) publisher.publishAudio(false); // 👈 OpenVidu Mute
       await stopAudioAnalysis();
       return;
     }
     setMicOn(true);
     sendMic(true);
+    if (publisher) publisher.publishAudio(true); // 👈 OpenVidu Unmute
     await startAudioAnalysis();
-  }, [micOn, startAudioAnalysis, stopAudioAnalysis, sendMic]);
+  }, [micOn, startAudioAnalysis, stopAudioAnalysis, sendMic, publisher]);
 
   // [추가] API 호출 없이 오디오/정적감지만 멈추는 헬퍼 함수
   const stopMediaProcessing = useCallback(async () => {
@@ -922,6 +1019,9 @@ export default function TogetherTalkPage() {
 
   const doLeaveRoom = useCallback(async () => {
     await stopAudioAnalysis();
+    
+    // 👇 진짜 방을 나갈 때는 세션 종료
+    if (leaveSession) leaveSession();
 
     if (resolvedRoomCode) {
       try {
@@ -930,7 +1030,7 @@ export default function TogetherTalkPage() {
         console.error("방 퇴장 API 호출 실패:", e);
       }
     }
-  }, [stopMediaProcessing, resolvedRoomCode]);
+  }, [stopMediaProcessing, resolvedRoomCode, leaveSession]);
 
 
   // ★ handleEnd: sendEndRoom(WS) 대신 endRoom REST API 호출
@@ -1306,7 +1406,7 @@ export default function TogetherTalkPage() {
       }
     };
 
-    scheduleRandomQuiz();
+    // scheduleRandomQuiz();
   }, [
     currentTurn,
     questRunning,
@@ -1484,76 +1584,68 @@ export default function TogetherTalkPage() {
      한국어→영어 번역 (Chrome STT)
   ========================= */
   const recognitionRef = useRef(null);
-
+  
+  // [필수] 턴 번호 최신화 Ref
   const currentTurnRef = useRef(currentTurn);
-
   useEffect(() => {
     currentTurnRef.current = currentTurn;
   }, [currentTurn]);
 
-  // STT 시작
+// [추가] 의도적으로 STT를 껐는지 확인하는 플래그
+  const isSTTIntentionallyStopped = useRef(false);
+
 // STT 시작
+// STT 시작 함수 (완성본)
   const startSTT = useCallback(() => {
+    // 1. 이미 실행 중이면 중복 실행 방지
+    if (recognitionRef.current) return;
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.warn("[STT] 미지원 브라우저");
+      return;
+    }
+
     try {
-      // [수정] 이미 실행 중이면 중단 (중복 생성 방지)
-      if (recognitionRef.current) {
-        console.log("[STT] 이미 실행 중입니다.");
-        return;
-      }
-
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        console.warn("[STT] Web Speech API를 지원하지 않는 브라우저입니다.");
-        return;
-      }
-
       const recognition = new SpeechRecognition();
       recognition.lang = "ko-KR";
-      recognition.continuous = true;
+      recognition.continuous = true; 
       recognition.interimResults = false;
+
+      // 시작 시 "의도적 중지" 플래그 해제
+      isSTTIntentionallyStopped.current = false;
 
       recognition.onresult = async (event) => {
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
-            console.log("🎤 [STT 인식됨]:", transcript);
+            
+            // 공백이거나 너무 짧으면(1글자 미만) 무시 (로그 과다 방지)
+            if (!transcript || transcript.trim().length < 2) continue;
 
-            // [수정] Ref에서 최신 턴 번호 가져오기
-            const currentTurnVal = currentTurnRef.current; 
+            // [로그] 인식된 내용만 심플하게 출력
+            console.log("🎤", transcript);
 
-            // 조건 체크
-            if (
-              roomId &&
-              myUserId &&
-              currentTurnVal && 
-              transcript &&
-              transcript.trim().length > 0
-            ) {
-              // 정적 감지 해제 신호 전송
-              recordVoiceActivity(roomId, myUserId, currentTurnVal).catch((e) => {
-                console.error("[STT] 음성 활동 기록 실패:", e);
-              });
-            }
+            // Ref를 통해 최신 턴 번호 조회
+            const currentTurnVal = currentTurnRef.current;
 
-            // [수정] 테스트를 위해 글자 수 제한을 4 -> 2로 완화
-            if (!roomId || !transcript || transcript.trim().length < 2) {
-              console.log("[STT] 텍스트가 너무 짧아 번역 건너뜀:", transcript);
-              continue;
+            // 말했으니 정적 감지 리셋 신호 전송
+            if (roomId && myUserId && currentTurnVal) {
+               recordVoiceActivity(roomId, myUserId, currentTurnVal).catch(() => {});
             }
 
             try {
-              console.log(`🚀 [STT] 번역 요청 (Turn: ${currentTurnVal}):`, transcript);
-              
-              const response = await translateToEnglish(
+              // 번역 API 호출
+              await translateToEnglish(
                 roomId,
                 transcript,
-                currentTurnVal, // Ref 값 사용
-                myUserId,
+                currentTurnVal, 
+                myUserId
               );
-              console.log("[STT] 번역 결과:", response);
             } catch (error) {
-              console.error("[STT] 번역 실패:", error);
+              console.error("[STT] 번역 전송 실패");
             }
           }
         }
@@ -1590,29 +1682,32 @@ export default function TogetherTalkPage() {
 
       recognition.start();
       recognitionRef.current = recognition;
-      console.log("🟢 [STT] 음성 인식 시작됨");
+
     } catch (error) {
-      console.error("[STT] 시작 실패:", error);
+      console.error("[STT] 시작 오류");
     }
   }, [roomId, myUserId]); // [중요] currentTurn 제거!
   
   // STT 중지
-  const stopSTT = useCallback(() => {
+const stopSTT = useCallback(() => {
+    isSTTIntentionallyStopped.current = true; // 재시작 방지 플래그 설정
+    
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
-      console.log("[STT] 음성 인식 중지");
     }
   }, []);
 
-  // 한국어 대화 시작 시 STT 자동 시작
+// 한국어 대화 시작 시 STT 자동 시작
   useEffect(() => {
+    // 퀘스트 중이 아니고, roomId가 있을 때만 STT 켜기
     if (!questRunning && roomId) {
       startSTT();
     } else {
       stopSTT();
     }
 
+    // 컴포넌트 언마운트 시 중지
     return () => {
       stopSTT();
     };
@@ -1653,6 +1748,12 @@ export default function TogetherTalkPage() {
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
+        {/* 👇 소리 재생용 컴포넌트 추가 */}
+        {subscribers.map((sub) => (
+          <div key={sub.stream.connection.connectionId} style={{ display: 'none' }}>
+            <UserAudioComponent streamManager={sub} />
+          </div>
+        ))}
         <ExitGuard />
 
         <AppHeader
@@ -1729,10 +1830,6 @@ export default function TogetherTalkPage() {
                   </div>
                 )}
 
-              {/* AI 추천 주제 */}
-              {aiSuggestion && !questRunning && (
-                <div className={styles.AiSuggestionBanner}>{aiSuggestion}</div>
-              )}
 
               <section
                 className={styles.CardsGrid}
@@ -1859,16 +1956,22 @@ export default function TogetherTalkPage() {
                   <span className={styles.AiDot} aria-hidden="true" />
                 </div>
 
-                <div className={styles.AiFace} aria-hidden="true">
-                  🙂
-                </div>
+                {!aiSuggestion && (
+                  <div className={styles.AiFace} aria-hidden="true">
+                    🙂
+                  </div>
+                )}
 
-                <div className={styles.AiMainText}>
-                  한국어로 편하게 대화해보세요!
+                <div
+                  className={`${styles.AiMainText} ${aiSuggestion ? styles.AiMainTextLarge : ''}`}
+                >
+                  {aiSuggestion || "한국어로 편하게 대화해보세요!"}
                 </div>
-                <div className={styles.AiSubText}>
-                  15초 동안 침묵이 지속되면 제가 도와드릴게요.
-                </div>
+                {!aiSuggestion && (
+                  <div className={styles.AiSubText}>
+                    15초 동안 침묵이 지속되면 제가 도와드릴게요.
+                  </div>
+                )}
 
                 <div className={styles.AiPointer} aria-hidden="true" />
               </div>
@@ -2021,3 +2124,16 @@ export default function TogetherTalkPage() {
     </div>
   );
 }
+
+// 👇 소리 재생용 컴포넌트
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};
