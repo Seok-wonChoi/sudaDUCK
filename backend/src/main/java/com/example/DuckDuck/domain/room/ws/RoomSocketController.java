@@ -134,6 +134,27 @@ public class RoomSocketController {
         }
     }
 
+    /**
+     * 미니게임 시작 (방장만 호출)
+     * client SEND: /app/rooms/{roomCode}/minigame/start
+     * server BROADCAST: /topic/rooms/{roomCode}
+     */
+    @MessageMapping("/rooms/{roomCode}/minigame/start")
+    public void startMiniGame(@DestinationVariable String roomCode, Principal principal) {
+        try {
+            Member member = requireMember(principal);
+            String senderKey = String.valueOf(member.getId());
+
+            // 모든 참가자에게 미니게임 시작 신호 브로드캐스트
+            roomSocketService.broadcast(roomCode,
+                    RoomWsMessage.of(WsType.MINIGAME_START, roomCode, senderKey, null));
+
+        } catch (Exception e) {
+            String fallback = (principal != null) ? principal.getName() : "anonymous";
+            roomSocketService.broadcast(roomCode,
+                    RoomWsMessage.of(WsType.ERROR, roomCode, fallback, e.getMessage()));
+        }
+    }
 
     private Member requireMember(Principal principal) {
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
