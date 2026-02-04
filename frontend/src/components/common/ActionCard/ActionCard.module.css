@@ -27,18 +27,16 @@
   width: 140px;
   height: 140px;
   margin-top: 10px;
-
+  margin-bottom: 10px;
   border-radius: 20px;
-  background: rgba(79, 70, 229, 0.08);
-  border: 1px solid rgba(79, 70, 229, 0.18);
-
+  justify-content: center;
   display: grid;
   place-items: center;
 }
 
 .Icon {
-  width: 96px;
-  height: 96px;
+  width: 250px;
+  height: auto;
   object-fit: contain;
   display: block;
   pointer-events: none;

@@ -5,8 +5,8 @@ import { useEffect, useState, useCallback } from "react";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ActionCard from "@/components/common/ActionCard/ActionCard";
 
-import makeRoomIcon from "@/assets/icons/make_room.png";
-import joinRoomIcon from "@/assets/icons/join_room.png";
+import makeRoomIcon from "@/assets/icons/make_room2.png";
+import joinRoomIcon from "@/assets/icons/join_room2.png";
 
 export default function TogetherPage() {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ export default function TogetherPage() {
           </button>
 
           <h1 className={styles.Title}>함께 하기</h1>
-          <p className={styles.Subtitle}>새로운 방을 만들거나 친구의 방에 참여해보세요</p>
+          <p className={styles.Subtitle}>새로운 방을 만들거나 친구의 방에 참여해보세요 🎮</p>
 
           <section className={styles.CardRow} aria-label="함께하기 메뉴">
             <ActionCard

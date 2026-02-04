@@ -49,11 +49,11 @@ export default function MainPage() {
         }
 
         const summaryData = await getMypageSummary();
-        if (summaryData?.attendanceDays !== undefined) {
-          setConsecutiveDays(summaryData.attendanceDays);
-        }
-        if (summaryData?.sentenceCount !== undefined) {
-          setSentenceCount(summaryData.sentenceCount);
+        if (summaryData) {
+          setSummary({
+            attendanceDays: summaryData.attendanceDays ?? 0,
+            sentenceCount: summaryData.sentenceCount ?? 0,
+          });
         }
       } catch (error) {
         console.error("프로필 로드 실패:", error);
