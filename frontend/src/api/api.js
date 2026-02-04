@@ -57,10 +57,6 @@ api.interceptors.request.use(
       const now = Date.now() / 1000;
       const timeLeft = decoded.exp - now;
 
-      console.log(
-        `[API] 토큰 남은 시간: ${Math.floor(timeLeft / 60)}분 ${Math.floor(timeLeft % 60)}초`,
-      );
-
       // 토큰이 5분(300초) 내로 만료되면 미리 갱신
       if (timeLeft < 300) {
         console.log("[API] ⚠️ 토큰 만료 임박! 사전 갱신 시작...");
