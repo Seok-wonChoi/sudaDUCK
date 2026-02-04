@@ -1,16 +1,19 @@
-import { useEffect } from "react";
 import styles from "./MainPage.module.css";
 import { useNavigate } from "react-router-dom";
+import { getMyProfileCustom, getMypageSummary } from "@/api/mypage";
+import { useEffect, useState } from "react";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import MainHero from "@/components/features/main/MainHero/MainHero";
 import ModeSelectSection from "@/components/features/main/ModeSelectSection/ModeSelectSection";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 import StatsSection from "@/components/features/main/StatsSection/StatsSection";
-import { getMyProfileCustom } from "@/api/mypage";
 
 export default function MainPage() {
   const navigate = useNavigate();
+  const [consecutiveDays, setConsecutiveDays] = useState(0);
+  const [sentenceCount, setSentenceCount] = useState(0);
+
 
   // 로그인 후 사용자 프로필 로드 (닉네임 등)
   useEffect(() => {
@@ -20,6 +23,14 @@ export default function MainPage() {
         if (profileData.nickname) {
           localStorage.setItem('userNickname', profileData.nickname);
           window.dispatchEvent(new Event('nicknameUpdated'));
+        }
+
+        const summaryData = await getMypageSummary();
+        if (summaryData?.attendanceDays !== undefined) {
+          setConsecutiveDays(summaryData.attendanceDays);
+        }
+        if (summaryData?.sentenceCount !== undefined) {
+          setSentenceCount(summaryData.sentenceCount);
         }
       } catch (error) {
         console.error("프로필 로드 실패:", error);
@@ -59,8 +70,8 @@ export default function MainPage() {
           <StatsSection
             stats={[
               { value: "🔥", label: "오늘도 열심히 해볼까요?" },
-              { value: "0일", label: "연속 학습" },
-              { value: "0개", label: "저장된 문장" },
+              { value: `${consecutiveDays}일`, label: "연속 학습" },
+              { value: `${sentenceCount}개`, label: "저장된 문장" },
             ]}
           />
         </div>

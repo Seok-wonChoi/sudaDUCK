@@ -2,6 +2,8 @@ import styles from "./ModeSelectSection.module.css";
 import ModeCard from "@/components/common/ModeCard/ModeCard";
 
 export default function ModeSelectSection({ onClickPractice, onClickTogether }) {
+  const practiceDisabled = true;
+
   return (
     <section className={styles.Section} aria-label="학습 모드 선택">
       <ModeCard
@@ -9,6 +11,8 @@ export default function ModeSelectSection({ onClickPractice, onClickTogether }) 
         description="편하게 연습하고 실력을 쌓아보세요"
         onClick={onClickPractice}
         variant="practice"
+        disabled={practiceDisabled}
+        disabledMessage="아직 오픈 예정입니다 👀"
       />
 
       <ModeCard
