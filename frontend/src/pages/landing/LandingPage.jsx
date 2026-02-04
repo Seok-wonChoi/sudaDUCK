@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './LandingPage.module.css';
+import { loginWithKakao } from "@/api/auth";
 
 // Importing images
 import duckHappy from '../../assets/images/duck_happy.png';
@@ -65,7 +66,7 @@ const LandingPage = () => {
   }, [showContent]);
 
   const handleStart = () => {
-    navigate('/login');
+    loginWithKakao();
   };
 
   return (
@@ -183,7 +184,7 @@ const LandingPage = () => {
                 나만의 영어 실력을 완성해보세요.
               </p>
               <button onClick={handleStart} className={styles.ctaButton}>
-                수다DUCK 시작하기
+                카카오로 시작하기
               </button>
             </div>
           </section>

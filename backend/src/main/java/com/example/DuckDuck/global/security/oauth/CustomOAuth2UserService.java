@@ -77,7 +77,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             if (profile == null) {
                 profile = Profile.builder()
                         .user(member)
-                        .coins(0)
+                        .coins(100)
                         .attendanceDays(1)
                         .duckCustomJson(DEFAULT_DUCK_JSON)
                         .avatarCustomJson(DEFAULT_AVATAR_JSON)
@@ -114,7 +114,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
             Profile newProfile = Profile.builder()
                     .user(newMember)
-                    .coins(40)
+                    .coins(100)
                     .attendanceDays(1)
                     .duckCustomJson(DEFAULT_DUCK_JSON)
                     .avatarCustomJson(DEFAULT_AVATAR_JSON)

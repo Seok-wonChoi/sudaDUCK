@@ -31,6 +31,24 @@ export const loginWithKakao = () => {
  * POST /api/v1/auth/logout
  */
 export async function logout() {
-  const { data } = await api.post("/api/v1/auth/logout");
-  return data;
+  try {
+    // 1️⃣ 서버 로그아웃 (refreshToken 무효화용)
+    await api.post("/api/v1/auth/logout");
+  } catch (e) {
+    // 서버 에러 나도 프론트 로그아웃은 진행
+    console.warn("서버 로그아웃 실패 (무시 가능):", e);
+  }
+
+  // 2️⃣ 프론트 토큰 제거
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userProfile");
+  localStorage.removeItem("userNickname");
+
+  // 3️⃣ 쿠키 제거 (WS 인증용)
+  document.cookie = "access_token=; Path=/; Max-Age=0; SameSite=None; Secure";
+  document.cookie = "access_token=; Path=/; Max-Age=0; SameSite=Lax";
+
+  // 4️⃣ 세션 스토리지 정리
+  sessionStorage.clear();
 }
