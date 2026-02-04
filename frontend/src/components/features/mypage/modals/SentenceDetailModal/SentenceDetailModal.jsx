@@ -19,6 +19,8 @@ export default function SentenceDetailModal({ sentence, onClose }) {
     similarExpressions = [],
     quizQuestion,
     quizAnswer,
+    blankWords = [],
+    blankScript = '',
   } = sentence;
 
   const handlePlayAudio = () => {
@@ -41,6 +43,7 @@ export default function SentenceDetailModal({ sentence, onClose }) {
         <SentenceCard
           english={english}
           korean={korean}
+          blankWords={blankWords}
           onPlayAudio={handlePlayAudio}
         />
 
@@ -53,6 +56,8 @@ export default function SentenceDetailModal({ sentence, onClose }) {
           onToggle={() => setQuizOpen(!quizOpen)}
           question={quizQuestion}
           answer={quizAnswer}
+          blankScript={blankScript}
+          blankWords={blankWords}
         />
       </div>
     </ModalWrapper>
