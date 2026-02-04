@@ -470,14 +470,14 @@ export default function WaitingRoomPage() {
 
   const fetchLobbyRef = useRef(null);
 
-  const fetchLobby = useCallback(async () => {
+  const fetchLobby = useCallback(async (isSilent = false) => {
     if (!inviteCode || inviteCode === "000000") {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
       return;
     }
 
     try {
-      setIsLoading(true);
+      if (!isSilent) setIsLoading(true);
       const data = await getRoomLobby(inviteCode);
 
       const members = data.participants ?? [];
@@ -566,7 +566,7 @@ export default function WaitingRoomPage() {
     } catch {
       showToast("참여자 목록을 불러오는데 실패했습니다.");
     } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
   }, [
     inviteCode,
@@ -664,9 +664,12 @@ export default function WaitingRoomPage() {
       nickname: payload?.nickname ?? "참여자",
       isHost: payload?.isHost ?? false,
       isReady: payload?.isReady ?? false,
-      micOn: payload?.micOn ?? false,
+      micOn: payload?.micOn ?? true,
       voiceLevel: 0,
       isSpeaking: false,
+      avatarCustomJson: payload?.avatarCustomJson ?? null,
+      duckCustomJson: payload?.duckCustomJson ?? null,
+      aiDuckbotCustomJson: payload?.aiDuckbotCustomJson ?? null,
     };
 
     setParticipants((prev) => {
@@ -679,6 +682,9 @@ export default function WaitingRoomPage() {
     });
 
     if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
+
+    // 새로운 멤버가 입장했을 때 최신 정보를 다시 가져옴 (프로필 커스터마이징 동기화)
+    fetchLobbyRef.current?.(true);
 
     // 새로운 멤버가 입장했을 때 내 마이크 상태를 전송하여 동기화
     if (sendMicRef.current) {
