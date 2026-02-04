@@ -1406,7 +1406,7 @@ export default function TogetherTalkPage() {
       }
     };
 
-    scheduleRandomQuiz();
+    // scheduleRandomQuiz();
   }, [
     currentTurn,
     questRunning,
