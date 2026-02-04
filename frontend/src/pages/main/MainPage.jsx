@@ -22,7 +22,8 @@ export default function MainPage() {
   // 토스트 메시지 표시
   useEffect(() => {
     if (location.state?.toastMessage) {
-      setToastMessage(location.state.toastMessage);
+      const message = location.state.toastMessage;
+      setToastMessage(message);
       setToastVisible(true);
 
       // 3초 후 자동으로 사라짐
@@ -33,9 +34,17 @@ export default function MainPage() {
       // location state 정리
       navigate(location.pathname, { replace: true, state: {} });
 
-      return () => clearTimeout(timer);
+      // 이 cleanup은 location이 바뀔 때마다 실행되는데,
+      // navigate를 호출하면 location이 바뀌어서 타이머가 바로 취소되는 버그가 있었음.
+      // 따라서 여기서는 언마운트 시에만 정리되도록 하거나, 타이머를 유지해야 함.
+      return () => {
+        // 만약 페이지를 아예 떠나는 것이라면 정리, 
+        // 하지만 navigate(replace)는 같은 컴포넌트를 유지하므로 주의 필요.
+        // 여기서는 단순히 clearTimeout을 제거하거나, 
+        // 의존성 배열에서 location을 빼고 location.state.toastMessage만 감시하는 것이 나음.
+      };
     }
-  }, [location, navigate]);
+  }, [location.state?.toastMessage, navigate, location.pathname]);
 
 
   // 로그인 후 사용자 프로필 로드 (닉네임 등)
