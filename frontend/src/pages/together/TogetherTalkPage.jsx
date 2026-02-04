@@ -301,16 +301,30 @@ export default function TogetherTalkPage() {
 
   // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
   const [currentTurn, setCurrentTurn] = useState(() => {
-    return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+    const turn = roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+    console.log("[TogetherTalkPage] currentTurn 초기화:", {
+      roomInfo,
+      turn,
+    });
+    return turn;
   });
 
   // [수정 2] 데이터 동기화 추가: 페이지 이동으로 hydratedInfo가 바뀌면 턴 번호도 업데이트
   useEffect(() => {
     const nextTurn = hydratedInfo?.currentTurn ?? hydratedInfo?.roomInfo?.currentTurn;
-    if (nextTurn) {
+    console.log("[TogetherTalkPage] hydratedInfo 변경 감지:", {
+      hydratedInfo,
+      currentTurnFromState: hydratedInfo?.currentTurn,
+      currentTurnFromRoomInfo: hydratedInfo?.roomInfo?.currentTurn,
+      nextTurn,
+      currentCurrentTurn: currentTurn,
+    });
+
+    if (nextTurn !== undefined && nextTurn !== null && nextTurn !== currentTurn) {
+      console.log(`[TogetherTalkPage] 턴 번호 업데이트: ${currentTurn} → ${nextTurn}`);
       setCurrentTurn(nextTurn);
     }
-  }, [hydratedInfo]);
+  }, [hydratedInfo, currentTurn]);
 
   // [추가] 턴이 변경될 때마다(또는 방 코드가 확보될 때마다) 해당 턴의 시작 시간을 박제
   useEffect(() => {
@@ -1777,10 +1791,6 @@ export default function TogetherTalkPage() {
                   </div>
                 )}
 
-              {/* AI 추천 주제 */}
-              {aiSuggestion && !questRunning && (
-                <div className={styles.AiSuggestionBanner}>{aiSuggestion}</div>
-              )}
 
               <section
                 className={styles.CardsGrid}
@@ -1907,16 +1917,22 @@ export default function TogetherTalkPage() {
                   <span className={styles.AiDot} aria-hidden="true" />
                 </div>
 
-                <div className={styles.AiFace} aria-hidden="true">
-                  🙂
-                </div>
+                {!aiSuggestion && (
+                  <div className={styles.AiFace} aria-hidden="true">
+                    🙂
+                  </div>
+                )}
 
-                <div className={styles.AiMainText}>
-                  한국어로 편하게 대화해보세요!
+                <div
+                  className={`${styles.AiMainText} ${aiSuggestion ? styles.AiMainTextLarge : ''}`}
+                >
+                  {aiSuggestion || "한국어로 편하게 대화해보세요!"}
                 </div>
-                <div className={styles.AiSubText}>
-                  15초 동안 침묵이 지속되면 제가 도와드릴게요.
-                </div>
+                {!aiSuggestion && (
+                  <div className={styles.AiSubText}>
+                    15초 동안 침묵이 지속되면 제가 도와드릴게요.
+                  </div>
+                )}
 
                 <div className={styles.AiPointer} aria-hidden="true" />
               </div>
