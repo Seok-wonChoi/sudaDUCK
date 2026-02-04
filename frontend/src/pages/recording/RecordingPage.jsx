@@ -366,8 +366,8 @@ console.log(`📤 발음 평가 전송 시작`, {
 
         console.log("[RecordingPage] 북마크 API 응답:", response);
 
-        // 턴별로 구분되는 복합 키 사용 (turn-sentenceId)
-        const bookmarkKey = `${targetTurn}-${id}`;
+        // scriptId는 고유하므로 scriptId를 북마크 키로 사용
+        const bookmarkKey = realScriptId;
 
         // API 응답의 isLiked 값을 기준으로 로컬 상태 업데이트
         setBookmarkedSentences((prev) => {
@@ -784,13 +784,11 @@ console.log(`📤 발음 평가 전송 시작`, {
       const finalScore = resultData?.score ?? sentenceScores[s.id];
 
       console.log(
-        `🔍 [Card ${i}] scriptId:${s.scriptId}, score:${finalScore}, averageScore:${resultData?.averageScore}`,
+        `🔍 [Card ${i}] scriptId:${s.scriptId}, id:${s.id}, score:${finalScore}, averageScore:${resultData?.averageScore}`,
       );
 
-      // 턴별로 구분되는 복합 키 사용 (turn-sentenceId)
-      // 다른 턴의 리포트를 볼 때는 selectedTurnForReport 사용
-      const targetTurn = selectedTurnForReport || currentTurn;
-      const bookmarkKey = `${targetTurn}-${s.id}`;
+      // scriptId는 고유하므로 scriptId만 사용 (턴 번호 불필요)
+      const bookmarkKey = s.scriptId;
       return {
         ...s,
         scriptId: s.scriptId,
