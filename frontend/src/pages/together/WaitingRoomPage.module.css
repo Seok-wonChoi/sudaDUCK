@@ -604,6 +604,11 @@
   z-index: 1000;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   animation: toastSlideUp 0.3s ease-out;
+  /* 가로 길이 수정 */
+  width: max-content;
+  max-width: clamp(280px, 80%, 600px);
+  text-align: center;
+  word-break: keep-all;
 }
 
 @keyframes toastSlideUp {

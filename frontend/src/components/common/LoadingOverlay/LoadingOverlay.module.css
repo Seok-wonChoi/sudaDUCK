@@ -1,0 +1,48 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8); /* 배경을 조금 더 어둡게 하여 가독성 높임 */
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.content {
+  text-align: center;
+  z-index: 10;
+  color: #ffffff;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.title {
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 900;
+  margin-bottom: 20px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.subtitle {
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 500;
+  opacity: 0.9;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.duck {
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  width: min(400px, 30vw);
+  height: auto;
+  z-index: 1;
+  pointer-events: none;
+}
