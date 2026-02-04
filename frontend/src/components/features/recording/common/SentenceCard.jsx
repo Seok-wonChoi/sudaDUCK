@@ -18,6 +18,9 @@ export default function SentenceCard({
   sentenceId = null,
   initialBookmarked = false,
   onBookmarkToggle = null,
+  onStop = null,
+  showBlanks = true,
+  onToggleBlanks = null,
 }) {
   const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
 
@@ -89,11 +92,20 @@ export default function SentenceCard({
 
           splits.forEach((split, idx) => {
             if (split.toLowerCase() === word.toLowerCase()) {
-              newParts.push(
-                <span key={`blank-${word}-${idx}`} className={styles.blank}>
-                  {'\u00A0'.repeat(split.length)}
-                </span>
-              );
+              if (showBlanks) {
+                newParts.push(
+                  <span key={`blank-${word}-${idx}`} className={styles.blank}>
+                    {'\u00A0'.repeat(split.length)}
+                  </span>
+                );
+              } else {
+                // 빈칸 모드가 꺼져있을 때는 텍스트를 보여주되 강조 표시
+                newParts.push(
+                  <span key={`hint-${word}-${idx}`} className={styles.blankTextHint}>
+                    {split}
+                  </span>
+                );
+              }
             } else if (split) {
               newParts.push(split);
             }
@@ -116,8 +128,19 @@ export default function SentenceCard({
     switch (cardState) {
       case 'record_timer':
         return (
-          <div className={styles.recordingStatus}>
-            <span className={styles.statusText}>녹음 대기 중...</span>
+          <div className={styles.recordingActive}>
+            <div className={styles.toggleSide}>
+              <button 
+                type="button" 
+                className={`${styles.miniToggle} ${showBlanks ? styles.active : ''}`}
+                onClick={onToggleBlanks}
+              >
+                빈칸 {showBlanks ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className={styles.recordingStatus}>
+              <span className={styles.statusText}>녹음 대기 중...</span>
+            </div>
           </div>
         );
 
@@ -130,9 +153,28 @@ export default function SentenceCard({
 
         return (
           <div className={styles.recordingActive}>
+            <div className={styles.toggleSide}>
+              <button 
+                type="button" 
+                className={`${styles.miniToggle} ${showBlanks ? styles.active : ''}`}
+                onClick={onToggleBlanks}
+              >
+                빈칸 {showBlanks ? 'ON' : 'OFF'}
+              </button>
+            </div>
             <div className={styles.recordingCircle}>
               <span className={styles.countdownNumber}>{formatCountdown(recordingCountdown)}</span>
             </div>
+            {onStop && (
+              <button 
+                className={styles.stopButton} 
+                onClick={onStop}
+                type="button"
+                aria-label="녹음 완료"
+              >
+                녹음 완료
+              </button>
+            )}
           </div>
         );
 
