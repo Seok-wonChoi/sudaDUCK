@@ -4,6 +4,7 @@ import RankingList from './RankingList';
 export default function ResultPanel({ 
   rankings = [],
   myProfile = null,
+  totalQuestions = 4,
   onShowReview,
   onExit
 }) {
@@ -32,6 +33,7 @@ export default function ResultPanel({
         <RankingList 
           rankings={sortedRankings}
           myProfile={myProfile}
+          totalQuestions={totalQuestions}
         />
 
         {/* 버튼 */}

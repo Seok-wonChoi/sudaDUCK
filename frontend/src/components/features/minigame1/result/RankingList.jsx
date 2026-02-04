@@ -1,7 +1,7 @@
 import RankingItem from './RankingItem';
 import styles from './RankingList.module.css';
 
-export default function RankingList({ rankings = [], myProfile = null }) {
+export default function RankingList({ rankings = [], myProfile = null, totalQuestions = 4 }) {
   return (
     <div className={styles.list}>
       {rankings.map((player, idx) => (
@@ -11,7 +11,7 @@ export default function RankingList({ rankings = [], myProfile = null }) {
           nickname={player.nickname}
           profileImageUrl={player.profileImageUrl}
           score={player.score}
-          total={4}
+          total={totalQuestions}
           isMe={player.me}
         />
       ))}

@@ -5,7 +5,8 @@ export default function WaitingPanel({
   message = '다른 참가자를 기다리는 중...',
   correctCount = 0,
   totalQuestions = 4,
-  onComplete
+  submittedCount = 1,
+  totalParticipants = 1
 }) {
   const [dots, setDots] = useState('');
 
@@ -16,16 +17,6 @@ export default function WaitingPanel({
     }, 500);
     return () => clearInterval(interval);
   }, []);
-
-  // 5초 후 자동으로 결과 조회
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (onComplete) {
-        onComplete();
-      }
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [onComplete]);
 
   return (
     <div className={styles.container}>
@@ -47,6 +38,21 @@ export default function WaitingPanel({
 
         <div className={styles.waiting}>
           다른 참가자를 기다리는 중{dots}
+        </div>
+
+        {/* 제출 현황 표시 */}
+        <div className={styles.submissionStatus}>
+          <div className={styles.statusBar}>
+            <div 
+              className={styles.statusFill}
+              style={{ 
+                width: `${(submittedCount / totalParticipants) * 100}%` 
+              }}
+            />
+          </div>
+          <div className={styles.statusText}>
+            {submittedCount} / {totalParticipants}명 제출 완료
+          </div>
         </div>
       </div>
     </div>

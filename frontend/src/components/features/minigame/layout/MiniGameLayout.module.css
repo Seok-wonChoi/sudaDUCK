@@ -26,6 +26,36 @@
 .footer {
   background: #fff;
   border-top: 1px solid #e5e7eb;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* 완료 버튼 */
+.completeButton {
+  padding: 12px 32px;
+  background: #6366F1;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  min-width: 100px;
+}
+
+.completeButton:hover {
+  background: #4F46E5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.completeButton:active {
+  transform: translateY(0);
 }
 
 /* 중형 화면 (1024px ~ 1440px) */
@@ -45,6 +75,15 @@
   .main {
     padding: clamp(14px, 2.2vh, 20px) 0;
   }
+
+  .footer {
+    padding: 14px 20px;
+  }
+
+  .completeButton {
+    padding: 10px 28px;
+    font-size: 15px;
+  }
 }
 
 /* 작은 태블릿 (600px ~ 768px) */
@@ -56,6 +95,17 @@
 
   .main {
     padding: 18px 0;
+  }
+
+  .footer {
+    padding: 12px 18px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .completeButton {
+    width: 100%;
+    padding: 12px 24px;
   }
 }
 
@@ -69,6 +119,10 @@
   .main {
     padding: 16px 0;
   }
+
+  .footer {
+    padding: 12px 16px;
+  }
 }
 
 /* 작은 모바일 (~ 480px) */
@@ -80,5 +134,14 @@
 
   .main {
     padding: 14px 0;
+  }
+
+  .footer {
+    padding: 10px 12px;
+  }
+
+  .completeButton {
+    padding: 10px 20px;
+    font-size: 14px;
   }
 }
