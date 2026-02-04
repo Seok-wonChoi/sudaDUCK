@@ -1,6 +1,6 @@
 import styles from "./ModeCard.module.css";
 import duckHeadsetImg from "@/assets/images/duck_headset.png";
-import duckTogetherImg from "@/assets/images/duck_together.png";
+import duckTogetherImg from "@/assets/images/duck_together2.png";
 import duckSoloImg from "@/assets/images/duck_solo.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
 
