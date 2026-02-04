@@ -3,11 +3,11 @@
 .Page {
   min-height: 100vh;
   background: #f6f8ff;
-  padding: 20px 16px;
+  padding: clamp(12px, 2vh, 28px) clamp(8px, 1.5vw, 16px);
 }
 
 .Shell {
-  max-width: 1200px;
+  max-width: min(1400px, 95vw);
   width: 100%;
   margin: 0 auto;
   background: #ffffff;
