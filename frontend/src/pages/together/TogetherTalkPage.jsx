@@ -2155,6 +2155,14 @@ const stopSTT = useCallback(() => {
         <UnexpectedQuestOverlay
           open={showResultOverlay}
           onClose={() => {}}
+          duckSrc={resultDuckSrc}
+          bubbleText={resultBubbleText}
+          bubbleTitle={null}
+          subText={null}
+          subTone="normal"
+          countdownNumber={undefined}
+          speechBubbleType={3}
+          clickAnywhere={false}
           showCloseButton={false}
           escToClose={false}
         />
