@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import api from "@/api/api";
+import { useOpenVidu } from "@/context/OpenViduContext"; // 👈 OpenVidu Hook 추가
 import Recordinglayout from "@/components/features/recording/layout/RecordingLayout";
 import {
   saveAssessment,
   toggleScriptLike,
   getTurnScripts,
+  getTurnResults,
 } from "@/api/shadowing";
 import { leaveRoom } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
-import api from "@/api/api"; // axios 인스턴스 import
+import { convertWebMToWav } from "@/utils/audioConverter";
 
 // Components
 import BottomIdle from "@/components/features/recording/bottom/BottomIdle";
@@ -57,6 +60,9 @@ const DUMMY_CONVERSATIONS = {
 export default function RecordingPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  // 👇 OpenVidu Publisher, Subscribers, leaveSession 가져오기
+  const { publisher, subscribers, leaveSession } = useOpenVidu(); 
+
   const roomInfo = state?.roomInfo || {};
   const myUserId = state?.myUserId; // 본인 userId
   const participants = state?.participants || []; // 참여자 목록
@@ -81,6 +87,7 @@ export default function RecordingPage() {
   const [selectedTurnForReport, setSelectedTurnForReport] = useState(null);
   const [scriptError, setScriptError] = useState(null);
   const [isLoadingScript, setIsLoadingScript] = useState(false);
+  const [turnResults, setTurnResults] = useState({});
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
@@ -367,11 +374,14 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   const handleRoomClosed = useCallback(() => {
     console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
+    // 👇 강제 퇴장 시에도 세션 종료
+    if (leaveSession) leaveSession();
+    
     navigate("/main", {
       replace: true,
       state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
-  }, [navigate]);
+  }, [navigate, leaveSession]);
 
   useRoomWebSocket(
     roomCode,
@@ -382,6 +392,9 @@ console.log(`📤 발음 평가 전송 시작`, {
   );
 
   const handleLogoExit = useCallback(async () => {
+    // 👇 진짜 방을 나갈 때는 세션 종료
+    if (leaveSession) leaveSession();
+
     if (roomCode) {
       try {
         await leaveRoom({ roomCode });
@@ -390,9 +403,74 @@ console.log(`📤 발음 평가 전송 시작`, {
         console.error("[RecordingPage] 방 퇴장 실패:", e);
       }
     }
-  }, [roomCode]);
+  }, [roomCode, leaveSession]);
+
+  const fetchTurnResults = useCallback(
+    async (turnNo = currentTurn) => {
+      if (!roomId || !turnNo) {
+        console.warn(
+          "[RecordingPage] roomId 또는 turnNo가 없어 점수 조회 불가",
+        );
+        return;
+      }
+
+      try {
+        console.log(`🔍 [RecordingPage] 턴 ${turnNo} 점수 조회 시작`);
+        const results = await getTurnResults(roomId, turnNo);
+
+        console.log("📊 [RecordingPage] 점수 조회 결과:", results);
+
+        if (!Array.isArray(results) || results.length === 0) {
+          console.warn("⚠️ [RecordingPage] 점수 데이터가 비어있음");
+          return;
+        }
+
+        setTurnResults((prev) => ({
+          ...prev,
+          [turnNo]: results,
+        }));
+
+        const targetConversations =
+          conversations[turnNo] || currentTurnSentences;
+        const scores = {};
+
+        results.forEach((result) => {
+          const sentence = targetConversations.find(
+            (s) => s.scriptId === result.scriptId,
+          );
+          if (sentence) {
+            scores[sentence.id] = result.score;
+          }
+        });
+
+        console.log("✅ [RecordingPage] 점수 업데이트:", scores);
+        setSentenceScores((prev) => ({ ...prev, ...scores }));
+      } catch (error) {
+        console.error("❌ [RecordingPage] 점수 조회 실패:", error);
+      }
+    },
+    [roomId, currentTurn, conversations, currentTurnSentences],
+  );
 
   // --- Effect 로직 ---
+
+  // 👇 [New] OpenVidu 마이크 제어 로직 (쉐도잉 진행 중에는 음소거, 결과 리포트 시에만 해제)
+  useEffect(() => {
+    if (!publisher) return;
+
+    // 대화가 허용되는 단계: 결과 리포트 화면 또는 완전히 종료된 화면
+    const isConversationStep = (step === STEP.TURN_REPORT || step === STEP.ALL_DONE || step === STEP.IDLE);
+
+    if (isConversationStep) {
+      // 결과 화면에서는 팀원들과 대화할 수 있도록 마이크 Unmute
+      console.log(`🎤 [OpenVidu] 결과 확인 단계(${step}) -> 마이크 Unmute`);
+      publisher.publishAudio(true);
+    } else {
+      // 쉐도잉 진행 중(AI 재생, 녹음 대기, 실제 녹음 등)에는 집중과 에코 방지를 위해 항상 Mute
+      console.log(`🎤 [OpenVidu] 쉐도잉 진행 단계(${step}) -> 마이크 Mute`);
+      publisher.publishAudio(false);
+    }
+  }, [step, publisher]);
 
   useEffect(() => {
     const saved = localStorage.getItem("bookmarkedSentences");
@@ -433,8 +511,10 @@ console.log(`📤 발음 평가 전송 시작`, {
           scripts.length === 0 ||
           (scripts.length === 1 && !scripts[0]?.scriptId)
         ) {
-          const errorMsg = `턴 ${currentTurn}의 스크립트를 불러올 수 없습니다.`;
-          console.error(`[RecordingPage] ${errorMsg}`);
+          const errorMsg = currentTurn >= TURNS
+            ? `턴 ${currentTurn}에 대화 내용이 없습니다.\n잠시 후 결과 화면으로 이동합니다.`
+            : `턴 ${currentTurn}에 대화 내용이 없습니다.\n잠시 후 다음 턴으로 이동합니다.`;
+          console.log(`[RecordingPage] ${errorMsg}`);
           setScriptError(errorMsg);
           setConversations((prev) => ({ ...prev, [currentTurn]: [] }));
           setIsLoadingScript(false);
@@ -528,6 +608,28 @@ console.log(`📤 발음 평가 전송 시작`, {
       if (conversations[currentTurn] === undefined) return;
       if (conversations[currentTurn].length === 0) return;
 
+      // ★ 스크립트가 아직 로드되지 않은 경우 대기
+      if (conversations[currentTurn] === undefined) {
+        console.log(
+          `⏳ [RecordingPage] turn ${currentTurn} 스크립트 로드 대기 중...`,
+        );
+        return;
+      }
+
+      // ★ 해당 턴의 스크립트가 빈 배열인 경우 (스크립트 없음)
+      if (conversations[currentTurn].length === 0) {
+        console.log(
+          `⚠️ [RecordingPage] turn ${currentTurn} 스크립트가 없음 - 다음 턴으로 자동 진행`,
+        );
+        // 스크립트가 없어도 다음 턴으로 진행
+        setTimeout(() => {
+          goNextTurn();
+        }, 2000); // 2초 대기 후 다음 턴으로
+        return;
+      }
+
+      // 정상: 3초 카운트다운 시작
+      console.log("✅ [STEP] AI_TIMER 카운트다운 시작 (3초)");
       setCountdown(3);
       intervalRef.current = setInterval(() => {
         setCountdown((c) => {
@@ -630,26 +732,57 @@ console.log(`📤 발음 평가 전송 시작`, {
     goNextSentence,
   ]);
 
+  useEffect(() => {
+    if (step === STEP.TURN_REPORT && roomId && currentTurn) {
+      console.log("[RecordingPage] TURN_REPORT 진입 → 점수 조회");
+      fetchTurnResults(currentTurn);
+    }
+  }, [step, currentTurn, roomId, fetchTurnResults]);
+
   // UI 데이터 가공
   const sentenceCardsData = useMemo(() => {
-    const isReportMode =
-      step === STEP.TURN_REPORT || step === STEP.ALL_DONE;
-    return currentTurnSentences.map((s, i) => ({
-      ...s,
-      scriptId: s.scriptId,
-      score: sentenceScores[s.id],
-      isActive: isReportMode ? true : i === currentSentenceIndex,
-      currentSentence: i + 1,
-      totalSentences: currentTurnSentences.length,
-      // [수정] id가 아니라 scriptId로 북마크 여부 확인
-      isBookmarked: bookmarkedSentences.includes(s.scriptId),
-    }));
+    const isReportMode = step === STEP.TURN_REPORT || step === STEP.ALL_DONE;
+    const targetTurn = selectedTurnForReport || currentTurn;
+
+    let resultsMap = {};
+    if (isReportMode && turnResults[targetTurn]) {
+      turnResults[targetTurn].forEach((result) => {
+        resultsMap[result.scriptId] = {
+          score: result.score,
+          averageScore: result.averageScore,
+        };
+      });
+      console.log("🔍 [RecordingPage] resultsMap:", resultsMap); // ← 이 줄 추가!
+    }
+
+    return currentTurnSentences.map((s, i) => {
+      const resultData = resultsMap[s.scriptId];
+      const finalScore = resultData?.score ?? sentenceScores[s.id];
+
+      console.log(
+        `🔍 [Card ${i}] scriptId:${s.scriptId}, score:${finalScore}, averageScore:${resultData?.averageScore}`,
+      );
+
+      return {
+        ...s,
+        scriptId: s.scriptId,
+        score: finalScore,
+        averageScore: resultData?.averageScore,
+        isActive: isReportMode ? true : i === currentSentenceIndex,
+        currentSentence: i + 1,
+        totalSentences: currentTurnSentences.length,
+        isBookmarked: bookmarkedSentences.includes(s.id),
+      };
+    });
   }, [
     currentTurnSentences,
     currentSentenceIndex,
     sentenceScores,
     bookmarkedSentences,
     step,
+    turnResults,
+    currentTurn,
+    selectedTurnForReport,
   ]);
 
   const bottomContent = () => {
@@ -674,37 +807,38 @@ console.log(`📤 발음 평가 전송 시작`, {
       return (
         <div
           style={{
-            padding: "20px",
+            padding: "40px 20px",
             textAlign: "center",
             background: "#fff",
             borderTop: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "200px",
           }}
         >
           <p
             style={{
-              fontSize: "14px",
-              color: "#ef4444",
+              fontSize: "16px",
+              color: "#6b7280",
               whiteSpace: "pre-line",
-              marginBottom: "16px",
+              marginBottom: "24px",
+              lineHeight: "1.6",
             }}
           >
             {scriptError}
           </p>
-          <button
-            onClick={() => navigate("/together/talk", { replace: true, state })}
+          <div
             style={{
-              padding: "12px 32px",
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#fff",
-              background: "#6b7280",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
+              width: "40px",
+              height: "40px",
+              border: "4px solid #e5e7eb",
+              borderTopColor: "#4f46e5",
+              borderRadius: "50%",
+              animation: "spin 0.8s linear infinite",
             }}
-          >
-            대화 페이지로 돌아가기
-          </button>
+          />
         </div>
       );
     }
@@ -759,8 +893,15 @@ console.log(`📤 발음 평가 전송 시작`, {
   };
 
   return (
-    <Recordinglayout
-      currentTurn={selectedTurnForReport || currentTurn}
+    <>
+      {/* 👇 소리 재생용 컴포넌트 추가 */}
+      {subscribers.map((sub, i) => (
+        <div key={i} style={{ display: 'none' }}>
+          <UserAudioComponent streamManager={sub} />
+        </div>
+      ))}
+      <Recordinglayout
+        currentTurn={selectedTurnForReport || currentTurn}
       sentenceCards={sentenceCardsData}
       activeCardState={
         step === STEP.AI_PLAYING
@@ -780,10 +921,31 @@ console.log(`📤 발음 평가 전송 시작`, {
       onBookmarkToggle={handleBookmarkToggle}
       totalTurns={TURNS}
       isAllDone={step === STEP.ALL_DONE}
-      onTurnClick={(t) => step === STEP.ALL_DONE && setSelectedTurnForReport(t)}
+      onTurnClick={(t) => {
+        if (step === STEP.ALL_DONE) {
+          setSelectedTurnForReport(t);
+          if (!turnResults[t]) {
+            fetchTurnResults(t);
+          }
+        }
+      }}
       selectedTurnForReport={selectedTurnForReport}
       logoExitMessage="메인 화면으로 나가시겠습니까?"
       onLogoExit={handleLogoExit}
-    />
+      />
+    </>
   );
 }
+
+// 👇 소리 재생용 컴포넌트
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};

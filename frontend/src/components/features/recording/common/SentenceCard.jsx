@@ -9,11 +9,12 @@ export default function SentenceCard({
   english = 'I worked at a coffee shop, and it was really tough.',
   blankWords = [],
   score = null,
+  averageScore = null,
   isActive = false,
   cardState = 'idle',
   countdown = 3,
-  recordingTime = 0, // 녹음 시간 (초)
-  recordingCountdown = 10, // 녹음 카운트다운 (초)
+  recordingTime = 0,
+  recordingCountdown = 10,
   sentenceId = null,
   initialBookmarked = false,
   onBookmarkToggle = null,
@@ -32,41 +33,33 @@ export default function SentenceCard({
       onBookmarkToggle(sentenceId, newBookmarkedState);
     }
 
-    // TODO: API 호출하여 서버에 북마크 저장
     console.log('북마크 토글:', sentenceId, newBookmarkedState);
   };
 
-  // 영어 문장을 빈칸 처리하는 함수
   const getDisplayEnglish = () => {
-    // 빈칸 단어가 없으면 전체 문장 표시
     if (blankWords.length === 0) {
       return <>{english}</>;
     }
 
-    // AI가 읽어줄 때는 전체 문장 표시
     if (cardState === 'ai_playing') {
       return <>{english}</>;
     }
 
-    // 녹음 시작 전(idle이면서 isActive인 경우)에는 전체 문장 표시
     if (cardState === 'idle' && isActive) {
       return <>{english}</>;
     }
 
-    // 턴 종료 리포트(!isActive)에서는 빈칸을 [ ] 안에 표시
     if (!isActive) {
       let parts = [english];
       blankWords.forEach((word) => {
         const newParts = [];
         parts.forEach((part) => {
           if (typeof part === 'string') {
-            // 대소문자 구분 없이 단어 찾기
             const regex = new RegExp(`\\b(${word})\\b`, 'gi');
             const splits = part.split(regex);
 
             splits.forEach((split, idx) => {
               if (split.toLowerCase() === word.toLowerCase()) {
-                // [ ] 안에 단어 표시
                 newParts.push(
                   <span key={`blank-${word}-${idx}`} className={styles.blankBracket}>
                     [{split}]
@@ -86,19 +79,16 @@ export default function SentenceCard({
       return <>{parts}</>;
     }
 
-    // 녹음 대기 중, 녹음 중, 녹음 완료 시에는 빈칸 처리 (공백으로)
     let parts = [english];
     blankWords.forEach((word) => {
       const newParts = [];
       parts.forEach((part) => {
         if (typeof part === 'string') {
-          // 대소문자 구분 없이 단어 찾기
           const regex = new RegExp(`\\b(${word})\\b`, 'gi');
           const splits = part.split(regex);
 
           splits.forEach((split, idx) => {
             if (split.toLowerCase() === word.toLowerCase()) {
-              // 빈칸으로 처리
               newParts.push(
                 <span key={`blank-${word}-${idx}`} className={styles.blank}>
                   {'\u00A0'.repeat(split.length)}
@@ -117,6 +107,7 @@ export default function SentenceCard({
 
     return <>{parts}</>;
   };
+  
   const getRecordingBoxContent = () => {
     if (!isActive) {
       return null;
@@ -131,7 +122,6 @@ export default function SentenceCard({
         );
 
       case 'recording':
-        // 녹음 카운트다운 포맷: 00:10 -> 00:00
         const formatCountdown = (seconds) => {
           const mins = Math.floor(seconds / 60);
           const secs = seconds % 60;
@@ -166,22 +156,18 @@ export default function SentenceCard({
     <div className={`${styles.sentenceCard} ${isActive ? styles.active : ''}`}>
       <div className={styles.header}>
         <div className={styles.speakerInfo}>
-          <div className={styles.speakerIcon}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 10C12.21 10 14 8.21 14 6C14 3.79 12.21 2 10 2C7.79 2 6 3.79 6 6C6 8.21 7.79 10 10 10ZM10 12C7.33 12 2 13.34 2 16V18H18V16C18 13.34 12.67 12 10 12Z" fill="white"/>
-            </svg>
-          </div>
           <span className={styles.speakerName}>{speaker}</span>
         </div>
         <div className={styles.headerRight}>
-          {/* 턴 종료 리포트(idle)에서만 점수 표시 */}
           {score !== null && cardState === 'idle' && (
             <span className={styles.score}>
-              개인 점수: <strong className={styles.scoreValue}>{score}점</strong> / 평균 78점
+              개인 점수: <strong className={styles.scoreValue}>{score}점</strong>
+              {averageScore !== null && averageScore !== undefined && (
+                <> / 평균 {averageScore}점</>
+              )}
             </span>
           )}
           <span className={styles.progress}>{currentSentence} / {totalSentences}</span>
-          {/* 턴 종료 리포트(idle)에서만 저장하기 버튼 표시 */}
           {score !== null && cardState === 'idle' && (
             <button
               className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}

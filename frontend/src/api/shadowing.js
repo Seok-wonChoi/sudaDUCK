@@ -8,6 +8,14 @@ export async function getTurnScripts(roomId, turnNo) {
   return data;
 }
 
+// 추가: 턴별 점수 조회 (score + averageScore 포함)
+export async function getTurnResults(roomId, turnNo) {
+  const { data } = await api.get(
+    `/api/v1/session/room/${roomId}/turn/${turnNo}/results`,
+  );
+  return data;
+}
+
 // 발음/정확도 점수 저장하기
 export async function saveAssessment(audioBlob, roomId, turnNo, scriptId) {
   const formData = new FormData();
@@ -25,10 +33,7 @@ export async function saveAssessment(audioBlob, roomId, turnNo, scriptId) {
   // axios가 자동으로 boundary를 포함한 multipart/form-data를 설정함
   // 명시적으로 설정하면 Authorization 헤더가 누락될 수 있음
   const { data } = await api.post("/api/v1/assessment", formData, {
-    headers: {
-      // [중요] 토큰이 있다면 Authorization 헤더 추가
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
+    timeout: 30000, // ← 30초 타임아웃 추가!
   });
   return data;
 }

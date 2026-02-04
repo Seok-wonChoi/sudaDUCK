@@ -61,39 +61,6 @@
   padding-bottom: clamp(8px, 1vw, 10px);
 }
 
-/* 돌발퀘스트 수동 시작 버튼 */
-.QuestTestButtons {
-  display: flex;
-  gap: 12px;
-  padding: 12px 0;
-  justify-content: center;
-}
-
-.QuestTestButton {
-  padding: 8px 20px;
-  border-radius: 8px;
-  border: 2px solid #4f46e5;
-  background: #ffffff;
-  color: #4f46e5;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.QuestTestButton:hover {
-  background: #4f46e5;
-  color: #ffffff;
-}
-
-.QuestTestButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #f3f4f6;
-  border-color: #d1d5db;
-  color: #9ca3af;
-}
-
 .ExitCol {
   display: flex;
   align-items: center;
@@ -111,6 +78,17 @@
   justify-content: flex-end;
   align-items: center;
   gap: clamp(10px, 1.5vw, 14px);
+  position: relative;
+}
+
+.TurnIndicator {
+  position: absolute;
+  bottom: -18px;
+  right: 0;
+  font-size: clamp(11px, 1.1vw, 12px);
+  font-weight: 700;
+  color: #6b7280;
+  text-align: center;
 }
 
 .SmallDuck {
@@ -286,6 +264,13 @@
   display: inline-flex;
   align-items: flex-end;
   gap: 10px;
+}
+
+/* 본인 표시 태그 */
+.MeTag {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
 }
 
 .MeLabel {
@@ -725,6 +710,31 @@
   -webkit-line-clamp: 3;
 }
 
+.AiLoadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #6b7280;
+  font-size: clamp(14px, 1.8vw, 18px);
+  font-weight: 700;
+}
+
+.AiLoadingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2b7fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .Quest1BannerQuestion {
   text-align: center;
 
@@ -743,4 +753,181 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+}
+
+/* 평가 대기 중 오버레이 */
+.WaitingResultOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.WaitingResultContent {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+}
+
+.WaitingResultSpinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid #e5e7eb;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.WaitingResultText {
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 900;
+  color: #111827;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.WaitingResultSubText {
+  font-size: clamp(14px, 1.5vw, 16px);
+  font-weight: 700;
+  color: #6b7280;
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 돌발 퀘스트 결과 화면 (이어하기 버튼 포함) */
+.QuestResultOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.QuestResultContent {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: clamp(30px, 4vw, 50px) clamp(40px, 5vw, 60px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(24px, 3vw, 32px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  max-width: 90vw;
+  min-width: min(500px, 90vw);
+}
+
+.QuestResultBubbleWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.QuestResultDuck {
+  width: clamp(80px, 10vw, 120px);
+  height: clamp(80px, 10vw, 120px);
+  object-fit: contain;
+}
+
+.QuestResultBubble {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: clamp(16px, 2vw, 24px) clamp(24px, 3vw, 32px);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.QuestResultText {
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 900;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.QuestResultButtonArea {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.QuestResultParticipant {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-radius: 12px;
+}
+
+.QuestResultParticipantName {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.QuestResultParticipantStatus {
+  font-size: 13px;
+  font-weight: 700;
+  color: #9ca3af;
+}
+
+.QuestResultParticipantStatus.Ready {
+  color: #10b981;
+}
+
+.QuestContinueButton {
+  width: 100%;
+  height: 56px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 60%, #5b21b6 100%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.3);
+  margin-top: 8px;
+}
+
+.QuestContinueButton:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(79, 70, 229, 0.4);
+}
+
+.QuestContinueButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #9ca3af;
+  box-shadow: none;
 }
