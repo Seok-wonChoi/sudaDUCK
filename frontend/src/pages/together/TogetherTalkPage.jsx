@@ -39,6 +39,7 @@ import micOffIcon from "@/assets/icons/mic_off.png";
 
 import UnexpectedQuestOverlay from "@/components/features/unexpected-quest/UnexpectedQuestOverlay";
 import UnexpectedQuestFillBlankModal from "@/components/features/unexpected-quest/UnexpectedQuestFillBlankModal";
+import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
 
 const ROOM_INFO_KEY = "together_room_info";
 
@@ -185,6 +186,7 @@ export default function TogetherTalkPage() {
   const { publisher, subscribers, leaveSession, session, joinSession } = useOpenVidu(); // 👈 session, joinSession 추가
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const [hydratedInfo, setHydratedInfo] = useState(() => {
     if (location.state) return location.state;
@@ -623,38 +625,43 @@ export default function TogetherTalkPage() {
         "[TogetherTalkPage] ROOM_ENDED 수신 - /recording으로 이동",
         payload,
       );
-      console.log("[TogetherTalkPage] 전달할 데이터:", {
-        roomId: payload?.roomInfo?.roomId ?? roomId,
-        roomCode: resolvedRoomCode,
-        currentTurn,
-        turnCount:
-          payload?.roomInfo?.turnCount ??
-          roomInfo.turnCount ??
-          roomInfo.turnCnt ??
-          3,
-      });
 
-      navigate("/recording", {
-        replace: true,
-        state: {
-          mode: "together",
-          roomInfo: {
-            ...roomInfo,
-            roomId: payload?.roomInfo?.roomId ?? roomId,
-            roomCode: resolvedRoomCode,
-            turnCount:
-              payload?.roomInfo?.turnCount ??
-              roomInfo.turnCount ??
-              roomInfo.turnCnt ??
-              3,
-            currentTurn: currentTurn, // 현재 턴 번호 전달
+      const totalTurns =
+        payload?.roomInfo?.turnCount ??
+        roomInfo.turnCount ??
+        roomInfo.turnCnt ??
+        3;
+      
+      const isLastTurn = currentTurn >= totalTurns;
+
+      const navigateToRecording = () => {
+        navigate("/recording", {
+          replace: true,
+          state: {
+            mode: "together",
+            roomInfo: {
+              ...roomInfo,
+              roomId: payload?.roomInfo?.roomId ?? roomId,
+              roomCode: resolvedRoomCode,
+              turnCount: totalTurns,
+              currentTurn: currentTurn, // 현재 턴 번호 전달
+            },
+            participants,
+            myUserId, // 본인 userId 전달
           },
-          participants,
-          myUserId, // 본인 userId 전달
-        },
-      });
+        });
+      };
+
+      if (!isLastTurn) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          navigateToRecording();
+        }, 5000);
+      } else {
+        navigateToRecording();
+      }
     },
-    [navigate, roomInfo, roomId, participants, currentTurn, resolvedRoomCode],
+    [navigate, roomInfo, roomId, participants, currentTurn, resolvedRoomCode, myUserId],
   );
 
   // 방장 퇴장 시 메인 화면으로 강제 이동
@@ -1063,6 +1070,8 @@ export default function TogetherTalkPage() {
   const handleDone = useCallback(async () => {
     // 내부 로직에서 participants 대신 ref 사용
     const currentParticipants = participantsRef.current;
+    const totalTurns = roomInfo.turnCount || roomInfo.turnCnt || 3;
+    const isLastTurn = currentTurn >= totalTurns;
 
     if (isHost) {
       try {
@@ -1080,21 +1089,43 @@ export default function TogetherTalkPage() {
 
     await stopMediaProcessing();
 
-    navigate("/recording", {
-      replace: true,
-      state: {
-        mode: "together",
-        roomInfo: {
-          ...roomInfo,
-          roomId: roomId,
-          roomCode: resolvedRoomCode,
-          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
-          currentTurn: currentTurn, // 현재 턴 번호 전달
+    const navigateToRecording = () => {
+      navigate("/recording", {
+        replace: true,
+        state: {
+          mode: "together",
+          roomInfo: {
+            ...roomInfo,
+            roomId: roomId,
+            roomCode: resolvedRoomCode,
+            turnCount: totalTurns,
+            currentTurn: currentTurn, // 현재 턴 번호 전달
+          },
+          participants: currentParticipants,
+          myUserId,
         },
-        participants: currentParticipants,
-      },
-    });
-  }, [doLeaveRoom, navigate, isHost, roomId, roomInfo, resolvedRoomCode]);
+      });
+    };
+
+    if (!isLastTurn) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        navigateToRecording();
+      }, 5000);
+    } else {
+      navigateToRecording();
+    }
+  }, [
+    doLeaveRoom,
+    navigate,
+    isHost,
+    roomId,
+    roomInfo,
+    resolvedRoomCode,
+    currentTurn,
+    myUserId,
+    stopMediaProcessing,
+  ]);
 
   //타이머 컴포넌트를 기억하여 리렌더링 방지
   const memoizedTimer = useMemo(() => {
@@ -2087,7 +2118,6 @@ const stopSTT = useCallback(() => {
 
               <div className={styles.QuestResultButtonArea}>
                 {participants.map((p) => {
-                  const isMe = p.isMe === true;
                   const isReady = questContinueReady[p.userId] === true;
                   return (
                     <div key={p.userId} className={styles.QuestResultParticipant}>
@@ -2120,6 +2150,7 @@ const stopSTT = useCallback(() => {
             </div>
           </div>
         )}
+        {isTransitioning && <LoadingOverlay />}
       </div>
     </div>
   );

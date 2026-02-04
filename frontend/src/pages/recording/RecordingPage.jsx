@@ -11,7 +11,8 @@ import {
 } from "@/api/shadowing";
 import { leaveRoom } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
-import { convertWebMToWav } from "@/utils/audioConverter";
+import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
+import duckTogether from "@/assets/images/duck_together.png";
 
 // Components
 import BottomIdle from "@/components/features/recording/bottom/BottomIdle";
@@ -72,6 +73,7 @@ export default function RecordingPage() {
   const TURNS = roomInfo.turnCount || 3;
 
   const [step, setStep] = useState(STEP.AI_TIMER);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   // state로 전달받은 currentTurn 사용
   const [currentTurn, setCurrentTurn] = useState(() => {
     return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
@@ -311,10 +313,13 @@ console.log(`📤 발음 평가 전송 시작`, {
       전달할State: navigationState,
     });
 
-    navigate("/together/talk", {
-      replace: true,
-      state: navigationState,
-    });
+    setIsTransitioning(true);
+    setTimeout(() => {
+      navigate("/together/talk", {
+        replace: true,
+        state: navigationState,
+      });
+    }, 5000);
   };
 
   const startFlow = () => setStep(STEP.AI_TIMER);
@@ -950,6 +955,13 @@ console.log(`📤 발음 평가 전송 시작`, {
       logoExitMessage="메인 화면으로 나가시겠습니까?"
       onLogoExit={handleLogoExit}
       />
+      {isTransitioning && (
+        <LoadingOverlay
+          title="새로운 턴이 시작됩니다!"
+          subtitle="다시 즐거운 대화를 시작해볼까요?"
+          image={duckTogether}
+        />
+      )}
     </>
   );
 }

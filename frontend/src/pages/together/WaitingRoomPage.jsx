@@ -29,7 +29,8 @@ import {
 
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 import useSmoothCountdown from "@/hooks/useSmoothCountdown";
-import CountdownOverlay from "@/components/features/minigame/countdown/CountdownOverlay";
+import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
+import duckHappy from "@/assets/images/duck_happy.png";
 
 const ROOM_INFO_KEY = "together_room_info";
 
@@ -1621,10 +1622,10 @@ export default function WaitingRoomPage() {
       ) : null}
 
       {isStarting && (
-        <CountdownOverlay
-          count={remainingSec}
+        <LoadingOverlay
           title="대화 준비!"
-          subtitle={`${remainingSec}초 뒤 스크립트를 모으는 자유말하기가 시작됩니다`}
+          subtitle="스크립트를 모으는 자유말하기가 시작됩니다"
+          image={duckHappy}
         />
       )}
     </div>
