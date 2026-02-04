@@ -2101,7 +2101,7 @@ const stopSTT = useCallback(() => {
           </div>
         )}
 
-        {/* 결과 - 이어하기 버튼 포함 */}
+        {/* 결과 - 이어하기 버튼 포함 (기존 수동 UI) */}
         {showResultOverlay && (
           <div className={styles.QuestResultOverlay}>
             <div className={styles.QuestResultContent}>
@@ -2150,6 +2150,23 @@ const stopSTT = useCallback(() => {
             </div>
           </div>
         )}
+
+        {/* 결과 - 3초 후 자동 복귀 (팀원 추가분) */}
+        <UnexpectedQuestOverlay
+          open={showResultOverlay}
+          onClose={() => {}}
+          duckSrc={resultDuckSrc}
+          bubbleText={resultBubbleText}
+          bubbleTitle={null}
+          subText={null}
+          subTone="normal"
+          countdownNumber={undefined}
+          speechBubbleType={3}
+          clickAnywhere={false}
+          showCloseButton={false}
+          escToClose={false}
+        />
+
         {isTransitioning && <LoadingOverlay />}
       </div>
     </div>

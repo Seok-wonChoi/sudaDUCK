@@ -58,7 +58,8 @@
 /* 작은 태블릿 (600px ~ 768px) */
 @media (max-width: 768px) {
   .Shell {
-    max-width: 96vw;
+    max-width: 98vw;
+    border-radius: 18px;
   }
 
   .Top {
