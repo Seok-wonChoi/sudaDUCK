@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ActionCard from "@/components/common/ActionCard/ActionCard";
+import StatsSection from "@/components/features/main/StatsSection/StatsSection";
+import { getMypageSummary } from "@/api/mypage";
 
 import makeRoomIcon from "@/assets/icons/make_room2.png";
 import joinRoomIcon from "@/assets/icons/join_room2.png";
@@ -12,10 +14,36 @@ export default function TogetherPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [toastMessage, setToastMessage] = useState("");
+  const [summary, setSummary] = useState({
+    attendanceDays: 0,
+    sentenceCount: 0,
+  });
 
   const showToast = useCallback((message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(""), 3000);
+  }, []);
+
+  // 통계 데이터 로드
+  useEffect(() => {
+    const loadSummary = async () => {
+      try {
+        const summaryData = await getMypageSummary();
+        if (summaryData) {
+          setSummary({
+            attendanceDays: summaryData.attendanceDays ?? 0,
+            sentenceCount: summaryData.sentenceCount ?? 0,
+          });
+        }
+      } catch (error) {
+        console.error("통계 데이터 로드 실패:", error);
+      }
+    };
+
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      loadSummary();
+    }
   }, []);
 
   // location state에서 토스트 메시지 확인
@@ -39,14 +67,6 @@ export default function TogetherPage() {
     navigate("/together/join");
   };
 
-  const topics = [
-    "첫 아르바이트 추억",
-    "최악의 데이트",
-    "나만의 취미생활",
-    "학창시절 이야기",
-    "여행 경험담",
-  ];
-
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
@@ -63,7 +83,9 @@ export default function TogetherPage() {
           </button>
 
           <h1 className={styles.Title}>함께 하기</h1>
-          <p className={styles.Subtitle}>새로운 방을 만들거나 친구의 방에 참여해보세요 🎮</p>
+          <p className={styles.Subtitle}>
+            새로운 방을 만들거나 친구의 방에 참여해보세요 🎮
+          </p>
 
           <section className={styles.CardRow} aria-label="함께하기 메뉴">
             <ActionCard
@@ -83,26 +105,19 @@ export default function TogetherPage() {
           </section>
         </main>
 
-        <section className={styles.Bottom} aria-label="공유 및 인기 주제">
-          <div className={styles.ShareBanner}>
-            <span className={styles.ShareText}>
-              친구에게 참여 코드를 <span className={styles.Emph}>카톡</span>으로 공유하세요!
-            </span>
-          </div>
-
-          <div className={styles.Popular}>
-            <div className={styles.PopularTitle}>지금 인기있는 주제</div>
-            <div className={styles.TopicRow}>
-              {topics.map((t) => (
-                <button key={t} type="button" className={styles.TopicChip}>
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
+        <section className={styles.Bottom} aria-label="통계">
+          <StatsSection
+            stats={[
+              { value: "🔥", label: "오늘도 열심히 해볼까요?" },
+              { value: `${summary.attendanceDays}일`, label: "연속 학습" },
+              { value: `${summary.sentenceCount}개`, label: "저장된 문장" },
+            ]}
+          />
         </section>
 
-        {toastMessage ? <div className={styles.Toast}>{toastMessage}</div> : null}
+        {toastMessage ? (
+          <div className={styles.Toast}>{toastMessage}</div>
+        ) : null}
       </div>
     </div>
   );

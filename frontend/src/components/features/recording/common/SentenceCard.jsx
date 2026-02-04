@@ -100,8 +100,12 @@ export default function SentenceCard({
           splits.forEach((split, idx) => {
             if (split.toLowerCase() === word.toLowerCase()) {
               newParts.push(
-                <span key={`blank-${word}-${idx}`} className={styles.blank}>
-                  {'\u00A0'.repeat(split.length)}
+                <span
+                  key={`blank-${word}-${idx}`}
+                  className={styles.blank}
+                  style={{ minWidth: `${split.length * 0.9}ch` }}
+                >
+                  {'\u00A0'}
                 </span>
               );
             } else if (split) {
