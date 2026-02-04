@@ -398,9 +398,12 @@
 
 /* 본인 표시 태그 */
 .MeTag {
+  display: inline-flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 900;
   color: #111827;
+  height: fit-content;
 }
 
 /* 준비 상태 태그 공통 */

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import styles from "./MainPage.module.css";
 import { useNavigate } from "react-router-dom";
 
@@ -7,29 +7,41 @@ import MainHero from "@/components/features/main/MainHero/MainHero";
 import ModeSelectSection from "@/components/features/main/ModeSelectSection/ModeSelectSection";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 import StatsSection from "@/components/features/main/StatsSection/StatsSection";
-import { getMyProfileCustom } from "@/api/mypage";
+import { getMyProfileCustom, getMypageSummary } from "@/api/mypage";
 
 export default function MainPage() {
   const navigate = useNavigate();
+  const [summary, setSummary] = useState({
+    attendanceDays: 0,
+    sentenceCount: 0,
+  });
 
-  // 로그인 후 사용자 프로필 로드 (닉네임 등)
+  // 로그인 후 사용자 프로필 및 요약 정보 로드
   useEffect(() => {
-    const loadUserProfile = async () => {
+    const loadUserData = async () => {
       try {
+        // 프로필 정보 로드
         const profileData = await getMyProfileCustom();
         if (profileData.nickname) {
           localStorage.setItem('userNickname', profileData.nickname);
           window.dispatchEvent(new Event('nicknameUpdated'));
         }
+
+        // 요약 정보 로드
+        const summaryData = await getMypageSummary();
+        setSummary({
+          attendanceDays: summaryData.attendanceDays || 0,
+          sentenceCount: summaryData.sentenceCount || 0,
+        });
       } catch (error) {
-        console.error("프로필 로드 실패:", error);
+        console.error("사용자 데이터 로드 실패:", error);
       }
     };
 
-    // accessToken이 있으면 프로필 로드
+    // accessToken이 있으면 데이터 로드
     const token = localStorage.getItem('accessToken');
     if (token) {
-      loadUserProfile();
+      loadUserData();
     }
   }, []);
 
@@ -58,7 +70,7 @@ export default function MainPage() {
           <TipBanner text="Tip: 연습 모드로 워밍업 후 함께 하기 모드에 도전해보세요!" />
           <StatsSection
             stats={[
-              { value: "0시간", label: "총 플레이 타임" },
+              { value: "🔥", label: "오늘도 열심히 해볼까요?" },
               { value: "0일", label: "연속 학습" },
               { value: "0개", label: "저장된 문장" },
             ]}

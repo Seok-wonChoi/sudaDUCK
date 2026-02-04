@@ -15,6 +15,7 @@ import {
   getRoomLobby,
   endRoom,
 } from "@/api/rooms";
+import { createToken } from "@/api/openVidu"; // 👈 [추가] 재접속용 API
 import { scheduleQuiz, submitQuizAnswer } from "@/api/quiz";
 import { translateToEnglish } from "@/api/translate";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
@@ -181,7 +182,7 @@ function getUserIdFromToken() {
 export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { publisher, subscribers, leaveSession } = useOpenVidu(); // 👈 leaveSession 추가
+  const { publisher, subscribers, leaveSession, session, joinSession } = useOpenVidu(); // 👈 session, joinSession 추가
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
@@ -192,6 +193,49 @@ export default function TogetherTalkPage() {
     const parsed = saved ? safeParseJson(saved) : null;
     return parsed ?? null;
   });
+
+  // 👇 [추가] 새로고침 시 세션 복구 로직 (구조대)
+  const isRecoveringRef = useRef(false);
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      // 1. 이미 세션이 있거나, 복구 시도 중이면 패스
+      if (session || isRecoveringRef.current) return;
+      
+      // 2. 방 정보가 없으면 복구 불가
+      const info = hydratedInfo || safeParseJson(sessionStorage.getItem(ROOM_INFO_KEY));
+      const ovSessionId = info?.openviduSessionId || info?.roomInfo?.openviduSessionId;
+      
+      if (!ovSessionId) {
+        console.warn("[TogetherTalkPage] ⚠️ 복구할 오픈비두 세션 ID가 없습니다.");
+        return;
+      }
+
+      console.log("🚑 [TogetherTalkPage] 새로고침 감지! 세션 복구를 시도합니다...", ovSessionId);
+      isRecoveringRef.current = true;
+
+      try {
+        // 3. 내 닉네임 찾기
+        const myId = info.myUserId ?? getUserIdFromToken();
+        const myName = Array.isArray(info.participants) 
+            ? info.participants.find(p => String(p.id || p.userId) === String(myId))?.nickname 
+            : "복구된유저";
+
+        // 4. 토큰 재발급 및 접속
+        const token = await createToken(ovSessionId);
+        await joinSession(token, myName || "User");
+        
+        console.log("✅ [TogetherTalkPage] 세션 복구 성공!");
+      } catch (e) {
+        console.error("❌ [TogetherTalkPage] 세션 복구 실패:", e);
+        // 실패 시 메인으로 튕기게 할 수도 있지만, 일단 로그만 출력
+      } finally {
+        isRecoveringRef.current = false;
+      }
+    };
+
+    restoreSession();
+  }, [session, hydratedInfo, joinSession]);
 
   useEffect(() => {
     if (location.state) {
@@ -301,16 +345,30 @@ export default function TogetherTalkPage() {
 
   // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
   const [currentTurn, setCurrentTurn] = useState(() => {
-    return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+    const turn = roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
+    console.log("[TogetherTalkPage] currentTurn 초기화:", {
+      roomInfo,
+      turn,
+    });
+    return turn;
   });
 
   // [수정 2] 데이터 동기화 추가: 페이지 이동으로 hydratedInfo가 바뀌면 턴 번호도 업데이트
   useEffect(() => {
     const nextTurn = hydratedInfo?.currentTurn ?? hydratedInfo?.roomInfo?.currentTurn;
-    if (nextTurn) {
+    console.log("[TogetherTalkPage] hydratedInfo 변경 감지:", {
+      hydratedInfo,
+      currentTurnFromState: hydratedInfo?.currentTurn,
+      currentTurnFromRoomInfo: hydratedInfo?.roomInfo?.currentTurn,
+      nextTurn,
+      currentCurrentTurn: currentTurn,
+    });
+
+    if (nextTurn !== undefined && nextTurn !== null && nextTurn !== currentTurn) {
+      console.log(`[TogetherTalkPage] 턴 번호 업데이트: ${currentTurn} → ${nextTurn}`);
       setCurrentTurn(nextTurn);
     }
-  }, [hydratedInfo]);
+  }, [hydratedInfo, currentTurn]);
 
   // [추가] 턴이 변경될 때마다(또는 방 코드가 확보될 때마다) 해당 턴의 시작 시간을 박제
   useEffect(() => {
@@ -1691,8 +1749,8 @@ const stopSTT = useCallback(() => {
     <div className={styles.Page}>
       <div className={styles.Shell}>
         {/* 👇 소리 재생용 컴포넌트 추가 */}
-        {subscribers.map((sub, i) => (
-          <div key={i} style={{ display: 'none' }}>
+        {subscribers.map((sub) => (
+          <div key={sub.stream.connection.connectionId} style={{ display: 'none' }}>
             <UserAudioComponent streamManager={sub} />
           </div>
         ))}
@@ -1772,10 +1830,6 @@ const stopSTT = useCallback(() => {
                   </div>
                 )}
 
-              {/* AI 추천 주제 */}
-              {aiSuggestion && !questRunning && (
-                <div className={styles.AiSuggestionBanner}>{aiSuggestion}</div>
-              )}
 
               <section
                 className={styles.CardsGrid}
@@ -1902,16 +1956,22 @@ const stopSTT = useCallback(() => {
                   <span className={styles.AiDot} aria-hidden="true" />
                 </div>
 
-                <div className={styles.AiFace} aria-hidden="true">
-                  🙂
-                </div>
+                {!aiSuggestion && (
+                  <div className={styles.AiFace} aria-hidden="true">
+                    🙂
+                  </div>
+                )}
 
-                <div className={styles.AiMainText}>
-                  한국어로 편하게 대화해보세요!
+                <div
+                  className={`${styles.AiMainText} ${aiSuggestion ? styles.AiMainTextLarge : ''}`}
+                >
+                  {aiSuggestion || "한국어로 편하게 대화해보세요!"}
                 </div>
-                <div className={styles.AiSubText}>
-                  15초 동안 침묵이 지속되면 제가 도와드릴게요.
-                </div>
+                {!aiSuggestion && (
+                  <div className={styles.AiSubText}>
+                    15초 동안 침묵이 지속되면 제가 도와드릴게요.
+                  </div>
+                )}
 
                 <div className={styles.AiPointer} aria-hidden="true" />
               </div>
