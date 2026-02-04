@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import styles from "./MyPage.module.css";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
-import { getMyScripts, updateAvatarCustom, updateDuckCustom, getMyProfileCustom, purchaseItem, updateNickname, updateAiDuckBot, getCustomItems } from "@/api/mypage";
+import { getMyScripts, updateAvatarCustom, updateDuckCustom, getMyProfileCustom, purchaseItem, updateNickname, updateAiDuckBot, getCustomItems, getMypageSummary} from "@/api/mypage";
 import { logout } from "@/api/auth";
-
+import { useNavigate } from "react-router-dom";
 import ProfileSection from "@/components/features/mypage/ProfileSection/ProfileSection";
 import StatsCard from "@/components/features/mypage/StatsCard/StatsCard";
 import SentenceList from "@/components/features/mypage/SentenceList/SentenceList";
@@ -38,6 +38,7 @@ const DUCK_PROFILE_IMAGES = {
 };
 
 export default function MyPage() {
+  const navigate = useNavigate();
   const [sentences, setSentences] = useState([]);
   const [selectedSentence, setSelectedSentence] = useState(null);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
@@ -90,6 +91,7 @@ export default function MyPage() {
   // 통계 데이터
   const [totalPlaytime, setTotalPlaytime] = useState(0); // 총 플레이 타임 (초)
   const [consecutiveDays, setConsecutiveDays] = useState(0); // 연속 학습 일수
+  const [sentenceCount, setSentenceCount] = useState(0); // 저장된 문장 개수
 
   // 코인 시스템
   const [coins, setCoins] = useState(200); // 초기 코인 (테스트용 200코인)
@@ -209,6 +211,11 @@ export default function MyPage() {
             console.error("aiDuckbotCustomJson 파싱 실패:", e);
           }
         }
+        
+        //4. 요약 정보 조회
+        const summaryData = await getMypageSummary();
+        if (summaryData.attendanceDays !== undefined) setConsecutiveDays(summaryData.attendanceDays);
+        if (summaryData.sentenceCount !== undefined) setSentenceCount(summaryData.sentenceCount);
 
       } catch (error) {
         console.error("데이터 로드 실패:", error);
@@ -335,15 +342,13 @@ export default function MyPage() {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     try {
-      await logout();
-      localStorage.removeItem('accessToken');
-      window.location.href = '/login';
+      logout(); 
+      navigate("/", { replace: true }); 
     } catch (error) {
-      console.error('로그아웃 실패:', error);
-      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
-      alert(`로그아웃 실패: ${errorMsg}`);
+      console.error("로그아웃 실패:", error);
+      alert("로그아웃에 실패했습니다.");
     }
   };
 
