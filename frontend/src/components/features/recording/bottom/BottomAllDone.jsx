@@ -1,6 +1,6 @@
 import styles from './BottomAllDone.module.css';
 
-export default function BottomAllDone({ onRestart, onComplete }) {
+export default function BottomAllDone({ onRestart, onComplete, isHost }) {
   return (
     <div className={styles.container} aria-live="polite">
       <div className={styles.iconCircle}>
@@ -17,18 +17,20 @@ export default function BottomAllDone({ onRestart, onComplete }) {
           <button
             className={styles.completeBtn}
             onClick={onComplete}
+            disabled={!isHost}
             style={{
               padding: '12px 24px',
               fontSize: '16px',
               fontWeight: '600',
               color: '#fff',
-              background: '#2b7fff',
+              background: isHost ? '#2b7fff' : '#9ca3af',
               border: 'none',
               borderRadius: '8px',
-              cursor: 'pointer'
+              cursor: isHost ? 'pointer' : 'not-allowed',
+              opacity: isHost ? 1 : 0.6
             }}
           >
-            복습게임하기
+            {isHost ? '모두 복습게임 시작' : '방장이 시작할 때까지 대기'}
           </button>
         </div>
       </div>
