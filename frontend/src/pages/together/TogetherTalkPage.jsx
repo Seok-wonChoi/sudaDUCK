@@ -15,6 +15,7 @@ import {
   getRoomLobby,
   endRoom,
 } from "@/api/rooms";
+import { createToken } from "@/api/openVidu"; // 👈 [추가] 재접속용 API
 import { scheduleQuiz, submitQuizAnswer } from "@/api/quiz";
 import { translateToEnglish } from "@/api/translate";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
@@ -181,7 +182,7 @@ function getUserIdFromToken() {
 export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { publisher, subscribers, leaveSession } = useOpenVidu(); // 👈 leaveSession 추가
+  const { publisher, subscribers, leaveSession, session, joinSession } = useOpenVidu(); // 👈 session, joinSession 추가
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
 
@@ -192,6 +193,49 @@ export default function TogetherTalkPage() {
     const parsed = saved ? safeParseJson(saved) : null;
     return parsed ?? null;
   });
+
+  // 👇 [추가] 새로고침 시 세션 복구 로직 (구조대)
+  const isRecoveringRef = useRef(false);
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      // 1. 이미 세션이 있거나, 복구 시도 중이면 패스
+      if (session || isRecoveringRef.current) return;
+      
+      // 2. 방 정보가 없으면 복구 불가
+      const info = hydratedInfo || safeParseJson(sessionStorage.getItem(ROOM_INFO_KEY));
+      const ovSessionId = info?.openviduSessionId || info?.roomInfo?.openviduSessionId;
+      
+      if (!ovSessionId) {
+        console.warn("[TogetherTalkPage] ⚠️ 복구할 오픈비두 세션 ID가 없습니다.");
+        return;
+      }
+
+      console.log("🚑 [TogetherTalkPage] 새로고침 감지! 세션 복구를 시도합니다...", ovSessionId);
+      isRecoveringRef.current = true;
+
+      try {
+        // 3. 내 닉네임 찾기
+        const myId = info.myUserId ?? getUserIdFromToken();
+        const myName = Array.isArray(info.participants) 
+            ? info.participants.find(p => String(p.id || p.userId) === String(myId))?.nickname 
+            : "복구된유저";
+
+        // 4. 토큰 재발급 및 접속
+        const token = await createToken(ovSessionId);
+        await joinSession(token, myName || "User");
+        
+        console.log("✅ [TogetherTalkPage] 세션 복구 성공!");
+      } catch (e) {
+        console.error("❌ [TogetherTalkPage] 세션 복구 실패:", e);
+        // 실패 시 메인으로 튕기게 할 수도 있지만, 일단 로그만 출력
+      } finally {
+        isRecoveringRef.current = false;
+      }
+    };
+
+    restoreSession();
+  }, [session, hydratedInfo, joinSession]);
 
   useEffect(() => {
     if (location.state) {
@@ -1534,76 +1578,68 @@ export default function TogetherTalkPage() {
      한국어→영어 번역 (Chrome STT)
   ========================= */
   const recognitionRef = useRef(null);
-
+  
+  // [필수] 턴 번호 최신화 Ref
   const currentTurnRef = useRef(currentTurn);
-
   useEffect(() => {
     currentTurnRef.current = currentTurn;
   }, [currentTurn]);
 
-  // STT 시작
+// [추가] 의도적으로 STT를 껐는지 확인하는 플래그
+  const isSTTIntentionallyStopped = useRef(false);
+
 // STT 시작
+// STT 시작 함수 (완성본)
   const startSTT = useCallback(() => {
+    // 1. 이미 실행 중이면 중복 실행 방지
+    if (recognitionRef.current) return;
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.warn("[STT] 미지원 브라우저");
+      return;
+    }
+
     try {
-      // [수정] 이미 실행 중이면 중단 (중복 생성 방지)
-      if (recognitionRef.current) {
-        console.log("[STT] 이미 실행 중입니다.");
-        return;
-      }
-
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        console.warn("[STT] Web Speech API를 지원하지 않는 브라우저입니다.");
-        return;
-      }
-
       const recognition = new SpeechRecognition();
       recognition.lang = "ko-KR";
-      recognition.continuous = true;
+      recognition.continuous = true; 
       recognition.interimResults = false;
+
+      // 시작 시 "의도적 중지" 플래그 해제
+      isSTTIntentionallyStopped.current = false;
 
       recognition.onresult = async (event) => {
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
-            console.log("🎤 [STT 인식됨]:", transcript);
+            
+            // 공백이거나 너무 짧으면(1글자 미만) 무시 (로그 과다 방지)
+            if (!transcript || transcript.trim().length < 2) continue;
 
-            // [수정] Ref에서 최신 턴 번호 가져오기
-            const currentTurnVal = currentTurnRef.current; 
+            // [로그] 인식된 내용만 심플하게 출력
+            console.log("🎤", transcript);
 
-            // 조건 체크
-            if (
-              roomId &&
-              myUserId &&
-              currentTurnVal && 
-              transcript &&
-              transcript.trim().length > 0
-            ) {
-              // 정적 감지 해제 신호 전송
-              recordVoiceActivity(roomId, myUserId, currentTurnVal).catch((e) => {
-                console.error("[STT] 음성 활동 기록 실패:", e);
-              });
-            }
+            // Ref를 통해 최신 턴 번호 조회
+            const currentTurnVal = currentTurnRef.current;
 
-            // [수정] 테스트를 위해 글자 수 제한을 4 -> 2로 완화
-            if (!roomId || !transcript || transcript.trim().length < 2) {
-              console.log("[STT] 텍스트가 너무 짧아 번역 건너뜀:", transcript);
-              continue;
+            // 말했으니 정적 감지 리셋 신호 전송
+            if (roomId && myUserId && currentTurnVal) {
+               recordVoiceActivity(roomId, myUserId, currentTurnVal).catch(() => {});
             }
 
             try {
-              console.log(`🚀 [STT] 번역 요청 (Turn: ${currentTurnVal}):`, transcript);
-              
-              const response = await translateToEnglish(
+              // 번역 API 호출
+              await translateToEnglish(
                 roomId,
                 transcript,
-                currentTurnVal, // Ref 값 사용
-                myUserId,
+                currentTurnVal, 
+                myUserId
               );
-              console.log("[STT] 번역 결과:", response);
             } catch (error) {
-              console.error("[STT] 번역 실패:", error);
+              console.error("[STT] 번역 전송 실패");
             }
           }
         }
@@ -1640,18 +1676,19 @@ export default function TogetherTalkPage() {
 
       recognition.start();
       recognitionRef.current = recognition;
-      console.log("🟢 [STT] 음성 인식 시작됨");
+
     } catch (error) {
-      console.error("[STT] 시작 실패:", error);
+      console.error("[STT] 시작 오류");
     }
   }, [roomId, myUserId]); // [중요] currentTurn 제거!
   
   // STT 중지
-  const stopSTT = useCallback(() => {
+const stopSTT = useCallback(() => {
+    isSTTIntentionallyStopped.current = true; // 재시작 방지 플래그 설정
+    
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
-      console.log("[STT] 음성 인식 중지");
     }
   }, []);
 
@@ -1663,6 +1700,7 @@ export default function TogetherTalkPage() {
       stopSTT();
     }
 
+    // 컴포넌트 언마운트 시 중지
     return () => {
       stopSTT();
     };
@@ -1704,8 +1742,8 @@ export default function TogetherTalkPage() {
     <div className={styles.Page}>
       <div className={styles.Shell}>
         {/* 👇 소리 재생용 컴포넌트 추가 */}
-        {subscribers.map((sub, i) => (
-          <div key={i} style={{ display: 'none' }}>
+        {subscribers.map((sub) => (
+          <div key={sub.stream.connection.connectionId} style={{ display: 'none' }}>
             <UserAudioComponent streamManager={sub} />
           </div>
         ))}
