@@ -28,6 +28,9 @@ import {
 } from "@/api/rooms";
 
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
+import useSmoothCountdown from "@/hooks/useSmoothCountdown";
+import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
+import duckHappy from "@/assets/images/duck_happy.png";
 
 const ROOM_INFO_KEY = "together_room_info";
 
@@ -286,6 +289,45 @@ export default function WaitingRoomPage() {
   const [readyCount, setReadyCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStarting, setIsStarting] = useState(false);
+  const startDataRef = useRef(null);
+
+  const { remainingSec, start: startTimer } = useSmoothCountdown(5, {
+    onDone: () => {
+      if (hasNavigatedRef.current) return;
+      hasNavigatedRef.current = true;
+      isTransitioningRef.current = true;
+
+      const payloadOrData = startDataRef.current;
+
+      navigate("/together/talk", {
+        replace: true,
+        state: {
+          ...roomInfo,
+          roomId: payloadOrData?.roomId ?? roomId ?? roomInfo.roomId,
+          roomCode: payloadOrData?.roomCode ?? inviteCode,
+          inviteCode,
+          joinCode: inviteCode,
+          roomTitle,
+          title: roomTitle,
+          topic,
+          turnCount,
+          turnCnt: turnCount,
+          maxCount,
+          currentTurn: 1,
+          myUserId: myKey ? Number(myKey) : roomInfo.myUserId,
+          participants: participants.map((p) => ({
+            id: p.key,
+            name: p.nickname,
+            isMe: p.key === myKey,
+            micOn: p.key === myKey ? myMicOn : (p.micOn ?? false),
+            voiceLevel: 0,
+            isHost: p.isHost,
+          })),
+        },
+      });
+    },
+  });
 
   const [myMicOn, setMyMicOn] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
@@ -869,52 +911,13 @@ export default function WaitingRoomPage() {
 
   const onRoomStarted = useCallback(
     (payloadOrData) => {
-      if (hasNavigatedRef.current) return;
-      hasNavigatedRef.current = true;
-      
-      // 👇 게임 화면으로 이동하므로 세션 유지 플래그 ON
-      isTransitioningRef.current = true;
-
-      navigate("/together/talk", {
-        replace: true,
-        state: {
-          ...roomInfo,
-          roomId: payloadOrData?.roomId ?? roomId ?? roomInfo.roomId,
-          roomCode: payloadOrData?.roomCode ?? inviteCode,
-          inviteCode,
-          joinCode: inviteCode,
-          roomTitle,
-          title: roomTitle,
-          topic,
-          turnCount,
-          turnCnt: turnCount,
-          maxCount,
-          currentTurn: 1,
-          myUserId: myKey ? Number(myKey) : roomInfo.myUserId,
-          participants: participants.map((p) => ({
-            id: p.key,
-            name: p.nickname,
-            isMe: p.key === myKey,
-            micOn: p.key === myKey ? myMicOn : (p.micOn ?? false),
-            voiceLevel: 0,
-            isHost: p.isHost,
-          })),
-        },
-      });
+      if (isStarting) return;
+      console.log("🎮 [WaitingRoom] ROOM_STARTED 수신 - 카운트다운 시작");
+      startDataRef.current = payloadOrData;
+      setIsStarting(true);
+      startTimer();
     },
-    [
-      navigate,
-      roomInfo,
-      roomId,
-      inviteCode,
-      roomTitle,
-      topic,
-      turnCount,
-      maxCount,
-      myKey,
-      participants,
-      myMicOn,
-    ],
+    [isStarting, startTimer],
   );
 
   const { sendReady, sendMic, sendVoiceLevel, isConnected } = useRoomWebSocket(inviteCode, {
@@ -1617,6 +1620,14 @@ export default function WaitingRoomPage() {
           </div>
         </div>
       ) : null}
+
+      {isStarting && (
+        <LoadingOverlay
+          title="대화 준비!"
+          subtitle="스크립트를 모으는 자유말하기가 시작됩니다"
+          image={duckHappy}
+        />
+      )}
     </div>
   );
 }

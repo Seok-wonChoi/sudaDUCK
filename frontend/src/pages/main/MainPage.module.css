@@ -78,11 +78,11 @@
   }
 
   .Top {
-    padding: 28px 28px 20px;
+    padding: clamp(38px, 4vw, 42px) clamp(14px, 2.2vw, 28px) clamp(20px, 2.5vw, 24px);
   }
 
   .Bottom {
-    padding: 24px 28px 32px;
+    padding: clamp(22px, 2.5vw, 26px) clamp(14px, 2.2vw, 28px) clamp(24px, 2.8vw, 28px);
   }
 }
 
@@ -114,11 +114,15 @@
   }
 
   .Top {
-    padding: 20px 16px 16px;
+    padding: 38px 14px 18px;
+  }
+
+  .Title {
+    font-size: 24px;
   }
 
   .Bottom {
-    padding: 18px 16px 24px;
+    padding: 18px 14px 20px;
   }
 }
 
@@ -130,10 +134,66 @@
   }
 
   .Top {
-    padding: 18px 14px 14px;
+    padding: 36px 12px 16px;
+  }
+
+  .Title {
+    font-size: 22px;
+  }
+
+  .Subtitle {
+    font-size: 12px;
+  }
+
+  .CardRow {
+    grid-template-columns: 1fr;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .Bottom {
-    padding: 16px 14px 20px;
+    padding: 16px 12px 18px;
+  }
+
+  .ShareText {
+    font-size: 13px;
+  }
+
+  .PopularTitle {
+    font-size: 16px;
+  }
+
+  .TopicChip {
+    font-size: 12px;
+    padding: 9px 14px;
+  }
+}
+
+/* Toast: 하단 중앙 토스트 메시지 */
+.Toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.95);
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  animation: toastSlideUp 0.3s ease-out;
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 }
