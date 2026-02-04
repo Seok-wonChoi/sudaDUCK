@@ -1791,10 +1791,6 @@ export default function TogetherTalkPage() {
                   </div>
                 )}
 
-              {/* AI 추천 주제 */}
-              {aiSuggestion && !questRunning && (
-                <div className={styles.AiSuggestionBanner}>{aiSuggestion}</div>
-              )}
 
               <section
                 className={styles.CardsGrid}
@@ -1921,16 +1917,22 @@ export default function TogetherTalkPage() {
                   <span className={styles.AiDot} aria-hidden="true" />
                 </div>
 
-                <div className={styles.AiFace} aria-hidden="true">
-                  🙂
-                </div>
+                {!aiSuggestion && (
+                  <div className={styles.AiFace} aria-hidden="true">
+                    🙂
+                  </div>
+                )}
 
-                <div className={styles.AiMainText}>
-                  한국어로 편하게 대화해보세요!
+                <div
+                  className={`${styles.AiMainText} ${aiSuggestion ? styles.AiMainTextLarge : ''}`}
+                >
+                  {aiSuggestion || "한국어로 편하게 대화해보세요!"}
                 </div>
-                <div className={styles.AiSubText}>
-                  15초 동안 침묵이 지속되면 제가 도와드릴게요.
-                </div>
+                {!aiSuggestion && (
+                  <div className={styles.AiSubText}>
+                    15초 동안 침묵이 지속되면 제가 도와드릴게요.
+                  </div>
+                )}
 
                 <div className={styles.AiPointer} aria-hidden="true" />
               </div>
