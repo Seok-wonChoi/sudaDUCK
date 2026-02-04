@@ -212,22 +212,37 @@ export default function WaitingRoomPage() {
   // 👇 게임 시작 등으로 페이지 이동 시에는 세션을 끊지 않도록 플래그 설정
   const isTransitioningRef = useRef(false);
 
+  // 👇 [버그 수정] useEffect 내부에서 최신 상태를 참조하기 위한 Ref
+  const isOvConnectedRef = useRef(isOvConnected);
+  const leaveSessionRef = useRef(leaveSession);
+
+  useEffect(() => {
+    isOvConnectedRef.current = isOvConnected;
+  }, [isOvConnected]);
+
+  useEffect(() => {
+    leaveSessionRef.current = leaveSession;
+  }, [leaveSession]);
+
   // 👇  오픈비듀우우우 브라우저 뒤로가기/새로고침 시 연결 끊기
   useEffect(() => {
-      const handleBeforeUnload = () => leaveSession();
+      const handleBeforeUnload = () => {
+          if (leaveSessionRef.current) leaveSessionRef.current();
+      };
       window.addEventListener('beforeunload', handleBeforeUnload);
 
       return () => {
           window.removeEventListener('beforeunload', handleBeforeUnload);
           // 게임 시작으로 이동하는 경우(isTransitioningRef.current === true)에는 끊지 않음!
-          if (isOvConnected && !isTransitioningRef.current) {
+          // [수정] 의존성 배열을 비우고([]) Ref를 사용하여, 불필요한 재실행(연결 끊김) 방지
+          if (isOvConnectedRef.current && !isTransitioningRef.current) {
              console.log("👋 [WaitingRoom] 대기실 퇴장 -> 세션 종료");
-             leaveSession(); 
+             if (leaveSessionRef.current) leaveSessionRef.current(); 
           } else {
              console.log("🚀 [WaitingRoom] 게임 시작 -> 세션 유지하며 이동");
           }
       };
-  }, [leaveSession, isOvConnected]);
+  }, []); // 👈 [중요] 빈 배열로 설정하여 언마운트 시에만 실행!
 
 
 
@@ -1207,8 +1222,8 @@ export default function WaitingRoomPage() {
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        {subscribers.map((sub, i) => (
-            <div key={i} style={{ display: 'none' }}>
+        {subscribers.map((sub) => (
+            <div key={sub.stream.connection.connectionId} style={{ display: 'none' }}>
                 <UserAudioComponent streamManager={sub} />
             </div>
         ))}

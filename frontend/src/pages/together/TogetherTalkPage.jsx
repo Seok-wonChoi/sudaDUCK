@@ -1696,8 +1696,8 @@ export default function TogetherTalkPage() {
     <div className={styles.Page}>
       <div className={styles.Shell}>
         {/* 👇 소리 재생용 컴포넌트 추가 */}
-        {subscribers.map((sub, i) => (
-          <div key={i} style={{ display: 'none' }}>
+        {subscribers.map((sub) => (
+          <div key={sub.stream.connection.connectionId} style={{ display: 'none' }}>
             <UserAudioComponent streamManager={sub} />
           </div>
         ))}
