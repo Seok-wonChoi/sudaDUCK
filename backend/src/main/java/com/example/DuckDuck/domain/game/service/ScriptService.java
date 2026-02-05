@@ -81,6 +81,7 @@ public class ScriptService {
             cleanParticipants = rawParticipants.trim().replace("\u0000", "");
         }
 
+        String similarityPhrases = (String) data.getOrDefault("similarity_phrases", "");
 
         //MySql Entity로 변환
         Sentence sentence = Sentence.builder()
@@ -93,6 +94,7 @@ public class ScriptService {
                 .topic((String) data.get("topic"))
                 .ttsUrl((String) data.getOrDefault("tts_url", null))
                 .participantList(cleanParticipants)
+                .similarityPhrases(similarityPhrases)
                 .createdAt(createdAt)
                 .build();
 
@@ -121,6 +123,13 @@ public class ScriptService {
                 log.error("JSON 파싱 에러! 데이터: {}, 원인: {}", s.getParticipantList(), e.getMessage());
                 participantList = List.of();
             }
+
+            List<String> similarList = List.of();
+            if (s.getSimilarityPhrases() != null && !s.getSimilarityPhrases().isBlank()) {
+                // 쉼표(,)를 기준으로 나누어 리스트로 변환
+                similarList = List.of(s.getSimilarityPhrases().split(","));
+            }
+
             return MySentenceResponse.builder()
                     .sentenceId(s.getSentenceId())
                     .englishSentence(s.getEnglishSentence())
@@ -131,6 +140,7 @@ public class ScriptService {
                     .participants(participantList)
                     .createdAt(s.getCreatedAt())
                     .ttsUrl(s.getTtsUrl())
+                    .similarityPhrases(similarList)
                     .build();
         }).collect(Collectors.toList());
     }

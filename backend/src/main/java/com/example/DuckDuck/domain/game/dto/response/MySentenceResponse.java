@@ -18,4 +18,5 @@ public class MySentenceResponse {
     private List<String> participants;
     private LocalDateTime createdAt;
     private String ttsUrl;
+    private List<String> similarityPhrases;
 }

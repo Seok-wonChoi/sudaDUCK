@@ -45,6 +45,9 @@ public class Sentence {
     @Column(name = "tts_url", length = 512)
     private String ttsUrl; // 새로 추가
 
+    @Column(name = "similarity_phrases", columnDefinition = "TEXT")
+    private String similarityPhrases;
+
     @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
