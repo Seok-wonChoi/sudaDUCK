@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./AppHeader.module.css";
-import { Settings } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 import duckLogo from "@/assets/images/duck_logo.png";
+import { useSoundContext } from "@/context/SoundContext";
+import clickMp3 from "@/assets/sounds/click.mp3";
 
 import duckProfile1 from "@/assets/images/duck_profile1.png";
 import duckProfile2 from "@/assets/images/duck_profile2.png";
@@ -56,8 +58,11 @@ export default function AppHeader({
   const [logoExitModalOpen, setLogoExitModalOpen] = useState(false);
   const [logoExitProcessing, setLogoExitProcessing] = useState(false);
 
-  const [muted, setMuted] = useState(initialMuted);
-  const [volume, setVolume] = useState(initialVolume);
+  // 사운드 컨텍스트 사용
+  const { masterVolume, setMasterVolume, isMuted, setIsMuted } = useSoundContext();
+
+  // 음소거 전 볼륨 저장용 로컬 상태
+  const [savedVolume, setSavedVolume] = useState(70);
 
   // 프로필 정보 (localStorage에서 읽기)
   const [profileInfo, setProfileInfo] = useState(() => {
@@ -125,7 +130,6 @@ export default function AppHeader({
     if (typeof onChangeSound === "function") onChangeSound(next);
   };
 
-
   const toggleSettings = () => {
     setSettingsOpen((v) => !v);
   };
@@ -170,19 +174,44 @@ export default function AppHeader({
   };
 
   const onMuteClick = () => {
-    const nextMuted = !muted;
-    setMuted(nextMuted);
-    emitSound({ muted: nextMuted, volume });
+    const nextMuted = !isMuted;
+
+    if (nextMuted) {
+      // 음소거: 현재 볼륨 저장하고 볼륨을 0으로 (무음)
+      setSavedVolume(masterVolume);
+      setMasterVolume(0);
+      setIsMuted(true);
+      emitSound({ muted: true, volume: 0 });
+    } else {
+      // 음소거 해제: 저장된 볼륨으로 복원 (클릭 사운드 재생)
+      const restoreVolume = savedVolume > 0 ? savedVolume : 70;
+      setMasterVolume(restoreVolume);
+      setIsMuted(false);
+
+      // 음소거 해제 시 클릭 사운드 재생
+      try {
+        const audio = new Audio(clickMp3);
+        audio.volume = (restoreVolume / 100) * 0.1; // master volume 적용 (10% 기본 볼륨)
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+
+      emitSound({ muted: false, volume: restoreVolume });
+    }
   };
 
   const onVolumeChange = (e) => {
     const nextVolume = Number(e.target.value);
-    setVolume(nextVolume);
+    setMasterVolume(nextVolume);
 
-    const nextMuted = nextVolume === 0 ? true : muted;
-    setMuted(nextMuted);
-
-    emitSound({ muted: nextMuted, volume: nextVolume });
+    // 슬라이더를 움직이면 자동으로 음소거 해제
+    if (isMuted && nextVolume > 0) {
+      setIsMuted(false);
+      emitSound({ muted: false, volume: nextVolume });
+    } else {
+      emitSound({ muted: isMuted, volume: nextVolume });
+    }
   };
 
   return (
@@ -232,10 +261,14 @@ export default function AppHeader({
             type="button"
             className={`${styles.IconButton} ${settingsOpen ? styles.Active : ""}`}
             onClick={toggleSettings}
-            aria-label="설정"
+            aria-label={isMuted ? "음소거 상태 - 사운드 설정" : "사운드 설정"}
             aria-expanded={settingsOpen}
           >
-            <Settings className={styles.IconSvg} />
+            {isMuted ? (
+              <VolumeX className={styles.IconSvg} />
+            ) : (
+              <Volume2 className={styles.IconSvg} />
+            )}
           </button>
 
           {settingsOpen && (
@@ -245,13 +278,13 @@ export default function AppHeader({
               <div className={styles.SoundRow}>
                 <button
                   type="button"
-                  className={`${styles.MuteButton} ${muted ? styles.MuteOn : ""}`}
+                  className={`${styles.MuteButton} ${isMuted ? styles.MuteOn : ""}`}
                   onClick={onMuteClick}
                 >
-                  {muted ? "음소거 해제" : "음소거"}
+                  {isMuted ? "음소거 해제" : "음소거"}
                 </button>
 
-                <div className={styles.VolumeText}>{muted ? "0%" : `${volume}%`}</div>
+                <div className={styles.VolumeText}>{masterVolume}%</div>
               </div>
 
               <div className={styles.SliderRow}>
@@ -260,7 +293,7 @@ export default function AppHeader({
                   type="range"
                   min="0"
                   max="100"
-                  value={muted ? 0 : volume}
+                  value={masterVolume}
                   onChange={onVolumeChange}
                 />
               </div>

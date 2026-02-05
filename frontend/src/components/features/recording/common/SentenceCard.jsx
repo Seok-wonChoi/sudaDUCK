@@ -21,6 +21,7 @@ export default function SentenceCard({
   onBookmarkToggle = null,
   onStop = null,
   showBlanks = true,
+  isSubmitting = false,
   onToggleBlanks = null,
 }) {
   const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
@@ -139,17 +140,14 @@ export default function SentenceCard({
       case 'record_timer':
         return (
           <div className={styles.recordingActive}>
-            <div className={styles.toggleSide}>
-              <button 
-                type="button" 
-                className={`${styles.miniToggle} ${showBlanks ? styles.active : ''}`}
-                onClick={onToggleBlanks}
-              >
-                빈칸 {showBlanks ? 'ON' : 'OFF'}
-              </button>
-            </div>
             <div className={styles.recordingStatus}>
-              <span className={styles.statusText}>녹음 대기 중...</span>
+              <div className={styles.statusColumn}>
+                <div className={styles.countdownCircleBig}>
+                  <span className={styles.countdownNumberBig}>{Math.max(0, countdown)}</span>
+                </div>
+                <span className={styles.statusTextLarge}>잠시 후 녹음이 시작됩니다</span>
+                <span className={styles.recordingHintLarge}>영어로 읽을 준비!!! 🎙️</span>
+              </div>
             </div>
           </div>
         );
@@ -162,38 +160,75 @@ export default function SentenceCard({
         };
 
         return (
-          <div className={styles.recordingActive}>
-            <div className={styles.toggleSide}>
-              <button 
-                type="button" 
-                className={`${styles.miniToggle} ${showBlanks ? styles.active : ''}`}
-                onClick={onToggleBlanks}
-              >
-                빈칸 {showBlanks ? 'ON' : 'OFF'}
-              </button>
+          <div className={styles.recordingColumn}>
+            <div className={styles.recordingActive}>
+              {/* 좌측: 스위치 토글 영역 */}
+              <div className={styles.sideArea}>
+                <div className={styles.switchWrapper}>
+                  <span className={styles.switchLabel}>빈칸</span>
+                  <button 
+                    type="button" 
+                    className={`${styles.iosSwitch} ${showBlanks ? styles.switchOn : ""}`}
+                    onClick={onToggleBlanks}
+                    disabled={isSubmitting}
+                    aria-label={showBlanks ? "빈칸 끄기" : "빈칸 켜기"}
+                  >
+                    <div className={styles.switchHandle} />
+                  </button>
+                </div>
+              </div>
+
+              {/* 중앙: 카운트다운 */}
+              <div className={styles.centerArea}>
+                <div className={styles.recordingCircle}>
+                  <span className={styles.countdownNumber}>{formatCountdown(recordingCountdown)}</span>
+                </div>
+              </div>
+
+              {/* 우측: 정지 버튼 영역 */}
+              <div className={styles.sideArea}>
+                {onStop && (
+                  <button 
+                    className={styles.stopButtonCircle} 
+                    onClick={onStop}
+                    type="button"
+                    aria-label="녹음 끝내기"
+                    disabled={isSubmitting}
+                  >
+                    <div className={styles.stopActionIconWrap}>
+                      {isSubmitting ? (
+                        <div className={styles.spinner} />
+                      ) : (
+                        <div className={styles.stopIcon} />
+                      )}
+                    </div>
+                    <span className={styles.stopText}>
+                      {isSubmitting ? '평가 중' : '끝내기'}
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
-            <div className={styles.recordingCircle}>
-              <span className={styles.countdownNumber}>{formatCountdown(recordingCountdown)}</span>
-            </div>
-            {onStop && (
-              <button 
-                className={styles.stopButton} 
-                onClick={onStop}
-                type="button"
-                aria-label="녹음 완료"
-              >
-                녹음 완료
-              </button>
-            )}
+            <p className={styles.recordingHintText}>문장을 천천히 또박또박 따라 말해보세요.</p>
           </div>
         );
 
       case 'record_done':
         return (
           <div className={styles.recordingStatus}>
-            <span className={`${styles.statusText} ${styles.statusSuccess}`}>
-              녹음이 끝났습니다
-            </span>
+            {isSubmitting ? (
+              <div className={styles.submittingStatus}>
+                <div className={styles.spinnerBlue} />
+                <span className={styles.statusText}>평가 전송 중...</span>
+              </div>
+            ) : (
+              <div className={styles.statusColumn}>
+                <span className={`${styles.statusText} ${styles.statusSuccess}`}>
+                  ✅ 문장 녹음 완료!
+                </span>
+                <span className={styles.nextSentenceHint}>다음 문장으로..</span>
+              </div>
+            )}
           </div>
         );
 
@@ -281,15 +316,6 @@ export default function SentenceCard({
           </div>
           <p className={styles.text}>{getDisplayEnglish()}</p>
         </div>
-
-        {showRecordingBox && (
-          <div className={styles.recordingBox}>
-            <span className={styles.label}>내 발음 녹음하기</span>
-            <div className={styles.recordingContent}>
-              {getRecordingBoxContent()}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

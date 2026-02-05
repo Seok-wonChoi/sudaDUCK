@@ -34,6 +34,282 @@
   margin-top: clamp(16px, 2vh, 20px);
   width: 100%;
   max-width: 100%;
+  margin-bottom: 32px;
+}
+
+/* 녹음 조작 섹션 */
+.recordingControlSection {
+  margin-top: 10px;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 140px;
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.recordingActive {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 550px;
+  margin: 0 auto;
+  gap: 50px;
+}
+
+.sideArea {
+  width: 120px; /* 100px -> 120px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.centerArea {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* iOS Style Switch */
+.switchWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.switchLabel {
+  font-size: 13px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.iosSwitch {
+  width: 52px; /* 44px -> 52px */
+  height: 28px; /* 24px -> 28px */
+  background-color: #cbd5e1;
+  border-radius: 99px;
+  position: relative;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  padding: 0;
+}
+
+.switchOn {
+  background-color: #2b7fff;
+}
+
+.switchHandle {
+  width: 22px; /* 18px -> 22px */
+  height: 22px; /* 18px -> 22px */
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.switchOn .switchHandle {
+  transform: translateX(24px);
+}
+
+/* Stop Button */
+.stopActionIconWrap {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stopButtonCircle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  padding: 0;
+}
+
+.stopButtonCircle:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.stopButtonCircle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.stopIcon {
+  width: 28px; /* 24px -> 28px */
+  height: 28px; /* 24px -> 28px */
+  background: #ef4444;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
+}
+
+.stopText {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ef4444;
+}
+
+/* Recording Hint */
+.recordingHintText {
+  margin-top: 16px;
+  font-size: 15px;
+  color: #64748b;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Countdown & Status Large Text */
+.statusColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.countdownWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.countdownCircleBig {
+  width: 76px; /* 64px -> 76px */
+  height: 76px; /* 64px -> 76px */
+  border-radius: 50%;
+  background: #2b7fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulseBlue 1s infinite;
+}
+
+@keyframes pulseBlue {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(43, 127, 255, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(43, 127, 255, 0); }
+}
+
+.countdownNumberBig {
+  font-size: 38px; /* 32px -> 38px */
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.statusTextLarge {
+  font-size: 22px;
+  color: #1e2939;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+.recordingHintLarge {
+  font-size: 18px;
+  color: #2b7fff;
+  font-weight: 800;
+}
+
+/* Success & Status */
+.statusSuccess {
+  font-size: 22px;
+  font-weight: 900;
+  color: #10b981;
+}
+
+.nextSentenceHint {
+  font-size: 18px;
+  color: #64748b;
+  font-weight: 700;
+  margin-top: 8px;
+  animation: fadeInHint 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes fadeInHint {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+/* Recording Circle (Recording Phase) */
+.recordingCircle {
+  width: 84px; /* 72px -> 84px */
+  height: 84px; /* 72px -> 84px */
+  border-radius: 50%;
+  background: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulseRed 1s infinite;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+@keyframes pulseRed {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+}
+
+.countdownNumber {
+  font-size: 26px; /* 32px -> 26px */
+  font-weight: 800;
+  color: #ffffff;
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(239, 68, 68, 0.2);
+  border-top: 3px solid #ef4444;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinnerBlue {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(43, 127, 255, 0.2);
+  border-top: 3px solid #2b7fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 8px;
+}
+
+.submittingStatus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.statusText {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Bottom Section */
