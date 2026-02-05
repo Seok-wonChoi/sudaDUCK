@@ -10,6 +10,7 @@ export default function SentenceItem({ sentence, onClick, onDelete }) {
     needsReview,
     date,
     bookmarked = true,
+    ttsUrl
   } = sentence;
 
   const handleDeleteClick = (e) => {

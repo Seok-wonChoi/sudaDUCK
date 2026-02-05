@@ -24,6 +24,8 @@ import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
 import { toggleScriptLike } from "@/api/shadowing.js";
 
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 const DUCK_BOT_IMAGES = {
   cyan: duckBotCyan,
   orange: duckBotOrange,
@@ -275,7 +277,8 @@ export default function MyPage() {
             speakerName: item.speakerName,
             participants: participants,
             blankScript: blankScript,
-            blankWords: blankWords
+            blankWords: blankWords,
+            ttsUrl: item.ttsUrl ? `${BACKEND_URL}${item.ttsUrl}` : ''
           };
 
           console.log(`[MyPage] 문장 ${index} 포맷 결과:`, formatted);

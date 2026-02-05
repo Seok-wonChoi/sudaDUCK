@@ -1,6 +1,26 @@
 import styles from "./SentenceCard.module.css";
 
-export default function SentenceCard({ english, korean, blankWords = [], onPlayAudio }) {
+export default function SentenceCard({ english, korean, blankWords = [], ttsUrl }) {
+  // 오디오 재생 핸들러
+  const handlePlayAudio = () => {
+    if (!ttsUrl) {
+      alert("재생할 오디오 파일이 없습니다.");
+      return;
+    }
+
+    // URL이 http로 시작하면 그대로 쓰고, 아니면 백엔드 주소 붙이기
+    const audioSrc = ttsUrl.startsWith("http") 
+      ? ttsUrl 
+      : `${BACKEND_URL}${ttsUrl}`;
+
+    const audio = new Audio(audioSrc);
+    audio.play().catch((err) => {
+      console.error("오디오 재생 실패:", err);
+      alert("오디오 재생에 실패했습니다.");
+    });
+  };
+
+  
   // 빈칸 단어를 강조 표시하는 함수
   const getDisplayEnglish = () => {
     if (!blankWords || blankWords.length === 0) {
@@ -52,7 +72,7 @@ export default function SentenceCard({ english, korean, blankWords = [], onPlayA
       <button
         type="button"
         className={styles.PlayButton}
-        onClick={onPlayAudio}
+        onClick={handlePlayAudio}
       >
         <span className={styles.SpeakerIcon}>🔊</span>
         영어로 듣기

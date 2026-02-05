@@ -21,6 +21,7 @@ export default function SentenceDetailModal({ sentence, onClose }) {
     quizAnswer,
     blankWords = [],
     blankScript = '',
+    ttsUrl,
   } = sentence;
 
   const handlePlayAudio = () => {
@@ -45,6 +46,7 @@ export default function SentenceDetailModal({ sentence, onClose }) {
           korean={korean}
           blankWords={blankWords}
           onPlayAudio={handlePlayAudio}
+          ttsUrl={ttsUrl}
         />
 
         <InfoGrid topic={topic} participants={participants} />
