@@ -34,11 +34,13 @@ import duckProfile1 from "@/assets/images/duck_profile1.png";
 import duckProfile2 from "@/assets/images/duck_profile2.png";
 import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
+import duckTogether from "@/assets/images/duck_together.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 
 import UnexpectedQuestOverlay from "@/components/features/unexpected-quest/UnexpectedQuestOverlay";
 import UnexpectedQuestFillBlankModal from "@/components/features/unexpected-quest/UnexpectedQuestFillBlankModal";
+import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
 
 const ROOM_INFO_KEY = "together_room_info";
 
@@ -185,6 +187,7 @@ export default function TogetherTalkPage() {
   const { publisher, subscribers, leaveSession, session, joinSession } = useOpenVidu(); // 👈 session, joinSession 추가
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const [hydratedInfo, setHydratedInfo] = useState(() => {
     if (location.state) return location.state;
@@ -633,39 +636,43 @@ export default function TogetherTalkPage() {
         "[TogetherTalkPage] ROOM_ENDED 수신 - /recording으로 이동",
         payload,
       );
-      console.log("[TogetherTalkPage] 전달할 데이터:", {
-        roomId: payload?.roomInfo?.roomId ?? roomId,
-        roomCode: resolvedRoomCode,
-        currentTurn,
-        turnCount:
-          payload?.roomInfo?.turnCount ??
-          roomInfo.turnCount ??
-          roomInfo.turnCnt ??
-          3,
-      });
 
-      navigate("/recording", {
-        replace: true,
-        state: {
-          mode: "together",
-          roomInfo: {
-            ...roomInfo,
-            roomId: payload?.roomInfo?.roomId ?? roomId,
-            roomCode: resolvedRoomCode,
-            turnCount:
-              payload?.roomInfo?.turnCount ??
-              roomInfo.turnCount ??
-              roomInfo.turnCnt ??
-              3,
-            currentTurn: currentTurn, // 현재 턴 번호 전달
+      const totalTurns =
+        payload?.roomInfo?.turnCount ??
+        roomInfo.turnCount ??
+        roomInfo.turnCnt ??
+        3;
+      
+      const isLastTurn = currentTurn >= totalTurns;
+
+      const navigateToRecording = () => {
+        navigate("/recording", {
+          replace: true,
+          state: {
+            mode: "together",
+            roomInfo: {
+              ...roomInfo,
+              roomId: payload?.roomInfo?.roomId ?? roomId,
+              roomCode: resolvedRoomCode,
+              turnCount: totalTurns,
+              currentTurn: currentTurn, // 현재 턴 번호 전달
+            },
+            participants,
+            myUserId, // 본인 userId 전달
           },
-          isHost: isHost,
-          participants,
-          myUserId, // 본인 userId 전달
-        },
-      });
+        });
+      };
+
+      if (!isLastTurn) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          navigateToRecording();
+        }, 5000);
+      } else {
+        navigateToRecording();
+      }
     },
-    [navigate, roomInfo, roomId, participants, currentTurn, resolvedRoomCode],
+    [navigate, roomInfo, roomId, participants, currentTurn, resolvedRoomCode, myUserId],
   );
 
   // 방장 퇴장 시 메인 화면으로 강제 이동
@@ -1062,6 +1069,8 @@ export default function TogetherTalkPage() {
   const handleDone = useCallback(async () => {
     // 내부 로직에서 participants 대신 ref 사용
     const currentParticipants = participantsRef.current;
+    const totalTurns = roomInfo.turnCount || roomInfo.turnCnt || 3;
+    const isLastTurn = currentTurn >= totalTurns;
 
     if (isHost) {
       try {
@@ -1079,22 +1088,43 @@ export default function TogetherTalkPage() {
 
     await stopMediaProcessing();
 
-    navigate("/recording", {
-      replace: true,
-      state: {
-        mode: "together",
-        roomInfo: {
-          ...roomInfo,
-          roomId: roomId,
-          roomCode: resolvedRoomCode,
-          turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
-          currentTurn: currentTurn, // 현재 턴 번호 전달
+    const navigateToRecording = () => {
+      navigate("/recording", {
+        replace: true,
+        state: {
+          mode: "together",
+          roomInfo: {
+            ...roomInfo,
+            roomId: roomId,
+            roomCode: resolvedRoomCode,
+            turnCount: totalTurns,
+            currentTurn: currentTurn, // 현재 턴 번호 전달
+          },
+          participants: currentParticipants,
+          myUserId,
         },
-        isHost: isHost,
-        participants: currentParticipants,
-      },
-    });
-  }, [doLeaveRoom, navigate, isHost, roomId, roomInfo, resolvedRoomCode]);
+      });
+    };
+
+    if (!isLastTurn) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        navigateToRecording();
+      }, 5000);
+    } else {
+      navigateToRecording();
+    }
+  }, [
+    doLeaveRoom,
+    navigate,
+    isHost,
+    roomId,
+    roomInfo,
+    resolvedRoomCode,
+    currentTurn,
+    myUserId,
+    stopMediaProcessing,
+  ]);
 
   //타이머 컴포넌트를 기억하여 리렌더링 방지
   const memoizedTimer = useMemo(() => {
@@ -2038,6 +2068,71 @@ const stopSTT = useCallback(() => {
           participants={participants}
         />
 
+        {/* 평가 대기 중 */}
+        {showWaitingResult && (
+          <div className={styles.WaitingResultOverlay}>
+            <div className={styles.WaitingResultContent}>
+              <div className={styles.WaitingResultSpinner} />
+              <div className={styles.WaitingResultText}>
+                답변을 평가하고 있어요
+              </div>
+              <div className={styles.WaitingResultSubText}>
+                잠시만 기다려 주세요!
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 결과 - 이어하기 버튼 포함 (기존 수동 UI) */}
+        {showResultOverlay && (
+          <div className={styles.QuestResultOverlay}>
+            <div className={styles.QuestResultContent}>
+              <div className={styles.QuestResultBubbleWrap}>
+                <img
+                  src={resultDuckSrc}
+                  alt="결과 오리"
+                  className={styles.QuestResultDuck}
+                />
+                <div className={styles.QuestResultBubble}>
+                  <div className={styles.QuestResultText}>{resultBubbleText}</div>
+                </div>
+              </div>
+
+              <div className={styles.QuestResultButtonArea}>
+                {participants.map((p) => {
+                  const isReady = questContinueReady[p.userId] === true;
+                  return (
+                    <div key={p.userId} className={styles.QuestResultParticipant}>
+                      <span className={styles.QuestResultParticipantName}>
+                        {p.name || "참여자"}
+                      </span>
+                      <span className={`${styles.QuestResultParticipantStatus} ${isReady ? styles.Ready : ""}`}>
+                        {isReady ? "✓ 준비 완료" : "대기 중..."}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                <button
+                  className={styles.QuestContinueButton}
+                  onClick={handleQuestContinue}
+                  disabled={
+                    questContinueReady[
+                      participants.find((p) => p.isMe === true)?.userId
+                    ] === true
+                  }
+                >
+                  {questContinueReady[
+                    participants.find((p) => p.isMe === true)?.userId
+                  ] === true
+                    ? "준비 완료!"
+                    : "이어하기"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 결과 - 3초 후 자동 복귀 */}
         <UnexpectedQuestOverlay
           open={showResultOverlay}
@@ -2053,6 +2148,15 @@ const stopSTT = useCallback(() => {
           showCloseButton={false}
           escToClose={false}
         />
+
+        {isTransitioning && (
+          <LoadingOverlay 
+            title="학습 단계로 이동합니다!"
+            subtitle="쉐도잉 학습을 시작해볼까요?"
+            note="학습 집중을 위해 마이크가 일시적으로 음소거됩니다."
+            image={duckTogether}
+          />
+        )}
       </div>
     </div>
   );
