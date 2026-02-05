@@ -22,6 +22,7 @@ export default function SentenceDetailModal({ sentence, onClose }) {
     blankWords = [],
     blankScript = '',
     ttsUrl,
+    similarityPhrases = []
   } = sentence;
 
   const handlePlayAudio = () => {
@@ -51,16 +52,16 @@ export default function SentenceDetailModal({ sentence, onClose }) {
 
         <InfoGrid topic={topic} participants={participants} />
 
-        <SimilarExpressions expressions={similarExpressions} />
+        <SimilarExpressions expressions={similarityPhrases} />
 
-        <QuizSection
+        {/* <QuizSection
           isOpen={quizOpen}
           onToggle={() => setQuizOpen(!quizOpen)}
           question={quizQuestion}
           answer={quizAnswer}
           blankScript={blankScript}
           blankWords={blankWords}
-        />
+        /> */}
       </div>
     </ModalWrapper>
   );

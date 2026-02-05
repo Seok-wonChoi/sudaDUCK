@@ -278,7 +278,8 @@ export default function MyPage() {
             participants: participants,
             blankScript: blankScript,
             blankWords: blankWords,
-            ttsUrl: item.ttsUrl ? `${BACKEND_URL}${item.ttsUrl}` : ''
+            ttsUrl: item.ttsUrl ? `${BACKEND_URL}${item.ttsUrl}` : '',
+            similarityPhrases: item.similarityPhrases || []
           };
 
           console.log(`[MyPage] 문장 ${index} 포맷 결과:`, formatted);
