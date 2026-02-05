@@ -1346,6 +1346,12 @@ export default function TogetherTalkPage() {
     console.log("[Quest] 차례 확인:", { myIndex, currentSpeakerIndex, isMyTurn });
 
     const controlMic = async () => {
+      // 이미 녹음 중이면 아무것도 하지 않음 (중복 방지 - 최우선 체크)
+      if (mediaRecorderRef.current?.state === "recording") {
+        console.log("[Quest] ⚠️ 이미 녹음 중 - 재시작하지 않음");
+        return;
+      }
+
       if (isMyTurn) {
         console.log("[Quest] 내 차례 - 녹음 준비");
 
@@ -1356,28 +1362,41 @@ export default function TogetherTalkPage() {
           await startAudioAnalysis();
         }
 
-        // 이미 녹음 중이면 다시 시작하지 않음 (중복 방지)
-        console.log("[Quest] MediaRecorder 상태 확인:", {
-          exists: !!mediaRecorderRef.current,
-          state: mediaRecorderRef.current?.state
-        });
-
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-          console.log("[Quest] ⚠️ 이미 녹음 중 - 재시작하지 않음");
-          return;
-        }
-
         // 녹음 시작
         console.log("[Quest] 녹음 시작 시도...");
         try {
-          // OpenVidu publisher의 기존 스트림 재사용 (새로운 getUserMedia 호출 안 함)
-          if (!publisher || !publisher.stream) {
-            console.error("[Quest] ❌ OpenVidu publisher 스트림이 없습니다.");
-            return;
-          }
+          let stream;
 
-          const stream = publisher.stream.getMediaStream();
-          console.log("[Quest] ✅ OpenVidu 스트림 재사용:", stream);
+          // OpenVidu publisher의 기존 스트림 재사용 시도
+          if (publisher && publisher.stream) {
+            const openviduStream = publisher.stream.getMediaStream();
+            // 스트림이 활성화되어 있는지 확인
+            if (openviduStream && openviduStream.active) {
+              stream = openviduStream;
+              console.log("[Quest] ✅ OpenVidu 스트림 재사용:", stream);
+            } else {
+              console.warn("[Quest] ⚠️ OpenVidu 스트림이 비활성화됨 (active: false). getUserMedia로 폴백");
+              stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true
+                }
+              });
+              console.log("[Quest] ✅ 새 마이크 스트림 획득:", stream);
+            }
+          } else {
+            // OpenVidu 스트림이 없으면 새로 getUserMedia 호출
+            console.warn("[Quest] ⚠️ OpenVidu publisher 스트림이 없습니다. getUserMedia로 폴백");
+            stream = await navigator.mediaDevices.getUserMedia({
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+              }
+            });
+            console.log("[Quest] ✅ 새 마이크 스트림 획득:", stream);
+          }
 
           const mediaRecorder = new MediaRecorder(stream, {
             mimeType: 'audio/webm'
@@ -1441,7 +1460,8 @@ export default function TogetherTalkPage() {
         setIsRecording(false);
       }
     };
-  }, [questStep, currentSpeakerIndex, participants, micOn, sendMic, startAudioAnalysis, stopAudioAnalysis, publisher]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questStep, currentSpeakerIndex]);
 
   // 3번째 턴 시작 시 퀴즈 스케줄 (백엔드에서 현재 주제 기반 AI 질문 생성 후 15-40초 후 WebSocket으로 전송)
   useEffect(() => {
