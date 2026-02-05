@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ActionCard from "@/components/common/ActionCard/ActionCard";
 import StatsSection from "@/components/features/main/StatsSection/StatsSection";
+import TipBanner from "@/components/common/TipBanner/TipBanner";
 import { getMypageSummary } from "@/api/mypage";
 
 import makeRoomIcon from "@/assets/icons/make_room2.png";
@@ -13,22 +14,33 @@ import joinRoomIcon from "@/assets/icons/join_room2.png";
 export default function TogetherPage() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // ✅ MainPage에서 넘겨준 summary 있으면 그걸 초기값으로 사용
+  const state = location.state ?? {};
+  const initialSummary = state.summary;
+
   const [toastMessage, setToastMessage] = useState("");
-  const [summary, setSummary] = useState({
-    attendanceDays: 0,
-    sentenceCount: 0,
-  });
+  const [summary, setSummary] = useState(() =>
+    initialSummary ?? { attendanceDays: 0, sentenceCount: 0 }
+  );
 
   const showToast = useCallback((message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(""), 3000);
   }, []);
 
-  // 통계 데이터 로드
+  // 통계 데이터 로드 (최신화)
   useEffect(() => {
+    let alive = true;
+
     const loadSummary = async () => {
       try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) return;
+
         const summaryData = await getMypageSummary();
+        if (!alive) return;
+
         if (summaryData) {
           setSummary({
             attendanceDays: summaryData.attendanceDays ?? 0,
@@ -40,32 +52,30 @@ export default function TogetherPage() {
       }
     };
 
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      loadSummary();
-    }
+    loadSummary();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // location state에서 토스트 메시지 확인
   useEffect(() => {
-    if (location.state?.toastMessage) {
-      showToast(location.state.toastMessage);
-      // state 정리 (뒤로가기 시 다시 표시되지 않도록)
-      navigate(location.pathname, { replace: true, state: {} });
+    if (state.toastMessage) {
+      showToast(state.toastMessage);
+
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...state, toastMessage: undefined },
+      });
     }
-  }, [location.state, location.pathname, navigate, showToast]);
+  }, [state.toastMessage, navigate, location.pathname, showToast]);
 
   const handleBack = () => {
-    navigate("/main");
+    navigate("/main", { state: { summary } });
   };
-
-  const handleMakeRoom = () => {
-    navigate("/together/make");
-  };
-
-  const handleJoinRoom = () => {
-    navigate("/together/join");
-  };
+  const handleMakeRoom = () => navigate("/together/make");
+  const handleJoinRoom = () => navigate("/together/join");
 
   return (
     <div className={styles.Page}>
@@ -106,6 +116,7 @@ export default function TogetherPage() {
         </main>
 
         <section className={styles.Bottom} aria-label="통계">
+          <TipBanner text="Tip: 방을 만들거나 참여해서 함께 하기 모드를 시작해보세요!" />
           <StatsSection
             stats={[
               { value: "🔥", label: "오늘도 열심히 해볼까요?" },
@@ -115,9 +126,7 @@ export default function TogetherPage() {
           />
         </section>
 
-        {toastMessage ? (
-          <div className={styles.Toast}>{toastMessage}</div>
-        ) : null}
+        {toastMessage ? <div className={styles.Toast}>{toastMessage}</div> : null}
       </div>
     </div>
   );
