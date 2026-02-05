@@ -12,12 +12,14 @@ import { getMyProfileCustom, getMypageSummary } from "@/api/mypage";
 export default function MainPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [summary, setSummary] = useState({
-    attendanceDays: 0,
-    sentenceCount: 0,
-  });
+  const state = location.state ?? {};
+  const initialSummary = state.summary;
+  const [summary, setSummary] = useState(() =>
+    initialSummary ?? { attendanceDays: 0, sentenceCount: 0 }
+  );
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
 
   // 토스트 메시지 표시
   useEffect(() => {
@@ -32,7 +34,11 @@ export default function MainPage() {
       }, 3000);
 
       // location state 정리
-      navigate(location.pathname, { replace: true, state: {} });
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...state, toastMessage: undefined },
+      });
+
 
       // 이 cleanup은 location이 바뀔 때마다 실행되는데,
       // navigate를 호출하면 location이 바뀌어서 타이머가 바로 취소되는 버그가 있었음.
@@ -81,8 +87,9 @@ export default function MainPage() {
   };
 
   const handleTogether = () => {
-    navigate("/together");
+    navigate("/together", { state: { summary } });
   };
+
 
   return (
     <div className={styles.Page}>
@@ -105,7 +112,7 @@ export default function MainPage() {
         </div>
 
         <div className={styles.Bottom}>
-          <TipBanner text="Tip: 연습 모드로 워밍업 후 함께 하기 모드에 도전해보세요!" />
+          <TipBanner text="Tip: 지금 바로 함께 하기 모드로 들어가 볼까요? 😊" />
           <StatsSection
             stats={[
               { value: "🔥", label: "오늘도 열심히 해볼까요?" },
