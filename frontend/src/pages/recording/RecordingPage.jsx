@@ -10,7 +10,7 @@ import {
   getTurnScripts,
   getTurnResults,
 } from "@/api/shadowing";
-import { leaveRoom } from "@/api/rooms";
+import { leaveRoom, getRoomLobby, toggleReady, startRoom } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
 import duckTogether from "@/assets/images/duck_together.png";
@@ -67,7 +67,7 @@ export default function RecordingPage() {
 
   const roomInfo = state?.roomInfo || {};
   const myUserId = state?.myUserId; // 본인 userId
-  const participants = state?.participants || []; // 참여자 목록
+  const [participants, setParticipants] = useState(state?.participants || []); // 참여자 목록
 
   console.log("[RecordingPage] 페이지 로드 - 전체 state:", state);
 
@@ -75,6 +75,7 @@ export default function RecordingPage() {
 
   const [step, setStep] = useState(STEP.AI_TIMER);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isReady, setIsReady] = useState(false); // 👈 내 준비 상태 추가
   // state로 전달받은 currentTurn 사용
   const [currentTurn, setCurrentTurn] = useState(() => {
     return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
@@ -100,6 +101,7 @@ export default function RecordingPage() {
   const recorderRef = useRef(null);
   const audioRef = useRef(null);
   const prevIsConversationStepRef = useRef(null); // 👈 이전 마이크 상태 저장용 Ref
+  const hasNavigatedRef = useRef(false); // 👈 중복 이동 방지용 Ref
 
   const showToast = useCallback((msg) => {
     setToastMessage(msg);
@@ -135,6 +137,49 @@ export default function RecordingPage() {
       ""
     );
   }, [roomInfo]);
+
+  // 방장 여부 확인 (participants 정보 또는 초기 roomInfo 정보 활용)
+  const isHost = useMemo(() => {
+    const me = participants.find((p) => String(p.id || p.userId) === String(myUserId));
+    if (me && typeof me.isHost === 'boolean') return me.isHost;
+    return roomInfo.isHost === true;
+  }, [participants, myUserId, roomInfo.isHost]);
+
+  // 모든 참여자(방장 제외)가 준비되었는지 확인
+  const allReady = useMemo(() => {
+    const nonHostParticipants = participants.filter((p) => !p.isHost);
+    if (nonHostParticipants.length === 0) return true;
+    return nonHostParticipants.every((p) => p.isReady);
+  }, [participants]);
+
+  // 초기 로비 정보 가져오기 (준비 상태 동기화)
+  const fetchLobby = useCallback(async () => {
+    if (!roomCode) return;
+    try {
+      const data = await getRoomLobby(roomCode);
+      const members = data.participants || [];
+      const mapped = members.map((m) => ({
+        id: String(m.userId),
+        userId: m.userId,
+        name: m.nickname,
+        isMe: String(m.userId) === String(myUserId),
+        isReady: m.readyStatus === "READY",
+        isHost: m.isHost,
+      }));
+      setParticipants(mapped);
+      
+      const me = mapped.find(p => p.isMe);
+      if (me) setIsReady(me.isReady);
+    } catch (e) {
+      console.error("[RecordingPage] 로비 정보 조회 실패:", e);
+    }
+  }, [roomCode, myUserId]);
+
+  useEffect(() => {
+    if (step === STEP.TURN_REPORT && currentTurn < TURNS) {
+      fetchLobby();
+    }
+  }, [step, fetchLobby, currentTurn, TURNS]);
 
   const currentTurnSentences = useMemo(() => {
     const turnToShow = selectedTurnForReport || currentTurn;
@@ -293,42 +338,12 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   const goNextTurn = () => {
     if (currentTurn >= TURNS) {
-      // 마지막 턴이면 ALL_DONE으로 이동
       console.log("[RecordingPage] 마지막 턴 완료 - ALL_DONE으로 전환");
       setStep(STEP.ALL_DONE);
       return;
     }
-
-    // 다음 턴이 있으면 TogetherTalkPage로 돌아가기
-    const nextTurn = currentTurn + 1;
-    const navigationState = {
-      ...state,
-      currentTurn: nextTurn, // 최상위 레벨에도 턴 번호 전달
-      roomInfo: {
-        ...roomInfo,
-        roomId: roomId,
-        roomCode: roomCode,
-        currentTurn: nextTurn, // roomInfo 내부에도 턴 번호 전달
-      },
-      myUserId,
-    };
-
-    console.log("[RecordingPage] 다음 턴으로 이동:", {
-      currentTurn,
-      nextTurn,
-      TURNS,
-      roomId,
-      roomCode,
-      전달할State: navigationState,
-    });
-
-    setIsTransitioning(true);
-    setTimeout(() => {
-      navigate("/together/talk", {
-        replace: true,
-        state: navigationState,
-      });
-    }, 5000);
+    // 중간 턴 이동은 handleStartNextTurn -> onRoomStarted를 통해 다함께 진행됩니다.
+    console.log("[RecordingPage] 다음 턴 대기 중 (방장 시작 대기)");
   };
 
   const startFlow = () => setStep(STEP.AI_TIMER);
@@ -436,14 +451,106 @@ console.log(`📤 발음 평가 전송 시작`, {
     });
   }, [navigate, leaveSession]);
 
-  useRoomWebSocket(
+  const { sendReady, isConnected } = useRoomWebSocket(
     roomCode,
     {
       onRoomClosed: handleRoomClosed,
       onMiniGameStart: handleMiniGameStart,
+      onReadyChanged: (payload, senderKey) => {
+        if (senderKey) {
+          let newReady = false;
+          if (payload?.myReadyStatus === "READY" || payload?.readyStatus === "READY") {
+            newReady = true;
+          } else if (payload?.myReadyStatus === "NOT_READY" || payload?.readyStatus === "NOT_READY") {
+            newReady = false;
+          } else if (payload?.ready !== undefined) {
+            newReady = payload.ready === true;
+          } else if (payload?.isReady !== undefined) {
+            newReady = payload.isReady === true;
+          }
+
+          setParticipants((prev) =>
+            prev.map((p) =>
+              String(p.id || p.userId) === String(senderKey)
+                ? { ...p, isReady: newReady }
+                : p
+            )
+          );
+        }
+      },
+      onRoomStarted: (payload) => {
+        console.log("[RecordingPage] 🎮 ROOM_STARTED 수신 - 단계 이동 시작");
+        if (hasNavigatedRef.current) return;
+
+        // 마지막 턴인 경우: 모든 참여자가 동시에 ALL_DONE 단계로 진입
+        if (currentTurn >= TURNS) {
+          console.log("[RecordingPage] 마지막 턴 종료 -> 전원 ALL_DONE 단계로 전환");
+          setStep(STEP.ALL_DONE);
+          return;
+        }
+
+        // 중간 턴인 경우: 모든 참여자가 동시에 다음 대화방으로 이동
+        hasNavigatedRef.current = true;
+        const nextTurn = currentTurn + 1;
+        const navigationState = {
+          ...state,
+          currentTurn: nextTurn,
+          roomInfo: {
+            ...roomInfo,
+            roomId: roomId,
+            roomCode: roomCode,
+            currentTurn: nextTurn,
+          },
+          myUserId,
+        };
+
+        setIsTransitioning(true);
+        setTimeout(() => {
+          navigate("/together/talk", {
+            replace: true,
+            state: navigationState,
+          });
+        }, 2000);
+      },
+      onMemberJoined: (payload) => fetchLobby(),
+      onMemberLeft: (payload, senderKey) => {
+        if (senderKey) {
+          setParticipants((prev) => prev.filter((p) => String(p.id || p.userId) !== String(senderKey)));
+        }
+      },
     },
     roomId
   );
+
+  const handleReady = useCallback(async () => {
+    if (!isConnected) {
+      showToast("서버와 연결되지 않았습니다.");
+      return;
+    }
+    const nextReady = !isReady;
+    try {
+      await toggleReady(roomCode, nextReady);
+      setIsReady(nextReady);
+      if (sendReady) sendReady(nextReady);
+      setParticipants((prev) =>
+        prev.map((p) => (String(p.id || p.userId) === String(myUserId) ? { ...p, isReady: nextReady } : p))
+      );
+    } catch (e) {
+      showToast("준비 상태 변경에 실패했습니다.");
+    }
+  }, [isConnected, isReady, roomCode, sendReady, myUserId, showToast]);
+
+  const handleStartNextTurn = useCallback(async () => {
+    if (!allReady && participants.length > 1) {
+      showToast("모든 참여자가 준비되어야 합니다.");
+      return;
+    }
+    try {
+      await startRoom(roomCode);
+    } catch (e) {
+      showToast("다음 턴 시작에 실패했습니다.");
+    }
+  }, [allReady, roomCode, showToast, participants.length]);
 
   const handleLogoExit = useCallback(async () => {
     // 👇 진짜 방을 나갈 때는 세션 종료
@@ -572,9 +679,7 @@ console.log(`📤 발음 평가 전송 시작`, {
           scripts.length === 0 ||
           (scripts.length === 1 && !scripts[0]?.scriptId)
         ) {
-          const errorMsg = currentTurn >= TURNS
-            ? `턴 ${currentTurn}에 대화 내용이 없습니다.\n잠시 후 결과 화면으로 이동합니다.`
-            : `턴 ${currentTurn}에 대화 내용이 없습니다.\n잠시 후 다음 턴으로 이동합니다.`;
+          const errorMsg = `턴 ${currentTurn}에 대화 내용이 없습니다.`;
           console.log(`[RecordingPage] ${errorMsg}`);
           setScriptError(errorMsg);
           setConversations((prev) => ({ ...prev, [currentTurn]: [] }));
@@ -680,12 +785,11 @@ console.log(`📤 발음 평가 전송 시작`, {
       // ★ 해당 턴의 스크립트가 빈 배열인 경우 (스크립트 없음)
       if (conversations[currentTurn].length === 0) {
         console.log(
-          `⚠️ [RecordingPage] turn ${currentTurn} 스크립트가 없음 - 다음 턴으로 자동 진행`,
+          `⚠️ [RecordingPage] turn ${currentTurn} 스크립트가 없음 - 동기화 단계로 이동`,
         );
-        // 스크립트가 없어도 다음 턴으로 진행
         setTimeout(() => {
-          goNextTurn();
-        }, 2000); // 2초 대기 후 다음 턴으로
+          setStep(STEP.TURN_REPORT);
+        }, 1000); 
         return;
       }
 
@@ -806,16 +910,16 @@ console.log(`📤 발음 평가 전송 시작`, {
     }
   }, [step, currentTurn, roomId, fetchTurnResults]);
 
-  // 스크립트 에러 발생 시 자동으로 다음 턴으로 진행
+  // 스크립트 에러 발생 시 동기화 단계로 진입
   useEffect(() => {
     if (scriptError) {
-      console.log("[RecordingPage] 스크립트 오류 발생 - 3초 후 자동 진행");
+      console.log("[RecordingPage] 스크립트 오류 발생 - 동기화 단계로 이동");
       const timer = setTimeout(() => {
-        goNextTurn();
-      }, 3000);
+        setStep(STEP.TURN_REPORT);
+      }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [scriptError, goNextTurn]);
+  }, [scriptError]);
 
   // UI 데이터 가공
   const sentenceCardsData = useMemo(() => {
@@ -889,7 +993,9 @@ console.log(`📤 발음 평가 전송 시작`, {
       );
     }
 
-    if (scriptError) {
+    const isReportMode = step === STEP.TURN_REPORT || step === STEP.ALL_DONE;
+
+    if (scriptError && !isReportMode) {
       return (
         <div
           style={{
@@ -934,6 +1040,11 @@ console.log(`📤 발음 평가 전송 시작`, {
       case STEP.RECORD_DONE:
         return <BottomRecordDone isLast={isLastSentence} />;
       case STEP.TURN_REPORT:
+        // 모든 턴(중간 및 마지막)에 대해 동기화 로직(준비/시작) 적용
+        const readyCount = participants.filter(p => !p.isHost && p.isReady).length;
+        const totalToReady = participants.length - 1;
+        const isLastTurn = currentTurn >= TURNS;
+
         return (
           <div
             style={{
@@ -941,23 +1052,60 @@ console.log(`📤 발음 평가 전송 시작`, {
               textAlign: "center",
               background: "#fff",
               borderTop: "1px solid #e5e7eb",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
             }}
           >
-            <button
-              onClick={goNextTurn}
-              style={{
-                padding: "12px 32px",
-                fontSize: "16px",
-                fontWeight: "600",
-                color: "#fff",
-                background: "#2b7fff",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-              }}
-            >
-              {currentTurn >= TURNS ? "완료" : "다음 턴으로"}
-            </button>
+            {/* 스크립트 에러/내용없음 메시지가 있으면 버튼 위에 표시 */}
+            {scriptError && (
+              <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px", whiteSpace: "pre-line" }}>
+                {scriptError}
+              </p>
+            )}
+
+            {/* 준비 현황을 모든 유저에게 표시 */}
+            <div style={{ fontSize: "14px", color: "#666", fontWeight: "500" }}>
+              {participants.length > 1 
+                ? `팀원 준비 현황: ${readyCount} / ${totalToReady}`
+                : "참여자를 기다리고 있습니다."}
+            </div>
+
+            {isHost ? (
+              <button
+                onClick={handleStartNextTurn}
+                disabled={!allReady && participants.length > 1}
+                style={{
+                  padding: "12px 32px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#fff",
+                  background: (!allReady && participants.length > 1) ? "#ccc" : "#2b7fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: (!allReady && participants.length > 1) ? "not-allowed" : "pointer",
+                }}
+              >
+                다음 단계로
+              </button>
+            ) : (
+              <button
+                onClick={handleReady}
+                style={{
+                  padding: "12px 32px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#fff",
+                  background: isReady ? "#10b981" : "#2b7fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                {isReady ? "준비 완료!" : "준비하기"}
+              </button>
+            )}
           </div>
         );
       case STEP.ALL_DONE:
