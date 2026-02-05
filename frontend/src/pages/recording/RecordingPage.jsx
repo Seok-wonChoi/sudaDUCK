@@ -75,6 +75,7 @@ export default function RecordingPage() {
 
   const [step, setStep] = useState(STEP.AI_TIMER);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 👈 제출 중 상태 추가
   const [isReady, setIsReady] = useState(false); // 👈 내 준비 상태 추가
   // state로 전달받은 currentTurn 사용
   const [currentTurn, setCurrentTurn] = useState(() => {
@@ -299,6 +300,8 @@ console.log(`📤 발음 평가 전송 시작`, {
             [currentSentence.id]: -1,
           }));
 
+          setIsSubmitting(true);
+
           // API 호출 (shadowing.js의 saveAssessment)
           const response = await saveAssessment(
             blob,
@@ -328,6 +331,8 @@ console.log(`📤 발음 평가 전송 시작`, {
             [currentSentence.id]: -2,
           }));
           setStep(STEP.RECORD_DONE);
+        } finally {
+          setIsSubmitting(false);
         }
       } else {
         console.warn("⚠️ 녹음된 데이터가 없습니다 (Blob size 0)");
@@ -1163,6 +1168,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       onBookmarkToggle={handleBookmarkToggle}
       onStop={handleManualStop}
       showBlanks={showBlanks}
+      isSubmitting={isSubmitting}
       onToggleBlanks={() => {
         console.log("🔄 [RecordingPage] 빈칸 모드 토글:", !showBlanks);
         setShowBlanks(!showBlanks);
