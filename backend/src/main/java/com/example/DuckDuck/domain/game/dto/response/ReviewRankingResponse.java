@@ -11,5 +11,4 @@ public class ReviewRankingResponse {
     private String profileImageUrl;
     private int score;
     private boolean isMe; // '나'인지 표시
-    private Boolean hasSubmitted;
 }
