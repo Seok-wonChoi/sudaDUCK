@@ -68,7 +68,7 @@ export default function MiniGame1Page() {
   
   const [phase, setPhase] = useState(GAME_PHASE.COUNTDOWN);
   const [countdown, setCountdown] = useState(3);
-  const [timer, setTimer] = useState(60);
+  const [timer, setTimer] = useState(15);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [currentBlank, setCurrentBlank] = useState(0);
   const [blanksState, setBlanksState] = useState([]);
@@ -609,7 +609,7 @@ export default function MiniGame1Page() {
       onExit={handleExit}
       timer={phase === GAME_PHASE.PLAYING ? formatTime(timer) : null}
       progress={phase === GAME_PHASE.PLAYING ? timer : 0}
-      totalProgress={60}
+      totalProgress={15}
       isReviewMode={phase === GAME_PHASE.REVIEW}
       onComplete={phase === GAME_PHASE.REVIEW ? handleBackToResult : null}
     >

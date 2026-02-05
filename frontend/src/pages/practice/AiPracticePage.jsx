@@ -39,7 +39,7 @@ function VoiceWave({ level, enabled }) {
 export default function AiPracticePage() {
   const navigate = useNavigate();
   const topic = useMemo(() => "좋아하는 음식", []);
-  const DURATION_MS = 60_000;
+  const DURATION_MS = 15_000;
 
   const [showBackConfirm, setShowBackConfirm] = useState(false);
 

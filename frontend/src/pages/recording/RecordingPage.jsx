@@ -10,7 +10,7 @@ import {
   getTurnScripts,
   getTurnResults,
 } from "@/api/shadowing";
-import { leaveRoom } from "@/api/rooms";
+import { leaveRoom, getRoomLobby, toggleReady, startRoom } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
 import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
 import duckTogether from "@/assets/images/duck_together.png";
@@ -63,7 +63,7 @@ export default function RecordingPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
   // 👇 OpenVidu Publisher, Subscribers, leaveSession 가져오기
-  const { publisher, subscribers, leaveSession } = useOpenVidu(); 
+  const { publisher, subscribers, leaveSession } = useOpenVidu();
 
   const roomInfo = state?.roomInfo || {};
   const myUserId = state?.myUserId; // 본인 userId
@@ -71,13 +71,13 @@ export default function RecordingPage() {
   // isHost는 state에서 직접 가져오기 (roomInfo에 없을 수 있음)
   const isHost = state?.isHost ?? roomInfo?.isHost ?? false;
 
-
   console.log("[RecordingPage] 페이지 로드 - 전체 state:", state);
 
   const TURNS = roomInfo.turnCount || 3;
 
   const [step, setStep] = useState(STEP.AI_TIMER);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isReady, setIsReady] = useState(false); // 👈 내 준비 상태 추가
   // state로 전달받은 currentTurn 사용
   const [currentTurn, setCurrentTurn] = useState(() => {
     return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
@@ -103,6 +103,7 @@ export default function RecordingPage() {
   const recorderRef = useRef(null);
   const audioRef = useRef(null);
   const prevIsConversationStepRef = useRef(null); // 👈 이전 마이크 상태 저장용 Ref
+  const hasNavigatedRef = useRef(false); // 👈 중복 이동 방지용 Ref
 
   const showToast = useCallback((msg) => {
     setToastMessage(msg);
@@ -138,6 +139,51 @@ export default function RecordingPage() {
       ""
     );
   }, [roomInfo]);
+
+  // 방장 여부 확인 (participants 정보 또는 초기 roomInfo 정보 활용)
+  const isHost = useMemo(() => {
+    const me = participants.find(
+      (p) => String(p.id || p.userId) === String(myUserId),
+    );
+    if (me && typeof me.isHost === "boolean") return me.isHost;
+    return roomInfo.isHost === true;
+  }, [participants, myUserId, roomInfo.isHost]);
+
+  // 모든 참여자(방장 제외)가 준비되었는지 확인
+  const allReady = useMemo(() => {
+    const nonHostParticipants = participants.filter((p) => !p.isHost);
+    if (nonHostParticipants.length === 0) return true;
+    return nonHostParticipants.every((p) => p.isReady);
+  }, [participants]);
+
+  // 초기 로비 정보 가져오기 (준비 상태 동기화)
+  const fetchLobby = useCallback(async () => {
+    if (!roomCode) return;
+    try {
+      const data = await getRoomLobby(roomCode);
+      const members = data.participants || [];
+      const mapped = members.map((m) => ({
+        id: String(m.userId),
+        userId: m.userId,
+        name: m.nickname,
+        isMe: String(m.userId) === String(myUserId),
+        isReady: m.readyStatus === "READY",
+        isHost: m.isHost,
+      }));
+      setParticipants(mapped);
+
+      const me = mapped.find((p) => p.isMe);
+      if (me) setIsReady(me.isReady);
+    } catch (e) {
+      console.error("[RecordingPage] 로비 정보 조회 실패:", e);
+    }
+  }, [roomCode, myUserId]);
+
+  useEffect(() => {
+    if (step === STEP.TURN_REPORT && currentTurn < TURNS) {
+      fetchLobby();
+    }
+  }, [step, fetchLobby, currentTurn, TURNS]);
 
   const currentTurnSentences = useMemo(() => {
     const turnToShow = selectedTurnForReport || currentTurn;
@@ -203,14 +249,14 @@ export default function RecordingPage() {
   // [수정] RecordRTC로 녹음 중지 및 전송
   const stopRecording = useCallback(() => {
     if (!currentSentence || !currentSentence.scriptId) {
-  console.error("❌ 발음 평가 실패: scriptId가 유효하지 않습니다.");
-  return;
-}
-console.log(`📤 발음 평가 전송 시작`, {
-  roomId,
-  turnNo: currentTurn,
-  scriptId: currentSentence.scriptId,
-});
+      console.error("❌ 발음 평가 실패: scriptId가 유효하지 않습니다.");
+      return;
+    }
+    console.log(`📤 발음 평가 전송 시작`, {
+      roomId,
+      turnNo: currentTurn,
+      scriptId: currentSentence.scriptId,
+    });
 
     const recorder = recorderRef.current;
 
@@ -236,7 +282,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       if (!currentSentence || !currentSentence.scriptId) {
         console.error(
           "❌ 발음 평가 실패: scriptId가 유효하지 않습니다.",
-          currentSentence
+          currentSentence,
         );
         setStep(STEP.RECORD_DONE);
         return;
@@ -262,7 +308,7 @@ console.log(`📤 발음 평가 전송 시작`, {
             blob,
             roomId,
             currentTurn,
-            currentSentence.scriptId
+            currentSentence.scriptId,
           );
 
           // [핵심] 백엔드에서 받은 점수(score)가 있으면 UI에 즉시 반영
@@ -296,42 +342,12 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   const goNextTurn = () => {
     if (currentTurn >= TURNS) {
-      // 마지막 턴이면 ALL_DONE으로 이동
       console.log("[RecordingPage] 마지막 턴 완료 - ALL_DONE으로 전환");
       setStep(STEP.ALL_DONE);
       return;
     }
-
-    // 다음 턴이 있으면 TogetherTalkPage로 돌아가기
-    const nextTurn = currentTurn + 1;
-    const navigationState = {
-      ...state,
-      currentTurn: nextTurn, // 최상위 레벨에도 턴 번호 전달
-      roomInfo: {
-        ...roomInfo,
-        roomId: roomId,
-        roomCode: roomCode,
-        currentTurn: nextTurn, // roomInfo 내부에도 턴 번호 전달
-      },
-      myUserId,
-    };
-
-    console.log("[RecordingPage] 다음 턴으로 이동:", {
-      currentTurn,
-      nextTurn,
-      TURNS,
-      roomId,
-      roomCode,
-      전달할State: navigationState,
-    });
-
-    setIsTransitioning(true);
-    setTimeout(() => {
-      navigate("/together/talk", {
-        replace: true,
-        state: navigationState,
-      });
-    }, 5000);
+    // 중간 턴 이동은 handleStartNextTurn -> onRoomStarted를 통해 다함께 진행됩니다.
+    console.log("[RecordingPage] 다음 턴 대기 중 (방장 시작 대기)");
   };
 
   const startFlow = () => setStep(STEP.AI_TIMER);
@@ -347,31 +363,31 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   // 미니게임 시작 신호 수신 핸들러
   const handleMiniGameStart = useCallback(() => {
-    console.log('🎮 미니게임 시작!');
-    navigate("/minigame1", { 
-      state: { 
+    console.log("🎮 미니게임 시작!");
+    navigate("/minigame1", {
+      state: {
         roomId: roomId,
         roomCode: roomCode,
         isHost: isHost || false,
-        participantsCount: participants.length
-      } 
+        participantsCount: participants.length,
+      },
     });
   }, [navigate, roomId, roomCode, isHost, participants.length]);
 
   const handleComplete = () => {
     // 방장만 시작 신호 전송
     if (isHost) {
-      console.log('🎮 [방장] 미니게임 시작 신호 전송');
-      
+      console.log("🎮 [방장] 미니게임 시작 신호 전송");
+
       const stompClient = window.stompClient;
       if (stompClient && stompClient.connected) {
         stompClient.publish({
           destination: `/app/rooms/${roomCode}/minigame/start`,
-          body: JSON.stringify({})
+          body: JSON.stringify({}),
         });
       } else {
-        console.error('❌ WebSocket 연결 안 됨');
-        alert('연결 오류가 발생했습니다.');
+        console.error("❌ WebSocket 연결 안 됨");
+        alert("연결 오류가 발생했습니다.");
       }
     }
   };
@@ -404,7 +420,7 @@ console.log(`📤 발음 평가 전송 시작`, {
         const response = await toggleScriptLike(
           realScriptId,
           roomId,
-          targetTurn
+          targetTurn,
         );
 
         console.log("[RecordingPage] 북마크 API 응답:", response);
@@ -415,8 +431,8 @@ console.log(`📤 발음 평가 전송 시작`, {
         // API 응답의 isLiked 값을 기준으로 로컬 상태 업데이트
         setBookmarkedSentences((prev) => {
           const next = response.isLiked
-            ? [...new Set([...prev, bookmarkKey])]  // API가 저장됨(true)을 반환하면 추가
-            : prev.filter((key) => key !== bookmarkKey);  // API가 삭제됨(false)을 반환하면 제거
+            ? [...new Set([...prev, bookmarkKey])] // API가 저장됨(true)을 반환하면 추가
+            : prev.filter((key) => key !== bookmarkKey); // API가 삭제됨(false)을 반환하면 제거
           localStorage.setItem("bookmarkedSentences", JSON.stringify(next));
           return next;
         });
@@ -425,28 +441,134 @@ console.log(`📤 발음 평가 전송 시작`, {
         alert("북마크 저장에 실패했습니다.");
       }
     },
-    [currentTurnSentences, roomId, selectedTurnForReport, currentTurn]
+    [currentTurnSentences, roomId, selectedTurnForReport, currentTurn],
   );
 
   const handleRoomClosed = useCallback(() => {
     console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
     // 👇 강제 퇴장 시에도 세션 종료
     if (leaveSession) leaveSession();
-    
+
     navigate("/main", {
       replace: true,
       state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
   }, [navigate, leaveSession]);
 
-  useRoomWebSocket(
+  const { sendReady, isConnected } = useRoomWebSocket(
     roomCode,
     {
       onRoomClosed: handleRoomClosed,
       onMiniGameStart: handleMiniGameStart,
+      onReadyChanged: (payload, senderKey) => {
+        if (senderKey) {
+          let newReady = false;
+          if (
+            payload?.myReadyStatus === "READY" ||
+            payload?.readyStatus === "READY"
+          ) {
+            newReady = true;
+          } else if (
+            payload?.myReadyStatus === "NOT_READY" ||
+            payload?.readyStatus === "NOT_READY"
+          ) {
+            newReady = false;
+          } else if (payload?.ready !== undefined) {
+            newReady = payload.ready === true;
+          } else if (payload?.isReady !== undefined) {
+            newReady = payload.isReady === true;
+          }
+
+          setParticipants((prev) =>
+            prev.map((p) =>
+              String(p.id || p.userId) === String(senderKey)
+                ? { ...p, isReady: newReady }
+                : p,
+            ),
+          );
+        }
+      },
+      onRoomStarted: (payload) => {
+        console.log("[RecordingPage] 🎮 ROOM_STARTED 수신 - 단계 이동 시작");
+        if (hasNavigatedRef.current) return;
+
+        // 마지막 턴인 경우: 모든 참여자가 동시에 ALL_DONE 단계로 진입
+        if (currentTurn >= TURNS) {
+          console.log(
+            "[RecordingPage] 마지막 턴 종료 -> 전원 ALL_DONE 단계로 전환",
+          );
+          setStep(STEP.ALL_DONE);
+          return;
+        }
+
+        // 중간 턴인 경우: 모든 참여자가 동시에 다음 대화방으로 이동
+        hasNavigatedRef.current = true;
+        const nextTurn = currentTurn + 1;
+        const navigationState = {
+          ...state,
+          currentTurn: nextTurn,
+          roomInfo: {
+            ...roomInfo,
+            roomId: roomId,
+            roomCode: roomCode,
+            currentTurn: nextTurn,
+          },
+          myUserId,
+        };
+
+        setIsTransitioning(true);
+        setTimeout(() => {
+          navigate("/together/talk", {
+            replace: true,
+            state: navigationState,
+          });
+        }, 2000);
+      },
+      onMemberJoined: (payload) => fetchLobby(),
+      onMemberLeft: (payload, senderKey) => {
+        if (senderKey) {
+          setParticipants((prev) =>
+            prev.filter((p) => String(p.id || p.userId) !== String(senderKey)),
+          );
+        }
+      },
     },
-    roomId
+    roomId,
   );
+
+  const handleReady = useCallback(async () => {
+    if (!isConnected) {
+      showToast("서버와 연결되지 않았습니다.");
+      return;
+    }
+    const nextReady = !isReady;
+    try {
+      await toggleReady(roomCode, nextReady);
+      setIsReady(nextReady);
+      if (sendReady) sendReady(nextReady);
+      setParticipants((prev) =>
+        prev.map((p) =>
+          String(p.id || p.userId) === String(myUserId)
+            ? { ...p, isReady: nextReady }
+            : p,
+        ),
+      );
+    } catch (e) {
+      showToast("준비 상태 변경에 실패했습니다.");
+    }
+  }, [isConnected, isReady, roomCode, sendReady, myUserId, showToast]);
+
+  const handleStartNextTurn = useCallback(async () => {
+    if (!allReady && participants.length > 1) {
+      showToast("모든 참여자가 준비되어야 합니다.");
+      return;
+    }
+    try {
+      await startRoom(roomCode);
+    } catch (e) {
+      showToast("다음 턴 시작에 실패했습니다.");
+    }
+  }, [allReady, roomCode, showToast, participants.length]);
 
   const handleLogoExit = useCallback(async () => {
     // 👇 진짜 방을 나갈 때는 세션 종료
@@ -516,13 +638,14 @@ console.log(`📤 발음 평가 전송 시작`, {
     if (!publisher) return;
 
     // 대화가 허용되는 단계: 결과 리포트 화면 또는 완전히 종료된 화면
-    const isConversationStep = (step === STEP.TURN_REPORT || step === STEP.ALL_DONE || step === STEP.IDLE);
+    const isConversationStep =
+      step === STEP.TURN_REPORT || step === STEP.ALL_DONE || step === STEP.IDLE;
 
     if (isConversationStep) {
       // 결과 화면에서는 팀원들과 대화할 수 있도록 마이크 Unmute
       console.log(`🎤 [OpenVidu] 결과 확인 단계(${step}) -> 마이크 Unmute`);
       publisher.publishAudio(true);
-      
+
       // 음소거가 풀릴 때만 알림 표시 (쉐도잉 -> 결과 화면 전환 시)
       if (prevIsConversationStepRef.current === false) {
         showToast("팀원들과 대화가 가능합니다. 🎙️");
@@ -532,7 +655,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       console.log(`🎤 [OpenVidu] 쉐도잉 진행 단계(${step}) -> 마이크 Mute`);
       publisher.publishAudio(false);
     }
-    
+
     prevIsConversationStepRef.current = isConversationStep;
   }, [step, publisher, showToast]);
 
@@ -545,9 +668,7 @@ console.log(`📤 발음 평가 전송 시작`, {
   useEffect(() => {
     const fetchTurnScripts = async () => {
       if (conversations[currentTurn]) {
-        console.log(
-          `[RecordingPage] turn ${currentTurn} 스크립트 이미 로드됨`
-        );
+        console.log(`[RecordingPage] turn ${currentTurn} 스크립트 이미 로드됨`);
         return;
       }
 
@@ -575,9 +696,7 @@ console.log(`📤 발음 평가 전송 시작`, {
           scripts.length === 0 ||
           (scripts.length === 1 && !scripts[0]?.scriptId)
         ) {
-          const errorMsg = currentTurn >= TURNS
-            ? `턴 ${currentTurn}에 대화 내용이 없습니다.\n잠시 후 결과 화면으로 이동합니다.`
-            : `턴 ${currentTurn}에 대화 내용이 없습니다.\n잠시 후 다음 턴으로 이동합니다.`;
+          const errorMsg = `턴 ${currentTurn}에 대화 내용이 없습니다.`;
           console.log(`[RecordingPage] ${errorMsg}`);
           setScriptError(errorMsg);
           setConversations((prev) => ({ ...prev, [currentTurn]: [] }));
@@ -597,11 +716,7 @@ console.log(`📤 발음 평가 전송 시작`, {
               s.name ||
               null;
 
-            if (
-              !speakerName &&
-              participants &&
-              participants.length > 0
-            ) {
+            if (!speakerName && participants && participants.length > 0) {
               const firstParticipant = participants[0];
               speakerName =
                 firstParticipant?.name ||
@@ -615,18 +730,13 @@ console.log(`📤 발음 평가 전송 시작`, {
 
             let isMe = false;
             if (participants && participants.length > 0) {
-              const myParticipant = participants.find(
-                (p) => p.isMe === true
-              );
+              const myParticipant = participants.find((p) => p.isMe === true);
               if (myParticipant) {
-                isMe =
-                  participants.length === 1 && myParticipant.isMe;
+                isMe = participants.length === 1 && myParticipant.isMe;
               }
             }
 
-            const displayName = isMe
-              ? `${speakerName}(나)`
-              : speakerName;
+            const displayName = isMe ? `${speakerName}(나)` : speakerName;
 
             return {
               id: s.order_no ?? i + 1,
@@ -646,7 +756,7 @@ console.log(`📤 발음 평가 전송 시작`, {
 
         console.log(
           `[RecordingPage] 포맷팅 완료 (${formatted.length}개):`,
-          formatted
+          formatted,
         );
         setConversations((prev) => ({
           ...prev,
@@ -683,12 +793,11 @@ console.log(`📤 발음 평가 전송 시작`, {
       // ★ 해당 턴의 스크립트가 빈 배열인 경우 (스크립트 없음)
       if (conversations[currentTurn].length === 0) {
         console.log(
-          `⚠️ [RecordingPage] turn ${currentTurn} 스크립트가 없음 - 다음 턴으로 자동 진행`,
+          `⚠️ [RecordingPage] turn ${currentTurn} 스크립트가 없음 - 동기화 단계로 이동`,
         );
-        // 스크립트가 없어도 다음 턴으로 진행
         setTimeout(() => {
-          goNextTurn();
-        }, 2000); // 2초 대기 후 다음 턴으로
+          setStep(STEP.TURN_REPORT);
+        }, 1000);
         return;
       }
 
@@ -761,17 +870,22 @@ console.log(`📤 발음 평가 전송 시작`, {
       } else {
         timerRef.current = setTimeout(
           () => setStep(STEP.RECORD_TIMER),
-          AI_PLAYING_MS
+          AI_PLAYING_MS,
         );
       }
     } else if (step === STEP.RECORDING) {
       setRecordingTime(0);
-      
+
       // 문장 길이에 따른 동적 시간 계산 (단어 수 기준)
-      const words = currentSentence?.english?.split(' ')?.length || 0;
-      const dynamicDuration = Math.max(8, Math.min(30, Math.ceil(words * 1.5) + 5));
-      
-      console.log(`🎙️ [RecordingPage] 문장 길이(${words}단어)에 따른 제한시간 설정: ${dynamicDuration}초`);
+      const words = currentSentence?.english?.split(" ")?.length || 0;
+      const dynamicDuration = Math.max(
+        8,
+        Math.min(30, Math.ceil(words * 1.5) + 5),
+      );
+
+      console.log(
+        `🎙️ [RecordingPage] 문장 길이(${words}단어)에 따른 제한시간 설정: ${dynamicDuration}초`,
+      );
       setRecordingCountdown(dynamicDuration);
       startRecording();
 
@@ -809,16 +923,16 @@ console.log(`📤 발음 평가 전송 시작`, {
     }
   }, [step, currentTurn, roomId, fetchTurnResults]);
 
-  // 스크립트 에러 발생 시 자동으로 다음 턴으로 진행
+  // 스크립트 에러 발생 시 동기화 단계로 진입
   useEffect(() => {
     if (scriptError) {
-      console.log("[RecordingPage] 스크립트 오류 발생 - 3초 후 자동 진행");
+      console.log("[RecordingPage] 스크립트 오류 발생 - 동기화 단계로 이동");
       const timer = setTimeout(() => {
-        goNextTurn();
-      }, 3000);
+        setStep(STEP.TURN_REPORT);
+      }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [scriptError, goNextTurn]);
+  }, [scriptError]);
 
   // UI 데이터 가공
   const sentenceCardsData = useMemo(() => {
@@ -892,7 +1006,9 @@ console.log(`📤 발음 평가 전송 시작`, {
       );
     }
 
-    if (scriptError) {
+    const isReportMode = step === STEP.TURN_REPORT || step === STEP.ALL_DONE;
+
+    if (scriptError && !isReportMode) {
       return (
         <div
           style={{
@@ -937,6 +1053,13 @@ console.log(`📤 발음 평가 전송 시작`, {
       case STEP.RECORD_DONE:
         return <BottomRecordDone isLast={isLastSentence} />;
       case STEP.TURN_REPORT:
+        // 모든 턴(중간 및 마지막)에 대해 동기화 로직(준비/시작) 적용
+        const readyCount = participants.filter(
+          (p) => !p.isHost && p.isReady,
+        ).length;
+        const totalToReady = participants.length - 1;
+        const isLastTurn = currentTurn >= TURNS;
+
         return (
           <div
             style={{
@@ -944,28 +1067,80 @@ console.log(`📤 발음 평가 전송 시작`, {
               textAlign: "center",
               background: "#fff",
               borderTop: "1px solid #e5e7eb",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
             }}
           >
-            <button
-              onClick={goNextTurn}
-              style={{
-                padding: "12px 32px",
-                fontSize: "16px",
-                fontWeight: "600",
-                color: "#fff",
-                background: "#2b7fff",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-              }}
-            >
-              {currentTurn >= TURNS ? "완료" : "다음 턴으로"}
-            </button>
+            {/* 스크립트 에러/내용없음 메시지가 있으면 버튼 위에 표시 */}
+            {scriptError && (
+              <p
+                style={{
+                  fontSize: "15px",
+                  color: "#6b7280",
+                  marginBottom: "4px",
+                  whiteSpace: "pre-line",
+                }}
+              >
+                {scriptError}
+              </p>
+            )}
+
+            {/* 준비 현황을 모든 유저에게 표시 */}
+            <div style={{ fontSize: "14px", color: "#666", fontWeight: "500" }}>
+              {participants.length > 1
+                ? `팀원 준비 현황: ${readyCount} / ${totalToReady}`
+                : "참여자를 기다리고 있습니다."}
+            </div>
+
+            {isHost ? (
+              <button
+                onClick={handleStartNextTurn}
+                disabled={!allReady && participants.length > 1}
+                style={{
+                  padding: "12px 32px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#fff",
+                  background:
+                    !allReady && participants.length > 1 ? "#ccc" : "#2b7fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor:
+                    !allReady && participants.length > 1
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                다음 단계로
+              </button>
+            ) : (
+              <button
+                onClick={handleReady}
+                style={{
+                  padding: "12px 32px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#fff",
+                  background: isReady ? "#10b981" : "#2b7fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                {isReady ? "준비 완료!" : "준비하기"}
+              </button>
+            )}
           </div>
         );
       case STEP.ALL_DONE:
         return (
-          <BottomAllDone onRestart={restart} onComplete={handleComplete} isHost={isHost} />
+          <BottomAllDone
+            onRestart={restart}
+            onComplete={handleComplete}
+            isHost={isHost}
+          />
         );
       default:
         return null;
@@ -976,48 +1151,48 @@ console.log(`📤 발음 평가 전송 시작`, {
     <>
       {/* 👇 소리 재생용 컴포넌트 추가 */}
       {subscribers.map((sub, i) => (
-        <div key={i} style={{ display: 'none' }}>
+        <div key={i} style={{ display: "none" }}>
           <UserAudioComponent streamManager={sub} />
         </div>
       ))}
       <Recordinglayout
         currentTurn={selectedTurnForReport || currentTurn}
-      sentenceCards={sentenceCardsData}
-      activeCardState={
-        step === STEP.AI_PLAYING
-          ? "ai_playing"
-          : step === STEP.RECORD_TIMER
-          ? "record_timer"
-          : step === STEP.RECORDING
-          ? "recording"
-          : step === STEP.RECORD_DONE
-          ? "record_done"
-          : "idle"
-      }
-      countdown={countdown}
-      recordingTime={recordingTime}
-      recordingCountdown={recordingCountdown}
-      bottomContent={bottomContent()}
-      onBookmarkToggle={handleBookmarkToggle}
-      onStop={handleManualStop}
-      showBlanks={showBlanks}
-      onToggleBlanks={() => {
-        console.log("🔄 [RecordingPage] 빈칸 모드 토글:", !showBlanks);
-        setShowBlanks(!showBlanks);
-      }}
-      totalTurns={TURNS}
-      isAllDone={step === STEP.ALL_DONE}
-      onTurnClick={(t) => {
-        if (step === STEP.ALL_DONE) {
-          setSelectedTurnForReport(t);
-          if (!turnResults[t]) {
-            fetchTurnResults(t);
-          }
+        sentenceCards={sentenceCardsData}
+        activeCardState={
+          step === STEP.AI_PLAYING
+            ? "ai_playing"
+            : step === STEP.RECORD_TIMER
+              ? "record_timer"
+              : step === STEP.RECORDING
+                ? "recording"
+                : step === STEP.RECORD_DONE
+                  ? "record_done"
+                  : "idle"
         }
-      }}
-      selectedTurnForReport={selectedTurnForReport}
-      logoExitMessage="메인 화면으로 나가시겠습니까?"
-      onLogoExit={handleLogoExit}
+        countdown={countdown}
+        recordingTime={recordingTime}
+        recordingCountdown={recordingCountdown}
+        bottomContent={bottomContent()}
+        onBookmarkToggle={handleBookmarkToggle}
+        onStop={handleManualStop}
+        showBlanks={showBlanks}
+        onToggleBlanks={() => {
+          console.log("🔄 [RecordingPage] 빈칸 모드 토글:", !showBlanks);
+          setShowBlanks(!showBlanks);
+        }}
+        totalTurns={TURNS}
+        isAllDone={step === STEP.ALL_DONE}
+        onTurnClick={(t) => {
+          if (step === STEP.ALL_DONE) {
+            setSelectedTurnForReport(t);
+            if (!turnResults[t]) {
+              fetchTurnResults(t);
+            }
+          }
+        }}
+        selectedTurnForReport={selectedTurnForReport}
+        logoExitMessage="메인 화면으로 나가시겠습니까?"
+        onLogoExit={handleLogoExit}
       />
       {isTransitioning && (
         <LoadingOverlay

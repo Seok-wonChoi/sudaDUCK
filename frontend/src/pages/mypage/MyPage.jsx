@@ -137,8 +137,9 @@ export default function MyPage() {
         itemsResults.forEach((result) => {
           if (result && result.items) {
             result.items.forEach((item) => {
+              const uniqueKey = `${result.category}:${item.itemKey}`;
               // itemKey -> itemId 매핑
-              keyToIdMap[item.itemKey] = item.itemId;
+              keyToIdMap[uniqueKey] = item.itemId;
 
               // owned 아이템 분류
               if (item.owned) {
@@ -426,7 +427,19 @@ export default function MyPage() {
       return false;
     }
 
-    const numericItemId = itemKeyToIdMap[itemKey];
+    let categoryPrefix = "";
+    switch (itemType) {
+    case "profile": categoryPrefix = "DUCK_STYLE"; break;
+    case "color": categoryPrefix = "DUCK_COLOR"; break;
+    case "accessory": categoryPrefix = "DUCK_ACCESSORY"; break;
+    case "duckBot": categoryPrefix = "AI_DUCKBOT_MODEL"; break;
+    case "background": categoryPrefix = "AVATAR_BG"; break; // 닉네임 모달용
+    case "effect": categoryPrefix = "AVATAR_EFFECT"; break; // 닉네임 모달용
+    default: console.error("알 수 없는 아이템 타입:", itemType); return false;
+    }
+    const uniqueKey = `${categoryPrefix}:${itemKey}`;
+
+    const numericItemId = itemKeyToIdMap[uniqueKey];
     if (!numericItemId) {
       alert('아이템 정보를 찾을 수 없습니다.');
       return false;

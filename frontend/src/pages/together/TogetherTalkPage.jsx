@@ -1100,7 +1100,7 @@ export default function TogetherTalkPage() {
   const memoizedTimer = useMemo(() => {
     return (
       <TimerGauge
-        durationMs={60_000}
+        durationMs={15_000}
         isRunning={isRoomTimerRunning}
         onDone={handleDone}
       />
@@ -1745,7 +1745,7 @@ const stopSTT = useCallback(() => {
 
             <div className={styles.TimerCol}>
               <TimerGauge
-                durationMs={60_000}
+                durationMs={15_000}
                 isRunning={isRoomTimerRunning}
                 onDone={handleDone}
                 startTimeMs={timerStartedAt}
