@@ -1,123 +1,102 @@
 .item {
   display: flex;
   align-items: center;
-  padding: 1rem 1.25rem;
+  padding: 1rem;
   background: white;
-  border: 2px solid #f3f4f6;
-  border-radius: 12px;
-  margin-bottom: 0.75rem;
-  transition: all 0.2s ease;
+  border-radius: 16px;
+  margin-bottom: 0.8rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
 }
 
-.item:hover {
-  border-color: #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-/* 본인 강조 */
 .isMe {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.1);
+  background: #f0fdf4; /* 연한 초록 배경 */
+  border: 1.5px solid #2EC4B6;
 }
 
-.isMe:hover {
-  border-color: #60a5fa;
-}
-
-/* 왼쪽: 순위/메달 */
 .rankIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  margin-right: 1rem;
-}
-
-.medal {
-  font-size: 1.5rem;
-}
-
-.rankNumber {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #6b7280;
-}
-
-/* 중앙: 프로필 + 이름 */
-.userInfo {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  gap: 0.75rem;
-}
-
-.avatar {
   width: 40px;
-  height: 40px;
-  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #888;
 }
 
-.avatarImage {
-  width: 100%;
-  height: 100%;
+/* 오리 프로필 스타일 */
+.userInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: 0.5rem;
+}
+
+.duckWrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #e5e7eb;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  
+  display: flex;
+  align-items: center;     /* 수직 중앙 */
+  justify-content: center; /* 수평 중앙 */
+  overflow: visible; 
 }
 
-.avatarPlaceholder {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: #d1d5db;
-  border: 2px solid #e5e7eb;
+.duckImage {
+  width: 70%; 
+  height: 70%;
+  object-fit: contain;
+  margin-top: 3px; 
 }
 
-.isMe .avatarImage,
-.isMe .avatarPlaceholder {
-  border-color: #93c5fd;
+.accessory {
+  position: absolute;
+  top: -8px;
+  right: -5px;
+  font-size: 1.2rem;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
 }
 
+/* 텍스트 스타일 */
 .nameContainer {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .nickname {
+  font-weight: 700;
+  color: #333;
   font-size: 1rem;
-  font-weight: 600;
-  color: #111827;
 }
 
 .youBadge {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
-  background: #3b82f6;
+  font-size: 0.7rem;
+  background: #2EC4B6;
   color: white;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.025em;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 800;
+  margin-top: 2px;
 }
 
-/* 오른쪽: 점수 */
 .score {
-  display: flex;
-  align-items: baseline;
-  gap: 0.25rem;
-  margin-left: auto;
+  text-align: right;
+  min-width: 60px;
 }
 
 .scoreNumber {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
+  font-weight: 800;
+  color: #FF9F1C;
+  font-size: 1.2rem;
 }
 
 .scoreTotal {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #9ca3af;
+  color: #ccc;
+  font-size: 0.9rem;
+  margin-left: 4px;
 }
