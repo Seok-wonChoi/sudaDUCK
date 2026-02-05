@@ -7,13 +7,16 @@ import ActionCard from "@/components/common/ActionCard/ActionCard";
 import StatsSection from "@/components/features/main/StatsSection/StatsSection";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 import { getMypageSummary } from "@/api/mypage";
+import { useSoundContext } from "@/context/SoundContext";
 
 import makeRoomIcon from "@/assets/icons/make_room2.png";
 import joinRoomIcon from "@/assets/icons/join_room2.png";
+import lightButtonSound from "@/assets/sounds/light_button.wav";
 
 export default function TogetherPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { getEffectiveVolume, isMuted } = useSoundContext();
 
   // ✅ MainPage에서 넘겨준 summary 있으면 그걸 초기값으로 사용
   const state = location.state ?? {};
@@ -72,6 +75,15 @@ export default function TogetherPage() {
   }, [state.toastMessage, navigate, location.pathname, showToast]);
 
   const handleBack = () => {
+    if (!isMuted) {
+      try {
+        const audio = new Audio(lightButtonSound);
+        audio.volume = getEffectiveVolume(0.1);
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+    }
     navigate("/main", { state: { summary } });
   };
   const handleMakeRoom = () => navigate("/together/make");
@@ -88,6 +100,7 @@ export default function TogetherPage() {
             type="button"
             onClick={handleBack}
             aria-label="뒤로 가기"
+            data-click-sound="false"
           >
             &lt;
           </button>

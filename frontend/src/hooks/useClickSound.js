@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import clickMp3 from "@/assets/sounds/click.mp3";
+import { useSoundContext } from "@/context/SoundContext";
 
 /**
  * enabled=true일 때만 문서 클릭 소리를 재생
@@ -14,6 +15,7 @@ export default function useClickSound(enabled, options = {}) {
     throttleMs = 40, // 너무 연타될 때 귀 아플 수 있어서 살짝 제한
   } = options;
 
+  const { getEffectiveVolume, isMuted } = useSoundContext();
   const audioRef = useRef(null);
   const lastPlayRef = useRef(0);
 
@@ -22,10 +24,12 @@ export default function useClickSound(enabled, options = {}) {
 
     // 오디오 준비
     const audio = new Audio(clickMp3);
-    audio.volume = volume;
     audioRef.current = audio;
 
     const onPointerDown = (e) => {
+      // 음소거 상태면 재생 안 함
+      if (isMuted) return;
+
       // 제외 대상이면 무시
       if (excludeSelector && e.target.closest(excludeSelector)) return;
 
@@ -39,6 +43,7 @@ export default function useClickSound(enabled, options = {}) {
 
       // 재생 (짧은 효과음이라 currentTime 리셋)
       try {
+        audio.volume = getEffectiveVolume(volume);
         audio.currentTime = 0;
         audio.play();
       } catch {
@@ -52,5 +57,5 @@ export default function useClickSound(enabled, options = {}) {
       document.removeEventListener("pointerdown", onPointerDown, { capture: true });
       audioRef.current = null;
     };
-  }, [enabled, volume, selector, excludeSelector, throttleMs]);
+  }, [enabled, volume, selector, excludeSelector, throttleMs, getEffectiveVolume, isMuted]);
 }

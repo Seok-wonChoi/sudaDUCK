@@ -63,7 +63,7 @@
   width: 50px;
   height: 50px;
   border-radius: 999px;
-  background: rgba(17, 24, 39, 0.10);
+  background: rgba(17, 24, 39, 0.1);
   border: 1px solid rgba(17, 24, 39, 0.12);
   position: relative;
   overflow: visible;
@@ -213,14 +213,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 0 10px;
+  padding: 10px 20px;
 }
 
 .MuteButton {
   border: 1px solid rgba(79, 70, 229, 0.22);
   background: rgba(79, 70, 229, 0.08);
   color: #3730a3;
-  padding: 9px 11px;
+  padding: 5px 7px;
   border-radius: 11px;
   cursor: pointer;
   font-weight: 900;
@@ -229,7 +229,7 @@
 
 .MuteOn {
   border-color: rgba(59, 130, 246, 0.35);
-  background: rgba(59, 130, 246, 0.10);
+  background: rgba(59, 130, 246, 0.1);
   color: #1d4ed8;
 }
 
@@ -240,7 +240,6 @@
 }
 
 .SliderRow {
-  margin-top: 11px;
   padding: 0 14px;
 }
 
@@ -313,6 +312,36 @@
   .Popover {
     top: 48px;
   }
+
+  .PopoverTitle {
+    padding: 11px 13px;
+    font-size: 14px;
+  }
+
+  .SoundRow {
+    padding: 9px 18px;
+  }
+
+  .MuteButton {
+    font-size: 11px;
+    padding: 5px 7px;
+  }
+
+  .VolumeText {
+    font-size: 11px;
+  }
+
+  .SliderRow {
+    padding: 0 13px;
+  }
+
+  .PopoverFooter {
+    padding: 11px 13px;
+  }
+
+  .FooterButton {
+    font-size: 13px;
+  }
 }
 
 /* 작은 태블릿 (600px ~ 768px) */
@@ -340,6 +369,37 @@
 
   .Popover {
     width: 260px;
+  }
+
+  .PopoverTitle {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .SoundRow {
+    padding: 8px 16px;
+    gap: 8px;
+  }
+
+  .MuteButton {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+
+  .VolumeText {
+    font-size: 11px;
+  }
+
+  .SliderRow {
+    padding: 0 12px;
+  }
+
+  .PopoverFooter {
+    padding: 10px 12px;
+  }
+
+  .FooterButton {
+    font-size: 13px;
   }
 }
 
@@ -369,6 +429,38 @@
   .Popover {
     width: calc(100vw - 32px);
     right: -8px;
+  }
+
+  .PopoverTitle {
+    padding: 9px 11px;
+    font-size: 13px;
+  }
+
+  .SoundRow {
+    padding: 7px 14px;
+    gap: 8px;
+  }
+
+  .MuteButton {
+    font-size: 10px;
+    padding: 4px 6px;
+    border-radius: 10px;
+  }
+
+  .VolumeText {
+    font-size: 11px;
+  }
+
+  .SliderRow {
+    padding: 0 11px;
+  }
+
+  .PopoverFooter {
+    padding: 9px 11px;
+  }
+
+  .FooterButton {
+    font-size: 12px;
   }
 
   .Avatar {
@@ -455,5 +547,38 @@
   .Popover {
     width: calc(100vw - 24px);
     right: -6px;
+    top: 44px;
+  }
+
+  .PopoverTitle {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .SoundRow {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .MuteButton {
+    font-size: 10px;
+    padding: 3px 5px;
+    border-radius: 9px;
+  }
+
+  .VolumeText {
+    font-size: 10px;
+  }
+
+  .SliderRow {
+    padding: 0 10px;
+  }
+
+  .PopoverFooter {
+    padding: 8px 10px;
+  }
+
+  .FooterButton {
+    font-size: 11px;
   }
 }

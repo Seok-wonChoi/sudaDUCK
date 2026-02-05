@@ -81,6 +81,14 @@
   width: 100%;
 }
 
+.BubbleTextLarge {
+  font-size: clamp(32px, 5.0vw, 50px);
+}
+
+.BubbleTextSmall {
+  font-size: clamp(22px, 3.4vw, 34px);
+}
+
 .SubText {
   font-weight: 800;
   font-size: clamp(26px, 4.0vw, 40px);

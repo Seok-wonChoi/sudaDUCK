@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { OpenViduProvider } from "@/context/OpenViduContext";
+import { SoundProvider } from "@/context/SoundContext";
 import useClickSound from "@/hooks/useClickSound";
 
 import LandingPage from "./pages/landing/LandingPage";
@@ -20,7 +21,7 @@ import MiniGame1Page from "./pages/minigame/MiniGame1Page";
 import MiniGame2Page from "./pages/minigame/MiniGame2Page";
 import VoiceRoom from "./pages/together/VoiceRoom";
 
-export default function App() {
+function AppContent() {
   useEffect(() => {
     document.body.classList.add("duck-cursor");
     return () => document.body.classList.remove("duck-cursor");
@@ -39,7 +40,7 @@ export default function App() {
     pathname.startsWith(p)
   );
 
-  useClickSound(clickSoundEnabled, { volume: 0.22 });
+  useClickSound(clickSoundEnabled, { volume: 0.1 });
 
   return (
     <OpenViduProvider>
@@ -67,5 +68,13 @@ export default function App() {
         <Route path="/test" element={<VoiceRoom />} />
       </Routes>
     </OpenViduProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <SoundProvider>
+      <AppContent />
+    </SoundProvider>
   );
 }

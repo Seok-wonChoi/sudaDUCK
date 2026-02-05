@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import styles from "./ConfirmModal.module.css";
+import lightButtonSound from "@/assets/sounds/light_button.wav";
+import { useSoundContext } from "@/context/SoundContext";
 
 export default function ConfirmModal({
   open,
@@ -13,8 +15,24 @@ export default function ConfirmModal({
   onCancel,
 }) {
   const cancelRef = useRef(null);
+  const { getEffectiveVolume, isMuted } = useSoundContext();
 
-  const handleClose = onClose || onCancel;
+  const playSound = () => {
+    if (!isMuted) {
+      try {
+        const audio = new Audio(lightButtonSound);
+        audio.volume = getEffectiveVolume(0.1);
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+    }
+  };
+
+  const handleClose = () => {
+    playSound();
+    (onClose || onCancel)?.();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -64,6 +82,7 @@ export default function ConfirmModal({
             className={styles.CancelButton}
             onClick={handleClose}
             ref={cancelRef}
+            data-click-sound="false"
           >
             {cancelText}
           </button>

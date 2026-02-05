@@ -1,4 +1,6 @@
 import styles from "./ModalWrapper.module.css";
+import lightButtonSound from "@/assets/sounds/light_button.wav";
+import { useSoundContext } from "@/context/SoundContext";
 
 export default function ModalWrapper({
   title,
@@ -7,8 +9,23 @@ export default function ModalWrapper({
   footer,
   showFooter = true,
 }) {
+  const { getEffectiveVolume, isMuted } = useSoundContext();
+
+  const playSound = () => {
+    if (!isMuted) {
+      try {
+        const audio = new Audio(lightButtonSound);
+        audio.volume = getEffectiveVolume(0.1);
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+    }
+  };
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
+      playSound();
       onClose?.();
     }
   };
@@ -21,8 +38,12 @@ export default function ModalWrapper({
           <button
             type="button"
             className={styles.CloseButton}
-            onClick={onClose}
+            onClick={() => {
+              playSound();
+              onClose?.();
+            }}
             aria-label="닫기"
+            data-click-sound="false"
           >
             <span aria-hidden="true">&times;</span>
           </button>

@@ -15,6 +15,10 @@
 .DuckImageContainer {
   position: relative;
   cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
 }
 
 .ProfileImage,
@@ -95,14 +99,16 @@
   border-radius: 50%;
   border: 2px solid #ffffff;
   background: #ffffff;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  transition: background 0.2s ease;
 }
 
-.EditButton:hover {
+.ProfileImageContainer:hover .EditButton,
+.DuckImageContainer:hover .EditButton {
   background: #f9fafb;
 }
 
