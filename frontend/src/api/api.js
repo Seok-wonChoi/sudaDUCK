@@ -38,6 +38,12 @@ function setAuthHeader(config, token) {
 /* [REQUEST INTERCEPTOR] 헤더에 토큰 부착 + 사전 갱신 */
 api.interceptors.request.use(
   async (config) => {
+    // ✅ 재시도 요청인 경우, 이미 response interceptor에서 헤더를 설정했으므로 건너뜀
+    if (config._retry) {
+      console.log("[API] 재시도 요청 - request interceptor 건너뜀");
+      return config;
+    }
+
     let token = localStorage.getItem("accessToken");
 
     // ✅ FormData가 아닌 경우에만 Content-Type 설정
@@ -137,13 +143,6 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // ✅ FormData는 재시도 불가 (그냥 실패로 처리)
-      if (originalRequest.data instanceof FormData) {
-        console.warn("[API] FormData 401 에러 - 재시도 불가");
-        // 백엔드가 처리 중일 수 있으므로 alert 제거
-        return Promise.reject(error);
-      }
-
       originalRequest._retry = true;
 
       try {
@@ -195,21 +194,14 @@ api.interceptors.response.use(
 
         console.log("[API] 새 토큰으로 재시도:", originalRequest.url);
 
-        // 기존 헤더 완전 삭제
-        if (originalRequest.headers) {
-          if (typeof originalRequest.headers.delete === "function") {
-            originalRequest.headers.delete("Authorization");
-            originalRequest.headers.delete("authorization");
-          } else {
-            delete originalRequest.headers.Authorization;
-            delete originalRequest.headers.authorization;
-          }
-        }
-
-        // 새 토큰으로 헤더 설정
+        // 새 토큰으로 헤더 설정 (setAuthHeader 내부에서 기존 헤더 삭제 후 설정)
         setAuthHeader(originalRequest, newAccessToken);
 
         console.log("[API] 재시도 헤더 설정 완료");
+        console.log("[API] 재시도 요청 헤더:", {
+          Authorization: originalRequest.headers?.Authorization || originalRequest.headers?.authorization,
+          hasAuthHeader: !!(originalRequest.headers?.Authorization || originalRequest.headers?.authorization)
+        });
 
         return api(originalRequest);
       } catch (refreshErr) {
