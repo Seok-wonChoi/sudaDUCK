@@ -55,13 +55,13 @@
 .AvatarButton {
   border: 0;
   background: transparent;
-  padding: 0;
+  padding: 4px; /* 클릭 영역 살짝 확대 */
   cursor: pointer;
 }
 
 .Avatar {
-  width: 32px;
-  height: 32px;
+  width: 50px;
+  height: 50px;
   border-radius: 999px;
   background: rgba(17, 24, 39, 0.10);
   border: 1px solid rgba(17, 24, 39, 0.12);
@@ -81,10 +81,11 @@
 
 .AvatarAccessory {
   position: absolute;
-  top: -6px;
+  top: -8px; /* ✅ 정상 px + 50px 아바타 기준 */
   left: 50%;
-  transform: translateX(-50%);
-  font-size: 14px;
+  transform: translate(-50%, 0);
+  font-size: 18px;
+  line-height: 1;
   pointer-events: none;
 }
 
@@ -92,27 +93,48 @@
   position: relative;
 }
 
+/* ✅ 설정 버튼(아이콘 버튼) - 전역(미디어 밖)에서 정의 */
 .IconButton {
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
-  border: 1px solid rgba(79, 70, 229, 0.18);
-  background: rgba(79, 70, 229, 0.08);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+
+  border: none;
+  background: transparent;
+
   display: grid;
   place-items: center;
+
   cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.IconButton:hover {
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.IconButton:focus {
+  outline: none;
+}
+
+/* lucide-react 같은 SVG 아이콘용 */
+.IconSvg {
+  width: 22px;
+  height: 22px;
+  color: #4f46e5;
+}
+
+/* hover / active 아이콘 색 */
+.IconButton:hover .IconSvg {
+  color: #3730a3;
 }
 
 .Active {
-  border-color: rgba(79, 70, 229, 0.35);
   background: rgba(79, 70, 229, 0.12);
 }
 
-.IconImage {
-  width: 17px;
-  height: 17px;
-  object-fit: contain;
-  display: block;
+.Active .IconSvg {
+  color: #1d4ed8;
 }
 
 .Badge {
@@ -133,7 +155,7 @@
 
 .Popover {
   position: absolute;
-  top: 44px;
+  top: 52px; /* 버튼 커졌으니 조금 내림 */
   right: 0;
   width: 280px;
   background: #ffffff;
@@ -246,11 +268,9 @@
   border: 0;
   background: transparent;
   padding: 0;
-
   display: flex;
   align-items: center;
   gap: 10px;
-
   cursor: pointer;
 }
 
@@ -267,6 +287,31 @@
 
   .Greeting {
     font-size: 14px;
+  }
+
+  .Avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .AvatarAccessory {
+    top: -7px;
+    font-size: 16px;
+  }
+
+  .IconButton {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .IconSvg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .Popover {
+    top: 48px;
   }
 }
 
@@ -325,6 +370,26 @@
     width: calc(100vw - 32px);
     right: -8px;
   }
+
+  .Avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .AvatarAccessory {
+    top: -6px;
+    font-size: 15px;
+  }
+
+  .IconButton {
+    width: 38px;
+    height: 38px;
+  }
+
+  .IconSvg {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 /* 작은 모바일 (~ 480px) */
@@ -360,19 +425,24 @@
   }
 
   .Avatar {
-    width: 26px;
-    height: 26px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .AvatarAccessory {
+    top: -6px;
+    font-size: 14px;
   }
 
   .IconButton {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
   }
 
-  .IconImage {
-    width: 15px;
-    height: 15px;
+  .IconSvg {
+    width: 18px;
+    height: 18px;
   }
 
   .Badge {
