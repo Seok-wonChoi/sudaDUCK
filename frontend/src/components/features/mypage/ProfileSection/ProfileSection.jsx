@@ -36,7 +36,7 @@ export default function ProfileSection({
   return (
     <div className={styles.Section}>
       <div className={styles.ImagesWrapper}>
-        <div className={styles.ProfileImageContainer}>
+        <div className={styles.ProfileImageContainer} onClick={onEditProfile}>
           <div
             className={styles.ProfileImage}
             style={{ background: COLOR_MAP[profileColor] || "#f3f4f6" }}
@@ -62,7 +62,7 @@ export default function ProfileSection({
           </button>
         </div>
 
-        <div className={styles.DuckImageContainer}>
+        <div className={styles.DuckImageContainer} onClick={onEditDuckBot}>
           <div className={styles.DuckImage}>
             {duckBotImage && (
               <img src={duckBotImage} alt="AI 오리봇" className={styles.Image} />

@@ -516,19 +516,37 @@ console.log(`📤 발음 평가 전송 시작`, {
   );
 
   const handleReady = useCallback(async () => {
+    console.log("[RecordingPage] 🔘 handleReady 호출:", {
+      isConnected,
+      isReady,
+      roomCode,
+      myUserId,
+      hasToken: !!localStorage.getItem("accessToken")
+    });
+
     if (!isConnected) {
       showToast("서버와 연결되지 않았습니다.");
       return;
     }
     const nextReady = !isReady;
     try {
+      console.log("[RecordingPage] 📡 toggleReady API 호출 시작:", { roomCode, nextReady });
       await toggleReady(roomCode, nextReady);
+      console.log("[RecordingPage] ✅ toggleReady API 호출 성공");
+
       setIsReady(nextReady);
       if (sendReady) sendReady(nextReady);
       setParticipants((prev) =>
         prev.map((p) => (String(p.id || p.userId) === String(myUserId) ? { ...p, isReady: nextReady } : p))
       );
     } catch (e) {
+      console.error("[RecordingPage] ❌ toggleReady API 호출 실패:", e);
+      console.error("[RecordingPage] 에러 상세:", {
+        status: e.response?.status,
+        statusText: e.response?.statusText,
+        data: e.response?.data,
+        headers: e.response?.headers
+      });
       showToast("준비 상태 변경에 실패했습니다.");
     }
   }, [isConnected, isReady, roomCode, sendReady, myUserId, showToast]);
@@ -1072,7 +1090,7 @@ console.log(`📤 발음 평가 전송 시작`, {
                 : "참여자를 기다리고 있습니다."}
             </div>
 
-            {amIHost ? (
+            {roomInfo.isHost ? (
               <button
                 onClick={handleStartNextTurn}
                 disabled={!allReady && participants.length > 1}

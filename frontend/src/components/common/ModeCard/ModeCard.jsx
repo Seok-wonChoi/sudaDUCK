@@ -39,6 +39,8 @@ export default function ModeCard({
       ? `${styles.Duck} ${styles.DuckTogether}`
       : styles.Duck;
 
+  const cardClassName = `${styles.Card} ${disabled ? styles.Disabled : ""} ${variant === "together" ? styles.CardTogether : ""}`;
+
   const handleClick = () => {
     if (disabled) return;
     onClick?.();
@@ -51,7 +53,7 @@ export default function ModeCard({
       onMouseLeave={() => setHovered(false)}
     >
       <button
-        className={`${styles.Card} ${disabled ? styles.Disabled : ""}`}
+        className={cardClassName}
         type="button"
         onClick={handleClick}
         disabled={disabled}

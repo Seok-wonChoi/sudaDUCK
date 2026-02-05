@@ -1,7 +1,7 @@
 .Section {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 32px;
   padding: 24px 0;
 }
 
@@ -14,6 +14,7 @@
 .ProfileImageContainer,
 .DuckImageContainer {
   position: relative;
+  cursor: pointer;
 }
 
 .ProfileImage,
@@ -29,10 +30,23 @@
 .ProfileImage img,
 .DuckImage img {
   border-radius: 50%;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 오리 꾸미기 이미지 호버 효과 */
+.ProfileImageContainer:hover .ProfileImage img,
+.DuckImageContainer:hover .DuckImage img {
+  transform: translateY(-8px) scale(1.08) rotate(-3deg);
+  filter: drop-shadow(0 8px 16px rgba(99, 102, 241, 0.25));
+}
+
+.ProfileImageContainer:active .ProfileImage img,
+.DuckImageContainer:active .DuckImage img {
+  transform: translateY(-4px) scale(1.04) rotate(-1deg);
 }
 
 .DuckImageContainer {
-  margin-left: -16px;
+  margin-left: 0px;
 }
 
 .DuckImage {
@@ -53,11 +67,23 @@
 
 .ProfileAccessory {
   position: absolute;
-  top: -6px;
+  top: -10px; /* ✅ 정상 px + 50px 아바타 기준 */
   left: 50%;
-  transform: translateX(-50%);
-  font-size: 22px;
+  transform: translate(-50%, 0);
+  font-size: 18px;
+  line-height: 1;
   pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 악세서리도 함께 호버링 */
+.ProfileImageContainer:hover .ProfileAccessory {
+  transform: translate(-50%, 0) translateY(-8px) scale(1.08) rotate(-3deg);
+  filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.2));
+}
+
+.ProfileImageContainer:active .ProfileAccessory {
+  transform: translate(-50%, 0) translateY(-4px) scale(1.04) rotate(-1deg);
 }
 
 .EditButton {
@@ -89,7 +115,7 @@
   flex: 1;
   background: linear-gradient(135deg, #7c3aed 0%, #c026d3 100%);
   border-radius: 16px;
-  padding: 20px 24px;
+  padding: 20px 24px 20px 18px;
   color: #ffffff;
 }
 
