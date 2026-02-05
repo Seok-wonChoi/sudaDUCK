@@ -577,6 +577,13 @@ console.log(`📤 발음 평가 전송 시작`, {
     }
   }, [roomCode, leaveSession]);
 
+  // [추가] 내가 방장인지 여부를 participants 리스트를 통해 더 확실하게 판별
+  const amIHost = useMemo(() => {
+    const me = participants.find((p) => String(p.id || p.userId) === String(myUserId));
+    if (me) return me.isHost === true;
+    return roomInfo.isHost === true; // 리스트에서 못 찾을 경우 fallback
+  }, [participants, myUserId, roomInfo.isHost]);
+
   const fetchTurnResults = useCallback(
     async (turnNo = currentTurn) => {
       if (!roomId || !turnNo) {
@@ -1121,7 +1128,7 @@ console.log(`📤 발음 평가 전송 시작`, {
         );
       case STEP.ALL_DONE:
         return (
-          <BottomAllDone onRestart={restart} onComplete={handleComplete} isHost={roomInfo.isHost} />
+          <BottomAllDone onRestart={restart} onComplete={handleComplete} isHost={amIHost} />
         );
       default:
         return null;
