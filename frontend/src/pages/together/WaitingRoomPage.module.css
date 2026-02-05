@@ -125,6 +125,12 @@
   line-height: 1.45;
 }
 
+.TopicHighlight {
+  color: #2b7fff;
+  font-weight: 900;
+  padding: 0 2px;
+}
+
 /* 참여자 카드 */
 .ParticipantsCard {
   margin-top: 18px;
@@ -190,27 +196,31 @@
 .RoomInfoText {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px; /* 간격 확대 */
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: 14px; /* 12px -> 14px */
   justify-content: center;
   flex: 1;
+  background: rgba(243, 244, 246, 0.5); /* 연한 배경 추가로 구분감 부여 */
+  padding: 8px 16px;
+  border-radius: 99px;
 }
 
 .RoomInfoLabel {
-  font-weight: 700;
-  color: #6b7280;
+  font-weight: 800;
+  color: #4b5563; /* 조금 더 진한 회색 */
 }
 
 .RoomInfoValue {
   font-weight: 900;
   color: #111827;
+  padding: 0 2px;
 }
 
 .RoomInfoSeparator {
-  color: #d1d5db;
+  color: #cbd5e1;
   font-weight: 400;
-  margin: 0 4px;
+  margin: 0 6px;
 }
 
 /* 참여 코드 박스 */
