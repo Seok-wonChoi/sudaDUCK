@@ -1065,7 +1065,7 @@ console.log(`📤 발음 평가 전송 시작`, {
                 : "참여자를 기다리고 있습니다."}
             </div>
 
-            {isHost ? (
+            {roomInfo.isHost ? (
               <button
                 onClick={handleStartNextTurn}
                 disabled={!allReady && participants.length > 1}
