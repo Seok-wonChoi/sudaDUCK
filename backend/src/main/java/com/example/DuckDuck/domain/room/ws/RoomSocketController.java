@@ -156,6 +156,33 @@ public class RoomSocketController {
         }
     }
 
+    /**
+     * 미니게임 문제 브로드캐스트 (방장만 호출)
+     * client SEND: /app/rooms/{roomCode}/minigame/questions
+     * server BROADCAST: /topic/rooms/{roomCode}
+     */
+    @MessageMapping("/rooms/{roomCode}/minigame/questions")
+    public void broadcastQuestions(@DestinationVariable String roomCode,
+                                   @Payload MiniGameQuestionsMessage payload,
+                                   Principal principal) {
+        try {
+            Member member = requireMember(principal);
+            String senderKey = String.valueOf(member.getId());
+
+            System.out.println("📤 문제 브로드캐스트: roomCode=" + roomCode +
+                    ", 문제수=" + (payload.getQuestions() != null ? payload.getQuestions().size() : 0));
+
+            // 모든 참가자에게 문제 데이터 브로드캐스트
+            roomSocketService.broadcast(roomCode,
+                    RoomWsMessage.of(WsType.MINIGAME_QUESTIONS_READY, roomCode, senderKey, payload));
+
+        } catch (Exception e) {
+            String fallback = (principal != null) ? principal.getName() : "anonymous";
+            roomSocketService.broadcast(roomCode,
+                    RoomWsMessage.of(WsType.ERROR, roomCode, fallback, e.getMessage()));
+        }
+    }
+
     private Member requireMember(Principal principal) {
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new IllegalArgumentException("인증 정보(principal)가 없습니다.");
