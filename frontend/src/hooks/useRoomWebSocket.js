@@ -222,6 +222,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               onQuizResultReceived,
               onUnexpectedQuestReceived,
               onQuestContinueReady,
+              onMiniGameStart,
               onError,
             } = handlersRef.current;
 
