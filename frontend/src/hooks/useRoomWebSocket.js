@@ -150,6 +150,24 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     [roomCode],
   );
 
+  const sendMiniGameStart = useCallback(() => {
+    const client = clientRef.current;
+    if (!client?.connected) {
+      console.warn("[WebSocket] sendMiniGameStart 실패: 연결되지 않음");
+      return;
+    }
+
+    console.log("[WebSocket] sendMiniGameStart 전송:", {
+      roomCode,
+      destination: `/app/rooms/${roomCode}/minigame/start`,
+    });
+
+    client.publish({
+      destination: `/app/rooms/${roomCode}/minigame/start`,
+      body: JSON.stringify({}),
+    });
+  }, [roomCode]);
+
   useEffect(() => {
     if (!roomCode) return;
 
@@ -222,6 +240,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               onQuizResultReceived,
               onUnexpectedQuestReceived,
               onQuestContinueReady,
+              onMiniGameStart,
               onError,
             } = handlersRef.current;
 
@@ -528,6 +547,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     sendEndRoom, 
     sendUnexpectedQuest, 
     sendQuestContinueReady, 
+    sendMiniGameStart,
     isConnected,
     participants,
     voiceLevels

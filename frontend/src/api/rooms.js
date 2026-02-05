@@ -32,7 +32,9 @@ export async function getTopics() {
 
 // 방장 방 상태 편집하기: PATCH /api/v1/rooms/{roomCode}/settings
 export async function updateRoomSettings(roomCode, settings) {
-  const { data } = await api.patch(`/api/v1/rooms/${roomCode}/settings`, settings);
+  // 백엔드 명세에 없는 필드가 포함되어 에러가 날 수 있으므로 필터링 (안전장치)
+  const { title, topic, turnCnt } = settings;
+  const { data } = await api.patch(`/api/v1/rooms/${roomCode}/settings`, { title, topic, turnCnt });
   return data;
 }
 

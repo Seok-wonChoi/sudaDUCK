@@ -5,6 +5,9 @@
 }
 
 .Preview {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   background: #f9fafb;
   border-radius: 16px;
   padding: 40px 20px;

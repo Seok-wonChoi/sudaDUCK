@@ -138,11 +138,11 @@ export default function RecordingPage() {
     );
   }, [roomInfo]);
 
-  // 방장 여부 확인 (participants 정보 또는 초기 roomInfo 정보 활용)
-  const isHost = useMemo(() => {
+  // [추가] 내가 방장인지 여부를 participants 리스트를 통해 더 확실하게 판별
+  const amIHost = useMemo(() => {
     const me = participants.find((p) => String(p.id || p.userId) === String(myUserId));
-    if (me && typeof me.isHost === 'boolean') return me.isHost;
-    return roomInfo.isHost === true;
+    if (me) return me.isHost === true;
+    return roomInfo.isHost === true; // 리스트에서 못 찾을 경우 fallback
   }, [participants, myUserId, roomInfo.isHost]);
 
   // 모든 참여자(방장 제외)가 준비되었는지 확인
@@ -359,33 +359,20 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   // 미니게임 시작 신호 수신 핸들러
   const handleMiniGameStart = useCallback(() => {
-    console.log('🎮 미니게임 시작!');
+    console.log('🎮 모든 참여자 미니게임으로 이동 시작');
     navigate("/minigame1", { 
       state: { 
         roomId: roomId,
         roomCode: roomCode,
-        isHost: roomInfo.isHost || false,
-        participantsCount: participants.length
+        isHost: amIHost, 
+        participantsCount: participants.length,
+        timeLimit: roomInfo.timeLimit || 40
       } 
     });
-  }, [navigate, roomId, roomCode, roomInfo.isHost, participants.length]);
+  }, [navigate, roomId, roomCode, amIHost, participants.length, roomInfo.timeLimit]);
 
   const handleComplete = () => {
-    // 방장만 시작 신호 전송
-    if (roomInfo.isHost) {
-      console.log('🎮 [방장] 미니게임 시작 신호 전송');
-      
-      const stompClient = window.stompClient;
-      if (stompClient && stompClient.connected) {
-        stompClient.publish({
-          destination: `/app/rooms/${roomCode}/minigame/start`,
-          body: JSON.stringify({})
-        });
-      } else {
-        console.error('❌ WebSocket 연결 안 됨');
-        alert('연결 오류가 발생했습니다.');
-      }
-    }
+    console.log("🎮 미니게임 시작 신호는 handleStartNextTurn에서 처리됩니다.");
   };
 
   // [수정] 북마크 토글: scriptId 기준으로 동작하도록 수정
@@ -451,7 +438,7 @@ console.log(`📤 발음 평가 전송 시작`, {
     });
   }, [navigate, leaveSession]);
 
-  const { sendReady, isConnected } = useRoomWebSocket(
+  const { sendReady, sendMiniGameStart, isConnected } = useRoomWebSocket(
     roomCode,
     {
       onRoomClosed: handleRoomClosed,
@@ -482,10 +469,10 @@ console.log(`📤 발음 평가 전송 시작`, {
         console.log("[RecordingPage] 🎮 ROOM_STARTED 수신 - 단계 이동 시작");
         if (hasNavigatedRef.current) return;
 
-        // 마지막 턴인 경우: 모든 참여자가 동시에 ALL_DONE 단계로 진입
+        // 마지막 턴인 경우: 더 이상 TogetherTalkPage로 이동하지 않고 
+        // handleStartNextTurn(sendMiniGameStart)에 의해 미니게임으로 이동하게 됨
         if (currentTurn >= TURNS) {
-          console.log("[RecordingPage] 마지막 턴 종료 -> 전원 ALL_DONE 단계로 전환");
-          setStep(STEP.ALL_DONE);
+          console.log("[RecordingPage] 마지막 턴 리포트 완료 대기 중...");
           return;
         }
 
@@ -497,8 +484,6 @@ console.log(`📤 발음 평가 전송 시작`, {
           currentTurn: nextTurn,
           roomInfo: {
             ...roomInfo,
-            roomId: roomId,
-            roomCode: roomCode,
             currentTurn: nextTurn,
           },
           myUserId,
@@ -523,34 +508,66 @@ console.log(`📤 발음 평가 전송 시작`, {
   );
 
   const handleReady = useCallback(async () => {
+    console.log("[RecordingPage] 🔘 handleReady 호출:", {
+      isConnected,
+      isReady,
+      roomCode,
+      myUserId,
+      hasToken: !!localStorage.getItem("accessToken")
+    });
+
     if (!isConnected) {
       showToast("서버와 연결되지 않았습니다.");
       return;
     }
     const nextReady = !isReady;
     try {
+      console.log("[RecordingPage] 📡 toggleReady API 호출 시작:", { roomCode, nextReady });
       await toggleReady(roomCode, nextReady);
+      console.log("[RecordingPage] ✅ toggleReady API 호출 성공");
+
       setIsReady(nextReady);
       if (sendReady) sendReady(nextReady);
       setParticipants((prev) =>
         prev.map((p) => (String(p.id || p.userId) === String(myUserId) ? { ...p, isReady: nextReady } : p))
       );
     } catch (e) {
+      console.error("[RecordingPage] ❌ toggleReady API 호출 실패:", e);
+      console.error("[RecordingPage] 에러 상세:", {
+        status: e.response?.status,
+        statusText: e.response?.statusText,
+        data: e.response?.data,
+        headers: e.response?.headers
+      });
       showToast("준비 상태 변경에 실패했습니다.");
     }
   }, [isConnected, isReady, roomCode, sendReady, myUserId, showToast]);
 
   const handleStartNextTurn = useCallback(async () => {
+    if (!amIHost) return;
     if (!allReady && participants.length > 1) {
       showToast("모든 참여자가 준비되어야 합니다.");
       return;
     }
+
+    const isLastTurn = currentTurn >= TURNS;
+
     try {
-      await startRoom(roomCode);
+      if (isLastTurn) {
+        console.log("🎮 [방장] 마지막 턴 완료 - 미니게임 시작 신호 전송");
+        if (sendMiniGameStart) {
+          sendMiniGameStart();
+        } else {
+          console.error("❌ sendMiniGameStart 함수가 없습니다.");
+        }
+      } else {
+        console.log("↻ [방장] 다음 턴 시작 API 호출");
+        await startRoom(roomCode);
+      }
     } catch (e) {
-      showToast("다음 턴 시작에 실패했습니다.");
+      showToast(isLastTurn ? "미니게임 시작에 실패했습니다." : "다음 턴 시작에 실패했습니다.");
     }
-  }, [allReady, roomCode, showToast, participants.length]);
+  }, [allReady, roomCode, showToast, participants.length, amIHost, currentTurn, TURNS, sendMiniGameStart]);
 
   const handleLogoExit = useCallback(async () => {
     // 👇 진짜 방을 나갈 때는 세션 종료
@@ -1072,7 +1089,7 @@ console.log(`📤 발음 평가 전송 시작`, {
                 : "참여자를 기다리고 있습니다."}
             </div>
 
-            {isHost ? (
+            {amIHost ? (
               <button
                 onClick={handleStartNextTurn}
                 disabled={!allReady && participants.length > 1}
@@ -1087,7 +1104,7 @@ console.log(`📤 발음 평가 전송 시작`, {
                   cursor: (!allReady && participants.length > 1) ? "not-allowed" : "pointer",
                 }}
               >
-                다음 단계로
+                {currentTurn >= TURNS ? "복습 게임 시작" : "다음 단계로"}
               </button>
             ) : (
               <button
@@ -1110,7 +1127,7 @@ console.log(`📤 발음 평가 전송 시작`, {
         );
       case STEP.ALL_DONE:
         return (
-          <BottomAllDone onRestart={restart} onComplete={handleComplete} isHost={roomInfo.isHost} />
+          <BottomAllDone onRestart={restart} onComplete={handleComplete} isHost={amIHost} />
         );
       default:
         return null;

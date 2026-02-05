@@ -293,6 +293,51 @@
   color: #111827;
 }
 
+.Stepper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(243, 244, 246, 0.7);
+  padding: 8px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(229, 231, 235, 1);
+  width: fit-content;
+}
+
+.StepButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.StepButton:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.StepButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.StepValue {
+  font-size: 16px;
+  font-weight: 900;
+  color: #111827;
+  min-width: 60px;
+  text-align: center;
+}
+
 .PrimaryButton {
   width: 100%;
   height: 46px;

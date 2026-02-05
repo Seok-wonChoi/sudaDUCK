@@ -1,6 +1,8 @@
-
-import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { OpenViduProvider } from "@/context/OpenViduContext";
+import useClickSound from "@/hooks/useClickSound";
+
 import LandingPage from "./pages/landing/LandingPage";
 import OAuth2RedirectHandler from "./pages/auth/OAuth2RedirectHandler";
 import MainPage from "./pages/main/MainPage";
@@ -19,31 +21,50 @@ import MiniGame2Page from "./pages/minigame/MiniGame2Page";
 import VoiceRoom from "./pages/together/VoiceRoom";
 
 export default function App() {
+  useEffect(() => {
+    document.body.classList.add("duck-cursor");
+    return () => document.body.classList.remove("duck-cursor");
+  }, []);
+
+  const { pathname } = useLocation();
+
+  // ❌ 클릭 효과음 "안 되는" 페이지들 (prefix 기준)
+  const clickSoundDisabledPrefixes = [
+    "/together/waiting",
+    "/together/talk",
+    "/minigame",   // /minigame1, /minigame2 등 확장 대응
+  ];
+
+  const clickSoundEnabled = !clickSoundDisabledPrefixes.some((p) =>
+    pathname.startsWith(p)
+  );
+
+  useClickSound(clickSoundEnabled, { volume: 0.22 });
+
   return (
     <OpenViduProvider>
       <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-      <Route path="/main" element={<MainPage />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+        <Route path="/main" element={<MainPage />} />
 
-      <Route path="/practice" element={<PracticePage />} />
-      <Route path="/practice/solo" element={<SoloPracticePage />} />
-      <Route path="/practice/ai" element={<AiPracticePage />} />
+        <Route path="/practice" element={<PracticePage />} />
+        <Route path="/practice/solo" element={<SoloPracticePage />} />
+        <Route path="/practice/ai" element={<AiPracticePage />} />
 
-      <Route path="/together" element={<TogetherPage />} />
-      <Route path="/together/make" element={<MakeRoomPage />} />
-      <Route path="/together/join" element={<JoinRoomPage />} />
-      <Route path="/together/waiting" element={<WaitingRoomPage />} />
-      <Route path="/together/talk" element={<TogetherTalkPage />} />
+        <Route path="/together" element={<TogetherPage />} />
+        <Route path="/together/make" element={<MakeRoomPage />} />
+        <Route path="/together/join" element={<JoinRoomPage />} />
+        <Route path="/together/waiting" element={<WaitingRoomPage />} />
+        <Route path="/together/talk" element={<TogetherTalkPage />} />
 
-      <Route path="/recording" element={<RecordingPage />} />
+        <Route path="/recording" element={<RecordingPage />} />
+        <Route path="/mypage" element={<MyPage />} />
 
-      <Route path="/mypage" element={<MyPage />} />
+        <Route path="/minigame1" element={<MiniGame1Page />} />
+        <Route path="/minigame2" element={<MiniGame2Page />} />
 
-      <Route path="/minigame1" element={<MiniGame1Page />} />
-      <Route path="/minigame2" element={<MiniGame2Page />} />
-
-      <Route path="/test" element={<VoiceRoom />} />
+        <Route path="/test" element={<VoiceRoom />} />
       </Routes>
     </OpenViduProvider>
   );

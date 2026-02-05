@@ -5,12 +5,16 @@
 }
 
 .Preview {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   border-radius: 16px;
   padding: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s ease;
+  background: #ffffff;
 }
 
 .DuckWrapper {
@@ -27,7 +31,7 @@
 
 .Accessory {
   position: absolute;
-  top: -0px;
+  top: 4px;
   left: 52%;
   transform: translateX(-50%);
   font-size: 32px;

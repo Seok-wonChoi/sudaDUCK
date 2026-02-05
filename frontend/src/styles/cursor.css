@@ -1,0 +1,5 @@
+/* 전역 커서 */
+body.duck-cursor,
+body.duck-cursor * {
+  cursor: url("/src/assets/icons/duck-cursor.png") 10 10, auto;
+}

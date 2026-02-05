@@ -58,7 +58,7 @@ export default function RoomUI({
   topic = "좋아하는 음식",
   rightTitle = "AI 설명",
   rightBody = "편하게 말해보세요.",
-  durationMs = 15_000,
+  durationMs = 40000,
   onTimeDone,
   exitTo = "/",
   exitMessage = "정말 나가시겠습니까?",

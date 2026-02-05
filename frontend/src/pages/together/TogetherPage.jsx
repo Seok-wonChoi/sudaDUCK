@@ -104,6 +104,7 @@ export default function TogetherPage() {
               iconSrc={makeRoomIcon}
               iconAlt="방 만들기"
               onClick={handleMakeRoom}
+              variant="make"
             />
             <ActionCard
               title="참여하기"

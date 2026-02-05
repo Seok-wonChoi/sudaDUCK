@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./AppHeader.module.css";
-import gearIcon from "@/assets/icons/gear.png";
+import { Settings } from "lucide-react";
 import duckLogo from "@/assets/images/duck_logo.png";
 
 import duckProfile1 from "@/assets/images/duck_profile1.png";
@@ -235,7 +235,7 @@ export default function AppHeader({
             aria-label="설정"
             aria-expanded={settingsOpen}
           >
-            <img className={styles.IconImage} src={gearIcon} alt="" />
+            <Settings className={styles.IconSvg} />
           </button>
 
           {settingsOpen && (
