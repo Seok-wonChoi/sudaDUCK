@@ -137,13 +137,6 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // ✅ FormData는 재시도 불가 (그냥 실패로 처리)
-      if (originalRequest.data instanceof FormData) {
-        console.warn("[API] FormData 401 에러 - 재시도 불가");
-        // 백엔드가 처리 중일 수 있으므로 alert 제거
-        return Promise.reject(error);
-      }
-
       originalRequest._retry = true;
 
       try {
