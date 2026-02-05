@@ -138,13 +138,6 @@ export default function RecordingPage() {
     );
   }, [roomInfo]);
 
-  // 방장 여부 확인 (participants 정보 또는 초기 roomInfo 정보 활용)
-  const isHost = useMemo(() => {
-    const me = participants.find((p) => String(p.id || p.userId) === String(myUserId));
-    if (me && typeof me.isHost === 'boolean') return me.isHost;
-    return roomInfo.isHost === true;
-  }, [participants, myUserId, roomInfo.isHost]);
-
   // 모든 참여자(방장 제외)가 준비되었는지 확인
   const allReady = useMemo(() => {
     const nonHostParticipants = participants.filter((p) => !p.isHost);
