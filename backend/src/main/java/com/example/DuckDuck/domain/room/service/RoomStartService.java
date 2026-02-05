@@ -135,7 +135,7 @@ public class RoomStartService {
         //====== redis에 topic과 member id-name 정보 저장 ======
 
         //이전 게임의 잔재(스크립트, 점수, 리뷰 문제 등) redis 데이터 삭제
-        miniGameService.clearReviewData(roomId);
+//        miniGameService.clearReviewData(roomId);
 
         String topicKey = "room:"+roomId + ":topic";
         String memberNamesKey = "room:" + roomId +":member";
