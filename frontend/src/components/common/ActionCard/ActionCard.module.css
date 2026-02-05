@@ -46,12 +46,12 @@
 
 /* 아이콘 이미지 호버 효과 */
 .Card:hover .Icon {
-  transform: translateY(-12px) scale(1.08) rotate(-3deg);
+  transform: translateY(-12px) scale(1.08) rotate(3deg);
   filter: drop-shadow(0 8px 16px rgba(99, 102, 241, 0.25));
 }
 
 .Card:active .Icon {
-  transform: translateY(-6px) scale(1.04) rotate(-1deg);
+  transform: translateY(-6px) scale(1.04) rotate(1deg);
 }
 
 /* 방 만들기 카드 파란색 그림자 */

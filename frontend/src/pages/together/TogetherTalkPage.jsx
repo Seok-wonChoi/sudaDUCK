@@ -2056,7 +2056,7 @@ const stopSTT = useCallback(() => {
             <div className={styles.TopicRow}>
               <img className={styles.SmallDuck} src={duckImg} alt="오리" />
               <div className={styles.TopicBubble}>
-                첫 번째 대화 주제는 {topic}입니다!
+                대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다!
               </div>
             </div>
 

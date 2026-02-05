@@ -89,13 +89,17 @@
   border: 1px solid #e8edf6;
   border-radius: clamp(12px, 1.5vw, 16px);
   padding: clamp(10px, 1.2vw, 12px) clamp(12px, 1.5vw, 16px);
-  font-size: clamp(12px, 1.3vw, 13px);
+  font-size: 14px;
   font-weight: 900;
   color: #111827;
   box-shadow: 0 14px 26px rgba(17, 24, 39, 0.10);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.TopicHighlight {
+  color: #2b7fff;
+  font-weight: 900;
+  padding: 0 2px;
 }
 
 .Stage {

@@ -101,7 +101,7 @@ export default function RoomUI({
         </div>
 
         <div className={styles.TopicRow}>
-          <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다.</div>
+          <div className={styles.TopicBubble}>대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다.</div>
         </div>
 
         <main className={styles.Main}>

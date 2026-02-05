@@ -1275,7 +1275,7 @@ export default function WaitingRoomPage() {
           <div className={styles.TopHeaderRow}>
             <div className={styles.SpeechRight}>
               <div className={styles.SpeechBubbleRight}>
-                첫 번째 대화 주제는 {topic}입니다!
+                대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다!
               </div>
               <img className={styles.Duck} src={duckImg} alt="오리" />
             </div>
@@ -1562,83 +1562,6 @@ export default function WaitingRoomPage() {
                     ) : (
                       "AI 추천"
                     )}
-                  </button>
-                </div>
-
-                <div className={styles.PopupHotRow}>
-                  <span className={styles.PopupHotDot} aria-hidden="true" />
-                  <span className={styles.PopupHotText}>인기 주제</span>
-                </div>
-
-                <div className={styles.PopupTopicRow}>
-                  {hotTopics.map((t) => {
-                    const active = editTopic === t;
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        className={`${styles.PopupTopicChip} ${ 
-                          active ? styles.PopupTopicChipActive : ""
-                        }`}
-                        onClick={() => handlePickEditTopic(t)}
-                      >
-                        {t}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className={styles.PopupField}>
-                <div className={styles.PopupLabelRow}>
-                  <span className={styles.PopupLabel}>턴 수</span>
-                </div>
-                <div className={styles.PopupTurnRow}>
-                  {[3, 4, 5].map((n) => {
-                    const active = editTurn === n;
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        className={`${styles.PopupTurnCard} ${ 
-                          active ? styles.PopupTurnCardActive : ""
-                        }`}
-                        onClick={() => setEditTurn(n)}
-                      >
-                        <span
-                          className={styles.PopupTurnIcon}
-                          aria-hidden="true"
-                        >
-                          ↻
-                        </span>
-                        <span className={styles.PopupTurnText}>{n}턴</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className={styles.PopupField}>
-                <div className={styles.PopupLabelRow}>
-                  <span className={styles.PopupLabel}>타이머 시간 (초)</span>
-                </div>
-                <div className={styles.PopupStepper}>
-                  <button
-                    type="button"
-                    className={styles.PopupStepButton}
-                    onClick={() => setEditTimeLimit(Math.max(15, editTimeLimit - 5))}
-                    disabled={editTimeLimit <= 15}
-                  >
-                    -
-                  </button>
-                  <span className={styles.PopupStepValue}>{editTimeLimit}초</span>
-                  <button
-                    type="button"
-                    className={styles.PopupStepButton}
-                    onClick={() => setEditTimeLimit(Math.min(60, editTimeLimit + 5))}
-                    disabled={editTimeLimit >= 60}
-                  >
-                    +
                   </button>
                 </div>
               </div>

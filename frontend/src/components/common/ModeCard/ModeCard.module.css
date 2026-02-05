@@ -26,12 +26,12 @@
 }
 
 .CardTogether:hover .DuckTogether {
-  transform: translateY(-12px) scale(1.08) rotate(-3deg);
+  transform: translateY(-12px) scale(1.08) rotate(3deg);
   filter: drop-shadow(0 8px 16px rgba(99, 102, 241, 0.25));
 }
 
 .CardTogether:active .DuckTogether {
-  transform: translateY(-6px) scale(1.04) rotate(-1deg);
+  transform: translateY(-6px) scale(1.04) rotate(1deg);
 }
 
 .ImageWrap {
