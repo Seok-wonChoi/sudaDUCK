@@ -12,7 +12,6 @@ import CoinRewardNotification from '@/components/features/minigame/CoinReward/Co
 import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewData } from '@/api/miniGame';
 import { leaveRoom, getRoomLobby } from '@/api/rooms';
 import useMicAnalyzer from '@/hooks/useMicAnalyzer';
-import useRoomWebSocket from '@/hooks/useRoomWebSocket';
 
 const GAME_PHASE = {
   COUNTDOWN: 'countdown',
@@ -83,7 +82,6 @@ export default function MiniGame1Page() {
   const [participants, setParticipants] = useState([]);
   const [submittedCount, setSubmittedCount] = useState(0);
   const [totalParticipants, setTotalParticipants] = useState(initialParticipantsCount);
-  const [waitingForQuestions, setWaitingForQuestions] = useState(!isHost); // 방장 아니면 대기
 
   // 마이크 분석기 - 음성 레벨 감지
   const { isSpeaking, voiceLevel, start: startMic, stop: stopMic } = useMicAnalyzer({
@@ -126,7 +124,7 @@ export default function MiniGame1Page() {
     return () => clearTimeout(timeout);
   }, [isSpeaking, voiceLevel, lastVoiceUpdate]);
 
-  // 방 참가자 정보 초기 로드
+  // 🔥 문제 5 해결: 방 참가자 정보 초기 로드
   useEffect(() => {
     const loadRoomParticipants = async () => {
       if (!roomCode) return;
@@ -160,7 +158,7 @@ export default function MiniGame1Page() {
     loadRoomParticipants();
   }, [roomCode]);
 
-  // 대기 중 제출 상태 확인 (3초마다)
+  // 🔥 문제 3 해결: 대기 중 제출 상태 확인 (3초마다)
   useEffect(() => {
     if (phase !== GAME_PHASE.WAITING) return;
 
@@ -171,12 +169,12 @@ export default function MiniGame1Page() {
         console.log('📊 대기 상태 확인:', {
           rankingData: rankingData.length,
           totalParticipants,
-          제출여부: rankingData.map(r => ({ 이름: r.nickname, 점수: r.score, 제출: r.hasSubmitted }))
+          제출여부: rankingData.map(r => ({ 이름: r.nickname, 점수: r.score }))
         });
         
         if (rankingData && Array.isArray(rankingData)) {
-          // ✅ 제출한 사람 수 계산 (hasSubmitted가 true인 사람만)
-          const submittedUsers = rankingData.filter(r => r.hasSubmitted === true);
+          // 제출한 사람 수 계산 (점수가 있는 사람)
+          const submittedUsers = rankingData.filter(r => r.score > 0 || r.hasSubmitted);
           setSubmittedCount(submittedUsers.length);
           
           // 랭킹 데이터로 참가자 정보 업데이트
@@ -207,9 +205,8 @@ export default function MiniGame1Page() {
             return Array.from(updatedMap.values());
           });
           
-          // ✅ 모든 참가자가 제출했으면 결과 화면으로
-          if (submittedUsers.length >= totalParticipants && totalParticipants > 0) {
-            console.log('✅ 모든 참가자 제출 완료 - 결과 화면으로 이동');
+          // 모든 참가자가 제출했으면 결과 화면으로
+          if (rankingData.length >= totalParticipants && totalParticipants > 0) {
             setRankings(rankingData);
             setPhase(GAME_PHASE.RESULT);
           }
@@ -225,59 +222,6 @@ export default function MiniGame1Page() {
     return () => clearInterval(interval);
   }, [phase, roomId, totalParticipants]);
 
-  // WebSocket: 문제 데이터 수신 핸들러
-  const handleQuestionsReady = useCallback((payload) => {
-    console.log('📥 문제 데이터 수신:', payload);
-    
-    if (!payload || !payload.questions) {
-      console.error('❌ 문제 데이터 없음');
-      return;
-    }
-    
-    // 받은 문제 데이터 처리
-    const receivedQuestions = payload.questions;
-    
-    // 유효성 검증 및 포맷팅
-    const formattedQuestions = receivedQuestions
-      .filter(item => {
-        if (!item.blank_script || !item.korean || !item.english) return false;
-        const hasBlanks = item.blank_script.includes('[') && item.blank_script.includes(']');
-        return hasBlanks;
-      })
-      .map(item => {
-        const { parts, answers } = parseBlankScript(item.blank_script);
-        
-        if (answers.length === 0) return null;
-        
-        return {
-          scriptId: item.scriptId,
-          korean: item.korean,
-          english: item.english,
-          englishParts: parts,
-          blanks: answers.map((ans) => ({ answer: ans.trim() })),
-        };
-      })
-      .filter(Boolean);
-    
-    console.log('✅ 포맷팅된 문제:', formattedQuestions);
-    
-    setQuestions(formattedQuestions);
-    initQuestion(0, formattedQuestions);
-    setWaitingForQuestions(false);
-    setIsLoading(false);
-    
-  }, []);
-
-  // WebSocket 연결
-  useRoomWebSocket(
-    roomCode,
-    {
-      onMiniGameQuestionsReady: handleQuestionsReady,
-    },
-    roomId
-  );
-
-  // 문제 가져오기 (방장만 실행)
   useEffect(() => {
     const fetchData = async () => {
       if (!roomId) {
@@ -286,18 +230,12 @@ export default function MiniGame1Page() {
         return;
       }
 
-      if (!isHost) {
-        console.log('🔄 방장 아님 - 문제 대기 중...');
-        return; // 방장 아니면 실행 안 함
-      }
-
       try {
         setIsLoading(true);
-        console.log('👑 [방장] 문제 요청 시작');
 
         const questionsData = await getReviewQuestions(roomId);
         
-        console.log('📊 [방장] 받아온 문제:', questionsData);
+        console.log('📊 받아온 문제 데이터:', questionsData);
 
         // 유효한 문제 필터링
         const validQuestions = questionsData.filter(
@@ -313,31 +251,8 @@ export default function MiniGame1Page() {
           }
         );
 
-        console.log('📊 [방장] 유효한 문제:', validQuestions.length);
+        console.log('📊 필터링 후 문제 수:', validQuestions.length);
 
-        if (validQuestions.length === 0) {
-          console.error('유효한 문제가 없습니다');
-          alert('문제를 불러올 수 없습니다.');
-          navigate('/together');
-          return;
-        }
-
-        // WebSocket으로 모든 참가자에게 브로드캐스트
-        const stompClient = window.stompClient;
-        if (stompClient && stompClient.connected) {
-          console.log('📤 [방장] 문제 브로드캐스트');
-          
-          stompClient.publish({
-            destination: `/app/rooms/${roomCode}/minigame/questions`,
-            body: JSON.stringify({
-              questions: validQuestions
-            })
-          });
-        } else {
-          console.error('❌ WebSocket 연결 안 됨');
-        }
-
-        // 방장도 문제 표시
         const formattedQuestions = validQuestions.map((item) => {
           const { parts, answers } = parseBlankScript(item.blank_script);
 
@@ -355,22 +270,27 @@ export default function MiniGame1Page() {
           };
         }).filter(Boolean);
 
-        console.log('✅ [방장] 최종 문제:', formattedQuestions);
+        console.log('✅ 최종 문제 목록:', formattedQuestions);
+
+        if (formattedQuestions.length === 0) {
+          console.error('유효한 문제가 없습니다');
+          alert('문제를 불러올 수 없습니다.');
+          navigate('/together');
+          return;
+        }
 
         setQuestions(formattedQuestions);
         initQuestion(0, formattedQuestions);
         setIsLoading(false);
-        
       } catch (error) {
-        console.error('❌ [방장] 문제 가져오기 실패:', error);
+        console.error('❌ 데이터 가져오기 실패:', error);
         setIsLoading(false);
-        alert('문제를 불러올 수 없습니다.');
         navigate('/together');
       }
     };
 
     fetchData();
-  }, [roomId, isHost, roomCode, navigate]);
+  }, [roomId, navigate]);
 
   const initQuestion = useCallback((qIdx, qs = questions) => {
     const q = qs[qIdx];
@@ -493,23 +413,17 @@ export default function MiniGame1Page() {
   }, [currentQuestion, currentBlank, questions, blanksState, answeredQuestions, initQuestion]);
 
   const handleTimeUp = useCallback(() => {
-    // ✅ 수정: 현재 문제 + 나머지 안 푼 문제 모두 추가
     const finalAnswers = [...answeredQuestions];
     
-    // 현재 문제부터 끝까지 모든 문제를 빈 답변으로 추가
-    for (let i = currentQuestion; i < questions.length; i++) {
-      const q = questions[i];
-      
-      // 현재 문제라면 입력한 답변 사용, 아니면 빈 답변
-      const isCurrentQuestion = i === currentQuestion;
-      
+    if (currentQuestion < questions.length) {
+      const q = questions[currentQuestion];
       const answered = {
         scriptId: q.scriptId,
         koreanSentence: q.korean,
         englishSentence: q.english,
         englishParts: q.englishParts,
         blanks: q.blanks.map((b, idx) => {
-          const userAns = isCurrentQuestion ? (blanksState[idx]?.value || '') : '';
+          const userAns = blanksState[idx]?.value || '';
           const correctAns = b.answer;
           const isCorrect = userAns.trim().toLowerCase() === correctAns.trim().toLowerCase();
           return {
@@ -519,11 +433,8 @@ export default function MiniGame1Page() {
           };
         }),
       };
-      
       finalAnswers.push(answered);
     }
-
-    console.log('⏰ 시간 종료 - 모든 문제 제출:', finalAnswers);
 
     submitAnswers(finalAnswers);
   }, [answeredQuestions, currentQuestion, questions, blanksState]);
@@ -575,25 +486,11 @@ export default function MiniGame1Page() {
     }
   };
 
-  if (isLoading || waitingForQuestions) {
+  if (isLoading) {
     return (
       <MiniGameLayout>
         <div style={{ textAlign: 'center', padding: '2rem' }}>
-          {isHost ? (
-            <>
-              <div>문제를 불러오는 중...</div>
-              <div style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#666' }}>
-                모든 참가자에게 문제를 전송합니다
-              </div>
-            </>
-          ) : (
-            <>
-              <div>방장이 문제를 준비하는 중...</div>
-              <div style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#666' }}>
-                잠시만 기다려주세요
-              </div>
-            </>
-          )}
+          로딩 중...
         </div>
       </MiniGameLayout>
     );
