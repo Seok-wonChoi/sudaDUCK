@@ -190,6 +190,10 @@ public class MiniGameService {
         String scoreKey = "room:" + roomId + ":review:scores";
         redisTemplate.opsForHash().put(scoreKey, userId.toString(), String.valueOf(correctCount));
 
+        // 4. 제출 완료 플래그 저장
+        String submittedKey = "room:" + roomId + ":review:submitted";
+        redisTemplate.opsForHash().put(submittedKey, userId.toString(), "true");
+
         return ReviewSubmitResponse.builder()
                 .correctCount(correctCount)
                 .totalQuestions(totalQuestions)
@@ -197,10 +201,10 @@ public class MiniGameService {
                 .build();
     }
 
-    // ========== 수정 : 전체 참가자 포함 ==========
+    // ========== 수정 : 전체 참가자 포함 + 제출 여부 확인 ==========
     @Transactional
     public List<ReviewRankingResponse> getReviewRanking(Long userId, Long roomId) {
-        // 1. 변경: Room의 전체 참가자 조회 (제출 안 한 사람도 포함)
+        // 1. Room의 전체 참가자 조회
         List<Member> allParticipants = roomParticipantsRepository.findMembersByRoomId(roomId);
 
         if (allParticipants.isEmpty()) {
@@ -211,12 +215,20 @@ public class MiniGameService {
         String scoreKey = "room:" + roomId + ":review:scores";
         Map<Object, Object> scores = redisTemplate.opsForHash().entries(scoreKey);
 
-        // 3. 전체 참가자 기준으로 랭킹 생성 (제출 여부와 관계없이)
+        // 3. 제출 완료 플래그 조회
+        String submittedKey = "room:" + roomId + ":review:submitted";
+        Map<Object, Object> submitted = redisTemplate.opsForHash().entries(submittedKey);
+
+        // 4. 전체 참가자 기준으로 랭킹 생성
         List<ReviewRankingResponse> ranking = new ArrayList<>();
 
         for (Member member : allParticipants) {
             Long memberId = member.getId();
             String scoreStr = (String) scores.get(memberId.toString());
+            String submittedStr = (String) submitted.get(memberId.toString());  // ✅ 추가
+
+            // 제출 여부 확인
+            boolean hasSubmitted = "true".equals(submittedStr);
             int score = scoreStr != null ? Integer.parseInt(scoreStr) : 0;
 
             ranking.add(ReviewRankingResponse.builder()
@@ -225,18 +237,19 @@ public class MiniGameService {
                     .profileImageUrl(member.getProfileImageUrl())
                     .score(score)
                     .isMe(memberId.equals(userId))
+                    .hasSubmitted(hasSubmitted)
                     .build());
         }
 
-        // 4. 점수 높은 순(내림차순)으로 정렬
+        // 5. 점수 높은 순(내림차순)으로 정렬
         ranking.sort(Comparator.comparing(ReviewRankingResponse::getScore).reversed());
 
+        // 6. 코인 보상
         String rewardKey = "room:" + roomId + ":reward:completed";
         Boolean alreadyRewarded = redisTemplate.hasKey(rewardKey);
 
         if (Boolean.FALSE.equals(alreadyRewarded)) {
             rewardCoins(ranking);
-            // 보상 완료 플래그 설정 (예: 1시간 후 만료)
             redisTemplate.opsForValue().set(rewardKey, "true", 1, TimeUnit.HOURS);
         }
 
@@ -271,7 +284,7 @@ public class MiniGameService {
 
     //redis 정보 삭제
     public void clearReviewData(Long roomId) {
-        // 1. 방 단위 문제 리스트 삭제 (변경)
+        // 1. 방 단위 문제 리스트 삭제
         String roomQuestionsKey = "room:" + roomId + ":review:questions";
         redisTemplate.delete(roomQuestionsKey);
 
@@ -279,10 +292,14 @@ public class MiniGameService {
         String scoreKey = "room:" + roomId + ":review:scores";
         redisTemplate.delete(scoreKey);
 
-        // 3. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
+        // 3. 제출 완료 플래그 삭제
+        String submittedKey = "room:" + roomId + ":review:submitted";
+        redisTemplate.delete(submittedKey);
+
+        // 4. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
         List<String> patterns = Arrays.asList(
-                "room:" + roomId + ":turn:*",  // 개별 스크립트 (단수)
-                "room:" + roomId + ":scripts"// 스크립트 묶음 (복수, 혹시 모를 대비)
+                "room:" + roomId + ":turn:*",
+                "room:" + roomId + ":scripts"
         );
         for (String pattern : patterns) {
             Set<String> keys = redisTemplate.keys(pattern);
@@ -344,6 +361,7 @@ public class MiniGameService {
                             .profileImageUrl(m != null ? m.getProfileImageUrl() : null)
                             .score(Integer.parseInt(entry.getValue().toString()))
                             .isMe(entryUserId.equals(userId))
+                            .hasSubmitted(true)
                             .build();
                 })
                 .sorted(Comparator.comparing(ReviewRankingResponse::getScore).reversed())
@@ -370,6 +388,7 @@ public class MiniGameService {
                             .profileImageUrl(m != null ? m.getProfileImageUrl() : null)
                             .score(score)
                             .isMe(uid.equals(currentUserId))
+                            .hasSubmitted(true)
                             .build();
                 })
                 .sorted(Comparator.comparing(ReviewRankingResponse::getScore).reversed())
