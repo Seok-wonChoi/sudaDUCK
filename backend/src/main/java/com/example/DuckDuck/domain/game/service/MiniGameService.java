@@ -200,7 +200,7 @@ public class MiniGameService {
     // ========== 수정 : 전체 참가자 포함 ==========
     @Transactional
     public List<ReviewRankingResponse> getReviewRanking(Long userId, Long roomId) {
-        // 1. Room의 전체 참가자 조회
+        // 1. 변경: Room의 전체 참가자 조회 (제출 안 한 사람도 포함)
         List<Member> allParticipants = roomParticipantsRepository.findMembersByRoomId(roomId);
 
         if (allParticipants.isEmpty()) {
@@ -211,20 +211,12 @@ public class MiniGameService {
         String scoreKey = "room:" + roomId + ":review:scores";
         Map<Object, Object> scores = redisTemplate.opsForHash().entries(scoreKey);
 
-        // 3. ✅ 추가: 제출 완료 플래그 조회
-        String submittedKey = "room:" + roomId + ":review:submitted";
-        Map<Object, Object> submitted = redisTemplate.opsForHash().entries(submittedKey);
-
-        // 4. 전체 참가자 기준으로 랭킹 생성
+        // 3. 전체 참가자 기준으로 랭킹 생성 (제출 여부와 관계없이)
         List<ReviewRankingResponse> ranking = new ArrayList<>();
 
         for (Member member : allParticipants) {
             Long memberId = member.getId();
             String scoreStr = (String) scores.get(memberId.toString());
-            String submittedStr = (String) submitted.get(memberId.toString());  // ← 이 줄 추가!
-
-            // ✅ 제출 여부 확인
-            boolean hasSubmitted = "true".equals(submittedStr);
             int score = scoreStr != null ? Integer.parseInt(scoreStr) : 0;
 
             ranking.add(ReviewRankingResponse.builder()
@@ -233,19 +225,18 @@ public class MiniGameService {
                     .profileImageUrl(member.getProfileImageUrl())
                     .score(score)
                     .isMe(memberId.equals(userId))
-                    .hasSubmitted(hasSubmitted)  // ← 이 줄도 확인
                     .build());
         }
 
         // 4. 점수 높은 순(내림차순)으로 정렬
         ranking.sort(Comparator.comparing(ReviewRankingResponse::getScore).reversed());
 
-        // 6. 코인 보상
         String rewardKey = "room:" + roomId + ":reward:completed";
         Boolean alreadyRewarded = redisTemplate.hasKey(rewardKey);
 
         if (Boolean.FALSE.equals(alreadyRewarded)) {
             rewardCoins(ranking);
+            // 보상 완료 플래그 설정 (예: 1시간 후 만료)
             redisTemplate.opsForValue().set(rewardKey, "true", 1, TimeUnit.HOURS);
         }
 
