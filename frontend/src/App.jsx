@@ -1,4 +1,4 @@
-
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { OpenViduProvider } from "@/context/OpenViduContext";
 import LandingPage from "./pages/landing/LandingPage";
@@ -19,6 +19,10 @@ import MiniGame2Page from "./pages/minigame/MiniGame2Page";
 import VoiceRoom from "./pages/together/VoiceRoom";
 
 export default function App() {
+  useEffect(() => {
+    document.body.classList.add("duck-cursor");
+    return () => document.body.classList.remove("duck-cursor");
+  }, []);
   return (
     <OpenViduProvider>
       <Routes>
