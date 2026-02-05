@@ -23,6 +23,7 @@ public enum WsType {
     ROOM_CLOSED,
 
     MINIGAME_START,
+    MINIGAME_QUESTIONS_READY,
 
     // ERROR
     ERROR

@@ -190,6 +190,10 @@ public class MiniGameService {
         String scoreKey = "room:" + roomId + ":review:scores";
         redisTemplate.opsForHash().put(scoreKey, userId.toString(), String.valueOf(correctCount));
 
+        // 4. 제출 완료 플래그 저장
+        String submittedKey = "room:" + roomId + ":review:submitted";
+        redisTemplate.opsForHash().put(submittedKey, userId.toString(), "true");
+
         return ReviewSubmitResponse.builder()
                 .correctCount(correctCount)
                 .totalQuestions(totalQuestions)
@@ -211,12 +215,20 @@ public class MiniGameService {
         String scoreKey = "room:" + roomId + ":review:scores";
         Map<Object, Object> scores = redisTemplate.opsForHash().entries(scoreKey);
 
-        // 3. 전체 참가자 기준으로 랭킹 생성 (제출 여부와 관계없이)
+        // 3. 제출 완료 플래그 조회
+        String submittedKey = "room:" + roomId + ":review:submitted";
+        Map<Object, Object> submitted = redisTemplate.opsForHash().entries(submittedKey);
+
+        // 4. 전체 참가자 기준으로 랭킹 생성 (제출 여부와 관계없이)
         List<ReviewRankingResponse> ranking = new ArrayList<>();
 
         for (Member member : allParticipants) {
             Long memberId = member.getId();
             String scoreStr = (String) scores.get(memberId.toString());
+            int score = scoreStr != null ? Integer.parseInt(scoreStr) : 0;
+
+            // 제출 여부 확인
+            boolean hasSubmitted = "true".equals(submittedStr);
             int score = scoreStr != null ? Integer.parseInt(scoreStr) : 0;
 
             ranking.add(ReviewRankingResponse.builder()
@@ -228,7 +240,7 @@ public class MiniGameService {
                     .build());
         }
 
-        // 4. 점수 높은 순(내림차순)으로 정렬
+        // 5. 점수 높은 순(내림차순)으로 정렬
         ranking.sort(Comparator.comparing(ReviewRankingResponse::getScore).reversed());
 
         String rewardKey = "room:" + roomId + ":reward:completed";
@@ -279,10 +291,14 @@ public class MiniGameService {
         String scoreKey = "room:" + roomId + ":review:scores";
         redisTemplate.delete(scoreKey);
 
-        // 3. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
+        // 3. 제출 완료 플래그 삭제
+        String submittedKey = "room:" + roomId + ":review:submitted";
+        redisTemplate.delete(submittedKey);
+
+        // 4. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
         List<String> patterns = Arrays.asList(
-                "room:" + roomId + ":turn:*",  // 개별 스크립트 (단수)
-                "room:" + roomId + ":scripts"// 스크립트 묶음 (복수, 혹시 모를 대비)
+                "room:" + roomId + ":turn:*",
+                "room:" + roomId + ":scripts"
         );
         for (String pattern : patterns) {
             Set<String> keys = redisTemplate.keys(pattern);
