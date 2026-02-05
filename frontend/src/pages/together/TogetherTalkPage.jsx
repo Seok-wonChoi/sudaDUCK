@@ -1103,17 +1103,18 @@ export default function TogetherTalkPage() {
     });
 
     // REST API로 방 종료 (이벤트는 백엔드에서 ROOM_ENDED WS로 브로드캐스트됨)
-    try {
-      await endRoom(resolvedRoomCode);
-      console.log(
-        "[TogetherTalkPage] endRoom REST API 성공 - 웹소켓 메시지 대기 중",
-      );
-    } catch (e) {
-      console.error("[TogetherTalkPage] endRoom REST API 실패:", e);
-    }
+    // try {
+    //   await endRoom(resolvedRoomCode);
+    //   console.log(
+    //     "[TogetherTalkPage] endRoom REST API 성공 - 웹소켓 메시지 대기 중",
+    //   );
+    // } catch (e) {
+    //   console.error("[TogetherTalkPage] endRoom REST API 실패:", e);
+    // }
+    handleDone();
 
     // 웹소켓 ROOM_ENDED 메시지를 기다림 (handleRoomEnded에서 모든 참여자가 동시에 /recording으로 이동)
-  }, [isHost, resolvedRoomCode]);
+  }, [isHost, handleDone]);
 
   // ★ handleDone: 타이머 종료 시에도 REST API 호출
   const handleDone = useCallback(async () => {
@@ -1122,19 +1123,19 @@ export default function TogetherTalkPage() {
     const totalTurns = roomInfo.turnCount || roomInfo.turnCnt || 3;
     const isLastTurn = currentTurn >= totalTurns;
 
-    if (isHost) {
-      try {
-        await endRoom(resolvedRoomCode);
-        console.log(
-          "[TogetherTalkPage] endRoom REST API 성공 (타이머 종료) - 웹소켓 메시지 대기 중",
-        );
-      } catch (e) {
-        console.error(
-          "[TogetherTalkPage] endRoom REST API 실패 (타이머 종료):",
-          e,
-        );
-      }
-    }
+    // if (isHost) {
+    //   try {
+    //     await endRoom(resolvedRoomCode);
+    //     console.log(
+    //       "[TogetherTalkPage] endRoom REST API 성공 (타이머 종료) - 웹소켓 메시지 대기 중",
+    //     );
+    //   } catch (e) {
+    //     console.error(
+    //       "[TogetherTalkPage] endRoom REST API 실패 (타이머 종료):",
+    //       e,
+    //     );
+    //   }
+    // }
 
     await stopMediaProcessing();
 
