@@ -67,6 +67,8 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .OptionButton.Selected {
@@ -74,7 +76,7 @@
   outline-offset: 2px;
 }
 
-/* Background styles for buttons */
+/* Background styles */
 .bg_default {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -106,7 +108,15 @@
 }
 
 .bg_rainbow {
-  background: linear-gradient(90deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #3b82f6 80%, #8b5cf6 100%);
+  background: linear-gradient(
+    90deg,
+    #ef4444 0%,
+    #f97316 20%,
+    #eab308 40%,
+    #22c55e 60%,
+    #3b82f6 80%,
+    #8b5cf6 100%
+  );
   border: none;
   color: #ffffff;
 }
@@ -126,6 +136,8 @@
   font-size: 24px;
   cursor: pointer;
   transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .EffectButton:hover {
@@ -165,4 +177,91 @@
 
 .SaveBtn:hover {
   filter: brightness(1.05);
+}
+
+/* 잠금 상태 */
+.Locked {
+  position: relative;
+  opacity: 0.6;
+  filter: grayscale(0.3);
+}
+
+.OptionButton.Locked {
+  position: relative;
+}
+
+.LockBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  padding: 2px 6px;
+  font-size: 10px;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.EffectButton.Locked {
+  position: relative;
+}
+
+.EffectLockBadge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 6px;
+  padding: 2px 4px;
+  font-size: 9px;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.CoinIconTiny {
+  width: 10px;
+  height: 10px;
+  object-fit: contain;
+}
+
+/* 2단계 클릭(구매 대기) 표시 */
+.PendingPurchase {
+  outline: 3px solid rgba(79, 70, 229, 0.35);
+  outline-offset: 2px;
+}
+
+.PendingHint {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 800;
+  color: #4f46e5;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(79, 70, 229, 0.25);
+  padding: 2px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.PendingHintTiny {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 800;
+  color: #4f46e5;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(79, 70, 229, 0.25);
+  padding: 2px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
 }

@@ -6,14 +6,20 @@ export default function QuizSection({
   onToggle,
   question,
   answer,
+  blankScript = '',
+  blankWords = [],
 }) {
   const [userAnswer, setUserAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
+  // blankScript가 있으면 자동으로 퀴즈 생성
+  const displayQuestion = question || blankScript.replace(/\[([^\]]+)\]/g, '______');
+  const displayAnswer = answer || (blankWords.length > 0 ? blankWords.join(', ') : '');
+
   const handleCheck = () => {
     const normalized = userAnswer.trim().toLowerCase();
-    const correctAnswer = answer?.toLowerCase() || "";
+    const correctAnswer = displayAnswer?.toLowerCase() || "";
     setIsCorrect(normalized === correctAnswer);
     setShowResult(true);
   };
@@ -37,15 +43,15 @@ export default function QuizSection({
         </button>
       </div>
 
-      {isOpen && question && (
+      {isOpen && (displayQuestion || question) && (
         <div className={styles.QuizBox}>
           <div className={styles.QuizLabel}>빈칸을 채워보세요</div>
-          <div className={styles.Question}>{question}</div>
+          <div className={styles.Question}>{displayQuestion}</div>
 
           <input
             type="text"
             className={styles.Input}
-            placeholder="빈칸에 들어갈 단어들을 입력하세요"
+            placeholder="빈칸에 들어갈 단어들을 입력하세요 (여러 개인 경우 쉼표로 구분)"
             value={userAnswer}
             onChange={(e) => setUserAnswer(e.target.value)}
             disabled={showResult}
@@ -53,7 +59,7 @@ export default function QuizSection({
 
           {showResult && (
             <div className={`${styles.Result} ${isCorrect ? styles.Correct : styles.Wrong}`}>
-              {isCorrect ? "정답입니다! 🎉" : `오답입니다. 정답: ${answer}`}
+              {isCorrect ? "정답입니다! 🎉" : `오답입니다. 정답: ${displayAnswer}`}
             </div>
           )}
 

@@ -2,7 +2,6 @@ import styles from './QuestionPanel.module.css';
 import QuestionInfo from './QuestionInfo';
 import KoreanSentence from './KoreanSentence';
 import BlankFillSentence from './BlankFillSentence';
-import AnswerInput from './AnswerInput';
 
 export default function QuestionPanel({
   current = 1,
@@ -11,19 +10,22 @@ export default function QuestionPanel({
   koreanSentence = '',
   englishParts = [],
   blanks = [],
-  inputValue = '',
-  onInputChange,
-  onSubmit
+  currentBlankIndex = 0,
+  onBlankChange,
+  onBlankSubmit,
+  onBlankClick  // 추가
 }) {
   return (
     <div className={styles.panel}>
       <QuestionInfo current={current} total={total} score={score} />
       <KoreanSentence sentence={koreanSentence} />
-      <BlankFillSentence parts={englishParts} blanks={blanks} />
-      <AnswerInput
-        value={inputValue}
-        onChange={onInputChange}
-        onSubmit={onSubmit}
+      <BlankFillSentence
+        parts={englishParts}
+        blanks={blanks}
+        currentBlankIndex={currentBlankIndex}
+        onBlankChange={onBlankChange}
+        onBlankSubmit={onBlankSubmit}
+        onBlankClick={onBlankClick}  // 추가
       />
     </div>
   );

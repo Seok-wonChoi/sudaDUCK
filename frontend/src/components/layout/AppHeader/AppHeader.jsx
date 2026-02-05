@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./AppHeader.module.css";
-import bellIcon from "@/assets/icons/notice_bell.png";
 import gearIcon from "@/assets/icons/gear.png";
 import duckLogo from "@/assets/images/duck_logo.png";
 
@@ -9,6 +8,8 @@ import duckProfile1 from "@/assets/images/duck_profile1.png";
 import duckProfile2 from "@/assets/images/duck_profile2.png";
 import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
+
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 
 const DUCK_PROFILE_IMAGES = {
   profile1: duckProfile1,
@@ -42,12 +43,18 @@ export default function AppHeader({
   initialMuted = false,
   initialVolume = 70,
   onChangeSound,
+  // 로고 클릭 시 나가기 확인 관련 props
+  logoExitMessage,
+  logoExitConfirmText = "나가기",
+  logoExitCancelText = "취소",
+  onLogoExit,
 }) {
   const navigate = useNavigate();
   const rootRef = useRef(null);
 
-  const [notifOpen, setNotifOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [logoExitModalOpen, setLogoExitModalOpen] = useState(false);
+  const [logoExitProcessing, setLogoExitProcessing] = useState(false);
 
   const [muted, setMuted] = useState(initialMuted);
   const [volume, setVolume] = useState(initialVolume);
@@ -93,11 +100,7 @@ export default function AppHeader({
     };
   }, []);
 
-  const count =
-    typeof notificationCount === "number" ? notificationCount : notifications.length;
-
   const closeAll = () => {
-    setNotifOpen(false);
     setSettingsOpen(false);
   };
 
@@ -122,19 +125,45 @@ export default function AppHeader({
     if (typeof onChangeSound === "function") onChangeSound(next);
   };
 
-  const toggleNotif = () => {
-    setSettingsOpen(false);
-    setNotifOpen((v) => !v);
-  };
 
   const toggleSettings = () => {
-    setNotifOpen(false);
     setSettingsOpen((v) => !v);
   };
 
-  const onLogoClick = () => {
-    navigate("/");
-  };
+  const onLogoClick = useCallback(() => {
+    // 로고 클릭 시 나가기 확인이 필요한 경우 (logoExitMessage가 있으면)
+    if (logoExitMessage) {
+      setLogoExitModalOpen(true);
+      return;
+    }
+    // 일반적인 경우 바로 메인으로 이동
+    navigate("/main");
+  }, [logoExitMessage, navigate]);
+
+  const handleLogoExitConfirm = useCallback(async () => {
+    if (logoExitProcessing) return;
+
+    setLogoExitProcessing(true);
+    try {
+      // 나가기 콜백 실행 (leaveRoom API 호출 등)
+      if (typeof onLogoExit === "function") {
+        await onLogoExit();
+      }
+
+      setLogoExitModalOpen(false);
+      navigate("/main");
+    } catch (e) {
+      console.error("로고 클릭 나가기 실패:", e);
+      alert(e?.message || "나가기에 실패했습니다.");
+    } finally {
+      setLogoExitProcessing(false);
+    }
+  }, [onLogoExit, navigate, logoExitProcessing]);
+
+  const handleLogoExitCancel = useCallback(() => {
+    if (logoExitProcessing) return;
+    setLogoExitModalOpen(false);
+  }, [logoExitProcessing]);
 
   const onProfileClick = () => {
     navigate("/mypage");
@@ -201,42 +230,6 @@ export default function AppHeader({
         <div className={styles.IconWrap}>
           <button
             type="button"
-            className={`${styles.IconButton} ${notifOpen ? styles.Active : ""}`}
-            onClick={toggleNotif}
-            aria-label="알림"
-            aria-expanded={notifOpen}
-          >
-            <img className={styles.IconImage} src={bellIcon} alt="" />
-            {count > 0 && <span className={styles.Badge}>{count}</span>}
-          </button>
-
-          {notifOpen && (
-            <div className={styles.Popover} role="dialog" aria-label="알림 목록">
-              <div className={styles.PopoverTitle}>알림</div>
-              <div className={styles.PopoverBody}>
-                {notifications.length === 0 ? (
-                  <div className={styles.EmptyText}>새 알림이 없습니다.</div>
-                ) : (
-                  notifications.slice(0, 6).map((n) => (
-                    <div className={styles.NotifItem} key={n.id ?? n.text}>
-                      <div className={styles.NotifText}>{n.text}</div>
-                      {n.time && <div className={styles.NotifTime}>{n.time}</div>}
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className={styles.PopoverFooter}>
-                <button type="button" className={styles.FooterButton} onClick={closeAll}>
-                  닫기
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className={styles.IconWrap}>
-          <button
-            type="button"
             className={`${styles.IconButton} ${settingsOpen ? styles.Active : ""}`}
             onClick={toggleSettings}
             aria-label="설정"
@@ -281,6 +274,16 @@ export default function AppHeader({
           )}
         </div>
       </div>
+
+      {/* 로고 클릭 시 나가기 확인 모달 */}
+      <ConfirmModal
+        open={logoExitModalOpen}
+        message={logoExitMessage || "메인 화면으로 나가시겠습니까?"}
+        confirmText={logoExitProcessing ? "나가는 중..." : logoExitConfirmText}
+        cancelText={logoExitCancelText}
+        onConfirm={handleLogoExitConfirm}
+        onClose={handleLogoExitCancel}
+      />
     </header>
   );
 }

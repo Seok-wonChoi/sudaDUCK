@@ -1,66 +1,66 @@
+:root {
+  --content-width: clamp(680px, 75vw, 760px);
+}
+
 .Page {
   min-height: 100vh;
   background: #f6f8ff;
-  padding: clamp(12px, 3vw, 28px) clamp(8px, 2vw, 16px);
+  padding: clamp(12px, 2vh, 28px) clamp(8px, 1.5vw, 16px);
 }
 
 .Shell {
-  max-width: 1120px;
+  max-width: min(1400px, 95vw);
   width: 100%;
   margin: 0 auto;
   background: #ffffff;
-  border-radius: clamp(16px, 3vw, 28px);
-  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.10);
+  border-radius: clamp(16px, 2vw, 28px);
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.1);
   overflow: hidden;
 }
 
 .Top {
   position: relative;
-  padding: 44px 34px 34px;
+  padding: clamp(40px, 4.5vw, 44px) clamp(16px, 2.5vw, 34px)
+    clamp(30px, 3.5vw, 34px);
   background: #ffffff;
 }
 
 .BackButton {
   position: absolute;
-  top: 16px;
-  left: 16px;
-
-  height: 40px;
-  padding: 0 12px;
-  border-radius: 12px;
-
-  border: 1px solid rgba(79, 70, 229, 0.18);
-  background: rgba(79, 70, 229, 0.08);
-  color: #3730a3;
-
-  display: flex;
+  top: clamp(20px, 3vw, 34px);
+  left: clamp(16px, 2.5vw, 34px);
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-
+  justify-content: center;
+  width: clamp(36px, 4vw, 40px);
+  height: clamp(36px, 4vw, 40px);
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: clamp(18px, 2vw, 20px);
+  font-weight: 700;
+  color: #374151;
   cursor: pointer;
-  font-weight: 900;
-  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 10;
 }
 
 .BackButton:hover {
-  border-color: rgba(79, 70, 229, 0.35);
-  background: rgba(79, 70, 229, 0.12);
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.BackIcon {
-  font-size: 18px;
-  line-height: 1;
-  transform: translateY(-1px);
-}
-
-.BackText {
-  font-size: 14px;
-  line-height: 1;
+.BackButton:active {
+  background: #f3f4f6;
+  transform: scale(0.96);
 }
 
 .Title {
-  margin: 8px 0 0;
-  font-size: 30px;
+  margin: clamp(6px, 0.8vw, 8px) 0 0;
+  padding: 0 clamp(16px, 2.5vw, 34px);
+  font-size: clamp(24px, 3vw, 30px);
   font-weight: 900;
   letter-spacing: -0.4px;
   text-align: center;
@@ -68,23 +68,35 @@
 }
 
 .Subtitle {
-  margin: 12px 0 0;
-  font-size: 14px;
+  margin: clamp(10px, 1.2vw, 12px) 0 0;
+  font-size: clamp(13px, 1.4vw, 14px);
   text-align: center;
   color: #6b7280;
   font-weight: 700;
 }
 
+.Content {
+  width: 100%;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+
 .FormCard {
-  max-width: 760px;
-  margin: 26px auto 0;
+  width: 100%;
+  max-width: none;
+  margin: clamp(22px, 2.8vw, 26px) 0 0;
 
   border: 1px solid rgba(229, 231, 235, 1);
-  border-radius: 18px;
+  border-radius: clamp(14px, 2vw, 18px);
   background: #ffffff;
   box-shadow: 0 10px 28px rgba(17, 24, 39, 0.08);
 
-  padding: 22px 22px 18px;
+  padding: clamp(18px, 2.2vw, 22px) clamp(18px, 2.2vw, 22px)
+    clamp(16px, 2vw, 18px);
+
+  box-sizing: border-box;
 }
 
 .Field {
@@ -117,6 +129,7 @@
   border: 1px solid rgba(229, 231, 235, 1);
   background: rgba(243, 244, 246, 0.7);
   padding: 0 14px;
+  box-sizing: border-box;
 
   font-size: 13px;
   font-weight: 800;
@@ -159,6 +172,32 @@
 
 .AiButton:hover {
   filter: brightness(1.02);
+}
+
+.AiButtonContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.AiSpinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: aiSpinnerRotate 0.8s linear infinite;
+}
+
+@keyframes aiSpinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .HotRow {
@@ -275,18 +314,53 @@
 }
 
 .TipWrap {
-  max-width: 760px;
-  margin: 14px auto 0;
+  width: 100%;
+  max-width: none;
+  margin: 14px 0 0;
+  box-sizing: border-box;
 }
 
-@media (max-width: 680px) {
-  .Top {
-    padding: 44px 16px 24px;
+/* TipBanner 내부가 튀는 스타일이 있어도 부모 폭에 강제 */
+.TipWrap > * {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 중형 화면 (1024px ~ 1440px) */
+@media (max-width: 1440px) {
+  .Shell {
+    max-width: min(1200px, 92vw);
+  }
+}
+
+@media (max-width: 1024px) {
+  .Shell {
+    max-width: min(900px, 90vw);
   }
 
-  .BackButton {
-    top: 12px;
-    left: 12px;
+  .Top {
+    padding: clamp(38px, 4vw, 42px) clamp(14px, 2.2vw, 28px)
+      clamp(28px, 3vw, 32px);
+  }
+
+  .Content {
+    max-width: 92%;
+  }
+}
+
+/* 작은 태블릿 (600px ~ 768px) */
+@media (max-width: 768px) {
+  .Shell {
+    max-width: 96vw;
+  }
+
+  .Top {
+    padding: 40px 16px 26px;
+  }
+
+  .Title {
+    font-size: 26px;
   }
 
   .FormCard {
@@ -298,6 +372,86 @@
   }
 
   .TurnRow {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+}
+
+/* 모바일 화면 (480px ~ 600px) */
+@media (max-width: 600px) {
+  .Page {
+    padding: clamp(8px, 1.5vh, 16px) clamp(6px, 1vw, 12px);
+  }
+
+  .Shell {
+    max-width: 98vw;
+    border-radius: clamp(12px, 1.5vw, 20px);
+  }
+
+  .Top {
+    padding: 38px 14px 24px;
+  }
+
+  .Title {
+    font-size: 24px;
+  }
+
+  .FormCard {
+    padding: 16px 14px 14px;
+  }
+}
+
+/* 작은 모바일 (~ 480px) */
+@media (max-width: 480px) {
+  .Page {
+    padding: 8px 4px;
+  }
+
+  .Shell {
+    max-width: 100vw;
+    border-radius: 16px;
+  }
+
+  .Top {
+    padding: 36px 12px 22px;
+  }
+
+  .Title {
+    font-size: 22px;
+  }
+
+  .Subtitle {
+    font-size: 12px;
+  }
+
+  .FormCard {
+    padding: 14px 12px 12px;
+  }
+
+  .Label {
+    font-size: 12px;
+  }
+
+  .Input {
+    height: 42px;
+    font-size: 12px;
+  }
+
+  .TopicInputRow {
+    grid-template-columns: 1fr 84px;
+  }
+
+  .AiButton {
+    height: 42px;
+    font-size: 12px;
+  }
+
+  .TurnRow {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .TurnCard {
+    height: 58px;
   }
 }

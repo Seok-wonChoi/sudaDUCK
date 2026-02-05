@@ -1,6 +1,28 @@
+import { useMemo } from 'react';
 import styles from './ParticipantList.module.css';
 
-export default function ParticipantList({ participants = [] }) {
+export default function ParticipantList({ 
+  participants = [],
+  voiceLevels = {}
+}) {
+  // 참가자 데이터와 음성 레벨 매칭 - voiceLevel > 0인 경우만 업데이트
+  const participantsWithVoice = useMemo(() => {
+    return participants.map(p => {
+      const level = voiceLevels[p.id] || voiceLevels[p.userId] || 0;
+      const isSpeaking = level > 0.05;
+      
+      return {
+        ...p,
+        voiceLevel: level,
+        isSpeaking
+      };
+    });
+  }, [participants, voiceLevels]);
+
+  if (!participants || participants.length === 0) {
+    return null;
+  }
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.label}>
@@ -10,23 +32,55 @@ export default function ParticipantList({ participants = [] }) {
         <span>참여자</span>
       </div>
       <div className={styles.list}>
-        {participants.map((p, idx) => (
-          <div key={idx} className={styles.participant}>
-            <div className={`${styles.avatar} ${p.isActive ? styles.active : styles.inactive}`}>
-              {p.avatar ? (
-                <img src={p.avatar} alt={p.name} />
-              ) : (
-                <div className={styles.avatarPlaceholder} />
-              )}
-              <div className={`${styles.micIcon} ${p.isActive ? styles.micActive : styles.micInactive}`}>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path d="M5 1V6M5 6C3.89543 6 3 5.10457 3 4M5 6C6.10457 6 7 5.10457 7 4M2 4V5C2 6.65685 3.34315 8 5 8C6.65685 8 8 6.65685 8 5V4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                </svg>
+        {participantsWithVoice.map((p, idx) => {
+          // 프로필 이미지 URL (여러 fallback 시도)
+          const profileUrl = p.avatar || p.profileImageUrl;
+          
+          return (
+            <div key={p.id || p.userId || idx} className={styles.participant}>
+              <div className={styles.avatar}>
+                {/* 음성 레벨에 따른 빛 효과 */}
+                {p.isSpeaking && p.voiceLevel > 0 && (
+                  <div 
+                    className={styles.voiceGlow}
+                    style={{
+                      opacity: Math.min(p.voiceLevel * 1.5, 1),
+                    }}
+                  />
+                )}
+
+                {/* 아바타 이미지 또는 이니셜 */}
+                {profileUrl ? (
+                  <img 
+                    src={profileUrl} 
+                    alt={p.name || p.nickname} 
+                    className={styles.avatarImage}
+                    onError={(e) => {
+                      // 이미지 로드 실패 시 이니셜로 대체
+                      console.error('❌ 이미지 로드 실패:', profileUrl);
+                      e.target.style.display = 'none';
+                      // 이니셜 표시를 위해 부모 요소에 fallback 클래스 추가
+                      if (e.target.parentElement) {
+                        const placeholder = document.createElement('div');
+                        placeholder.className = styles.avatarPlaceholder;
+                        placeholder.textContent = (p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?';
+                        e.target.parentElement.appendChild(placeholder);
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className={styles.avatarPlaceholder}>
+                    {(p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                )}
               </div>
+              <span className={styles.name}>
+                {p.name || p.nickname}
+                {p.isMe && <span className={styles.meBadge}>나</span>}
+              </span>
             </div>
-            <span className={styles.name}>{p.name}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

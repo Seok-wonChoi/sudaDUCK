@@ -1,30 +1,64 @@
 .Page {
   min-height: 100vh;
   background: #f6f8ff;
-  padding: clamp(12px, 3vw, 28px) clamp(8px, 2vw, 16px);
+  padding: clamp(12px, 2vh, 28px) clamp(8px, 1.5vw, 16px);
 }
 
 .Shell {
-  max-width: 1120px;
+  max-width: min(1400px, 95vw);
   width: 100%;
   margin: 0 auto;
   background: #ffffff;
-  border-radius: clamp(16px, 3vw, 28px);
-  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.10);
+  border-radius: clamp(16px, 2vw, 28px);
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.1);
   overflow: hidden;
   position: relative;
 }
 
 .Content {
-  padding: 20px 34px 28px;
+  position: relative;
+  padding: clamp(18px, 2.5vw, 28px) clamp(16px, 2.5vw, 34px)
+    clamp(22px, 2.8vw, 28px);
+}
+
+.BackButton {
+  position: absolute;
+  top: clamp(20px, 3vw, 34px);
+  left: clamp(16px, 2.5vw, 34px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(36px, 4vw, 40px);
+  height: clamp(36px, 4vw, 40px);
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: clamp(18px, 2vw, 20px);
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+.BackButton:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.BackButton:active {
+  background: #f3f4f6;
+  transform: scale(0.96);
 }
 
 .HeaderRow {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 14px;
-  padding-bottom: 10px;
+  gap: clamp(10px, 1.5vw, 14px);
+  padding-bottom: clamp(8px, 1vw, 10px);
 }
 
 .ExitCol {
@@ -35,7 +69,7 @@
 .TopicRow {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: clamp(10px, 1.5vw, 14px);
   min-width: 0;
 }
 
@@ -43,65 +77,45 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 14px;
+  gap: clamp(10px, 1.5vw, 14px);
+  position: relative;
+}
+
+.TurnIndicator {
+  position: absolute;
+  bottom: -18px;
+  right: 0;
+  font-size: clamp(11px, 1.1vw, 12px);
+  font-weight: 700;
+  color: #6b7280;
+  text-align: center;
 }
 
 .SmallDuck {
-  width: 56px;
-  height: 56px;
+  width: clamp(48px, 6vw, 56px);
+  height: clamp(48px, 6vw, 56px);
   object-fit: contain;
 }
 
 .TopicBubble {
   background: #ffffff;
   border: 1px solid #e8edf6;
-  border-radius: 16px;
-  padding: 12px 16px;
-  font-size: 13px;
+  border-radius: clamp(12px, 1.5vw, 16px);
+  padding: clamp(10px, 1.2vw, 12px) clamp(12px, 1.5vw, 16px);
+  font-size: clamp(12px, 1.3vw, 13px);
   font-weight: 900;
   color: #111827;
-  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.10);
+  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.QuestButtons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.QuestBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid rgba(79, 70, 229, 0.25);
-  background: rgba(79, 70, 229, 0.08);
-  color: #4f46e5;
-  cursor: pointer;
-  font-weight: 900;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.QuestBtn:hover {
-  background: rgba(79, 70, 229, 0.14);
-  border-color: rgba(79, 70, 229, 0.35);
-}
-
-.QuestBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .Stage {
-  margin-top: 18px;
+  margin-top: clamp(14px, 2vw, 18px);
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
+  grid-template-columns: 1fr clamp(280px, 28vw, 320px);
+  gap: clamp(18px, 2.5vw, 24px);
   align-items: start;
 }
 
@@ -109,23 +123,25 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 0;
 }
 
 .CardsGrid {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: clamp(12px, 1.5vw, 14px);
 }
 
 .VideoCard {
-  height: 180px;
-  border-radius: 14px;
+  height: clamp(160px, 18vw, 180px);
+  border-radius: clamp(12px, 1.5vw, 14px);
   background: #fbfcff;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 16px 16px 12px;
+  padding: clamp(14px, 1.8vw, 16px) clamp(14px, 1.8vw, 16px)
+    clamp(10px, 1.2vw, 12px);
   border: 2px solid rgba(229, 231, 235, 1);
   position: relative;
 }
@@ -134,7 +150,7 @@
   border-color: rgba(34, 197, 94, 0.95);
   box-shadow:
     0 0 0 3px rgba(34, 197, 94, 0.18),
-    0 0 22px rgba(34, 197, 94, 0.30),
+    0 0 22px rgba(34, 197, 94, 0.3),
     0 18px 34px rgba(17, 24, 39, 0.12);
 }
 
@@ -155,6 +171,10 @@
 }
 
 .VideoCardEmpty {
+  height: clamp(160px, 18vw, 180px);
+  border-radius: clamp(12px, 1.5vw, 14px);
+  padding: clamp(14px, 1.8vw, 16px) clamp(14px, 1.8vw, 16px)
+    clamp(10px, 1.2vw, 12px);
   border: 2px dashed rgba(209, 213, 219, 0.8);
   background: rgba(249, 250, 251, 0.5);
   display: flex;
@@ -176,8 +196,9 @@
 }
 
 .AvatarCircle {
-  width: 105px;
-  height: 105px;
+  position: relative;
+  width: clamp(100px, 12vw, 120px);
+  height: clamp(100px, 12vw, 120px);
   border-radius: 999px;
   background: #ffffff;
   border: 1px solid #eef2ff;
@@ -188,21 +209,37 @@
 }
 
 .AvatarDuck {
-  width: 68px;
-  height: 68px;
+  width: clamp(75px, 9vw, 95px);
+  height: clamp(75px, 9vw, 95px);
   object-fit: contain;
+}
+
+.ProfileAccessory {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 22px;
+  pointer-events: none;
 }
 
 .VideoFooter {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
 }
 
 .VideoFooterLeft {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
+}
+
+/* 본인 표시 태그 */
+.MeTag {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
 }
 
 .MeLabel {
@@ -213,15 +250,15 @@
 
 .VideoFooterRight {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-end;
-  min-width: 18px;
 }
 
 .MicMini {
   width: 18px;
   height: 18px;
   object-fit: contain;
+  align-self: center;
 }
 
 .MicMuted {
@@ -250,13 +287,27 @@
   opacity: 1;
 }
 
-.WaveBar1 { background: rgba(34, 197, 94, 0.95); }
-.WaveBar2 { background: rgba(16, 185, 129, 0.95); }
-.WaveBar3 { background: rgba(59, 130, 246, 0.95); }
-.WaveBar4 { background: rgba(99, 102, 241, 0.95); }
-.WaveBar5 { background: rgba(158, 67, 242, 0.95); }
-.WaveBar6 { background: rgba(59, 130, 246, 0.95); }
-.WaveBar7 { background: rgba(16, 185, 129, 0.95); }
+.WaveBar1 {
+  background: rgba(34, 197, 94, 0.95);
+}
+.WaveBar2 {
+  background: rgba(16, 185, 129, 0.95);
+}
+.WaveBar3 {
+  background: rgba(59, 130, 246, 0.95);
+}
+.WaveBar4 {
+  background: rgba(99, 102, 241, 0.95);
+}
+.WaveBar5 {
+  background: rgba(158, 67, 242, 0.95);
+}
+.WaveBar6 {
+  background: rgba(59, 130, 246, 0.95);
+}
+.WaveBar7 {
+  background: rgba(16, 185, 129, 0.95);
+}
 
 .BottomActions {
   margin-top: 14px;
@@ -302,15 +353,17 @@
 .RightStage {
   position: relative;
   height: 100%;
-  min-height: 440px;
+  min-height: clamp(360px, 45vw, 440px);
+  min-width: 0;
 }
 
 .AiBubble {
   position: relative;
   background: #ffffff;
   border: 2px solid rgba(79, 70, 229, 0.25);
-  border-radius: 16px;
-  padding: 14px 16px 16px;
+  border-radius: clamp(12px, 1.5vw, 16px);
+  padding: clamp(12px, 1.5vw, 14px) clamp(14px, 1.8vw, 16px)
+    clamp(14px, 1.8vw, 16px);
   box-shadow: 0 18px 40px rgba(17, 24, 39, 0.14);
   z-index: 2;
 }
@@ -351,6 +404,12 @@
   line-height: 1.35;
 }
 
+.AiMainTextLarge {
+  margin-top: 16px;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
 .AiSubText {
   margin-top: 8px;
   text-align: center;
@@ -374,18 +433,48 @@
 
 .BigDuck {
   position: absolute;
-  right: -6px;
-  bottom: -8px;
-  width: 280px;
-  height: 280px;
+  left: 50%;
+  bottom: clamp(-20px, -2vw, -15px);
+  transform: translateX(-50%);
+  width: clamp(280px, 35vw, 360px);
+  height: clamp(280px, 35vw, 360px);
   object-fit: contain;
   z-index: 1;
   filter: drop-shadow(0 18px 30px rgba(17, 24, 39, 0.12));
 }
 
-@media (max-width: 980px) {
+/* 중형 화면 (1024px ~ 1440px) */
+@media (max-width: 1440px) {
+  .Shell {
+    max-width: min(1200px, 92vw);
+  }
+}
+
+/* 태블릿 화면 (768px ~ 1024px) */
+@media (max-width: 1024px) {
+  .Shell {
+    max-width: min(900px, 90vw);
+  }
+
   .Content {
-    padding: 18px 16px 22px;
+    padding: clamp(16px, 2.2vw, 24px) clamp(14px, 2.2vw, 28px)
+      clamp(20px, 2.5vw, 24px);
+  }
+
+  .Stage {
+    grid-template-columns: 1fr clamp(240px, 26vw, 280px);
+    gap: clamp(14px, 2vw, 20px);
+  }
+}
+
+/* 작은 태블릿 (600px ~ 768px) */
+@media (max-width: 768px) {
+  .Shell {
+    max-width: 96vw;
+  }
+
+  .Content {
+    padding: 18px 16px 20px;
   }
 
   .HeaderRow {
@@ -404,6 +493,7 @@
 
   .Stage {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 
   .CardsGrid {
@@ -411,28 +501,30 @@
   }
 
   .RightStage {
-    min-height: 360px;
+    min-height: 320px;
   }
 
   .BigDuck {
-    width: 220px;
-    height: 220px;
+    width: 200px;
+    height: 200px;
     right: 0;
     bottom: 0;
   }
 }
 
+/* 모바일 화면 (480px ~ 600px) */
 @media (max-width: 600px) {
   .Page {
-    padding: 8px;
+    padding: clamp(8px, 1.5vh, 16px) clamp(6px, 1vw, 12px);
   }
 
   .Shell {
-    border-radius: 12px;
+    max-width: 98vw;
+    border-radius: clamp(12px, 1.5vw, 20px);
   }
 
   .Content {
-    padding: 12px;
+    padding: 14px;
   }
 
   .CardsGrid {
@@ -440,7 +532,11 @@
   }
 
   .VideoCard {
-    height: 160px;
+    height: 150px;
+  }
+
+  .VideoCardEmpty {
+    height: 150px;
   }
 
   .TopicBubble {
@@ -464,4 +560,351 @@
     width: 100%;
     justify-content: center;
   }
+
+  .RightStage {
+    min-height: 300px;
+  }
+
+  .BigDuck {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+/* 작은 모바일 (~ 480px) */
+@media (max-width: 480px) {
+  .Page {
+    padding: 8px 4px;
+  }
+
+  .Shell {
+    max-width: 100vw;
+    border-radius: 16px;
+  }
+
+  .Content {
+    padding: 12px;
+  }
+
+  .SmallDuck {
+    width: 44px;
+    height: 44px;
+  }
+
+  .TopicBubble {
+    font-size: 11px;
+    padding: 9px 12px;
+  }
+
+  .QuestBtn {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .VideoCard {
+    height: 140px;
+    padding: 12px;
+  }
+
+  .VideoCardEmpty {
+    height: 140px;
+    padding: 12px;
+  }
+
+  .AvatarCircle {
+    width: 75px;
+    height: 75px;
+  }
+
+  .AvatarDuck {
+    width: 48px;
+    height: 48px;
+  }
+
+  .RightStage {
+    min-height: 280px;
+  }
+
+  .BigDuck {
+    width: 160px;
+    height: 160px;
+  }
+
+  .AiBubble {
+    padding: 10px 12px 12px;
+  }
+
+  .PrimaryButton,
+  .SecondaryButton {
+    height: 36px;
+    font-size: 11px;
+  }
+}
+
+/* AI 추천 주제 배너 */
+.AiSuggestionBanner {
+  background: white;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #1f2937;
+  font-size: 38px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* AI 추천 주제 배너 */
+.AiSuggestionBanner {
+  background: white;
+  padding: 20px 24px;
+
+  /* 배너를 조금 아래로 */
+  margin: 8px 0 20px; /* 기존 margin-bottom:20px 대체 */
+
+  text-align: center;
+  color: #1f2937;
+
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+
+  /* 한 줄이어도 기본 폰트를 더 작게 */
+  font-weight: 900;
+  font-size: clamp(16px, 2.4vw, 28px);
+  line-height: 1.2;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.AiLoadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #6b7280;
+  font-size: clamp(14px, 1.8vw, 18px);
+  font-weight: 700;
+}
+
+.AiLoadingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2b7fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.Quest1BannerQuestion {
+  text-align: center;
+
+  /* 한 줄 강제 제거 */
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+
+  /* 기본 폰트 조금 작게 + 길이에 따라 반응형 */
+  font-size: clamp(16px, 2.4vw, 28px);
+  font-weight: 900;
+  line-height: 1.2;
+
+  /* 최대 3줄 */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* 평가 대기 중 오버레이 */
+.WaitingResultOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.WaitingResultContent {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+}
+
+.WaitingResultSpinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid #e5e7eb;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.WaitingResultText {
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 900;
+  color: #111827;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.WaitingResultSubText {
+  font-size: clamp(14px, 1.5vw, 16px);
+  font-weight: 700;
+  color: #6b7280;
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 돌발 퀘스트 결과 화면 (이어하기 버튼 포함) */
+.QuestResultOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.QuestResultContent {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: clamp(30px, 4vw, 50px) clamp(40px, 5vw, 60px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(24px, 3vw, 32px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  max-width: 90vw;
+  min-width: min(500px, 90vw);
+}
+
+.QuestResultBubbleWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.QuestResultDuck {
+  width: clamp(80px, 10vw, 120px);
+  height: clamp(80px, 10vw, 120px);
+  object-fit: contain;
+}
+
+.QuestResultBubble {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: clamp(16px, 2vw, 24px) clamp(24px, 3vw, 32px);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.QuestResultText {
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 900;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.QuestResultButtonArea {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.QuestResultParticipant {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-radius: 12px;
+}
+
+.QuestResultParticipantName {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.QuestResultParticipantStatus {
+  font-size: 13px;
+  font-weight: 700;
+  color: #9ca3af;
+}
+
+.QuestResultParticipantStatus.Ready {
+  color: #10b981;
+}
+
+.QuestContinueButton {
+  width: 100%;
+  height: 56px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 60%, #5b21b6 100%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.3);
+  margin-top: 8px;
+}
+
+.QuestContinueButton:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(79, 70, 229, 0.4);
+}
+
+.QuestContinueButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #9ca3af;
+  box-shadow: none;
 }

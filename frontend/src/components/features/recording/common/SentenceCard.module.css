@@ -2,13 +2,13 @@
 .sentenceCard {
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 24px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08),
-              0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  padding: 48px 60px;
+  border-radius: 14px;
+  box-shadow: 0 8px 12px -3px rgba(0, 0, 0, 0.06),
+              0 3px 5px -3px rgba(0, 0, 0, 0.04);
+  padding: clamp(12px, 1.5vh, 18px) clamp(10px, 1.2vw, 14px);
   width: 100%;
-  max-width: 1600px;
-  min-height: 350px;
+  max-width: 100%;
+  min-height: clamp(160px, 20vh, 220px);
   margin: 0 auto;
   transition: all 0.3s ease;
 }
@@ -17,6 +17,25 @@
   border-color: #2b7fff;
   box-shadow: 0 20px 25px -5px rgba(43, 127, 255, 0.15),
               0 10px 10px -5px rgba(43, 127, 255, 0.1);
+}
+
+/* 점수 등급별 테마 */
+.excellent {
+  border-color: #10b981 !important;
+  background-color: #f0fdf4 !important;
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1), 0 4px 6px -2px rgba(16, 185, 129, 0.05) !important;
+}
+
+.good {
+  border-color: #f59e0b !important;
+  background-color: #fffbeb !important;
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.1), 0 4px 6px -2px rgba(245, 158, 11, 0.05) !important;
+}
+
+.poor {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.1), 0 4px 6px -2px rgba(239, 68, 68, 0.05) !important;
 }
 
 .sentenceCard:hover {
@@ -29,18 +48,18 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 10px;
 }
 
 .speakerInfo {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 
 .speakerIcon {
-  width: 64px;
-  height: 64px;
+  width: clamp(36px, 4.5vw, 48px);
+  height: clamp(36px, 4.5vw, 48px);
   background: #2b7fff;
   border-radius: 50%;
   display: flex;
@@ -50,35 +69,99 @@
 }
 
 .speakerIcon svg {
-  width: 28px;
-  height: 28px;
+  width: clamp(16px, 2.2vw, 20px);
+  height: clamp(16px, 2.2vw, 20px);
 }
 
 .speakerName {
   font-weight: 600;
-  font-size: 28px;
+  font-size: clamp(15px, 1.8vw, 20px);
   color: #1e2939;
 }
 
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
-.score {
-  font-size: 18px;
-  color: #6b7280;
+.scoreContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
 }
 
-.scoreValue {
-  color: #2b7fff;
+.scoreLabel {
+  font-size: 11px;
   font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scoreWrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.gradeBadge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.excellent .gradeBadge { background: #d1fae5; color: #059669; }
+.good .gradeBadge { background: #fef3c7; color: #d97706; }
+.poor .gradeBadge { background: #fee2e2; color: #dc2626; }
+
+.scoreValueBig {
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1;
+  font-family: 'Inter', sans-serif;
+}
+
+.excellent .scoreValueBig { color: #059669; }
+.good .scoreValueBig { color: #d97706; }
+.poor .scoreValueBig { color: #dc2626; }
+
+.scoreUnit {
+  font-size: 16px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.averageScore {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Score Color Classes */
+.scoreRed {
+  color: #ef4444 !important;
+}
+
+.scoreOrange {
+  color: #f97316 !important;
+}
+
+.scoreYellow {
+  color: #eab308 !important;
+}
+
+.scoreGreen {
+  color: #22c55e !important;
 }
 
 .progress {
   font-weight: 500;
-  font-size: 20px;
+  font-size: 13px;
   color: #6b7280;
   white-space: nowrap;
 }
@@ -87,12 +170,12 @@
   background: none;
   border: 1px solid #e5e7eb;
   cursor: pointer;
-  padding: 8px 14px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border-radius: 8px;
+  gap: 4px;
+  border-radius: 6px;
   transition: all 0.3s ease;
 }
 
@@ -113,12 +196,25 @@
   border-color: #2b7fff;
 }
 
-.bookmarkButton.bookmarked svg {
+.bookmarkIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  transition: all 0.3s ease;
+  filter: grayscale(100%) brightness(0.6);
+}
+
+.bookmarkButton.bookmarked .bookmarkIcon {
   animation: bookmarkPop 0.4s ease;
+  filter: brightness(0) saturate(100%) invert(42%) sepia(97%) saturate(3129%) hue-rotate(200deg) brightness(101%) contrast(101%);
+}
+
+.bookmarkButton:hover .bookmarkIcon {
+  filter: grayscale(0%) brightness(0.8);
 }
 
 .bookmarkText {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   color: #6b7280;
   transition: color 0.3s ease;
@@ -148,25 +244,25 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 8px;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 
 .label {
   font-weight: 600;
-  font-size: 16px;
+  font-size: clamp(12px, 1.3vw, 14px);
   color: #6b7280;
   text-transform: none;
 }
 
 .text {
-  font-size: 22px;
-  line-height: 1.6;
+  font-size: clamp(13px, 1.5vw, 17px);
+  line-height: 1.5;
   color: #1e2939;
   margin: 0;
 }
@@ -174,16 +270,16 @@
 /* English Section */
 .englishSection {
   background: #eff6ff;
-  padding: 28px 32px;
-  border-radius: 16px;
-  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-top: 4px;
 }
 
 .englishHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .englishSection .label {
@@ -191,20 +287,33 @@
 }
 
 .englishSection .text {
-  font-size: 24px;
+  font-size: clamp(14px, 1.6vw, 19px);
   font-weight: 400;
-  letter-spacing: 0.5px;
-  word-spacing: 2px;
+  letter-spacing: 0.1px;
+  word-spacing: 0.5px;
 }
 
 .blank {
   color: #2b7fff;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   display: inline-block;
-  border-bottom: 3px solid #2b7fff;
-  padding-bottom: 2px;
-  margin: 0 2px;
+  border-bottom: 2px solid #2b7fff;
+  padding-bottom: 1px;
+  margin: 0 1px;
+}
+
+.blankTextHint {
+  color: #2b7fff;
+  font-weight: 700;
+  border-bottom: 1px dashed #2b7fff;
+  padding-bottom: 1px;
+}
+
+.blankBracket {
+  color: #2b7fff;
+  font-weight: 700;
+  font-size: 1.05em;
 }
 
 .aiStatus {
@@ -225,12 +334,12 @@
 .recordingBox {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 32px;
-  min-height: 160px;
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 80px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 6px;
 }
 
 .recordingContent {
@@ -239,7 +348,7 @@
   align-items: center;
   justify-content: center;
   flex: 1;
-  padding: 20px 0;
+  padding: 12px 0;
 }
 
 .recordingStatus {
@@ -250,7 +359,7 @@
 }
 
 .statusText {
-  font-size: 18px;
+  font-size: 14px;
   color: #6b7280;
   font-weight: 500;
 }
@@ -261,9 +370,62 @@
 
 .recordingActive {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  gap: 12px;
+}
+
+.toggleSide {
+  position: absolute;
+  left: 0;
+}
+
+.miniToggle {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 800;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.miniToggle.active {
+  background: #eff6ff;
+  border-color: #2b7fff;
+  color: #2b7fff;
+  box-shadow: 0 2px 8px rgba(43, 127, 255, 0.15);
+}
+
+.stopButton {
+  position: absolute;
+  right: 0;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  background: #4f46e5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+}
+
+.stopButton:hover {
+  background: #4338ca;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 10px rgba(79, 70, 229, 0.3);
+}
+
+.stopButton:active {
+  transform: translateY(0);
 }
 
 .recordingCircle {
@@ -289,13 +451,13 @@
 }
 
 .countdownNumber {
-  font-size: 48px;
+  font-size: 36px;
   font-weight: 700;
   color: #ffffff;
 }
 
 .recordingHint {
-  font-size: 18px;
+  font-size: 14px;
   color: #6b7280;
   margin: 0;
   text-align: center;
@@ -304,77 +466,77 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .sentenceCard {
-    padding: 24px;
-    border-radius: 20px;
+    padding: 10px 8px;
+    border-radius: 12px;
   }
 
   .header {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 6px;
   }
 
   .bookmarkButton {
-    padding: 6px 10px;
+    padding: 4px 6px;
   }
 
   .bookmarkText {
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .speakerIcon {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
 
   .speakerName {
-    font-size: 18px;
+    font-size: 13px;
   }
 
   .progress {
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .text {
-    font-size: 15px;
+    font-size: 12px;
   }
 
   .englishSection .text {
-    font-size: 16px;
+    font-size: 13px;
   }
 
   .englishSection {
-    padding: 16px;
+    padding: 8px 10px;
   }
 
   .recordingBox {
-    padding: 16px;
+    padding: 10px;
   }
 }
 
 @media (max-width: 480px) {
   .sentenceCard {
-    padding: 20px;
-    border-radius: 16px;
+    padding: 10px 8px;
+    border-radius: 10px;
   }
 
   .content {
-    gap: 12px;
+    gap: 6px;
   }
 
   .englishSection {
-    padding: 14px;
+    padding: 8px 10px;
     margin-top: 4px;
   }
 
   .recordingBox {
-    padding: 14px;
+    padding: 8px;
   }
 
   .text {
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .englishSection .text {
-    font-size: 15px;
+    font-size: 12px;
   }
 }

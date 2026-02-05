@@ -12,7 +12,7 @@ export default function PracticePage() {
   const navigate = useNavigate();
 
   const handleBack = () => {
-    navigate("/");
+    navigate("/main");
   };
 
   const handleSolo = () => {

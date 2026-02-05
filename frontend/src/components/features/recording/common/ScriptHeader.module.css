@@ -1,36 +1,16 @@
 .scriptHeader {
-  text-align: center;
-  padding: 32px 20px;
-  margin-bottom: 24px;
+  margin-bottom: clamp(16px, 2.5vh, 24px);
 }
 
 .title {
-  font-weight: 700;
-  font-size: 32px;
-  line-height: 1.2;
+  font-size: clamp(20px, 2.5vw, 28px);
+  font-weight: 800;
   color: #1e2939;
-  margin: 0 0 12px 0;
+  margin: 0 0 4px 0;
 }
 
 .subtitle {
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 1.5;
-  color: #6b7280;
+  font-size: clamp(13px, 1.5vw, 16px);
+  color: #64748b;
   margin: 0;
-}
-
-@media (max-width: 768px) {
-  .scriptHeader {
-    padding: 24px 16px;
-    margin-bottom: 16px;
-  }
-
-  .title {
-    font-size: 24px;
-  }
-
-  .subtitle {
-    font-size: 14px;
-  }
 }

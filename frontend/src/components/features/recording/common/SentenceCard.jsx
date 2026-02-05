@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import styles from './SentenceCard.module.css';
+import bookmarkerIcon from '@/assets/icons/bookmarker.png';
 
 export default function SentenceCard({
   speaker = '나',
@@ -9,12 +10,18 @@ export default function SentenceCard({
   english = 'I worked at a coffee shop, and it was really tough.',
   blankWords = [],
   score = null,
+  averageScore = null,
   isActive = false,
   cardState = 'idle',
   countdown = 3,
+  recordingTime = 0,
+  recordingCountdown = 10,
   sentenceId = null,
   initialBookmarked = false,
   onBookmarkToggle = null,
+  onStop = null,
+  showBlanks = true,
+  onToggleBlanks = null,
 }) {
   const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
 
@@ -30,41 +37,85 @@ export default function SentenceCard({
       onBookmarkToggle(sentenceId, newBookmarkedState);
     }
 
-    // TODO: API 호출하여 서버에 북마크 저장
     console.log('북마크 토글:', sentenceId, newBookmarkedState);
   };
 
-  // 영어 문장을 빈칸 처리하는 함수
-  const getDisplayEnglish = () => {
-    // AI가 읽어줄 때나 평가 결과 볼 때는 전체 문장 표시
-    const showFullSentence =
-      cardState === 'ai_playing' ||
-      cardState === 'record_done' ||
-      cardState === 'idle' ||
-      !isActive;
+  // 점수에 따른 색상 클래스 반환
+  const getScoreColorClass = (scoreValue) => {
+    if (scoreValue < 40) return styles.scoreRed;
+    if (scoreValue < 60) return styles.scoreOrange;
+    if (scoreValue < 80) return styles.scoreYellow;
+    return styles.scoreGreen;
+  };
 
-    if (showFullSentence || blankWords.length === 0) {
+  const getDisplayEnglish = () => {
+    if (blankWords.length === 0) {
       return <>{english}</>;
     }
 
-    // 녹음 대기 중이거나 녹음 중일 때는 빈칸 처리
+    // AI가 읽는 중이거나 녹음 대기 중에는 전체 문장 보여주기
+    if (cardState === 'ai_playing' || cardState === 'record_timer') {
+      return <>{english}</>;
+    }
+
+    if (cardState === 'idle' && isActive) {
+      return <>{english}</>;
+    }
+
+    if (!isActive) {
+      let parts = [english];
+      blankWords.forEach((word) => {
+        const newParts = [];
+        parts.forEach((part) => {
+          if (typeof part === 'string') {
+            const regex = new RegExp(`\\b(${word})\\b`, 'gi');
+            const splits = part.split(regex);
+
+            splits.forEach((split, idx) => {
+              if (split.toLowerCase() === word.toLowerCase()) {
+                newParts.push(
+                  <span key={`blank-${word}-${idx}`} className={styles.blankBracket}>
+                    [{split}]
+                  </span>
+                );
+              } else if (split) {
+                newParts.push(split);
+              }
+            });
+          } else {
+            newParts.push(part);
+          }
+        });
+        parts = newParts;
+      });
+
+      return <>{parts}</>;
+    }
+
     let parts = [english];
     blankWords.forEach((word) => {
       const newParts = [];
       parts.forEach((part) => {
         if (typeof part === 'string') {
-          // 대소문자 구분 없이 단어 찾기
           const regex = new RegExp(`\\b(${word})\\b`, 'gi');
           const splits = part.split(regex);
 
           splits.forEach((split, idx) => {
             if (split.toLowerCase() === word.toLowerCase()) {
-              // 빈칸으로 처리
-              newParts.push(
-                <span key={`blank-${word}-${idx}`} className={styles.blank}>
-                  {'_'.repeat(split.length)}
-                </span>
-              );
+              if (showBlanks) {
+                newParts.push(
+                  <span key={`blank-${word}-${idx}`} className={styles.blank}>
+                    {'\u00A0'.repeat(split.length)}
+                  </span>
+                );
+              } else {
+                // 빈칸 모드가 꺼져있을 때는 텍스트를 보여주되 강조 표시
+                newParts.push(
+                  <span key={`hint-${word}-${idx}`} className={styles.blankTextHint}>
+                    {split}
+                  </span>
+                );
+              }
             } else if (split) {
               newParts.push(split);
             }
@@ -78,6 +129,7 @@ export default function SentenceCard({
 
     return <>{parts}</>;
   };
+  
   const getRecordingBoxContent = () => {
     if (!isActive) {
       return null;
@@ -86,18 +138,53 @@ export default function SentenceCard({
     switch (cardState) {
       case 'record_timer':
         return (
-          <div className={styles.recordingStatus}>
-            <span className={styles.statusText}>녹음 대기 중...</span>
+          <div className={styles.recordingActive}>
+            <div className={styles.toggleSide}>
+              <button 
+                type="button" 
+                className={`${styles.miniToggle} ${showBlanks ? styles.active : ''}`}
+                onClick={onToggleBlanks}
+              >
+                빈칸 {showBlanks ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className={styles.recordingStatus}>
+              <span className={styles.statusText}>녹음 대기 중...</span>
+            </div>
           </div>
         );
 
       case 'recording':
+        const formatCountdown = (seconds) => {
+          const mins = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        };
+
         return (
           <div className={styles.recordingActive}>
-            <div className={styles.recordingCircle}>
-              <span className={styles.countdownNumber}>{countdown}</span>
+            <div className={styles.toggleSide}>
+              <button 
+                type="button" 
+                className={`${styles.miniToggle} ${showBlanks ? styles.active : ''}`}
+                onClick={onToggleBlanks}
+              >
+                빈칸 {showBlanks ? 'ON' : 'OFF'}
+              </button>
             </div>
-            <p className={styles.recordingHint}>자동으로 다음 음성으로 넘어갑니다</p>
+            <div className={styles.recordingCircle}>
+              <span className={styles.countdownNumber}>{formatCountdown(recordingCountdown)}</span>
+            </div>
+            {onStop && (
+              <button 
+                className={styles.stopButton} 
+                onClick={onStop}
+                type="button"
+                aria-label="녹음 완료"
+              >
+                녹음 완료
+              </button>
+            )}
           </div>
         );
 
@@ -117,44 +204,60 @@ export default function SentenceCard({
 
   const showRecordingBox = isActive && (cardState === 'record_timer' || cardState === 'recording' || cardState === 'record_done');
 
+  // 점수에 따른 등급 클래스 결정
+  const getScoreGradeClass = () => {
+    if (score === null || cardState !== 'idle') return '';
+    if (score >= 90) return styles.excellent; // Green
+    if (score >= 70) return styles.good;      // Yellow
+    return styles.poor;                       // Red
+  };
+
+  const getScoreGradeText = () => {
+    if (score === null) return '';
+    if (score >= 90) return 'Great!';
+    if (score >= 70) return 'Good';
+    return 'Keep it up!';
+  };
+
   return (
-    <div className={`${styles.sentenceCard} ${isActive ? styles.active : ''}`}>
+    <div className={`${styles.sentenceCard} ${isActive ? styles.active : ''} ${getScoreGradeClass()}`}>
       <div className={styles.header}>
         <div className={styles.speakerInfo}>
-          <div className={styles.speakerIcon}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 10C12.21 10 14 8.21 14 6C14 3.79 12.21 2 10 2C7.79 2 6 3.79 6 6C6 8.21 7.79 10 10 10ZM10 12C7.33 12 2 13.34 2 16V18H18V16C18 13.34 12.67 12 10 12Z" fill="white"/>
-            </svg>
-          </div>
           <span className={styles.speakerName}>{speaker}</span>
         </div>
         <div className={styles.headerRight}>
-          {score !== null && (
-            <span className={styles.score}>
-              개인 점수: <strong className={styles.scoreValue}>{score}점</strong> / 평균 78점
-            </span>
+          {score !== null && cardState === 'idle' && (
+            <div className={styles.scoreContainer}>
+              <span className={styles.gradeBadge}>{getScoreGradeText()}</span>
+              <div className={styles.scoreWrapper}>
+                <strong className={styles.scoreValueBig}>{score}</strong>
+                <span className={styles.scoreUnit}>pt</span>
+              </div>
+              {averageScore !== null && averageScore !== undefined && (
+                <span className={styles.averageScore}>
+                  Avg. {averageScore}pt
+                </span>
+              )}
+            </div>
           )}
           <span className={styles.progress}>{currentSentence} / {totalSentences}</span>
-          <button
-            className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}
-            onClick={handleBookmark}
-            aria-label={isBookmarked ? "저장 해제" : "저장하기"}
-            title={isBookmarked ? "저장 해제" : "저장하기"}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M19 3H5C4.20435 3 3.44129 3.31607 2.87868 3.87868C2.31607 4.44129 2 5.20435 2 6V21L12 16.5L22 21V6C22 5.20435 21.6839 4.44129 21.1213 3.87868C20.5587 3.31607 19.7956 3 19 3Z"
-                stroke={isBookmarked ? "#2b7fff" : "#9CA3AF"}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill={isBookmarked ? "#2b7fff" : "none"}
+          {score !== null && cardState === 'idle' && (
+            <button
+              className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}
+              onClick={handleBookmark}
+              aria-label={isBookmarked ? "저장 해제" : "저장하기"}
+              title={isBookmarked ? "저장 해제" : "저장하기"}
+            >
+              <img
+                src={bookmarkerIcon}
+                alt="bookmark"
+                className={styles.bookmarkIcon}
               />
-            </svg>
-            <span className={styles.bookmarkText}>
-              {isBookmarked ? "저장됨" : "저장하기"}
-            </span>
-          </button>
+              <span className={styles.bookmarkText}>
+                {isBookmarked ? "저장됨" : "저장하기"}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 

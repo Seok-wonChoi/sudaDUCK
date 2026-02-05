@@ -1,94 +1,282 @@
 .card {
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 20px;
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto 24px;
+  border-radius: 20px;
+  padding: 32px 40px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
-.correct {
-  border: 2px solid #22c55e;
-  background: #fff;
+.correctCard {
+  background: #D1FAE5;
+  border: 2px solid #E8F5E9;  /* 연한 초록 */
 }
 
-.wrong {
-  border: 2px solid #ef4444;
-  background: #fff;
+.wrongCard {
+  background: #FEF2F2;
+  border: 2px solid #FFEBEE;  /* 연한 빨강 */
 }
 
+/* 헤더 */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
 .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 20px;
-  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
 }
 
-.badgeCorrect {
-  background: #22c55e;
+.correctBadge {
+  background: #10B981;
 }
 
-.badgeWrong {
-  background: #ef4444;
+.wrongBadge {
+  background: #EF4444;
 }
 
 .questionNum {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6B7280;
 }
 
+/* 섹션 */
 .section {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
 }
 
 .label {
-  display: inline-block;
-  background: #f3f4f6;
-  color: #374151;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
-  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4F46E5;
+  margin-bottom: 12px;
 }
 
 .koreanText {
-  margin: 0;
-  font-size: 15px;
-  color: #111827;
-}
-
-.englishSentence {
-  background: #f9fafb;
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 15px;
-  color: #111827;
-  line-height: 1.8;
-}
-
-.blankWord {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 6px;
-  margin: 0 4px;
+  font-size: 18px;
   font-weight: 600;
+  color: #111827;
+  line-height: 1.6;
 }
 
-.blankCorrect {
-  background: #dcfce7;
-  color: #22c55e;
+/* 완성된 영어 문장 */
+.completedSentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 17px;
+  line-height: 2;
+  color: #374151;
 }
 
-.blankWrong {
-  background: #fee2e2;
-  color: #ef4444;
+.sentencePart {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.blankBox {
+  display: inline-block;
+  padding: 6px 16px;
+  background: #10B981;
+  color: white;
+  font-weight: 700;
+  font-size: 17px;
+  border-radius: 8px;
+  margin: 0 2px;
+}
+
+/* 빈칸 상세 */
+.blankList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.blankItem {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  border-radius: 16px;
+  padding: 18px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: calc(100% - 8px);
+  margin: 0 auto;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.blankBadge {
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  display: inline-block;
+  margin-bottom: 14px;
+  width: fit-content;
+}
+
+.blankContent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.answerOnly {
+  font-size: 20px;
+  font-weight: 700;
+  color: #10B981;
+  line-height: 1.4;
+}
+
+.answerRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 17px;
+}
+
+.answerLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: #6B7280;
+}
+
+.correctAnswer {
+  color: #10B981;
+  font-weight: 700;
+  font-size: 19px;
+}
+
+.wrongAnswer {
+  color: #EF4444;
+  font-weight: 700;
+  font-size: 19px;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .card {
+    padding: 28px 24px;
+    max-width: 100%;
+  }
+
+  .header {
+    margin-bottom: 24px;
+  }
+
+  .badge {
+    padding: 5px 14px;
+    font-size: 13px;
+  }
+
+  .label {
+    font-size: 13px;
+  }
+
+  .koreanText {
+    font-size: 17px;
+  }
+
+  .completedSentence {
+    font-size: 16px;
+  }
+
+  .blankBox {
+    padding: 5px 12px;
+    font-size: 16px;
+  }
+
+  .blankItem {
+    padding: 18px 22px;
+    min-height: 90px;
+  }
+
+  .answerOnly {
+    font-size: 18px;
+  }
+
+  .answerRow {
+    font-size: 16px;
+  }
+
+  .answerLabel {
+    font-size: 13px;
+  }
+
+  .correctAnswer,
+  .wrongAnswer {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 24px 20px;
+    margin-bottom: 20px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .badge {
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+
+  .label {
+    font-size: 12px;
+  }
+
+  .koreanText {
+    font-size: 16px;
+  }
+
+  .completedSentence {
+    font-size: 15px;
+  }
+
+  .blankBox {
+    padding: 4px 10px;
+    font-size: 15px;
+  }
+
+  .blankItem {
+    padding: 16px 18px;
+    min-height: 80px;
+  }
+
+  .answerOnly {
+    font-size: 17px;
+  }
+
+  .answerRow {
+    font-size: 15px;
+  }
+
+  .answerLabel {
+    font-size: 12px;
+  }
+
+  .correctAnswer,
+  .wrongAnswer {
+    font-size: 16px;
+  }
 }

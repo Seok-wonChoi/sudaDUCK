@@ -10,14 +10,16 @@ function formatMMSS(totalSeconds) {
 }
 
 export default function TimerGauge({
-  durationMs = 60_000,
+  durationMs = 15_000,
   isRunning = true,
   onDone,
+  startTimeMs = null, // 절대 시작 시간 (timestamp)
 }) {
   const fillRef = useRef(null);
   const rafRef = useRef(0);
   const endAtRef = useRef(0);
   const lastShownSecRef = useRef(-1);
+  const remainingMsRef = useRef(durationMs); // 남은 시간 저장 (일시정지/재개용)
 
   const [shownSec, setShownSec] = useState(() =>
     Math.ceil(durationMs / 1000)
@@ -26,12 +28,39 @@ export default function TimerGauge({
   const label = useMemo(() => formatMMSS(Math.max(0, shownSec)), [shownSec]);
 
   useEffect(() => {
-    if (!isRunning) return;
+    if (!isRunning) {
+      // 일시정지: 현재 남은 시간 저장
+      cancelAnimationFrame(rafRef.current);
 
-    const start = performance.now();
-    endAtRef.current = start + durationMs;
+      if (startTimeMs) {
+        // 절대 시간 모드: 현재 남은 시간 계산
+        const now = Date.now();
+        const elapsed = now - startTimeMs;
+        const remain = Math.max(0, durationMs - elapsed);
+        remainingMsRef.current = remain;
+      } else {
+        // 상대 시간 모드
+        const now = performance.now();
+        if (endAtRef.current > 0) {
+          const remain = Math.max(0, endAtRef.current - now);
+          remainingMsRef.current = remain;
+        }
+      }
+      return;
+    }
 
-    const tick = (now) => {
+    // 재개
+    if (startTimeMs) {
+      // 절대 시간 모드: 시작 시간 기준으로 종료 시간 계산
+      endAtRef.current = startTimeMs + durationMs;
+    } else {
+      // 상대 시간 모드: 남은 시간부터 시작
+      const start = performance.now();
+      endAtRef.current = start + remainingMsRef.current;
+    }
+
+    const tick = () => {
+      const now = startTimeMs ? Date.now() : performance.now();
       const remain = Math.max(0, endAtRef.current - now);
       const progress = durationMs > 0 ? remain / durationMs : 0;
 
@@ -58,7 +87,7 @@ export default function TimerGauge({
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [durationMs, isRunning, onDone]);
+  }, [durationMs, isRunning, onDone, startTimeMs]);
 
   return (
     <div className={styles.Wrap} aria-label="남은 시간">
