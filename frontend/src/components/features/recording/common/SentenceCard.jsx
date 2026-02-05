@@ -207,18 +207,16 @@ export default function SentenceCard({
   // 점수에 따른 등급 클래스 결정
   const getScoreGradeClass = () => {
     if (score === null || cardState !== 'idle') return '';
-    if (score >= 90) return styles.excellent;
-    if (score >= 70) return styles.good;
-    if (score >= 40) return styles.fair;
-    return styles.poor;
+    if (score >= 90) return styles.excellent; // Green
+    if (score >= 70) return styles.good;      // Yellow
+    return styles.poor;                       // Red
   };
 
   const getScoreGradeText = () => {
     if (score === null) return '';
-    if (score >= 90) return 'Perfect';
+    if (score >= 90) return 'Great!';
     if (score >= 70) return 'Good';
-    if (score >= 40) return 'Fair';
-    return 'Poor';
+    return 'Keep it up!';
   };
 
   return (
