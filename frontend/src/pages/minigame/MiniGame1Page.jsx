@@ -64,10 +64,11 @@ export default function MiniGame1Page() {
   const roomCode = location.state?.roomCode;
   const isHost = location.state?.isHost || false;
   const initialParticipantsCount = location.state?.participantsCount || 1;
+  const timeLimit = location.state?.timeLimit || 40;
   
   const [phase, setPhase] = useState(GAME_PHASE.COUNTDOWN);
   const [countdown, setCountdown] = useState(3);
-  const [timer, setTimer] = useState(40);
+  const [timer, setTimer] = useState(timeLimit);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [currentBlank, setCurrentBlank] = useState(0);
   const [blanksState, setBlanksState] = useState([]);
@@ -506,7 +507,7 @@ export default function MiniGame1Page() {
       onExit={handleExit}
       timer={phase === GAME_PHASE.PLAYING ? formatTime(timer) : null}
       progress={phase === GAME_PHASE.PLAYING ? timer : 0}
-      totalProgress={40}
+      totalProgress={timeLimit}
       isReviewMode={phase === GAME_PHASE.REVIEW}
       onComplete={phase === GAME_PHASE.REVIEW ? handleBackToResult : null}
     >

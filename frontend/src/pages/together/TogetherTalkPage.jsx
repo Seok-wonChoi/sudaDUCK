@@ -259,7 +259,13 @@ export default function TogetherTalkPage() {
   }, [hydratedInfo, navigate]);
 
   const roomInfo = hydratedInfo ?? {};
-  const timeLimit = 40;
+  const timeLimit = useMemo(() => {
+    const raw = roomInfo.timeLimit || roomInfo.roomInfo?.timeLimit;
+    const num = parseInt(raw, 10);
+    if (!isNaN(num) && num >= 15 && num <= 60) return num;
+    return 40; // 기본값
+  }, [roomInfo.timeLimit, roomInfo.roomInfo?.timeLimit]);
+  const durationMs = timeLimit * 1000;
 
   const resolvedRoomCode = useMemo(() => {
     return (
@@ -551,14 +557,14 @@ export default function TogetherTalkPage() {
 
   const handleSilenceDetected = useCallback(
     (payload, senderKey) => {
-      console.log("🔇 [정적 감지] 40초 동안 대화가 없었습니다!", {
+      console.log(`🔇 [정적 감지] ${timeLimit}초 동안 대화가 없었습니다!`, {
         payload,
         senderKey,
         roomId,
         currentTurn,
       });
     },
-    [roomId, currentTurn],
+    [roomId, currentTurn, timeLimit],
   );
 
   const handleVoiceLevelChanged = useCallback((payload, senderKey) => {
@@ -658,6 +664,8 @@ export default function TogetherTalkPage() {
               roomCode: resolvedRoomCode,
               turnCount: totalTurns,
               currentTurn: currentTurn, // 현재 턴 번호 전달
+              isHost: isHost, // 방장 권한 명시적 전달
+              timeLimit: timeLimit, // 타이머 설정값 명시적 전달
             },
             participants,
             myUserId, // 본인 userId 전달
@@ -740,7 +748,7 @@ export default function TogetherTalkPage() {
 
     // 퀘스트 시작 전 현재 남은 시간 저장
     const elapsed = Date.now() - timerStartedAt;
-    const remaining = Math.max(0, 40_000 - elapsed);
+    const remaining = Math.max(0, durationMs - elapsed);
     pausedTimeRemainingRef.current = remaining;
     console.log("[Quest] 타이머 일시정지 - 남은 시간:", remaining, "ms");
 
@@ -817,7 +825,7 @@ export default function TogetherTalkPage() {
 
     // 퀘스트 시작 전 현재 남은 시간 저장
     const elapsed = Date.now() - timerStartedAt;
-    const remaining = Math.max(0, 40_000 - elapsed);
+    const remaining = Math.max(0, durationMs - elapsed);
     pausedTimeRemainingRef.current = remaining;
     console.log("[UnexpectedQuest] 타이머 일시정지 - 남은 시간:", remaining, "ms");
 
@@ -1141,6 +1149,8 @@ export default function TogetherTalkPage() {
             roomCode: resolvedRoomCode,
             turnCount: totalTurns,
             currentTurn: currentTurn, // 현재 턴 번호 전달
+            isHost: isHost,
+            timeLimit: timeLimit,
           },
           participants: currentParticipants,
           myUserId,
@@ -1172,12 +1182,12 @@ export default function TogetherTalkPage() {
   const memoizedTimer = useMemo(() => {
     return (
       <TimerGauge
-        durationMs={40_000}
+        durationMs={durationMs}
         isRunning={isRoomTimerRunning}
         onDone={handleDone}
       />
     );
-  }, [isRoomTimerRunning, handleDone]);
+  }, [isRoomTimerRunning, handleDone, durationMs]);
 
   const handleBack = useCallback(() => {
     if (window.history.length > 1) navigate(-1);
@@ -1193,7 +1203,7 @@ export default function TogetherTalkPage() {
   const audioChunksRef = useRef([]);
   const answerSubmittedRef = useRef(false); // 답변 제출 여부 추적
   const [currentSpeakerIndex, setCurrentSpeakerIndex] = useState(-1); // 현재 답변 중인 참여자 인덱스
-  const [speakerTimeLeft, setSpeakerTimeLeft] = useState(40); // 현재 참여자의 남은 시간 (15초)
+  const [speakerTimeLeft, setSpeakerTimeLeft] = useState(timeLimit); // 현재 참여자의 남은 시간
   const pausedTimeRemainingRef = useRef(null); // 퀘스트 시작 시 남은 시간 저장
   const recordingReadyRef = useRef(false); // 녹음 준비 완료 여부
   const timerInitializedRef = useRef(false); // 타이머 초기화 여부 (중복 방지)
@@ -1206,7 +1216,7 @@ export default function TogetherTalkPage() {
     // 퀘스트 종료 시 남은 시간만큼 타이머 재개
     if (pausedTimeRemainingRef.current !== null) {
       const remainingTime = pausedTimeRemainingRef.current;
-      const newStartTime = Date.now() - (40_000 - remainingTime);
+      const newStartTime = Date.now() - (durationMs - remainingTime);
       setTimerStartedAt(newStartTime);
       console.log("[Quest] 타이머 재개 - 남은 시간:", remainingTime, "ms");
       pausedTimeRemainingRef.current = null;
@@ -1222,7 +1232,7 @@ export default function TogetherTalkPage() {
     setIsRecording(false);
     setRecordedAudio(null);
     setCurrentSpeakerIndex(-1);
-    setSpeakerTimeLeft(40);
+    setSpeakerTimeLeft(timeLimit);
     if (
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state !== "inactive"
@@ -1479,7 +1489,7 @@ export default function TogetherTalkPage() {
 
           // 타이머를 한 번만 리셋 (중복 리셋 방지)
           if (!timerInitializedRef.current) {
-            setSpeakerTimeLeft(40);
+            setSpeakerTimeLeft(timeLimit);
             timerInitializedRef.current = true;
             console.log("[Quest] ✅ 녹음 준비 완료 - 15초 타이머 시작");
           }
@@ -1634,7 +1644,7 @@ export default function TogetherTalkPage() {
     // 내 차례가 아니면 바로 타이머 시작
     if (!isMyTurn) {
       console.log(`[타이머] 다른 참여자 차례 - 즉시 타이머 시작`);
-      setSpeakerTimeLeft(40);
+      setSpeakerTimeLeft(timeLimit);
       recordingReadyRef.current = true; // 다른 사람 차례는 녹음 불필요
     } else {
       console.log(`[타이머] 내 차례 - 녹음 준비 대기 중...`);
@@ -1806,7 +1816,7 @@ export default function TogetherTalkPage() {
             }, 2000); // WAV 변환 + API 제출 시간 고려
             setCurrentSpeakerIndex(-1);
           }
-          return 40;
+          return timeLimit;
         }
         return prev - 1;
       });
@@ -2052,7 +2062,7 @@ const stopSTT = useCallback(() => {
 
             <div className={styles.TimerCol}>
               <TimerGauge
-                durationMs={40_000}
+                durationMs={durationMs}
                 isRunning={isRoomTimerRunning}
                 onDone={handleDone}
                 startTimeMs={timerStartedAt}
