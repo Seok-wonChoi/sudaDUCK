@@ -1,4 +1,5 @@
 import api from "./api";
+import { logWarning } from "../utils/errorLogger";
 
 // 미니게임1 복습 4문제 조회: GET /api/v1/mini_game/{roomId}/review/questions
 export async function getReviewQuestions(roomId) {
@@ -15,7 +16,6 @@ export async function submitReviewAnswers(roomId, answers) {
 }
 
 // 미니게임1 결과 랭킹 조회: GET /api/v1/mini_game/{roomId}/review/ranking
-// 백엔드가 실제로 GET으로 구현되어 있음
 export async function getReviewRanking(roomId) {
   const { data } = await api.get(`/api/v1/mini_game/${roomId}/review/ranking`);
   return data;
@@ -28,7 +28,12 @@ export async function clearReviewData(roomId) {
     const { data } = await api.delete(`/api/v1/mini_game/${roomId}/review/clear`);
     return data;
   } catch (error) {
-    console.warn('clearReviewData API 미구현 또는 에러:', error);
+    // 구조화된 경고 로그 (프로덕션에서 Sentry 등으로 전송 가능)
+    logWarning('clearReviewData', 'API 미구현 또는 호출 실패', {
+      roomId,
+      status: error?.response?.status,
+      message: error?.message
+    });
     return null;
   }
 }

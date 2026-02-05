@@ -5,17 +5,11 @@ export default function ParticipantList({
   participants = [],
   voiceLevels = {}
 }) {
-  // 참가자 데이터와 음성 레벨 매칭
+  // 참가자 데이터와 음성 레벨 매칭 - voiceLevel > 0인 경우만 업데이트
   const participantsWithVoice = useMemo(() => {
-    // Participants
-    // Voice levels
-    
     return participants.map(p => {
       const level = voiceLevels[p.id] || voiceLevels[p.userId] || 0;
-      const isSpeaking = level > 0.05; // threshold 낮춤: 5% 이상이면 말하는 중
-      
-      if (level > 0) {
-      }
+      const isSpeaking = level > 0.05;
       
       return {
         ...p,
@@ -38,38 +32,55 @@ export default function ParticipantList({
         <span>참여자</span>
       </div>
       <div className={styles.list}>
-        {participantsWithVoice.map((p, idx) => (
-          <div key={p.id || p.userId || idx} className={styles.participant}>
-            <div className={styles.avatar}>
-              {/* 음성 레벨에 따른 빛 효과 */}
-              {p.isSpeaking && (
-                <div 
-                  className={styles.voiceGlow}
-                  style={{
-                    opacity: Math.min(p.voiceLevel * 1.5, 1),
-                  }}
-                />
-              )}
+        {participantsWithVoice.map((p, idx) => {
+          // 프로필 이미지 URL (여러 fallback 시도)
+          const profileUrl = p.avatar || p.profileImageUrl;
+          
+          return (
+            <div key={p.id || p.userId || idx} className={styles.participant}>
+              <div className={styles.avatar}>
+                {/* 음성 레벨에 따른 빛 효과 */}
+                {p.isSpeaking && p.voiceLevel > 0 && (
+                  <div 
+                    className={styles.voiceGlow}
+                    style={{
+                      opacity: Math.min(p.voiceLevel * 1.5, 1),
+                    }}
+                  />
+                )}
 
-              {/* 아바타 이미지 */}
-              {p.avatar || p.profileImageUrl ? (
-                <img 
-                  src={p.avatar || p.profileImageUrl} 
-                  alt={p.name || p.nickname} 
-                  className={styles.avatarImage}
-                />
-              ) : (
-                <div className={styles.avatarPlaceholder}>
-                  {(p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?'}
-                </div>
-              )}
+                {/* 아바타 이미지 또는 이니셜 */}
+                {profileUrl ? (
+                  <img 
+                    src={profileUrl} 
+                    alt={p.name || p.nickname} 
+                    className={styles.avatarImage}
+                    onError={(e) => {
+                      // 이미지 로드 실패 시 이니셜로 대체
+                      console.error('❌ 이미지 로드 실패:', profileUrl);
+                      e.target.style.display = 'none';
+                      // 이니셜 표시를 위해 부모 요소에 fallback 클래스 추가
+                      if (e.target.parentElement) {
+                        const placeholder = document.createElement('div');
+                        placeholder.className = styles.avatarPlaceholder;
+                        placeholder.textContent = (p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?';
+                        e.target.parentElement.appendChild(placeholder);
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className={styles.avatarPlaceholder}>
+                    {(p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                )}
+              </div>
+              <span className={styles.name}>
+                {p.name || p.nickname}
+                {p.isMe && <span className={styles.meBadge}>나</span>}
+              </span>
             </div>
-            <span className={styles.name}>
-              {p.name || p.nickname}
-              {p.isMe && <span className={styles.meBadge}>나</span>}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

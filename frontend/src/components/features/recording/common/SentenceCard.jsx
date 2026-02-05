@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import styles from './SentenceCard.module.css';
+import bookmarkerIcon from '@/assets/icons/bookmarker.png';
 
 export default function SentenceCard({
   speaker = '나',
@@ -39,12 +40,21 @@ export default function SentenceCard({
     console.log('북마크 토글:', sentenceId, newBookmarkedState);
   };
 
+  // 점수에 따른 색상 클래스 반환
+  const getScoreColorClass = (scoreValue) => {
+    if (scoreValue < 40) return styles.scoreRed;
+    if (scoreValue < 60) return styles.scoreOrange;
+    if (scoreValue < 80) return styles.scoreYellow;
+    return styles.scoreGreen;
+  };
+
   const getDisplayEnglish = () => {
     if (blankWords.length === 0) {
       return <>{english}</>;
     }
 
-    if (cardState === 'ai_playing') {
+    // AI가 읽는 중이거나 녹음 대기 중에는 전체 문장 보여주기
+    if (cardState === 'ai_playing' || cardState === 'record_timer') {
       return <>{english}</>;
     }
 
@@ -240,16 +250,11 @@ export default function SentenceCard({
               aria-label={isBookmarked ? "저장 해제" : "저장하기"}
               title={isBookmarked ? "저장 해제" : "저장하기"}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M19 3H5C4.20435 3 3.44129 3.31607 2.87868 3.87868C2.31607 4.44129 2 5.20435 2 6V21L12 16.5L22 21V6C22 5.20435 21.6839 4.44129 21.1213 3.87868C20.5587 3.31607 19.7956 3 19 3Z"
-                  stroke={isBookmarked ? "#2b7fff" : "#9CA3AF"}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill={isBookmarked ? "#2b7fff" : "none"}
-                />
-              </svg>
+              <img
+                src={bookmarkerIcon}
+                alt="bookmark"
+                className={styles.bookmarkIcon}
+              />
               <span className={styles.bookmarkText}>
                 {isBookmarked ? "저장됨" : "저장하기"}
               </span>

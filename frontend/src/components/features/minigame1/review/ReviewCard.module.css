@@ -9,12 +9,12 @@
 
 .correctCard {
   background: #D1FAE5;
-  border: 3px solid #10B981;
+  border: 2px solid #E8F5E9;  /* 연한 초록 */
 }
 
 .wrongCard {
   background: #FEF2F2;
-  border: 3px solid #EF4444;
+  border: 2px solid #FFEBEE;  /* 연한 빨강 */
 }
 
 /* 헤더 */
@@ -26,9 +26,9 @@
 }
 
 .badge {
-  padding: 8px 20px;
-  border-radius: 24px;
-  font-size: 15px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
   font-weight: 700;
   color: white;
 }
@@ -107,35 +107,37 @@
 
 .blankItem {
   background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.03);
   border-radius: 16px;
-  padding: 24px 32px;
+  padding: 18px 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  width: 100%;
-  min-height: 120px;
+  width: calc(100% - 8px);
+  margin: 0 auto;
+  min-height: 90px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
 .blankBadge {
-  padding: 6px 16px;
-  border-radius: 16px;
-  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: white;
   display: inline-block;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
+  width: fit-content;
 }
 
 .blankContent {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .answerOnly {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: #10B981;
   line-height: 1.4;
@@ -144,12 +146,12 @@
 .answerRow {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 18px;
+  gap: 4px;
+  font-size: 17px;
 }
 
 .answerLabel {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #6B7280;
 }
@@ -157,13 +159,13 @@
 .correctAnswer {
   color: #10B981;
   font-weight: 700;
-  font-size: 20px;
+  font-size: 19px;
 }
 
 .wrongAnswer {
   color: #EF4444;
   font-weight: 700;
-  font-size: 20px;
+  font-size: 19px;
 }
 
 /* 반응형 */
@@ -178,8 +180,8 @@
   }
 
   .badge {
-    padding: 6px 16px;
-    font-size: 14px;
+    padding: 5px 14px;
+    font-size: 13px;
   }
 
   .label {
@@ -200,26 +202,25 @@
   }
 
   .blankItem {
-    padding: 20px 24px;
-    min-height: 100px;
+    padding: 18px 22px;
+    min-height: 90px;
   }
 
   .answerOnly {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .answerRow {
-    font-size: 17px;
-    gap: 5px;
+    font-size: 16px;
   }
 
   .answerLabel {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .correctAnswer,
   .wrongAnswer {
-    font-size: 18px;
+    font-size: 17px;
   }
 }
 
@@ -236,8 +237,8 @@
   }
 
   .badge {
-    padding: 5px 14px;
-    font-size: 13px;
+    padding: 4px 12px;
+    font-size: 12px;
   }
 
   .label {
@@ -258,24 +259,24 @@
   }
 
   .blankItem {
-    padding: 18px 20px;
-    min-height: 90px;
+    padding: 16px 18px;
+    min-height: 80px;
   }
 
   .answerOnly {
-    font-size: 18px;
+    font-size: 17px;
   }
 
   .answerRow {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .answerLabel {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .correctAnswer,
   .wrongAnswer {
-    font-size: 17px;
+    font-size: 16px;
   }
 }

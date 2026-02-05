@@ -58,6 +58,13 @@ function parseBlankScript(blankScript) {
 export default function MiniGame1Page() {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Location state에서 초기값 가져오기
+  const roomId = location.state?.roomId;
+  const roomCode = location.state?.roomCode;
+  const isHost = location.state?.isHost || false;
+  const initialParticipantsCount = location.state?.participantsCount || 1;
+  
   const [phase, setPhase] = useState(GAME_PHASE.COUNTDOWN);
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState(60);
@@ -74,11 +81,7 @@ export default function MiniGame1Page() {
   const [submitResult, setSubmitResult] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [submittedCount, setSubmittedCount] = useState(0);
-  const [totalParticipants, setTotalParticipants] = useState(0);
-
-  const roomId = location.state?.roomId;
-  const roomCode = location.state?.roomCode;
-  const isHost = location.state?.isHost || false;
+  const [totalParticipants, setTotalParticipants] = useState(initialParticipantsCount);
 
   // 마이크 분석기 - 음성 레벨 감지
   const { isSpeaking, voiceLevel, start: startMic, stop: stopMic } = useMicAnalyzer({
@@ -91,68 +94,71 @@ export default function MiniGame1Page() {
     if (phase === GAME_PHASE.PLAYING) {
       startMic();
     }
-    return () => {
-      stopMic();
-    };
+    return () => stopMic();
   }, [phase, startMic, stopMic]);
 
-  // 참가자 목록 불러오기 (게임 시작 시 1번만)
-  useEffect(() => {
-    // 게임 시작 시에만 호출
-    if (phase !== GAME_PHASE.COUNTDOWN && phase !== GAME_PHASE.PLAYING) {
-      return;
-    }
+  // 음성 레벨 맵 (throttle 적용 - 200ms)
+  const [voiceLevelsMap, setVoiceLevelsMap] = useState({});
+  const [lastVoiceUpdate, setLastVoiceUpdate] = useState(0);
 
-    const fetchParticipants = async () => {
+  useEffect(() => {
+    if (!isSpeaking || voiceLevel < 0.05) return;
+
+    const now = Date.now();
+    if (now - lastVoiceUpdate < 200) return;
+
+    const myId = 'me';
+    setVoiceLevelsMap((prev) => ({
+      ...prev,
+      [myId]: voiceLevel,
+    }));
+    setLastVoiceUpdate(now);
+
+    const timeout = setTimeout(() => {
+      setVoiceLevelsMap((prev) => ({
+        ...prev,
+        [myId]: 0,
+      }));
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [isSpeaking, voiceLevel, lastVoiceUpdate]);
+
+  // 🔥 문제 5 해결: 방 참가자 정보 초기 로드
+  useEffect(() => {
+    const loadRoomParticipants = async () => {
       if (!roomCode) return;
       
       try {
         const lobbyData = await getRoomLobby(roomCode);
+        console.log('📊 방 참가자 정보 로드:', lobbyData);
         
-        if (lobbyData?.participants) {
-          const formattedParticipants = lobbyData.participants.map(p => {
-            console.log('👤 참가자 데이터:', p);
-            return {
-              id: p.userId || p.id,
-              userId: p.userId || p.id,
-              name: p.nickname || p.name,
-              nickname: p.nickname || p.name,
-              profileImageUrl: p.profileImageUrl || p.avatar || p.profileImage,
-              avatar: p.profileImageUrl || p.avatar || p.profileImage,
-              isActive: true,
-              isMe: false,
-              voiceLevel: 0,
-            };
-          });
+        if (lobbyData && lobbyData.members && Array.isArray(lobbyData.members)) {
+          const participantsList = lobbyData.members.map(member => ({
+            id: member.userId || member.memberId,
+            userId: member.userId || member.memberId,
+            name: member.nickname,
+            nickname: member.nickname,
+            profileImageUrl: member.profileImageUrl,
+            avatar: member.profileImageUrl,
+            isActive: true,
+            isMe: member.isMe || false,
+            voiceLevel: 0,
+          }));
           
-          setParticipants(formattedParticipants);
-          setTotalParticipants(formattedParticipants.length);
+          console.log('✅ 참가자 목록 설정:', participantsList);
+          setParticipants(participantsList);
+          setTotalParticipants(participantsList.length);
         }
       } catch (error) {
-        console.error('❌ 참가자 목록 조회 실패:', error);
+        console.error('❌ 방 참가자 정보 로드 실패:', error);
       }
     };
 
-    // 게임 시작 시 1번만 호출
-    fetchParticipants();
-  }, [roomCode, phase]);
+    loadRoomParticipants();
+  }, [roomCode]);
 
-  // 내 음성 레벨을 participants에 반영 (throttle 적용)
-  useEffect(() => {
-    // voiceLevel이 매우 작으면 무시
-    if (voiceLevel < 0.05) return;
-    
-    // throttle: 200ms마다만 업데이트
-    const timeoutId = setTimeout(() => {
-      setParticipants(prev => prev.map(p => 
-        p.isMe ? { ...p, voiceLevel, isSpeaking } : p
-      ));
-    }, 200);
-
-    return () => clearTimeout(timeoutId);
-  }, [voiceLevel, isSpeaking]);
-
-  // 대기 중 제출 상태 확인 (3초마다)
+  // 🔥 문제 3 해결: 대기 중 제출 상태 확인 (3초마다)
   useEffect(() => {
     if (phase !== GAME_PHASE.WAITING) return;
 
@@ -160,12 +166,47 @@ export default function MiniGame1Page() {
       try {
         const rankingData = await getReviewRanking(roomId);
         
+        console.log('📊 대기 상태 확인:', {
+          rankingData: rankingData.length,
+          totalParticipants,
+          제출여부: rankingData.map(r => ({ 이름: r.nickname, 점수: r.score }))
+        });
+        
         if (rankingData && Array.isArray(rankingData)) {
-          setSubmittedCount(rankingData.length);
+          // 제출한 사람 수 계산 (점수가 있는 사람)
+          const submittedUsers = rankingData.filter(r => r.score > 0 || r.hasSubmitted);
+          setSubmittedCount(submittedUsers.length);
           
-          // 모든 참가자가 제출했으면 결과 화면으로 이동
+          // 랭킹 데이터로 참가자 정보 업데이트
+          const updatedParticipants = rankingData.map(rank => ({
+            id: rank.userId || rank.nickname,
+            userId: rank.userId || rank.nickname,
+            name: rank.nickname,
+            nickname: rank.nickname,
+            profileImageUrl: rank.profileImageUrl,
+            avatar: rank.profileImageUrl,
+            isActive: true,
+            isMe: rank.isMe || false,
+            voiceLevel: 0,
+          }));
+          
+          // 기존 참가자 정보와 병합
+          setParticipants(prevParticipants => {
+            const updatedMap = new Map();
+            
+            prevParticipants.forEach(p => {
+              updatedMap.set(p.userId, p);
+            });
+            
+            updatedParticipants.forEach(p => {
+              updatedMap.set(p.userId, { ...updatedMap.get(p.userId), ...p });
+            });
+            
+            return Array.from(updatedMap.values());
+          });
+          
+          // 모든 참가자가 제출했으면 결과 화면으로
           if (rankingData.length >= totalParticipants && totalParticipants > 0) {
-            // All participants submitted
             setRankings(rankingData);
             setPhase(GAME_PHASE.RESULT);
           }
@@ -175,10 +216,7 @@ export default function MiniGame1Page() {
       }
     };
 
-    // 즉시 한 번 확인
     checkSubmissionStatus();
-    
-    // 3초마다 확인 (2초 → 3초로 변경)
     const interval = setInterval(checkSubmissionStatus, 3000);
     
     return () => clearInterval(interval);
@@ -196,14 +234,15 @@ export default function MiniGame1Page() {
         setIsLoading(true);
 
         const questionsData = await getReviewQuestions(roomId);
+        
+        console.log('📊 받아온 문제 데이터:', questionsData);
 
-        // 유효한 문제 필터링: scores 제외, 필드 존재, 빈칸 있는지 확인
+        // 유효한 문제 필터링
         const validQuestions = questionsData.filter(
           item => {
             if (item.scriptId === 'scores') return false;
             if (!item.blank_script || !item.korean || !item.english) return false;
             
-            // 빈칸이 실제로 있는지 확인
             const hasBlanks = item.blank_script.includes('[') && item.blank_script.includes(']');
             if (!hasBlanks) {
               console.warn('❌ 빈칸이 없는 문제 제외:', item);
@@ -212,11 +251,13 @@ export default function MiniGame1Page() {
           }
         );
 
+        console.log('📊 필터링 후 문제 수:', validQuestions.length);
+
         const formattedQuestions = validQuestions.map((item) => {
           const { parts, answers } = parseBlankScript(item.blank_script);
 
-          // 빈칸이 없으면 제외 (이중 체크)
           if (answers.length === 0) {
+            console.warn('❌ 빈칸 파싱 실패:', item.blank_script);
             return null;
           }
 
@@ -225,53 +266,65 @@ export default function MiniGame1Page() {
             korean: item.korean,
             english: item.english,
             englishParts: parts,
-            blanks: answers.map(answer => ({
-              answer: answer.toLowerCase().trim(),
-              userAnswer: '',
-              status: 'empty'
-            })),
+            blanks: answers.map((ans) => ({ answer: ans.trim() })),
           };
-        }).filter(q => q !== null); // null 제거
+        }).filter(Boolean);
+
+        console.log('✅ 최종 문제 목록:', formattedQuestions);
+
+        if (formattedQuestions.length === 0) {
+          console.error('유효한 문제가 없습니다');
+          alert('문제를 불러올 수 없습니다.');
+          navigate('/together');
+          return;
+        }
 
         setQuestions(formattedQuestions);
-
+        initQuestion(0, formattedQuestions);
         setIsLoading(false);
       } catch (error) {
-        console.error('❌ 미니게임 데이터 조회 실패:', error);
+        console.error('❌ 데이터 가져오기 실패:', error);
         setIsLoading(false);
+        navigate('/together');
       }
     };
 
     fetchData();
   }, [roomId, navigate]);
 
-  const initQuestion = useCallback((qIdx) => {
-    const q = questions[qIdx];
-    if (q) {
-      setBlanksState(q.blanks.map(() => ({ value: '', status: 'empty' })));
-      setCurrentBlank(0);
-    }
+  const initQuestion = useCallback((qIdx, qs = questions) => {
+    const q = qs[qIdx];
+    if (!q) return;
+
+    const initialBlanks = q.blanks.map(() => ({
+      value: '',
+      status: 'empty',
+    }));
+
+    setBlanksState(initialBlanks);
+    setCurrentBlank(0);
   }, [questions]);
 
   useEffect(() => {
-    if (phase !== GAME_PHASE.COUNTDOWN || countdown <= 0) return;
-    const id = setTimeout(() => {
+    if (phase !== GAME_PHASE.COUNTDOWN) return;
+
+    const interval = setInterval(() => {
       setCountdown((prev) => {
-        const next = prev - 1;
-        if (next === 0) {
+        if (prev <= 1) {
           setPhase(GAME_PHASE.PLAYING);
           setShowGuide(true);
-          initQuestion(0);
+          return 0;
         }
-        return next;
+        return prev - 1;
       });
     }, 1000);
-    return () => clearTimeout(id);
-  }, [phase, countdown, initQuestion]);
+
+    return () => clearInterval(interval);
+  }, [phase]);
 
   useEffect(() => {
     if (phase !== GAME_PHASE.PLAYING) return;
-    
+
     const interval = setInterval(() => {
       setTimer((t) => {
         if (t <= 1) {
@@ -309,6 +362,10 @@ export default function MiniGame1Page() {
     });
   }, []);
 
+  const handleBlankClick = useCallback((blankIdx) => {
+    setCurrentBlank(blankIdx);
+  }, []);
+
   const handleBlankSubmit = useCallback((blankIdx) => {
     const q = questions[currentQuestion];
     if (!q) return;
@@ -332,11 +389,18 @@ export default function MiniGame1Page() {
         koreanSentence: q.korean,
         englishSentence: q.english,
         englishParts: q.englishParts,
-        blanks: q.blanks.map((b, idx) => ({
-          answer: b.answer,
-          userAnswer: blanksState[idx]?.value || '',
-        })),
+        blanks: q.blanks.map((b, idx) => {
+          const userAns = blanksState[idx]?.value || '';
+          const correctAns = b.answer;
+          const isCorrect = userAns.trim().toLowerCase() === correctAns.trim().toLowerCase();
+          return {
+            answer: correctAns,
+            userAnswer: userAns,
+            isCorrect: isCorrect,
+          };
+        }),
       };
+
       setAnsweredQuestions((prev) => [...prev, answered]);
 
       if (currentQuestion < questions.length - 1) {
@@ -358,10 +422,16 @@ export default function MiniGame1Page() {
         koreanSentence: q.korean,
         englishSentence: q.english,
         englishParts: q.englishParts,
-        blanks: q.blanks.map((b, idx) => ({
-          answer: b.answer,
-          userAnswer: blanksState[idx]?.value || '',
-        })),
+        blanks: q.blanks.map((b, idx) => {
+          const userAns = blanksState[idx]?.value || '';
+          const correctAns = b.answer;
+          const isCorrect = userAns.trim().toLowerCase() === correctAns.trim().toLowerCase();
+          return {
+            answer: correctAns,
+            userAnswer: userAns,
+            isCorrect: isCorrect,
+          };
+        }),
       };
       finalAnswers.push(answered);
     }
@@ -378,39 +448,22 @@ export default function MiniGame1Page() {
 
       console.log('📤 답안 제출:', apiAnswers);
 
-      const result = await submitReviewAnswers(roomId, apiAnswers);
-      console.log('✅ 제출 결과:', result);
-
-      setSubmitResult(result);
+      const response = await submitReviewAnswers(roomId, apiAnswers);
       
-      const updatedAnswers = answers.map((ans, ansIdx) => {
-        const blanksWithCorrect = ans.blanks.map(blank => {
-          const isCorrect = blank.userAnswer.toLowerCase().trim() === blank.answer.toLowerCase().trim();
-          return {
-            ...blank,
-            isCorrect
-          };
-        });
-        return {
-          ...ans,
-          blanks: blanksWithCorrect
-        };
+      setSubmitResult({
+        message: response.message || '제출 완료!',
+        correctCount: response.correctCount || 0,
+        totalQuestions: questions.length,
       });
-      setAnsweredQuestions(updatedAnswers);
-      
-      setPhase(GAME_PHASE.WAITING);
-      setSubmittedCount(1); // 내가 제출했으므로 최소 1
 
-      if (result.correctCount >= 3) {
-        setShowCoinReward(true);
-      }
+      setPhase(GAME_PHASE.WAITING);
     } catch (error) {
       console.error('❌ 답안 제출 실패:', error);
       alert('답안 제출에 실패했습니다.');
     }
   };
 
-  const handleShowReview = () => {
+  const handleShowReview = async () => {
     setPhase(GAME_PHASE.REVIEW);
   };
 
@@ -420,54 +473,30 @@ export default function MiniGame1Page() {
 
   const handleExit = async () => {
     try {
-      if (isHost) {
-        await clearReviewData(roomId);
-        console.log('✅ 미니게임 데이터 정리 완료');
+      if (roomCode) {
+        await leaveRoom({ roomCode });
       }
-
-      await leaveRoom({ roomCode });
+      
+      await clearReviewData(roomId);
+      
       navigate('/together');
     } catch (error) {
-      console.error('❌ 나가기 실패:', error);
+      console.error('방 나가기 에러:', error);
       navigate('/together');
     }
   };
 
   if (isLoading) {
     return (
-      <MiniGameLayout
-        participants={participants}
-        voiceLevels={{}}
-        onExit={handleExit}
-      >
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100%',
-          fontSize: '1.5rem',
-          color: '#666'
-        }}>
-          문제를 불러오는 중...
+      <MiniGameLayout>
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          로딩 중...
         </div>
       </MiniGameLayout>
     );
   }
 
   const currentQuestionData = questions[currentQuestion];
-
-  // voiceLevels 객체 생성 - 모든 참가자에게 음성 레벨 전달 (실제로는 내 레벨만 업데이트됨)
-  const voiceLevelsMap = {};
-  participants.forEach(p => {
-    // 내 음성 레벨을 전달 (첫 번째 참가자를 나로 간주)
-    if (participants.indexOf(p) === 0) {
-      voiceLevelsMap[p.id || p.userId] = voiceLevel;
-    } else {
-      voiceLevelsMap[p.id || p.userId] = 0;
-    }
-  });
-
-  // Voice levels updated
 
   return (
     <MiniGameLayout
@@ -501,6 +530,7 @@ export default function MiniGame1Page() {
             currentBlankIndex={currentBlank}
             onBlankChange={handleBlankChange}
             onBlankSubmit={handleBlankSubmit}
+            onBlankClick={handleBlankClick}
           />
         </>
       )}

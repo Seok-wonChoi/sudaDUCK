@@ -149,6 +149,23 @@
   font-weight: 500;
 }
 
+/* Score Color Classes */
+.scoreRed {
+  color: #ef4444 !important;
+}
+
+.scoreOrange {
+  color: #f97316 !important;
+}
+
+.scoreYellow {
+  color: #eab308 !important;
+}
+
+.scoreGreen {
+  color: #22c55e !important;
+}
+
 .progress {
   font-weight: 500;
   font-size: 13px;
@@ -186,8 +203,21 @@
   border-color: #2b7fff;
 }
 
-.bookmarkButton.bookmarked svg {
+.bookmarkIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  transition: all 0.3s ease;
+  filter: grayscale(100%) brightness(0.6);
+}
+
+.bookmarkButton.bookmarked .bookmarkIcon {
   animation: bookmarkPop 0.4s ease;
+  filter: brightness(0) saturate(100%) invert(42%) sepia(97%) saturate(3129%) hue-rotate(200deg) brightness(101%) contrast(101%);
+}
+
+.bookmarkButton:hover .bookmarkIcon {
+  filter: grayscale(0%) brightness(0.8);
 }
 
 .bookmarkText {

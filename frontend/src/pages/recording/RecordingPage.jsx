@@ -342,14 +342,35 @@ console.log(`📤 발음 평가 전송 시작`, {
     setSelectedTurnForReport(null);
   };
 
-  const handleComplete = () => {
+  // 미니게임 시작 신호 수신 핸들러
+  const handleMiniGameStart = useCallback(() => {
+    console.log('🎮 미니게임 시작!');
     navigate("/minigame1", { 
       state: { 
         roomId: roomId,
         roomCode: roomCode,
-        isHost: roomInfo.isHost || false
+        isHost: roomInfo.isHost || false,
+        participantsCount: participants.length
       } 
     });
+  }, [navigate, roomId, roomCode, roomInfo.isHost, participants.length]);
+
+  const handleComplete = () => {
+    // 방장만 시작 신호 전송
+    if (roomInfo.isHost) {
+      console.log('🎮 [방장] 미니게임 시작 신호 전송');
+      
+      const stompClient = window.stompClient;
+      if (stompClient && stompClient.connected) {
+        stompClient.publish({
+          destination: `/app/rooms/${roomCode}/minigame/start`,
+          body: JSON.stringify({})
+        });
+      } else {
+        console.error('❌ WebSocket 연결 안 됨');
+        alert('연결 오류가 발생했습니다.');
+      }
+    }
   };
 
   // [수정] 북마크 토글: scriptId 기준으로 동작하도록 수정
@@ -419,6 +440,7 @@ console.log(`📤 발음 평가 전송 시작`, {
     roomCode,
     {
       onRoomClosed: handleRoomClosed,
+      onMiniGameStart: handleMiniGameStart,
     },
     roomId
   );
@@ -940,7 +962,7 @@ console.log(`📤 발음 평가 전송 시작`, {
         );
       case STEP.ALL_DONE:
         return (
-          <BottomAllDone onRestart={restart} onComplete={handleComplete} />
+          <BottomAllDone onRestart={restart} onComplete={handleComplete} isHost={roomInfo.isHost} />
         );
       default:
         return null;
