@@ -330,16 +330,41 @@
   height: 20px;
 }
 
-/* Recording Box */
-.recordingBox {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+.nextSentenceHint {
+  font-size: 18px;
+  color: #64748b;
+  font-weight: 700;
+  margin-top: 8px;
+  animation: fadeInHint 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes fadeInHint {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.countdownWrapper {
+  background: transparent;
+  border: none;
   padding: 12px;
   min-height: 80px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.recordingAreaWrapper {
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .recordingContent {
@@ -365,78 +390,240 @@
 }
 
 .statusText.statusSuccess {
+  font-size: 24px;
+  font-weight: 900;
   color: #10b981;
+}
+
+.recordingColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.statusColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.countdownCircleBig {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #2b7fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  animation: pulseBlue 1s infinite;
+}
+
+@keyframes pulseBlue {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(43, 127, 255, 0.4); }
+  50% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(43, 127, 255, 0); }
+}
+
+.countdownNumberBig {
+  font-size: 42px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.statusTextLarge {
+  font-size: 26px;
+  color: #1e2939;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+}
+
+.recordingHintLarge {
+  font-size: 20px;
+  color: #2b7fff;
+  font-weight: 800;
+}
+
+.recordingHint {
+  font-size: 13px;
+  color: #2b7fff;
+  font-weight: 700;
+}
+
+.recordingHintText {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 600;
+  text-align: center;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .recordingActive {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
   position: relative;
-  gap: 12px;
 }
 
-.toggleSide {
-  position: absolute;
-  left: 0;
+.sideArea {
+  width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.miniToggle {
-  padding: 10px 18px;
-  font-size: 14px;
+.centerArea {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* iOS Style Switch */
+.switchWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.switchLabel {
+  font-size: 11px;
   font-weight: 800;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  color: #64748b;
 }
 
-.miniToggle.active {
-  background: #eff6ff;
-  border-color: #2b7fff;
-  color: #2b7fff;
-  box-shadow: 0 2px 8px rgba(43, 127, 255, 0.15);
-}
-
-.stopButton {
-  position: absolute;
-  right: 0;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
-  background: #4f46e5;
+.iosSwitch {
+  width: 50px;
+  height: 26px;
+  background-color: #cbd5e1;
+  border-radius: 99px;
+  position: relative;
   border: none;
-  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+  transition: background-color 0.3s ease;
+  padding: 0;
 }
 
-.stopButton:hover {
-  background: #4338ca;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 10px rgba(79, 70, 229, 0.3);
+.switchOn {
+  background-color: #2b7fff;
 }
 
-.stopButton:active {
-  transform: translateY(0);
+.switchHandle {
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.switchOn .switchHandle {
+  transform: translateX(24px);
+}
+
+.stopActionIconWrap {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stopButtonCircle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  padding: 0;
+  min-width: 60px;
+}
+
+.stopButtonCircle:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.stopButtonCircle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.stopIcon {
+  width: 28px;
+  height: 28px;
+  background: #ef4444;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
+}
+
+.stopText {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ef4444;
+  white-space: nowrap;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(239, 68, 68, 0.2);
+  border-top: 3px solid #ef4444;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinnerBlue {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(43, 127, 255, 0.2);
+  border-top: 3px solid #2b7fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+.submittingStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .recordingCircle {
-  width: 100px;
-  height: 100px;
+  width: clamp(70px, 8vw, 90px);
+  height: clamp(70px, 8vw, 90px);
   border-radius: 50%;
   background: #ef4444;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: pulse 1s infinite;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
 }
 
 @keyframes pulse {
@@ -451,8 +638,8 @@
 }
 
 .countdownNumber {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
   color: #ffffff;
 }
 

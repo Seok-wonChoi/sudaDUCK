@@ -1,16 +1,40 @@
 .scriptHeader {
-  margin-bottom: clamp(16px, 2.5vh, 24px);
+  margin-bottom: clamp(20px, 3vh, 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* 수평 중앙 정렬 */
+  text-align: center; /* 텍스트 자체 중앙 정렬 */
 }
 
 .title {
-  font-size: clamp(20px, 2.5vw, 28px);
-  font-weight: 800;
-  color: #1e2939;
-  margin: 0 0 4px 0;
+  font-size: clamp(22px, 2.8vw, 30px);
+  font-weight: 900;
+  color: #0f172a; /* 더 깊은 색상 */
+  margin: 0 0 8px 0;
+  letter-spacing: -0.03em; /* 세련된 자간 */
+  position: relative;
+  display: inline-block;
+  padding-bottom: 4px;
+}
+
+/* 제목 아래에 부드러운 강조 라인 추가 */
+.title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 3px;
+  background: #2b7fff;
+  border-radius: 99px;
+  opacity: 0.8;
 }
 
 .subtitle {
-  font-size: clamp(13px, 1.5vw, 16px);
+  font-size: clamp(14px, 1.6vw, 17px);
   color: #64748b;
+  font-weight: 600;
   margin: 0;
+  line-height: 1.5;
 }
