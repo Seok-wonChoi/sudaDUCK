@@ -280,6 +280,7 @@ export default function AppHeader({
                   type="button"
                   className={`${styles.MuteButton} ${isMuted ? styles.MuteOn : ""}`}
                   onClick={onMuteClick}
+                  data-click-sound="false"
                 >
                   {isMuted ? "음소거 해제" : "음소거"}
                 </button>

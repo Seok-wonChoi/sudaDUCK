@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import styles from './SentenceCard.module.css';
-import bookmarkerIcon from '@/assets/icons/bookmarker.png';
+import bookmarkAddIcon from '@/assets/icons/bookmark_add.png';
+import bookmarkAddedIcon from '@/assets/icons/bookmakr_added.png';
 
 export default function SentenceCard({
   speaker = '나',
@@ -284,7 +285,7 @@ export default function SentenceCard({
               title={isBookmarked ? "저장 해제" : "저장하기"}
             >
               <img
-                src={bookmarkerIcon}
+                src={isBookmarked ? bookmarkAddedIcon : bookmarkAddIcon}
                 alt="bookmark"
                 className={styles.bookmarkIcon}
               />

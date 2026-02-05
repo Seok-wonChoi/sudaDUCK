@@ -73,6 +73,7 @@ export default function SentenceCard({ english, korean, blankWords = [], ttsUrl 
         type="button"
         className={styles.PlayButton}
         onClick={handlePlayAudio}
+        data-click-sound="false"
       >
         <span className={styles.SpeakerIcon}>🔊</span>
         영어로 듣기
