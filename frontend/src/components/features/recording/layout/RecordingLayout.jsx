@@ -13,6 +13,9 @@ export default function RecordingLayout({
   recordingCountdown = 10, // 녹음 카운트다운
   bottomContent,
   onBookmarkToggle = null,
+  onStop = null,
+  showBlanks = true,
+  onToggleBlanks = null,
   totalTurns = 3,
   isAllDone = false,
   onTurnClick = null,
@@ -27,7 +30,7 @@ export default function RecordingLayout({
         <AppHeader logoExitMessage={logoExitMessage} onLogoExit={onLogoExit} />
 
         <main className={styles.content}>
-          <ScriptHeader />
+          <ScriptHeader showBlanks={showBlanks} onToggleBlanks={onToggleBlanks} />
           <TurnTabs
             currentTurn={currentTurn}
             totalTurns={totalTurns}
@@ -58,6 +61,9 @@ export default function RecordingLayout({
                   recordingCountdown={recordingCountdown}
                   initialBookmarked={card.isBookmarked}
                   onBookmarkToggle={onBookmarkToggle}
+                  onStop={onStop}
+                  showBlanks={showBlanks}
+                  onToggleBlanks={onToggleBlanks}
                 />
               ))}
           </div>

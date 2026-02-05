@@ -34,6 +34,7 @@ import duckProfile1 from "@/assets/images/duck_profile1.png";
 import duckProfile2 from "@/assets/images/duck_profile2.png";
 import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
+import duckTogether from "@/assets/images/duck_together.png";
 import micOnIcon from "@/assets/icons/mic_on.png";
 import micOffIcon from "@/assets/icons/mic_off.png";
 
@@ -2148,7 +2149,14 @@ const stopSTT = useCallback(() => {
           escToClose={false}
         />
 
-        {isTransitioning && <LoadingOverlay />}
+        {isTransitioning && (
+          <LoadingOverlay 
+            title="학습 단계로 이동합니다!"
+            subtitle="쉐도잉 학습을 시작해볼까요?"
+            note="학습 집중을 위해 마이크가 일시적으로 음소거됩니다."
+            image={duckTogether}
+          />
+        )}
       </div>
     </div>
   );

@@ -19,6 +19,9 @@ export default function SentenceCard({
   sentenceId = null,
   initialBookmarked = false,
   onBookmarkToggle = null,
+  onStop = null,
+  showBlanks = true,
+  onToggleBlanks = null,
 }) {
   const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
 
@@ -99,15 +102,20 @@ export default function SentenceCard({
 
           splits.forEach((split, idx) => {
             if (split.toLowerCase() === word.toLowerCase()) {
-              newParts.push(
-                <span
-                  key={`blank-${word}-${idx}`}
-                  className={styles.blank}
-                  style={{ minWidth: `${split.length * 0.9}ch` }}
-                >
-                  {'\u00A0'}
-                </span>
-              );
+              if (showBlanks) {
+                newParts.push(
+                  <span key={`blank-${word}-${idx}`} className={styles.blank}>
+                    {'\u00A0'.repeat(split.length)}
+                  </span>
+                );
+              } else {
+                // 빈칸 모드가 꺼져있을 때는 텍스트를 보여주되 강조 표시
+                newParts.push(
+                  <span key={`hint-${word}-${idx}`} className={styles.blankTextHint}>
+                    {split}
+                  </span>
+                );
+              }
             } else if (split) {
               newParts.push(split);
             }
@@ -130,8 +138,19 @@ export default function SentenceCard({
     switch (cardState) {
       case 'record_timer':
         return (
-          <div className={styles.recordingStatus}>
-            <span className={styles.statusText}>녹음 대기 중...</span>
+          <div className={styles.recordingActive}>
+            <div className={styles.toggleSide}>
+              <button 
+                type="button" 
+                className={`${styles.miniToggle} ${showBlanks ? styles.active : ''}`}
+                onClick={onToggleBlanks}
+              >
+                빈칸 {showBlanks ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className={styles.recordingStatus}>
+              <span className={styles.statusText}>녹음 대기 중...</span>
+            </div>
           </div>
         );
 
@@ -144,9 +163,28 @@ export default function SentenceCard({
 
         return (
           <div className={styles.recordingActive}>
+            <div className={styles.toggleSide}>
+              <button 
+                type="button" 
+                className={`${styles.miniToggle} ${showBlanks ? styles.active : ''}`}
+                onClick={onToggleBlanks}
+              >
+                빈칸 {showBlanks ? 'ON' : 'OFF'}
+              </button>
+            </div>
             <div className={styles.recordingCircle}>
               <span className={styles.countdownNumber}>{formatCountdown(recordingCountdown)}</span>
             </div>
+            {onStop && (
+              <button 
+                className={styles.stopButton} 
+                onClick={onStop}
+                type="button"
+                aria-label="녹음 완료"
+              >
+                녹음 완료
+              </button>
+            )}
           </div>
         );
 
@@ -166,20 +204,43 @@ export default function SentenceCard({
 
   const showRecordingBox = isActive && (cardState === 'record_timer' || cardState === 'recording' || cardState === 'record_done');
 
+  // 점수에 따른 등급 클래스 결정
+  const getScoreGradeClass = () => {
+    if (score === null || cardState !== 'idle') return '';
+    if (score >= 90) return styles.excellent;
+    if (score >= 70) return styles.good;
+    if (score >= 40) return styles.fair;
+    return styles.poor;
+  };
+
+  const getScoreGradeText = () => {
+    if (score === null) return '';
+    if (score >= 90) return 'Perfect';
+    if (score >= 70) return 'Good';
+    if (score >= 40) return 'Fair';
+    return 'Poor';
+  };
+
   return (
-    <div className={`${styles.sentenceCard} ${isActive ? styles.active : ''}`}>
+    <div className={`${styles.sentenceCard} ${isActive ? styles.active : ''} ${getScoreGradeClass()}`}>
       <div className={styles.header}>
         <div className={styles.speakerInfo}>
           <span className={styles.speakerName}>{speaker}</span>
         </div>
         <div className={styles.headerRight}>
           {score !== null && cardState === 'idle' && (
-            <span className={styles.score}>
-              개인 점수: <strong className={`${styles.scoreValue} ${getScoreColorClass(score)}`}>{score}점</strong>
+            <div className={styles.scoreContainer}>
+              <span className={styles.gradeBadge}>{getScoreGradeText()}</span>
+              <div className={styles.scoreWrapper}>
+                <strong className={styles.scoreValueBig}>{score}</strong>
+                <span className={styles.scoreUnit}>pt</span>
+              </div>
               {averageScore !== null && averageScore !== undefined && (
-                <> / 평균 <strong className={getScoreColorClass(averageScore)}>{averageScore}점</strong></>
+                <span className={styles.averageScore}>
+                  Avg. {averageScore}pt
+                </span>
               )}
-            </span>
+            </div>
           )}
           <span className={styles.progress}>{currentSentence} / {totalSentences}</span>
           {score !== null && cardState === 'idle' && (
