@@ -133,6 +133,19 @@ public class TranslateService {
             String detailKey = String.format("room:%d:turn:%d:script:%s", roomId, turnNo, scriptId);
 
             Map<String, String> scriptData = new HashMap<>();
+
+            //topic 가져오기
+            String topicKey = "room:" + roomId + ":topic";
+            String topic = redisTemplate.opsForValue().get(topicKey);
+
+            // 2) Participants 가져오기 (이미 JSON String으로 저장되어 있음)
+            String participantsKey = "room:" + roomId + ":participants";
+            String participantsJson = redisTemplate.opsForValue().get(participantsKey);
+
+            // 데이터가 없을 경우(만료 등)에 대한 방어 코드
+            if (topic == null) topic = "Free Talking";
+            if (participantsJson == null) participantsJson = "[]";
+
             scriptData.put("order_no", orderNo.toString());
             scriptData.put("speaker_id", speakerId.toString());
             scriptData.put("english", script.getEn());
@@ -142,6 +155,9 @@ public class TranslateService {
             scriptData.put("similarity_phrases", String.join(",", script.getSimilarityPhrases()));
             scriptData.put("tts_url", ttsUrl != null ? ttsUrl : "");  // null이면 빈 문자열
             scriptData.put("created_at", LocalDateTime.now().toString());
+
+            scriptData.put("topic", topic);
+            scriptData.put("participants", participantsJson);
 
             redisTemplate.opsForHash().putAll(detailKey, scriptData);
             redisTemplate.expire(detailKey, TTL_MINUTES, TimeUnit.MINUTES);

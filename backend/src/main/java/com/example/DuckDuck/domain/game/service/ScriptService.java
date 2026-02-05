@@ -91,6 +91,7 @@ public class ScriptService {
                 .koreanSentence((String) data.get("korean"))
                 .score(Integer.parseInt((String)data.get("score")))
                 .topic((String) data.get("topic"))
+                .ttsUrl((String) data.getOrDefault("tts_url", null))
                 .participantList(cleanParticipants)
                 .createdAt(createdAt)
                 .build();
@@ -108,7 +109,7 @@ public class ScriptService {
             List<String> participantList;
             try{
                 String jsonStr = s.getParticipantList(); // 1. DB에서 꺼낸 원본 문자열 확인
-                log.info("DB 원본 데이터: [{}]", jsonStr);
+//                log.info("DB 원본 데이터: [{}]", jsonStr);
 
                 if (jsonStr == null || jsonStr.isBlank()) {
                     participantList = List.of();
@@ -129,6 +130,7 @@ public class ScriptService {
                     .speakerName(s.getSpeakerName())
                     .participants(participantList)
                     .createdAt(s.getCreatedAt())
+                    .ttsUrl(s.getTtsUrl())
                     .build();
         }).collect(Collectors.toList());
     }
