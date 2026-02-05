@@ -222,7 +222,6 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               onQuizResultReceived,
               onUnexpectedQuestReceived,
               onQuestContinueReady,
-              onMiniGameStart,
               onError,
             } = handlersRef.current;
 
@@ -387,6 +386,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                   type,
                 });
                 onQuestContinueReady?.(payload, senderKey);
+                break;
 
               case "MINIGAME_START":
                 console.log("[WebSocket] 🎮 MINIGAME_START 수신:", {
@@ -395,7 +395,6 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                   type,
                 });
                 onMiniGameStart?.(payload, senderKey);
-                break;
                 break;
 
               case "ERROR":
@@ -501,16 +500,6 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
       handlersRef.current.onDisconnected?.();
     };
 
-
-  // stompClient 전역 노출 (방장이 미니게임 시작 신호 보내기 위해)
-  useEffect(() => {
-    if (clientRef.current && isConnected) {
-      window.stompClient = clientRef.current;
-    }
-    return () => {
-      window.stompClient = null;
-    };
-  }, [isConnected]);
     clientRef.current = client;
     client.activate();
 
@@ -521,6 +510,16 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
       clientRef.current = null;
     };
   }, [roomCode, roomId]);
+
+  // stompClient 전역 노출 (방장이 미니게임 시작 신호 보내기 위해)
+  useEffect(() => {
+    if (clientRef.current && isConnected) {
+      window.stompClient = clientRef.current;
+    }
+    return () => {
+      window.stompClient = null;
+    };
+  }, [isConnected]);
 
   return { 
     sendReady, 
