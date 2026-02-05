@@ -160,10 +160,10 @@ export default function NicknameStyleModal({
 
   const footer = (
     <>
-      <button type="button" className={styles.CancelBtn} onClick={onClose}>
+      <button type="button" className={styles.CancelBtn} onClick={onClose} data-click-sound="false">
         취소
       </button>
-      <button type="button" className={styles.SaveBtn} onClick={handleSave}>
+      <button type="button" className={styles.SaveBtn} onClick={handleSave} data-click-sound="false">
         저장
       </button>
     </>

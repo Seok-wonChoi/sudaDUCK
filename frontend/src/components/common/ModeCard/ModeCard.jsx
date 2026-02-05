@@ -4,6 +4,8 @@ import duckHeadsetImg from "@/assets/images/duck_headset.png";
 import duckTogetherImg from "@/assets/images/duck_together2.png";
 import duckSoloImg from "@/assets/images/duck_solo.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
+import tapSound from "@/assets/sounds/tap.wav";
+import { useSoundContext } from "@/context/SoundContext";
 
 export default function ModeCard({
   title,
@@ -14,6 +16,18 @@ export default function ModeCard({
   disabledMessage = "오픈 예정입니다",
 }) {
   const [hovered, setHovered] = useState(false);
+  const { getEffectiveVolume, isMuted } = useSoundContext();
+
+  const playTapSound = () => {
+    if (isMuted) return;
+    try {
+      const audio = new Audio(tapSound);
+      audio.volume = getEffectiveVolume(0.1);
+      audio.play().catch(() => {});
+    } catch (e) {
+      // 사운드 재생 실패 무시
+    }
+  };
 
   // 이미지 선택
   let duckSrc;
@@ -49,7 +63,13 @@ export default function ModeCard({
   return (
     <div
       className={styles.CardWrap}
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={() => {
+        setHovered(true);
+        // 연습 모드는 tap 사운드 재생 안 함
+        if (variant !== "practice") {
+          playTapSound();
+        }
+      }}
       onMouseLeave={() => setHovered(false)}
     >
       <button

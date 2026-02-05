@@ -4,13 +4,16 @@ import styles from "./MakeRoomPage.module.css";
 import { createSession } from "@/api/openVidu"; // 👈 오픈비듀
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
+import { useSoundContext } from "@/context/SoundContext";
 
 import { createRoom, getTopics, joinRoom } from "@/api/rooms";
+import lightButtonSound from "@/assets/sounds/light_button.wav";
 
 const ROOM_INFO_KEY = "together_room_info";
 
 export default function MakeRoomPage() {
   const navigate = useNavigate();
+  const { getEffectiveVolume, isMuted } = useSoundContext();
 
   const hotTopics = useMemo(
     () => [
@@ -34,6 +37,15 @@ export default function MakeRoomPage() {
   const titleCount = title.length;
 
   const handleBack = () => {
+    if (!isMuted) {
+      try {
+        const audio = new Audio(lightButtonSound);
+        audio.volume = getEffectiveVolume(0.1);
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+    }
     if (window.history.length > 1) navigate(-1);
     else navigate("/together");
   };
@@ -154,6 +166,7 @@ export default function MakeRoomPage() {
             onClick={handleBack}
             aria-label="뒤로 가기"
             disabled={loading}
+            data-click-sound="false"
           >
             &lt;
           </button>

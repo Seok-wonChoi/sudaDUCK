@@ -7,6 +7,9 @@ import TipBanner from "@/components/common/TipBanner/TipBanner";
 
 import duckImg from "@/assets/images/duck.png";
 import { joinRoom } from "@/api/rooms";
+import lightButtonSound from "@/assets/sounds/light_button.wav";
+import typeSound from "@/assets/sounds/type.wav";
+import { useSoundContext } from "@/context/SoundContext";
 
 const CODE_LEN = 6;
 const ROOM_INFO_KEY = "together_room_info";
@@ -21,6 +24,7 @@ function normalizeCode(raw) {
 
 export default function JoinRoomPage() {
   const navigate = useNavigate();
+  const { getEffectiveVolume, isMuted } = useSoundContext();
 
   const [codeArr, setCodeArr] = useState(() => Array(CODE_LEN).fill(""));
   const inputsRef = useRef([]);
@@ -35,11 +39,31 @@ export default function JoinRoomPage() {
     setTimeout(() => setToastMessage(""), 3000);
   }, []);
 
+  const playTypeSound = () => {
+    if (isMuted) return;
+    try {
+      const audio = new Audio(typeSound);
+      audio.volume = getEffectiveVolume(0.25);
+      audio.play().catch(() => {});
+    } catch (e) {
+      // 사운드 재생 실패 무시
+    }
+  };
+
   useEffect(() => {
     inputsRef.current?.[0]?.focus?.();
   }, []);
 
   const handleBack = () => {
+    if (!isMuted) {
+      try {
+        const audio = new Audio(lightButtonSound);
+        audio.volume = getEffectiveVolume(0.1);
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+    }
     if (window.history.length > 1) navigate(-1);
     else navigate("/together");
   };
@@ -76,6 +100,8 @@ export default function JoinRoomPage() {
       return;
     }
 
+    // 한 글자씩 입력할 때 사운드 재생
+    playTypeSound();
     setAt(idx, v);
     if (idx < CODE_LEN - 1) focusAt(idx + 1);
   };
@@ -99,6 +125,9 @@ export default function JoinRoomPage() {
     e.preventDefault();
     const pasted = normalizeCode(e.clipboardData.getData("text"));
     if (!pasted) return;
+
+    // 붙여넣기 시 사운드 한 번만 재생
+    playTypeSound();
 
     const chars = pasted.split("");
     setCodeArr(() => {
@@ -181,6 +210,7 @@ export default function JoinRoomPage() {
             onClick={handleBack}
             aria-label="뒤로 가기"
             disabled={loading}
+            data-click-sound="false"
           >
             &lt;
           </button>
