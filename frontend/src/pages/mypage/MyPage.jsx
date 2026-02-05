@@ -47,6 +47,8 @@ export default function MyPage() {
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [showDuckModal, setShowDuckModal] = useState(false);
   const [showDuckBotModal, setShowDuckBotModal] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
 
   // localStorage에서 프로필 정보 읽어오기 (초기 렌더링 플래시 방지)
   const getInitialProfile = () => {
@@ -93,8 +95,9 @@ export default function MyPage() {
 
   // 통계 데이터
   const [totalPlaytime, setTotalPlaytime] = useState(0); // 총 플레이 타임 (초)
-  const [consecutiveDays, setConsecutiveDays] = useState(0); // 연속 학습 일수
-  const [sentenceCount, setSentenceCount] = useState(0); // 저장된 문장 개수
+  const [consecutiveDays, setConsecutiveDays] = useState(null);
+  const [sentenceCount, setSentenceCount] = useState(null);
+
 
   // 코인 시스템
   const [coins, setCoins] = useState(200); // 초기 코인 (테스트용 200코인)
@@ -111,6 +114,11 @@ export default function MyPage() {
   // 아이템 목록 로드 및 itemKey -> itemId 매핑 생성
   useEffect(() => {
     const fetchItemsAndProfile = async () => {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setIsReady(true);
+        return;
+      }
       try {
         // 1. 모든 카테고리의 아이템 목록 조회
         const categories = ["DUCK_STYLE", "DUCK_COLOR", "DUCK_ACCESSORY", "AVATAR_BG", "AVATAR_EFFECT", "AI_DUCKBOT_MODEL"];
@@ -220,8 +228,12 @@ export default function MyPage() {
         if (summaryData.attendanceDays !== undefined) setConsecutiveDays(summaryData.attendanceDays);
         if (summaryData.sentenceCount !== undefined) setSentenceCount(summaryData.sentenceCount);
 
+        setIsReady(true);
+
       } catch (error) {
         console.error("데이터 로드 실패:", error);
+      } finally {
+        setIsReady(true);
       }
     };
     fetchItemsAndProfile();
@@ -300,8 +312,8 @@ export default function MyPage() {
 
   const stats = [
     { value: "✨", label: "수다DUCK과 함께 한 문장 연습!" },
-    { value: consecutiveDays, label: "연속 학습", unit: "일" },
-    { value: sentenceCount, label: "저장된 문장", unit: "개" },
+    { value: consecutiveDays ?? "—", label: "연속 학습", unit: "일" },
+    { value: sentenceCount ?? "—", label: "저장된 문장", unit: "개" },
   ];
 
   const handleSentenceClick = (sentence) => {
@@ -444,11 +456,37 @@ export default function MyPage() {
     }
   };
 
+    if (!isReady) {
+    return (
+      <div className={styles.Page}>
+        <div className={styles.Shell}>
+          <main className={styles.LoadingWrap} aria-label="로딩 중">
+            <div className={styles.LoadingCard}>
+              {/* 이미 쓰고 있는 프로필 오리 이미지 재사용 */}
+              <img
+                className={styles.LoadingDuck}
+                src={DUCK_PROFILE_IMAGES[duckProfileId] ?? DUCK_PROFILE_IMAGES.profile1}
+                alt="로딩 오리"
+              />
+
+              <p className={styles.LoadingTitle}>오리들이 준비 중이에요…</p>
+              <p className={styles.LoadingSub}>
+                커스터마이징과 통계를 불러오는 중 <span className={styles.Dots} />
+              </p>
+
+              <div className={styles.Spinner} aria-hidden="true" />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        <AppHeader userName="장가은" />
-
+        <AppHeader userName="" />
         <main className={styles.Main}>
           <ProfileSection
             profileImage={DUCK_PROFILE_IMAGES[duckProfileId]}
