@@ -138,6 +138,7 @@ export default function JoinRoomPage() {
         roomTitle: "-",
         topic: "-",
         turnCount: "-",
+        timeLimit: "-",
       };
 
       sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));

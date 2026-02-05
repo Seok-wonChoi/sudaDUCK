@@ -27,6 +27,7 @@ export default function MakeRoomPage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
   const [turn, setTurn] = useState(3);
+  const [timeLimit, setTimeLimit] = useState(40);
   const [loading, setLoading] = useState(false);
   const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
@@ -123,6 +124,7 @@ export default function MakeRoomPage() {
         roomTitle: res.title,
         topic: res.topic,
         turnCount: res.turnCnt,
+        timeLimit: res.timeLimit || timeLimit,
 
         joinCode: res.roomCode,
         inviteCode: res.roomCode, // joinCode와 inviteCode 모두 설정
@@ -260,6 +262,32 @@ export default function MakeRoomPage() {
             </button>
           );
         })}
+      </div>
+    </div>
+
+    <div className={styles.Field}>
+      <div className={styles.LabelRow}>
+        <span className={styles.Label}>타이머 시간 (초)</span>
+      </div>
+
+      <div className={styles.Stepper}>
+        <button
+          type="button"
+          className={styles.StepButton}
+          onClick={() => setTimeLimit(Math.max(15, timeLimit - 5))}
+          disabled={loading || timeLimit <= 15}
+        >
+          -
+        </button>
+        <span className={styles.StepValue}>{timeLimit}초</span>
+        <button
+          type="button"
+          className={styles.StepButton}
+          onClick={() => setTimeLimit(Math.min(60, timeLimit + 5))}
+          disabled={loading || timeLimit >= 60}
+        >
+          +
+        </button>
       </div>
     </div>
 

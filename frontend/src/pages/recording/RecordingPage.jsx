@@ -138,6 +138,13 @@ export default function RecordingPage() {
     );
   }, [roomInfo]);
 
+  // [추가] 내가 방장인지 여부를 participants 리스트를 통해 더 확실하게 판별
+  const amIHost = useMemo(() => {
+    const me = participants.find((p) => String(p.id || p.userId) === String(myUserId));
+    if (me) return me.isHost === true;
+    return roomInfo.isHost === true; // 리스트에서 못 찾을 경우 fallback
+  }, [participants, myUserId, roomInfo.isHost]);
+
   // 모든 참여자(방장 제외)가 준비되었는지 확인
   const allReady = useMemo(() => {
     const nonHostParticipants = participants.filter((p) => !p.isHost);
@@ -358,10 +365,11 @@ console.log(`📤 발음 평가 전송 시작`, {
         roomId: roomId,
         roomCode: roomCode,
         isHost: roomInfo.isHost || false,
-        participantsCount: participants.length
+        participantsCount: participants.length,
+        timeLimit: roomInfo.timeLimit || 40
       } 
     });
-  }, [navigate, roomId, roomCode, roomInfo.isHost, participants.length]);
+  }, [navigate, roomId, roomCode, roomInfo.isHost, participants.length, roomInfo.timeLimit]);
 
   const handleComplete = () => {
     // 방장만 시작 신호 전송
@@ -490,8 +498,6 @@ console.log(`📤 발음 평가 전송 시작`, {
           currentTurn: nextTurn,
           roomInfo: {
             ...roomInfo,
-            roomId: roomId,
-            roomCode: roomCode,
             currentTurn: nextTurn,
           },
           myUserId,
@@ -552,6 +558,7 @@ console.log(`📤 발음 평가 전송 시작`, {
   }, [isConnected, isReady, roomCode, sendReady, myUserId, showToast]);
 
   const handleStartNextTurn = useCallback(async () => {
+    if (!amIHost) return;
     if (!allReady && participants.length > 1) {
       showToast("모든 참여자가 준비되어야 합니다.");
       return;
@@ -561,7 +568,7 @@ console.log(`📤 발음 평가 전송 시작`, {
     } catch (e) {
       showToast("다음 턴 시작에 실패했습니다.");
     }
-  }, [allReady, roomCode, showToast, participants.length]);
+  }, [allReady, roomCode, showToast, participants.length, amIHost]);
 
   const handleLogoExit = useCallback(async () => {
     // 👇 진짜 방을 나갈 때는 세션 종료
@@ -576,13 +583,6 @@ console.log(`📤 발음 평가 전송 시작`, {
       }
     }
   }, [roomCode, leaveSession]);
-
-  // [추가] 내가 방장인지 여부를 participants 리스트를 통해 더 확실하게 판별
-  const amIHost = useMemo(() => {
-    const me = participants.find((p) => String(p.id || p.userId) === String(myUserId));
-    if (me) return me.isHost === true;
-    return roomInfo.isHost === true; // 리스트에서 못 찾을 경우 fallback
-  }, [participants, myUserId, roomInfo.isHost]);
 
   const fetchTurnResults = useCallback(
     async (turnNo = currentTurn) => {
@@ -1090,7 +1090,7 @@ console.log(`📤 발음 평가 전송 시작`, {
                 : "참여자를 기다리고 있습니다."}
             </div>
 
-            {roomInfo.isHost ? (
+            {amIHost ? (
               <button
                 onClick={handleStartNextTurn}
                 disabled={!allReady && participants.length > 1}

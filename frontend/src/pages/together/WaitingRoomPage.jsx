@@ -278,6 +278,11 @@ export default function WaitingRoomPage() {
   const [turnCount, setTurnCount] = useState(
     roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
   );
+  const [timeLimit, setTimeLimit] = useState(() => {
+    const raw = roomInfo.timeLimit ?? 40;
+    const num = parseInt(raw, 10);
+    return isNaN(num) ? 40 : num;
+  });
 
   const [participants, setParticipants] = useState([]);
   const participantsRef = useRef([]);
@@ -313,6 +318,7 @@ export default function WaitingRoomPage() {
           topic,
           turnCount,
           turnCnt: turnCount,
+          timeLimit,
           maxCount,
           currentTurn: 1,
           myUserId: myKey ? Number(myKey) : roomInfo.myUserId,
@@ -338,6 +344,7 @@ export default function WaitingRoomPage() {
   const [editTitle, setEditTitle] = useState(roomTitle);
   const [editTopic, setEditTopic] = useState(topic);
   const [editTurn, setEditTurn] = useState(turnCount);
+  const [editTimeLimit, setEditTimeLimit] = useState(timeLimit);
   const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
   const hotTopics = useMemo(
@@ -529,6 +536,7 @@ export default function WaitingRoomPage() {
       const nextTitle = data.title ?? data.roomTitle;
       const nextTopic = data.topic ?? data.roomTopic;
       const nextTurn = data.turnCnt ?? data.turnCount;
+      // const nextTimeLimit = data.timeLimit; // 서버 미지원 필드 제외
 
       if (typeof nextTitle === "string" && nextTitle.trim())
         setRoomTitle(nextTitle);
@@ -536,6 +544,8 @@ export default function WaitingRoomPage() {
         setTopic(nextTopic);
       if (nextTurn !== undefined && nextTurn !== null)
         setTurnCount(Number(nextTurn));
+      // if (nextTimeLimit !== undefined && nextTimeLimit !== null)
+      //   setTimeLimit(Number(nextTimeLimit));
 
       const tokenKey = getUserIdFromToken();
       const resolvedMyKey =
@@ -599,6 +609,7 @@ export default function WaitingRoomPage() {
           topic: nextTopic ?? topic,
           turnCnt: nextTurn ?? turnCount,
           turnCount: nextTurn ?? turnCount,
+          timeLimit: timeLimit, // 로컬 설정값 유지
           maxCount,
         };
         sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(nextRoomInfo));
@@ -1086,8 +1097,9 @@ export default function WaitingRoomPage() {
     setEditTitle(roomTitle);
     setEditTopic(topic);
     setEditTurn(turnCount);
+    setEditTimeLimit(timeLimit);
     setEditPopupOpen(true);
-  }, [isHost, roomTitle, topic, turnCount]);
+  }, [isHost, roomTitle, topic, turnCount, timeLimit]);
 
   const handleCloseEditPopup = useCallback(() => {
     setEditPopupOpen(false);
@@ -1146,6 +1158,7 @@ export default function WaitingRoomPage() {
         title: editTitle.trim(),
         topic: editTopic.trim(),
         turnCnt: editTurn,
+        // timeLimit는 서버 미지원으로 제외 (api/rooms.js에서 필터링됨)
       });
     } catch {
       showToast("방 설정 변경에 실패했습니다.");
@@ -1155,6 +1168,7 @@ export default function WaitingRoomPage() {
     setRoomTitle(editTitle.trim());
     setTopic(editTopic.trim());
     setTurnCount(editTurn);
+    setTimeLimit(editTimeLimit);
 
     try {
       const stored = sessionStorage.getItem(ROOM_INFO_KEY);
@@ -1168,6 +1182,7 @@ export default function WaitingRoomPage() {
           topic: editTopic.trim(),
           turnCount: editTurn,
           turnCnt: editTurn,
+          timeLimit: editTimeLimit,
         }),
       );
     } catch {
@@ -1292,6 +1307,9 @@ export default function WaitingRoomPage() {
                     <span className={styles.RoomInfoSeparator}>|</span>
                     <span className={styles.RoomInfoLabel}>턴 수:</span>
                     <span className={styles.RoomInfoValue}>{turnCount}턴</span>
+                    <span className={styles.RoomInfoSeparator}>|</span>
+                    <span className={styles.RoomInfoLabel}>타이머:</span>
+                    <span className={styles.RoomInfoValue}>{timeLimit}초</span>
                   </div>
 
                   <div className={styles.InviteCodeBox}>
@@ -1597,6 +1615,31 @@ export default function WaitingRoomPage() {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              <div className={styles.PopupField}>
+                <div className={styles.PopupLabelRow}>
+                  <span className={styles.PopupLabel}>타이머 시간 (초)</span>
+                </div>
+                <div className={styles.PopupStepper}>
+                  <button
+                    type="button"
+                    className={styles.PopupStepButton}
+                    onClick={() => setEditTimeLimit(Math.max(15, editTimeLimit - 5))}
+                    disabled={editTimeLimit <= 15}
+                  >
+                    -
+                  </button>
+                  <span className={styles.PopupStepValue}>{editTimeLimit}초</span>
+                  <button
+                    type="button"
+                    className={styles.PopupStepButton}
+                    onClick={() => setEditTimeLimit(Math.min(60, editTimeLimit + 5))}
+                    disabled={editTimeLimit >= 60}
+                  >
+                    +
+                  </button>
                 </div>
               </div>
             </div>
