@@ -30,6 +30,27 @@
   opacity: 0.9;
   letter-spacing: -0.01em;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: pre-line;
+}
+
+.noteContainer {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: fadeIn 0.8s ease-out 0.3s both;
+}
+
+.note {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fbbf24; /* 밝은 노란색으로 강조 */
+  background: rgba(251, 191, 36, 0.1);
+  padding: 10px 24px;
+  border-radius: 50px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  text-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
 }
 
 @keyframes fadeIn {

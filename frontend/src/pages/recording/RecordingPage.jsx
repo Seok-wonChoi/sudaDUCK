@@ -91,12 +91,20 @@ export default function RecordingPage() {
   const [scriptError, setScriptError] = useState(null);
   const [isLoadingScript, setIsLoadingScript] = useState(false);
   const [turnResults, setTurnResults] = useState({});
+  const [showBlanks, setShowBlanks] = useState(true); // 👈 빈칸 모드 상태 추가
+  const [toastMessage, setToastMessage] = useState(""); // 👈 토스트 메시지 상태 추가
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
   // MediaRecorder 대신 RecordRTC 사용을 위한 ref
   const recorderRef = useRef(null);
   const audioRef = useRef(null);
+  const prevIsConversationStepRef = useRef(null); // 👈 이전 마이크 상태 저장용 Ref
+
+  const showToast = useCallback((msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 2500);
+  }, []);
 
   // roomId 추출
   const roomId = useMemo(() => {
@@ -511,12 +519,19 @@ console.log(`📤 발음 평가 전송 시작`, {
       // 결과 화면에서는 팀원들과 대화할 수 있도록 마이크 Unmute
       console.log(`🎤 [OpenVidu] 결과 확인 단계(${step}) -> 마이크 Unmute`);
       publisher.publishAudio(true);
+      
+      // 음소거가 풀릴 때만 알림 표시 (쉐도잉 -> 결과 화면 전환 시)
+      if (prevIsConversationStepRef.current === false) {
+        showToast("팀원들과 대화가 가능합니다. 🎙️");
+      }
     } else {
       // 쉐도잉 진행 중(AI 재생, 녹음 대기, 실제 녹음 등)에는 집중과 에코 방지를 위해 항상 Mute
       console.log(`🎤 [OpenVidu] 쉐도잉 진행 단계(${step}) -> 마이크 Mute`);
       publisher.publishAudio(false);
     }
-  }, [step, publisher]);
+    
+    prevIsConversationStepRef.current = isConversationStep;
+  }, [step, publisher, showToast]);
 
   useEffect(() => {
     const saved = localStorage.getItem("bookmarkedSentences");
@@ -748,7 +763,13 @@ console.log(`📤 발음 평가 전송 시작`, {
       }
     } else if (step === STEP.RECORDING) {
       setRecordingTime(0);
-      setRecordingCountdown(10);
+      
+      // 문장 길이에 따른 동적 시간 계산 (단어 수 기준)
+      const words = currentSentence?.english?.split(' ')?.length || 0;
+      const dynamicDuration = Math.max(8, Math.min(30, Math.ceil(words * 1.5) + 5));
+      
+      console.log(`🎙️ [RecordingPage] 문장 길이(${words}단어)에 따른 제한시간 설정: ${dynamicDuration}초`);
+      setRecordingCountdown(dynamicDuration);
       startRecording();
 
       intervalRef.current = setInterval(() => {
@@ -844,6 +865,12 @@ console.log(`📤 발음 평가 전송 시작`, {
     selectedTurnForReport,
   ]);
 
+  const handleManualStop = useCallback(() => {
+    console.log("⏹️ [RecordingPage] 사용자가 녹음을 수동으로 종료했습니다.");
+    clearAllTimers();
+    stopRecording();
+  }, [clearAllTimers, stopRecording]);
+
   const bottomContent = () => {
     if (isLoadingScript) {
       return (
@@ -903,7 +930,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       case STEP.RECORD_TIMER:
         return <BottomRecordTimer seconds={countdown} />;
       case STEP.RECORDING:
-        return <BottomRecording />;
+        return <BottomRecording onStop={handleManualStop} />;
       case STEP.RECORD_DONE:
         return <BottomRecordDone isLast={isLastSentence} />;
       case STEP.TURN_REPORT:
@@ -969,6 +996,12 @@ console.log(`📤 발음 평가 전송 시작`, {
       recordingCountdown={recordingCountdown}
       bottomContent={bottomContent()}
       onBookmarkToggle={handleBookmarkToggle}
+      onStop={handleManualStop}
+      showBlanks={showBlanks}
+      onToggleBlanks={() => {
+        console.log("🔄 [RecordingPage] 빈칸 모드 토글:", !showBlanks);
+        setShowBlanks(!showBlanks);
+      }}
       totalTurns={TURNS}
       isAllDone={step === STEP.ALL_DONE}
       onTurnClick={(t) => {
@@ -985,11 +1018,12 @@ console.log(`📤 발음 평가 전송 시작`, {
       />
       {isTransitioning && (
         <LoadingOverlay
-          title="새로운 턴이 시작됩니다!"
-          subtitle="다시 즐거운 대화를 시작해볼까요?"
+          title="대화 단계로 이동합니다!"
+          subtitle="팀원들과 즐거운 대화를 나눠보세요."
           image={duckTogether}
         />
       )}
+      {toastMessage && <div className={styles.Toast}>{toastMessage}</div>}
     </>
   );
 }
