@@ -77,20 +77,22 @@ export default function ConfirmModal({
         </div>
 
         <div className={styles.Actions}>
-          <button
-            type="button"
-            className={styles.CancelButton}
-            onClick={handleClose}
-            ref={cancelRef}
-            data-click-sound="false"
-          >
-            {cancelText}
-          </button>
+          {cancelText && (
+            <button
+              type="button"
+              className={styles.CancelButton}
+              onClick={handleClose}
+              ref={cancelRef}
+              data-click-sound="false"
+            >
+              {cancelText}
+            </button>
+          )}
 
           <button
             type="button"
             className={styles.ConfirmButton}
-            onClick={onConfirm}
+            onClick={onConfirm || handleClose}
           >
             {confirmText}
           </button>

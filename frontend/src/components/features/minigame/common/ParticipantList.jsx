@@ -7,9 +7,23 @@ export default function ParticipantList({
 }) {
   // 참가자 데이터와 음성 레벨 매칭 - voiceLevel > 0인 경우만 업데이트
   const participantsWithVoice = useMemo(() => {
+    console.log('🔍 [ParticipantList] voiceLevels:', voiceLevels);
+    console.log('🔍 [ParticipantList] participants:', participants);
+
     return participants.map(p => {
       const level = voiceLevels[p.key] || voiceLevels[p.id] || voiceLevels[p.userId] || 0;
       const isSpeaking = level > 0.05;
+
+      if (isSpeaking) {
+        console.log('🎤 [ParticipantList] Speaking detected:', {
+          name: p.name || p.nickname,
+          key: p.key,
+          id: p.id,
+          userId: p.userId,
+          level,
+          isSpeaking
+        });
+      }
 
       return {
         ...p,

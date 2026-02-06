@@ -118,26 +118,61 @@ export default function MiniGame1Page() {
   const [voiceLevelsMap, setVoiceLevelsMap] = useState({});
 
   // 웹소켓 연결 - 음성 레벨 동기화
-  const handleVoiceLevelChanged = useCallback((payload) => {
-    const { key, level } = payload;
-    if (!key) return;
+  const handleVoiceLevelChanged = useCallback((payload, senderKey) => {
+    console.log('🔊 [MiniGame1] Voice level changed:', { payload, senderKey });
 
+    // userId 또는 senderKey를 key로 사용
+    const key = payload?.userId || senderKey;
+    const level = payload?.level;
+
+    if (!key || typeof level !== 'number') {
+      console.warn('⚠️ [MiniGame1] Invalid voice level data:', { key, level, payload });
+      return;
+    }
+
+    console.log('✅ [MiniGame1] Setting voice level:', { key, level });
     setVoiceLevelsMap((prev) => ({
       ...prev,
-      [key]: level || 0,
+      [String(key)]: level || 0,
     }));
 
     // 일정 시간 후 자동으로 0으로 설정
     setTimeout(() => {
       setVoiceLevelsMap((prev) => ({
         ...prev,
-        [key]: 0,
+        [String(key)]: 0,
       }));
     }, 500);
   }, []);
 
+  // 랭킹 업데이트 핸들러 (실시간)
+  const handleRankingUpdated = useCallback((payload) => {
+    console.log('🏆 [MiniGame1] Ranking updated:', payload);
+
+    if (payload?.rankings && Array.isArray(payload.rankings)) {
+      setRankings(payload.rankings);
+
+      // 제출한 사람 수 업데이트
+      const submitted = payload.rankings.filter(r => r.score > 0 || r.hasSubmitted).length;
+      setSubmittedCount(submitted);
+
+      console.log('✅ [MiniGame1] Rankings updated:', {
+        rankings: payload.rankings,
+        submittedCount: submitted,
+        totalParticipants
+      });
+
+      // 모든 참가자가 제출했으면 결과 화면으로 이동
+      if (submitted >= totalParticipants && totalParticipants > 0 && phase === GAME_PHASE.WAITING) {
+        console.log('🎉 [MiniGame1] All participants submitted, moving to RESULT phase');
+        setPhase(GAME_PHASE.RESULT);
+      }
+    }
+  }, [totalParticipants, phase]);
+
   const { sendVoiceLevel, isConnected } = useRoomWebSocket(roomCode, {
     onVoiceLevelChanged: handleVoiceLevelChanged,
+    onRankingUpdated: handleRankingUpdated,
     onConnected: () => {
       console.log('[MiniGame1] ✅ WebSocket 연결 성공');
     },
@@ -274,84 +309,15 @@ export default function MiniGame1Page() {
   }, []); // 마운트 시 1회 실행
 
 
-  // 🔥 문제 3 해결: 대기 중 제출 상태 확인 (3초마다)
-  useEffect(() => {
-    if (phase !== GAME_PHASE.WAITING) return;
-
-    const checkSubmissionStatus = async () => {
-      try {
-        const rankingData = await getReviewRanking(roomId);
-        
-        console.log('📊 대기 상태 확인:', {
-          rankingData: rankingData.length,
-          totalParticipants,
-          제출여부: rankingData.map(r => ({ 이름: r.nickname, 점수: r.score }))
-        });
-        
-        if (rankingData && Array.isArray(rankingData)) {
-          // 제출한 사람 수 계산 (점수가 있는 사람)
-          const submittedUsers = rankingData.filter(r => r.score > 0 || r.hasSubmitted);
-          setSubmittedCount(submittedUsers.length);
-          
-          // [수정] 랭킹 데이터에 참가자 정보(오리 커스텀 등)를 병합
-          const mergedRankings = rankingData.map(rank => {
-            // ID로 매칭 (문자열로 변환하여 비교)
-            const participantInfo = participants.find(p => 
-              String(p.userId) === String(rank.userId)
-            );
-
-            // 해당 유저를 찾았다면 그 유저의 duckCustomJson을 사용
-            return {
-              ...rank,
-              duckCustomJson: participantInfo?.duckCustomJson || null,
-              avatarCustomJson: participantInfo?.avatarCustomJson || null // 닉네임 효과도 있다면 추가
-            };
-          });
-          
-          // 랭킹 데이터로 참가자 정보 업데이트
-          const updatedParticipants = rankingData.map(rank => ({
-            id: rank.userId || rank.nickname,
-            userId: rank.userId || rank.nickname,
-            name: rank.nickname,
-            nickname: rank.nickname,
-            profileImageUrl: rank.profileImageUrl,
-            avatar: rank.profileImageUrl,
-            isActive: true,
-            isMe: rank.isMe || false,
-            voiceLevel: 0,
-          }));
-          
-          // 기존 참가자 정보와 병합
-          setParticipants(prevParticipants => {
-            const updatedMap = new Map();
-            
-            prevParticipants.forEach(p => {
-              updatedMap.set(p.userId, p);
-            });
-            
-            updatedParticipants.forEach(p => {
-              updatedMap.set(p.userId, { ...updatedMap.get(p.userId), ...p });
-            });
-            
-            return Array.from(updatedMap.values());
-          });
-          
-          // 모든 참가자가 제출했으면 결과 화면으로
-          if (rankingData.length >= totalParticipants && totalParticipants > 0) {
-            setRankings(mergedRankings);
-            setPhase(GAME_PHASE.RESULT);
-          }
-        }
-      } catch (error) {
-        console.error('❌ 제출 상태 확인 실패:', error);
-      }
-    };
-
-    checkSubmissionStatus();
-    const interval = setInterval(checkSubmissionStatus, 3000);
-    
-    return () => clearInterval(interval);
-  }, [phase, roomId, totalParticipants, participants]);
+  // 🔥 폴링 제거: 웹소켓으로 실시간 랭킹 업데이트 사용
+  // 이전에는 3초마다 폴링으로 체크했지만, 이제 웹소켓 메시지로 실시간 업데이트
+  // useEffect(() => {
+  //   if (phase !== GAME_PHASE.WAITING) return;
+  //   const checkSubmissionStatus = async () => { ... };
+  //   checkSubmissionStatus();
+  //   const interval = setInterval(checkSubmissionStatus, 3000);
+  //   return () => clearInterval(interval);
+  // }, [phase, roomId, totalParticipants, participants]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -733,7 +699,21 @@ export default function MiniGame1Page() {
 
       {phase === GAME_PHASE.REVIEW && (
         <ReviewPanel
-          questions={answeredQuestions}
+          questions={questions.map((q, idx) => {
+            // answeredQuestions에서 해당 scriptId의 답변 찾기
+            const answered = answeredQuestions.find(a => a.scriptId === q.scriptId);
+
+            return {
+              koreanSentence: q.korean,
+              englishSentence: q.english,
+              englishParts: q.englishParts,
+              blanks: q.blanks.map((blank, blankIdx) => ({
+                answer: blank.answer,
+                userAnswer: answered?.blanks[blankIdx]?.userAnswer || '',
+                isCorrect: answered?.blanks[blankIdx]?.isCorrect || false,
+              })),
+            };
+          })}
           onBack={handleBackToResult}
         />
       )}

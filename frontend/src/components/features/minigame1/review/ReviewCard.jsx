@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import styles from './ReviewCard.module.css';
 
 export default function ReviewCard({
@@ -7,6 +8,23 @@ export default function ReviewCard({
   blanks = [],
   englishParts = []
 }) {
+  // 각 blank의 토글 상태 (false = 틀린 답변 표시, true = 정답 표시)
+  const [showingCorrect, setShowingCorrect] = useState(
+    blanks.map(() => false)
+  );
+
+  // 틀린 답변을 클릭하면 정답 ↔ 틀린 답변 토글
+  const handleBlankClick = (idx) => {
+    // 원래 맞힌 경우는 토글 불가
+    if (blanks[idx].isCorrect) return;
+
+    setShowingCorrect(prev => {
+      const next = [...prev];
+      next[idx] = !next[idx];
+      return next;
+    });
+  };
+
   // 정답 개수 계산
   const correctCount = blanks.filter(b => b.isCorrect).length;
   const totalCount = blanks.length;
@@ -36,12 +54,24 @@ export default function ReviewCard({
             <span key={idx} className={styles.sentencePart}>
               {part}
               {idx < blanks.length && (
-                <span className={`${styles.blankBox} ${
-                  blanks[idx].isCorrect
-                    ? styles.correctBlank
-                    : styles.wrongBlank
-                }`}>
-                  {blanks[idx].userAnswer || '_'.repeat(blanks[idx].answer.length)}
+                <span
+                  className={`${styles.blankBox} ${
+                    // 원래 맞힌 경우 또는 토글해서 정답 보는 중이면 파란색
+                    (blanks[idx].isCorrect || showingCorrect[idx])
+                      ? styles.correctBlank
+                      : styles.wrongBlank
+                  } ${!blanks[idx].userAnswer ? styles.emptyBlank : ''}
+                  ${!blanks[idx].isCorrect ? styles.clickable : ''}`}
+                  onClick={() => handleBlankClick(idx)}
+                >
+                  {/* 원래 맞힌 경우 → userAnswer 표시 */}
+                  {/* 틀렸는데 토글해서 정답 보는 중 → answer 표시 */}
+                  {/* 틀렸고 토글 안함 → userAnswer 표시 */}
+                  {blanks[idx].isCorrect
+                    ? blanks[idx].userAnswer
+                    : showingCorrect[idx]
+                    ? blanks[idx].answer
+                    : (blanks[idx].userAnswer || blanks[idx].answer)}
                 </span>
               )}
             </span>
