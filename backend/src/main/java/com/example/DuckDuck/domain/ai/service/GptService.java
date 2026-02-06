@@ -39,7 +39,7 @@ public class GptService {
                 "]";
 
         try {
-            String jsonResponse = callGptRaw(prompt);
+            String jsonResponse = callGptRaw(prompt, 1.3);
             @SuppressWarnings("unchecked")
             List<String> topics = objectMapper.readValue(jsonResponse, List.class);
 
@@ -193,10 +193,14 @@ public class GptService {
         }
     }
 
+    public String callGptRaw(String prompt) {
+        return callGptRaw(prompt, null);
+    }
+
     /**
      * GPT 호출 (JSON 문자열 반환)
      */
-    public String callGptRaw(String prompt) {
+    public String callGptRaw(String prompt, Double temperature) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + gmsToken);
@@ -204,6 +208,9 @@ public class GptService {
         Map<String, Object> body = new HashMap<>();
         body.put("model", "gpt-4o-mini");
         body.put("messages", List.of(Map.of("role", "user", "content", prompt)));
+        if (temperature != null) {
+            body.put("temperature", temperature);
+        }
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.postForEntity(GMS_URL, entity, Map.class);
