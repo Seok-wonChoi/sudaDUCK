@@ -1198,7 +1198,16 @@ export default function WaitingRoomPage() {
     if (!canStart) return;
 
     try {
+
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith(`timer_start_${inviteCode}`)) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      console.log("🧹 [WaitingRoom] 새 게임 시작 전 타이머 기록 초기화 완료");
+
       await startRoom(inviteCode);
+
     } catch {
       showToast("방을 시작하는데 실패했습니다.");
       return;
