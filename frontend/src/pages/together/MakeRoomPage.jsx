@@ -24,7 +24,7 @@ export default function MakeRoomPage() {
       "여행 경험담",
       "좋아하는 음식",
     ],
-    []
+    [],
   );
 
   const [title, setTitle] = useState("");
@@ -100,19 +100,15 @@ export default function MakeRoomPage() {
     setLoading(true);
     try {
       //오픈비듀 관련 세션 생성
-      const ovSessionId = await createSession(); 
+      const ovSessionId = await createSession();
       console.log("1. 오픈비두 세션 확보:", ovSessionId);
-
-
-
-
 
       // 1. 방 생성: POST /api/v1/rooms
       const res = await createRoom({
         title: title.trim(),
         topic: topic.trim(),
         turnCnt: turn,
-        openviduSessionId: ovSessionId // 👈 백엔드 DTO에 추가한 필드 오픈비듀 세션이올시다!핳핳
+        openviduSessionId: ovSessionId, // 👈 백엔드 DTO에 추가한 필드 오픈비듀 세션이올시다!핳핳
       });
 
       // 2. 방 참가: POST /api/v1/rooms/join (방장도 명시적으로 참가해야 함)
@@ -142,13 +138,17 @@ export default function MakeRoomPage() {
         inviteCode: res.roomCode, // joinCode와 inviteCode 모두 설정
 
         // ★ [중요] 세션 ID를 꼭 저장해서 대기실로 가져가야 함!
-        openviduSessionId: ovSessionId
+        openviduSessionId: ovSessionId,
       };
 
       sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));
       navigate("/together/waiting", { state: roomInfo });
     } catch (e) {
-      alert(e.message || "방 생성에 실패했습니다.");
+      // 백엔드에서 보낸 메시지 추출
+      const errorMessage =
+        e.response?.data?.message || e.message || "방 생성에 실패했습니다.";
+
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -172,60 +172,62 @@ export default function MakeRoomPage() {
           </button>
 
           <h1 className={styles.Title}>방 만들기 </h1>
-<p className={styles.Subtitle}>친구들과 함께할 수다방을 만들어보세요 🎮</p>
+          <p className={styles.Subtitle}>
+            친구들과 함께할 수다방을 만들어보세요 🎮
+          </p>
 
-<div className={styles.Content}>
-  <section className={styles.FormCard} aria-label="방 만들기 폼">
-    <div className={styles.Field}>
-      <div className={styles.LabelRow}>
-        <span className={styles.Label}>방 제목</span>
-        <span className={styles.Required}>*</span>
-      </div>
+          <div className={styles.Content}>
+            <section className={styles.FormCard} aria-label="방 만들기 폼">
+              <div className={styles.Field}>
+                <div className={styles.LabelRow}>
+                  <span className={styles.Label}>방 제목</span>
+                  <span className={styles.Required}>*</span>
+                </div>
 
-      <input
-        className={styles.Input}
-        value={title}
-        onChange={handleTitleChange}
-        placeholder="예: 친구들과 수다타임"
-        disabled={loading}
-      />
+                <input
+                  className={styles.Input}
+                  value={title}
+                  onChange={handleTitleChange}
+                  placeholder="예: 친구들과 수다타임"
+                  disabled={loading}
+                />
 
-      <div className={styles.Counter}>{titleCount}/30</div>
-    </div>
+                <div className={styles.Counter}>{titleCount}/30</div>
+              </div>
 
-    <div className={styles.Field}>
-      <div className={styles.LabelRow}>
-        <span className={styles.Label}>수다 주제</span>
-        <span className={styles.Required}>*</span>
-      </div>
+              <div className={styles.Field}>
+                <div className={styles.LabelRow}>
+                  <span className={styles.Label}>수다 주제</span>
+                  <span className={styles.Required}>*</span>
+                </div>
 
-      <div className={styles.TopicInputRow}>
-        <input
-          className={styles.Input}
-          value={topic}
-          onChange={handleTopicChange}
-          placeholder="직접 입력하거나 아래에서 선택하세요"
-          disabled={loading}
-        />
+                <div className={styles.TopicInputRow}>
+                  <input
+                    className={styles.Input}
+                    value={topic}
+                    onChange={handleTopicChange}
+                    placeholder="직접 입력하거나 아래에서 선택하세요"
+                    disabled={loading}
+                  />
 
-        <button
-          type="button"
-          className={styles.AiButton}
-          onClick={handleAiRecommend}
-          disabled={loading || isLoadingAiRecommend}
-        >
-          {isLoadingAiRecommend ? (
-            <span className={styles.AiButtonContent}>
-              <span className={styles.AiSpinner} />
-              AI 추천
-            </span>
-          ) : (
-            "AI 추천"
-          )}
-        </button>
-      </div>
+                  <button
+                    type="button"
+                    className={styles.AiButton}
+                    onClick={handleAiRecommend}
+                    disabled={loading || isLoadingAiRecommend}
+                  >
+                    {isLoadingAiRecommend ? (
+                      <span className={styles.AiButtonContent}>
+                        <span className={styles.AiSpinner} />
+                        AI 추천
+                      </span>
+                    ) : (
+                      "AI 추천"
+                    )}
+                  </button>
+                </div>
 
-      {/* <div className={styles.HotRow}>
+                {/* <div className={styles.HotRow}>
         <span className={styles.HotDot} aria-hidden="true" />
         <span className={styles.HotText}>인기 주제</span>
       </div>
@@ -248,77 +250,76 @@ export default function MakeRoomPage() {
           );
         })}
       </div> */}
-    </div>
+              </div>
 
-    <div className={styles.Field}>
-      <div className={styles.LabelRow}>
-        <span className={styles.Label}>턴 수</span>
-      </div>
+              <div className={styles.Field}>
+                <div className={styles.LabelRow}>
+                  <span className={styles.Label}>턴 수</span>
+                </div>
 
-      <div className={styles.TurnRow}>
-        {[3, 4, 5].map((n) => {
-          const active = turn === n;
-          return (
-            <button
-              key={n}
-              type="button"
-              className={`${styles.TurnCard} ${
-                active ? styles.TurnCardActive : ""
-              }`}
-              onClick={() => setTurn(n)}
-              disabled={loading}
-            >
-              <span className={styles.TurnIcon} aria-hidden="true">
-                ↻
-              </span>
-              <span className={styles.TurnText}>{n}턴</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+                <div className={styles.TurnRow}>
+                  {[3, 4, 5].map((n) => {
+                    const active = turn === n;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`${styles.TurnCard} ${
+                          active ? styles.TurnCardActive : ""
+                        }`}
+                        onClick={() => setTurn(n)}
+                        disabled={loading}
+                      >
+                        <span className={styles.TurnIcon} aria-hidden="true">
+                          ↻
+                        </span>
+                        <span className={styles.TurnText}>{n}턴</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-    <div className={styles.Field}>
-      <div className={styles.LabelRow}>
-        <span className={styles.Label}>턴당 제한시간 (초)</span>
-      </div>
+              <div className={styles.Field}>
+                <div className={styles.LabelRow}>
+                  <span className={styles.Label}>턴당 제한시간 (초)</span>
+                </div>
 
-      <div className={styles.Stepper}>
-        <button
-          type="button"
-          className={styles.StepButton}
-          onClick={() => setTimeLimit(Math.max(15, timeLimit - 5))}
-          disabled={loading || timeLimit <= 15}
-        >
-          -
-        </button>
-        <span className={styles.StepValue}>{timeLimit}초</span>
-        <button
-          type="button"
-          className={styles.StepButton}
-          onClick={() => setTimeLimit(Math.min(60, timeLimit + 5))}
-          disabled={loading || timeLimit >= 60}
-        >
-          +
-        </button>
-      </div>
-    </div>
+                <div className={styles.Stepper}>
+                  <button
+                    type="button"
+                    className={styles.StepButton}
+                    onClick={() => setTimeLimit(Math.max(15, timeLimit - 5))}
+                    disabled={loading || timeLimit <= 15}
+                  >
+                    -
+                  </button>
+                  <span className={styles.StepValue}>{timeLimit}초</span>
+                  <button
+                    type="button"
+                    className={styles.StepButton}
+                    onClick={() => setTimeLimit(Math.min(60, timeLimit + 5))}
+                    disabled={loading || timeLimit >= 60}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
 
-    <button
-      type="button"
-      className={styles.PrimaryButton}
-      onClick={handleSubmit}
-      disabled={loading}
-    >
-      {loading ? "생성 중..." : "방 만들기"}
-    </button>
-  </section>
+              <button
+                type="button"
+                className={styles.PrimaryButton}
+                onClick={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? "생성 중..." : "방 만들기"}
+              </button>
+            </section>
 
-  <div className={styles.TipWrap}>
-    <TipBanner text="Tip: 방을 만들면 참여 코드가 생성되어 친구들에게 공유할 수 있어요!" />
-  </div>
-</div>
-
+            <div className={styles.TipWrap}>
+              <TipBanner text="Tip: 방을 만들면 참여 코드가 생성되어 친구들에게 공유할 수 있어요!" />
+            </div>
+          </div>
         </main>
       </div>
     </div>
