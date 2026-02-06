@@ -12,8 +12,69 @@ import {
 } from "@/api/shadowing";
 import { leaveRoom, getRoomLobby, toggleReady, startRoom } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
+import useMicAnalyzer from "@/hooks/useMicAnalyzer"; // 👈 추가
 import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
 import duckTogether from "@/assets/images/duck_together.png";
+
+// Profile Images
+import duckProfile1 from "@/assets/images/duck_profile1.png";
+import duckProfile2 from "@/assets/images/duck_profile2.png";
+import duckProfile3 from "@/assets/images/duck_profile3.png";
+import duckProfile4 from "@/assets/images/duck_profile4.png";
+
+const DUCK_PROFILE_IMAGES = {
+  profile1: duckProfile1,
+  profile2: duckProfile2,
+  profile3: duckProfile3,
+  profile4: duckProfile4,
+};
+
+const COLOR_MAP = {
+  white: "#ffffff",
+  yellow: "#fef08a",
+  blue: "#93c5fd",
+  pink: "#f9a8d4",
+  green: "#86efac",
+  purple: "#c4b5fd",
+  orange: "#fdba74",
+};
+
+const ACCESSORY_MAP = {
+  hat: "🎩",
+  sunglasses: "🕶️",
+  ribbon: "🎀",
+  crown: "👑",
+  none: null,
+};
+
+function safeParseJson(str) {
+  try {
+    return typeof str === 'string' ? JSON.parse(str) : str;
+  } catch {
+    return null;
+  }
+}
+
+function getDuckProfileDetail(duckCustomJson) {
+  const parsed = safeParseJson(duckCustomJson);
+  if (!parsed) {
+    return {
+      image: duckProfile1,
+      color: "#ffffff",
+      accessory: null,
+    };
+  }
+
+  const style = parsed.style || "profile1";
+  const color = parsed.color || "white";
+  const accessory = parsed.accessory || "none";
+
+  return {
+    image: DUCK_PROFILE_IMAGES[style] || duckProfile1,
+    color: COLOR_MAP[color] || "#ffffff",
+    accessory: ACCESSORY_MAP[accessory] || null,
+  };
+}
 
 // Components
 import BottomIdle from "@/components/features/recording/bottom/BottomIdle";
@@ -69,7 +130,9 @@ export default function RecordingPage() {
   const myUserId = state?.myUserId; // 본인 userId
   const [participants, setParticipants] = useState(state?.participants || []); // 참여자 목록
 
-  console.log("[RecordingPage] 페이지 로드 - 전체 state:", state);
+  useEffect(() => {
+    console.log("[RecordingPage] 페이지 로드 - 전체 state:", state);
+  }, []); // 마운트 시 1회만 실행
 
   const TURNS = roomInfo.turnCount || 3;
 
@@ -95,6 +158,7 @@ export default function RecordingPage() {
   const [turnResults, setTurnResults] = useState({});
   const [showBlanks, setShowBlanks] = useState(true); // 👈 빈칸 모드 상태 추가
   const [toastMessage, setToastMessage] = useState(""); // 👈 토스트 메시지 상태 추가
+  const [isSpeakerMuted, setIsSpeakerMuted] = useState(true); // 👈 상대방 소리 음소거 상태 추가
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
@@ -103,6 +167,53 @@ export default function RecordingPage() {
   const audioRef = useRef(null);
   const prevIsConversationStepRef = useRef(null); // 👈 이전 마이크 상태 저장용 Ref
   const hasNavigatedRef = useRef(false); // 👈 중복 이동 방지용 Ref
+
+  // --- 🪄 [추가] 패널 드래그 및 최소화 상태 ---
+  const [panelPos, setPanelPos] = useState({ top: 130, right: 40 });
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = (e) => {
+    // 버튼 클릭 시에는 드래그 방지
+    if (e.target.closest('button')) return;
+    
+    setIsDragging(true);
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragOffset.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+      
+      const newLeft = e.clientX - dragOffset.current.x;
+      const newTop = e.clientY - dragOffset.current.y;
+      
+      // 오른쪽 기준 좌표로 변환 (화면 크기 변화 대응)
+      const panelWidth = 280; 
+      const newRight = window.innerWidth - (newLeft + panelWidth);
+      
+      setPanelPos({ 
+        top: Math.max(10, Math.min(window.innerHeight - 50, newTop)), 
+        right: Math.max(10, Math.min(window.innerWidth - 50, newRight)) 
+      });
+    };
+
+    const handleMouseUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   const showToast = useCallback((msg) => {
     setToastMessage(msg);
@@ -159,22 +270,217 @@ export default function RecordingPage() {
     try {
       const data = await getRoomLobby(roomCode);
       const members = data.participants || [];
-      const mapped = members.map((m) => ({
-        id: String(m.userId),
-        userId: m.userId,
-        name: m.nickname,
-        isMe: String(m.userId) === String(myUserId),
-        isReady: m.readyStatus === "READY",
-        isHost: m.isHost,
-      }));
-      setParticipants(mapped);
       
-      const me = mapped.find(p => p.isMe);
-      if (me) setIsReady(me.isReady);
+      setParticipants((prev) => {
+        // 기존 참여자들의 마이크/발화 상태를 기억하기 위한 맵
+        const prevMap = new Map(prev.map(p => [String(p.id || p.userId), p]));
+        
+        return members.map((m) => {
+          const id = String(m.userId);
+          const prevInfo = prevMap.get(id);
+          
+          return {
+            id: id,
+            userId: m.userId,
+            name: m.nickname,
+            isMe: id === String(myUserId),
+            isReady: m.readyStatus === "READY",
+            isHost: m.isHost,
+            duckCustomJson: m.duckCustomJson,
+            // 👈 중요: 기존에 이미 완료(micOn: true)했다면 그 상태를 유지함
+            micOn: prevInfo ? (prevInfo.micOn || (m.micOn ?? false)) : false,
+            voiceLevel: prevInfo?.voiceLevel || 0,
+            isSpeaking: prevInfo?.isSpeaking || false,
+          };
+        });
+      });
+      
+      const me = members.find(m => String(m.userId) === String(myUserId));
+      if (me) setIsReady(me.readyStatus === "READY");
     } catch (e) {
       console.error("[RecordingPage] 로비 정보 조회 실패:", e);
     }
   }, [roomCode, myUserId]);
+
+  const handleRoomClosed = useCallback(() => {
+    console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
+    // 👇 강제 퇴장 시에도 세션 종료
+    if (leaveSession) leaveSession();
+    
+    navigate("/main", {
+      replace: true,
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+    });
+  }, [navigate, leaveSession]);
+
+  const handleMiniGameStart = useCallback(() => {
+    console.log('🎮 모든 참여자 미니게임으로 이동 시작');
+    navigate("/minigame1", { 
+      state: { 
+        ...state, // 기존 state(openviduSessionId 포함) 유지
+        roomId: roomId,
+        roomCode: roomCode,
+        isHost: amIHost, 
+        participantsCount: participants.length,
+        timeLimit: roomInfo.timeLimit || 40
+      } 
+    });
+  }, [navigate, state, roomId, roomCode, amIHost, participants.length, roomInfo.timeLimit]);
+
+  const { sendReady, sendMiniGameStart, sendVoiceLevel, sendMic, isConnected } = useRoomWebSocket(
+    roomCode,
+    {
+      onRoomClosed: handleRoomClosed,
+      onMiniGameStart: handleMiniGameStart,
+      onVoiceLevelChanged: (payload, senderKey) => {
+        if (!senderKey) return;
+        const k = String(senderKey);
+        setParticipants((prev) =>
+          prev.map((p) => {
+            if (p.id === k) {
+              const level = payload?.level ?? 0;
+              const isSpeaking = p.micOn && level > 0.03;
+              return { ...p, voiceLevel: level, isSpeaking };
+            }
+            return p;
+          })
+        );
+      },
+      onMicChanged: (payload, senderKey) => {
+        if (!senderKey) return;
+        const k = String(senderKey);
+        setParticipants((prev) =>
+          prev.map((p) =>
+            p.id === k ? { ...p, micOn: payload?.micOn ?? true, isSpeaking: (payload?.micOn ?? true) ? p.isSpeaking : false } : p
+          )
+        );
+      },
+      onReadyChanged: (payload, senderKey) => {
+        if (senderKey) {
+          let newReady = false;
+          if (payload?.myReadyStatus === "READY" || payload?.readyStatus === "READY") {
+            newReady = true;
+          } else if (payload?.myReadyStatus === "NOT_READY" || payload?.readyStatus === "NOT_READY") {
+            newReady = false;
+          } else if (payload?.ready !== undefined) {
+            newReady = payload.ready === true;
+          } else if (payload?.isReady !== undefined) {
+            newReady = payload.isReady === true;
+          }
+
+          setParticipants((prev) =>
+            prev.map((p) =>
+              String(p.id || p.userId) === String(senderKey)
+                ? { ...p, isReady: newReady } // 기존 정보(duckCustomJson 등) 유지하며 상태만 변경
+                : p
+            )
+          );
+        }
+      },
+      onRoomStarted: (payload) => {
+        console.log("[RecordingPage] 🎮 ROOM_STARTED 수신 - 단계 이동 시작");
+        if (hasNavigatedRef.current) return;
+
+        // 마지막 턴인 경우: 더 이상 TogetherTalkPage로 이동하지 않고 
+        // handleStartNextTurn(sendMiniGameStart)에 의해 미니게임으로 이동하게 됨
+        if (currentTurn >= TURNS) {
+          console.log("[RecordingPage] 마지막 턴 리포트 완료 대기 중...");
+          return;
+        }
+
+        // 중간 턴인 경우: 모든 참여자가 동시에 다음 대화방으로 이동
+        hasNavigatedRef.current = true;
+        const nextTurn = currentTurn + 1;
+        const navigationState = {
+          ...state,
+          currentTurn: nextTurn,
+          roomInfo: {
+            ...roomInfo,
+            currentTurn: nextTurn,
+          },
+          myUserId,
+        };
+
+        setIsTransitioning(true);
+        setTimeout(() => {
+          navigate("/together/talk", {
+            replace: true,
+            state: navigationState,
+          });
+        }, 2000);
+      },
+      onMemberJoined: (payload) => fetchLobby(),
+      onMemberLeft: (payload, senderKey) => {
+        if (senderKey) {
+          setParticipants((prev) => prev.filter((p) => String(p.id || p.userId) !== String(senderKey)));
+        }
+      },
+    },
+    roomId
+  );
+
+  // 🎤 실시간 음성 분석기
+  const { voiceLevel: localVoiceLevel, isSpeaking: localIsSpeaking, start: startMicAnalytic, stop: stopMicAnalytic } = useMicAnalyzer({
+    threshold: 0.03,
+    holdMs: 220,
+  });
+
+  // 🎤 내 목소리 크기를 다른 사람들에게 전송
+  useEffect(() => {
+    if (!isSpeakerMuted && sendVoiceLevel && localVoiceLevel > 0) {
+      sendVoiceLevel(localVoiceLevel);
+    }
+    
+    // 내 화면의 내 아바타에도 표시하기 위해 participants 업데이트
+    if (localIsSpeaking !== undefined) {
+      setParticipants(prev => prev.map(p => 
+        p.isMe ? { ...p, isSpeaking: localIsSpeaking, voiceLevel: localVoiceLevel } : p
+      ));
+    }
+  }, [localVoiceLevel, localIsSpeaking, isSpeakerMuted, sendVoiceLevel]);
+
+  // 🎤 초기 마이크 상태 전송 (접속 즉시 모두 '평가 중'으로 설정)
+  useEffect(() => {
+    if (isConnected && sendMic) {
+      console.log("🎤 [RecordingPage] 초기 마이크 상태 전송 (false)");
+      sendMic(false);
+    }
+  }, [isConnected, sendMic]);
+
+  // 👇 [New] OpenVidu 제어 로직 (쉐도잉 중에는 입과 귀를 모두 닫음)
+  useEffect(() => {
+    if (!publisher) return;
+
+    // 대화가 허용되는 단계: 결과 리포트 화면 또는 완전히 종료된 화면
+    const isConversationStep = (step === STEP.TURN_REPORT || step === STEP.ALL_DONE || step === STEP.IDLE);
+
+    if (isConversationStep) {
+      // 결과 화면에서는 팀원들과 대화할 수 있도록 마이크 Unmute & 스피커 Unmute
+      console.log(`🎤 [OpenVidu] 결과 확인 단계(${step}) -> 마이크 & 스피커 Unmute`);
+      publisher.publishAudio(true);
+      setIsSpeakerMuted(false);
+      
+      // 🎤 내 음성 분석 시작 및 서버에 마이크 켜짐 알림
+      startMicAnalytic();
+      if (sendMic) sendMic(true);
+      
+      // 음소거가 풀릴 때만 알림 표시 (쉐도잉 -> 결과 화면 전환 시)
+      if (prevIsConversationStepRef.current === false) {
+        showToast("팀원들과 대화가 가능합니다. 🎙️");
+      }
+    } else {
+      // 쉐도잉 진행 중에는 집중을 위해 마이크 Mute & 스피커 Mute
+      console.log(`🎤 [OpenVidu] 쉐도잉 진행 단계(${step}) -> 마이크 & 스피커 Mute`);
+      publisher.publishAudio(false);
+      setIsSpeakerMuted(true);
+
+      // 🎤 내 음성 분석 중지 및 서버에 마이크 꺼짐 알림
+      stopMicAnalytic();
+      if (sendMic) sendMic(false);
+    }
+    
+    prevIsConversationStepRef.current = isConversationStep;
+  }, [step, publisher, showToast, startMicAnalytic, stopMicAnalytic, sendMic]);
 
   useEffect(() => {
     if (step === STEP.TURN_REPORT && currentTurn < TURNS) {
@@ -362,25 +668,6 @@ console.log(`📤 발음 평가 전송 시작`, {
     setSelectedTurnForReport(null);
   };
 
-  // 미니게임 시작 신호 수신 핸들러
-  const handleMiniGameStart = useCallback(() => {
-    console.log('🎮 모든 참여자 미니게임으로 이동 시작');
-    navigate("/minigame1", { 
-      state: { 
-        ...state, // 기존 state(openviduSessionId 포함) 유지
-        roomId: roomId,
-        roomCode: roomCode,
-        isHost: amIHost, 
-        participantsCount: participants.length,
-        timeLimit: roomInfo.timeLimit || 40
-      } 
-    });
-  }, [navigate, state, roomId, roomCode, amIHost, participants.length, roomInfo.timeLimit]);
-
-  const handleComplete = () => {
-    console.log("🎮 미니게임 시작 신호는 handleStartNextTurn에서 처리됩니다.");
-  };
-
   // [수정] 북마크 토글: scriptId 기준으로 동작하도록 수정
   const handleBookmarkToggle = useCallback(
     async (id, isBookmarked) => {
@@ -431,86 +718,6 @@ console.log(`📤 발음 평가 전송 시작`, {
       }
     },
     [currentTurnSentences, roomId, selectedTurnForReport, currentTurn]
-  );
-
-  const handleRoomClosed = useCallback(() => {
-    console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
-    // 👇 강제 퇴장 시에도 세션 종료
-    if (leaveSession) leaveSession();
-    
-    navigate("/main", {
-      replace: true,
-      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
-    });
-  }, [navigate, leaveSession]);
-
-  const { sendReady, sendMiniGameStart, isConnected } = useRoomWebSocket(
-    roomCode,
-    {
-      onRoomClosed: handleRoomClosed,
-      onMiniGameStart: handleMiniGameStart,
-      onReadyChanged: (payload, senderKey) => {
-        if (senderKey) {
-          let newReady = false;
-          if (payload?.myReadyStatus === "READY" || payload?.readyStatus === "READY") {
-            newReady = true;
-          } else if (payload?.myReadyStatus === "NOT_READY" || payload?.readyStatus === "NOT_READY") {
-            newReady = false;
-          } else if (payload?.ready !== undefined) {
-            newReady = payload.ready === true;
-          } else if (payload?.isReady !== undefined) {
-            newReady = payload.isReady === true;
-          }
-
-          setParticipants((prev) =>
-            prev.map((p) =>
-              String(p.id || p.userId) === String(senderKey)
-                ? { ...p, isReady: newReady }
-                : p
-            )
-          );
-        }
-      },
-      onRoomStarted: (payload) => {
-        console.log("[RecordingPage] 🎮 ROOM_STARTED 수신 - 단계 이동 시작");
-        if (hasNavigatedRef.current) return;
-
-        // 마지막 턴인 경우: 더 이상 TogetherTalkPage로 이동하지 않고 
-        // handleStartNextTurn(sendMiniGameStart)에 의해 미니게임으로 이동하게 됨
-        if (currentTurn >= TURNS) {
-          console.log("[RecordingPage] 마지막 턴 리포트 완료 대기 중...");
-          return;
-        }
-
-        // 중간 턴인 경우: 모든 참여자가 동시에 다음 대화방으로 이동
-        hasNavigatedRef.current = true;
-        const nextTurn = currentTurn + 1;
-        const navigationState = {
-          ...state,
-          currentTurn: nextTurn,
-          roomInfo: {
-            ...roomInfo,
-            currentTurn: nextTurn,
-          },
-          myUserId,
-        };
-
-        setIsTransitioning(true);
-        setTimeout(() => {
-          navigate("/together/talk", {
-            replace: true,
-            state: navigationState,
-          });
-        }, 2000);
-      },
-      onMemberJoined: (payload) => fetchLobby(),
-      onMemberLeft: (payload, senderKey) => {
-        if (senderKey) {
-          setParticipants((prev) => prev.filter((p) => String(p.id || p.userId) !== String(senderKey)));
-        }
-      },
-    },
-    roomId
   );
 
   const handleReady = useCallback(async () => {
@@ -638,31 +845,6 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   // --- Effect 로직 ---
 
-  // 👇 [New] OpenVidu 마이크 제어 로직 (쉐도잉 진행 중에는 음소거, 결과 리포트 시에만 해제)
-  useEffect(() => {
-    if (!publisher) return;
-
-    // 대화가 허용되는 단계: 결과 리포트 화면 또는 완전히 종료된 화면
-    const isConversationStep = (step === STEP.TURN_REPORT || step === STEP.ALL_DONE || step === STEP.IDLE);
-
-    if (isConversationStep) {
-      // 결과 화면에서는 팀원들과 대화할 수 있도록 마이크 Unmute
-      console.log(`🎤 [OpenVidu] 결과 확인 단계(${step}) -> 마이크 Unmute`);
-      publisher.publishAudio(true);
-      
-      // 음소거가 풀릴 때만 알림 표시 (쉐도잉 -> 결과 화면 전환 시)
-      if (prevIsConversationStepRef.current === false) {
-        showToast("팀원들과 대화가 가능합니다. 🎙️");
-      }
-    } else {
-      // 쉐도잉 진행 중(AI 재생, 녹음 대기, 실제 녹음 등)에는 집중과 에코 방지를 위해 항상 Mute
-      console.log(`🎤 [OpenVidu] 쉐도잉 진행 단계(${step}) -> 마이크 Mute`);
-      publisher.publishAudio(false);
-    }
-    
-    prevIsConversationStepRef.current = isConversationStep;
-  }, [step, publisher, showToast]);
-
   useEffect(() => {
     const saved = localStorage.getItem("bookmarkedSentences");
     if (saved) setBookmarkedSentences(JSON.parse(saved));
@@ -787,7 +969,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       }
     };
     fetchTurnScripts();
-  }, [currentTurn, roomId, conversations]);
+  }, [currentTurn, roomId, conversations, participants]);
 
   // 메인 타이머 및 자동 흐름 제어
   useEffect(() => {
@@ -957,16 +1139,12 @@ console.log(`📤 발음 평가 전송 시작`, {
           averageScore: result.averageScore,
         };
       });
-      console.log("🔍 [RecordingPage] resultsMap:", resultsMap); // ← 이 줄 추가!
+      console.log("🔍 [RecordingPage] resultsMap:", resultsMap);
     }
 
     return currentTurnSentences.map((s, i) => {
       const resultData = resultsMap[s.scriptId];
       const finalScore = resultData?.score ?? sentenceScores[s.id];
-
-      console.log(
-        `🔍 [Card ${i}] scriptId:${s.scriptId}, id:${s.id}, score:${finalScore}, averageScore:${resultData?.averageScore}`,
-      );
 
       // scriptId는 고유하므로 scriptId만 사용 (턴 번호 불필요)
       const bookmarkKey = s.scriptId;
@@ -1066,7 +1244,6 @@ console.log(`📤 발음 평가 전송 시작`, {
         // 모든 턴(중간 및 마지막)에 대해 동기화 로직(준비/시작) 적용
         const readyCount = participants.filter(p => !p.isHost && p.isReady).length;
         const totalToReady = participants.length - 1;
-        const isLastTurn = currentTurn >= TURNS;
 
         return (
           <div
@@ -1133,7 +1310,7 @@ console.log(`📤 발음 평가 전송 시작`, {
         );
       case STEP.ALL_DONE:
         return (
-          <BottomAllDone onRestart={restart} onComplete={handleComplete} isHost={amIHost} />
+          <BottomAllDone onRestart={restart} onComplete={handleMiniGameStart} isHost={amIHost} />
         );
       default:
         return null;
@@ -1142,10 +1319,80 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   return (
     <>
-      {/* 👇 소리 재생용 컴포넌트 추가 */}
+      {/* 📊 실시간 학습 현황 패널 추가 (드래그/최소화 기능) */}
+      <div 
+        className={`${styles.StatusPanel} ${isDragging ? styles.Dragging : ''} ${isMinimized ? styles.Minimized : ''}`}
+        style={{ 
+          top: `${panelPos.top}px`, 
+          right: `${panelPos.right}px`,
+          cursor: isDragging ? 'grabbing' : 'grab'
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        <div className={styles.StatusTitle}>
+          <div className={styles.TitleLeft}>
+            <span>학습 현황</span>
+            {!isMinimized && <span className={styles.LiveBadge}>LIVE</span>}
+          </div>
+          <button 
+            className={styles.MinimizeButton} 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMinimized(!isMinimized);
+            }}
+            title={isMinimized ? "펼치기" : "최소화"}
+          >
+            {isMinimized ? "∨" : "∧"}
+          </button>
+        </div>
+        
+        {!isMinimized && participants.map((p) => {
+          const profile = getDuckProfileDetail(p.duckCustomJson);
+          // 🔴/🟢 점은 오직 '평가(쉐도잉) 완료' 여부만 나타냄 (준비 상태와 분리)
+          // 내가 리포트 단계거나, 상대방의 마이크가 켜졌다면(쉐도잉 완료) '평가 완료'
+          const isEvalFinished = p.isMe 
+            ? (step === STEP.TURN_REPORT || step === STEP.ALL_DONE) 
+            : p.micOn;
+          
+          return (
+            <div key={p.id} className={styles.ParticipantStatus}>
+              <div 
+                className={`${styles.AvatarWrapper} ${p.isSpeaking ? styles.Speaking : ''}`}
+                style={{ backgroundColor: profile.color }}
+              >
+                <img 
+                  src={profile.image} 
+                  alt={p.name} 
+                  className={styles.StatusAvatar}
+                />
+                {profile.accessory && profile.accessory !== 'none' && (
+                  <span className={styles.StatusAccessory}>{profile.accessory}</span>
+                )}
+              </div>
+              <div className={styles.StatusInfo}>
+                <div className={styles.NameRow}>
+                  <span className={styles.StatusName}>
+                    {p.isMe 
+                      ? `${p.name.length > 5 ? p.name.slice(0, 5) + '..' : p.name}(나)` 
+                      : (p.name.length > 5 ? p.name.slice(0, 5) + '..' : p.name)}
+                  </span>
+                </div>
+                <div className={styles.StatusLabel}>
+                  <span className={`${styles.StatusDot} ${isEvalFinished ? styles.DotGreen : styles.DotRed}`} />
+                  <span className={isEvalFinished ? styles.TextGreen : styles.TextRed}>
+                    {isEvalFinished ? '평가 완료' : '평가 중'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 👇 소리 재생용 컴포넌트 추가 (음소거 상태 전달) */}
       {subscribers.map((sub, i) => (
         <div key={i} style={{ display: 'none' }}>
-          <UserAudioComponent streamManager={sub} />
+          <UserAudioComponent streamManager={sub} muted={isSpeakerMuted} />
         </div>
       ))}
       <Recordinglayout
@@ -1201,7 +1448,7 @@ console.log(`📤 발음 평가 전송 시작`, {
 }
 
 // 👇 소리 재생용 컴포넌트
-const UserAudioComponent = ({ streamManager }) => {
+const UserAudioComponent = ({ streamManager, muted }) => {
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -1210,5 +1457,12 @@ const UserAudioComponent = ({ streamManager }) => {
     }
   }, [streamManager]);
 
-  return <audio autoPlay ref={audioRef} />;
+  // muted 프로퍼티가 변경될 때 실제 엘리먼트에 적용
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = muted;
+    }
+  }, [muted]);
+
+  return <audio autoPlay ref={audioRef} muted={muted} />;
 };
