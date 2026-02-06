@@ -12,6 +12,7 @@ import SentenceDetailModal from "@/components/features/mypage/modals/SentenceDet
 import NicknameStyleModal from "@/components/features/mypage/modals/NicknameStyleModal/NicknameStyleModal";
 import DuckStyleModal from "@/components/features/mypage/modals/DuckStyleModal/DuckStyleModal";
 import DuckBotModal from "@/components/features/mypage/modals/DuckBotModal/DuckBotModal";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal"; // 👈 ConfirmModal 추가
 
 import duckBotCyan from "@/assets/images/duck_bot_cyan.png";
 import duckBotOrange from "@/assets/images/duck_bot_orange.png";
@@ -48,6 +49,16 @@ export default function MyPage() {
   const [showDuckModal, setShowDuckModal] = useState(false);
   const [showDuckBotModal, setShowDuckBotModal] = useState(false);
   const [isReady, setIsReady] = useState(false);
+
+  // 👈 토스트 및 삭제 모달 상태 추가
+  const [toastMessage, setToastMessage] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [sentenceToDelete, setSentenceToDelete] = useState(null);
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(""), 2500);
+  };
 
 
   // localStorage에서 프로필 정보 읽어오기 (초기 렌더링 플래시 방지)
@@ -324,20 +335,26 @@ export default function MyPage() {
     setSelectedSentence(sentence);
   };
 
-  const handleDeleteSentence = async (sentenceId) => {
+  const handleDeleteSentence = (sentenceId) => {
+    setSentenceToDelete(sentenceId);
+    setShowDeleteModal(true);
+  };
 
-    if (window.confirm("이 문장을 저장 목록에서 삭제하시겠습니까?")) {
+  const confirmDelete = async () => {
+    if (!sentenceToDelete) return;
+
     try {
-      // roomId와 turnNo 없이 호출해도 백엔드에서 알아서 삭제 처리함
-      await toggleScriptLike(sentenceId, null, null); 
-      
-      setSentences((prev) => prev.filter((s) => s.id !== sentenceId));
-      setSentenceCount(prev => Math.max(0, prev - 1));
-      alert("삭제되었습니다.");
+      await toggleScriptLike(sentenceToDelete, null, null);
+      setSentences((prev) => prev.filter((s) => s.id !== sentenceToDelete));
+      setSentenceCount((prev) => Math.max(0, prev - 1));
+      showToast("문장이 삭제되었습니다.");
     } catch (error) {
       console.error("삭제 실패:", error);
+      showToast("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setShowDeleteModal(false);
+      setSentenceToDelete(null);
     }
-  }
   };
 
   const handleSaveNicknameStyle = async ({ nickname: newNickname, background, effect }) => {
@@ -524,6 +541,21 @@ export default function MyPage() {
           />
         </main>
       </div>
+
+      {toastMessage && <div className={styles.Toast}>{toastMessage}</div>}
+
+      {showDeleteModal && (
+        <ConfirmModal
+          open={showDeleteModal}
+          title="문장 삭제"
+          message="이 문장을 저장 목록에서 삭제하시겠습니까?"
+          confirmText="🗑️ 삭제"
+          cancelText="취소"
+          onConfirm={confirmDelete}
+          onClose={() => setShowDeleteModal(false)}
+          reverseButtons={true}
+        />
+      )}
 
       {selectedSentence && (
         <SentenceDetailModal

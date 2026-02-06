@@ -280,7 +280,7 @@ export default function MakeRoomPage() {
 
     <div className={styles.Field}>
       <div className={styles.LabelRow}>
-        <span className={styles.Label}>타이머 시간 (초)</span>
+        <span className={styles.Label}>턴당 제한시간 (초)</span>
       </div>
 
       <div className={styles.Stepper}>
