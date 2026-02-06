@@ -74,4 +74,18 @@ public class MiniGameController {
         return ResponseEntity.ok(ranking);
     }
 
+    @Operation(
+            summary = "미니게임 및 스크립트 데이터 정리 (게임 종료 시)",
+            description = "미니게임이 끝난 후 Redis에 저장된 스크립트, 점수, 문제 데이터를 삭제합니다."
+    )
+    @PostMapping("/{roomId}/cleanup")
+    public ResponseEntity<Void> cleanupGameData(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long roomId) {
+
+        // (필요 시) 방장 권한 체크 등 추가 가능
+        miniGameService.clearReviewData(roomId);
+        return ResponseEntity.ok().build();
+    }
+
 }
