@@ -14,6 +14,7 @@ export default function ConfirmModal({
   onClose,
   onCancel,
   reverseButtons = false, // 👈 버튼 순서 반전 옵션 추가
+  small = false, // 👈 버튼 크기 축소 옵션 추가
 }) {
   const cancelRef = useRef(null);
   const { getEffectiveVolume, isMuted } = useSoundContext();
@@ -63,26 +64,34 @@ export default function ConfirmModal({
 
   if (!open) return null;
 
-  const buttons = [
-    <button
-      key="cancel"
-      type="button"
-      className={styles.CancelButton}
-      onClick={handleClose}
-      ref={cancelRef}
-      data-click-sound="false"
-    >
-      {cancelText}
-    </button>,
+  // 버튼 배열 생성 (cancelText가 있을 때만 취소 버튼 포함)
+  const buttons = [];
+
+  if (cancelText) {
+    buttons.push(
+      <button
+        key="cancel"
+        type="button"
+        className={`${styles.CancelButton} ${small ? styles.Small : ""}`}
+        onClick={handleClose}
+        ref={cancelRef}
+        data-click-sound="false"
+      >
+        {cancelText}
+      </button>
+    );
+  }
+
+  buttons.push(
     <button
       key="confirm"
       type="button"
       className={styles.ConfirmButton}
-      onClick={onConfirm}
+      onClick={onConfirm || handleClose}
     >
       {confirmText}
-    </button>,
-  ];
+    </button>
+  );
 
   return createPortal(
     <div className={styles.Overlay} role="presentation" onClick={handleClose}>
@@ -99,7 +108,7 @@ export default function ConfirmModal({
         </div>
 
         <div className={styles.Actions}>
-          {reverseButtons ? buttons.reverse() : buttons}
+          {reverseButtons ? [...buttons].reverse() : buttons}
         </div>
       </div>
     </div>,

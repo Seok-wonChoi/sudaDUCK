@@ -39,7 +39,7 @@ public class GptService {
                 "]";
 
         try {
-            String jsonResponse = callGptRaw(prompt);
+            String jsonResponse = callGptRaw(prompt, 1.3);
             @SuppressWarnings("unchecked")
             List<String> topics = objectMapper.readValue(jsonResponse, List.class);
 
@@ -102,8 +102,13 @@ public class GptService {
 
                         "2. **blank_script** (빈칸 학습지)\n" +
                         "   - 'en'에서 핵심 단어 2-3개를 [ ]로 치환\n" +
-                        "   - 선택 기준: 명사 > 동사 > 형용사 순\n" +
+                        "   - 선택 기준: 동사 > 명사 > 형용사 순\n" +
                         "   - 학습 난이도를 고려하여 선택\n\n" +
+                        "   **빈칸 개수 규칙:**\n" +
+                        "   - 단어 1-2개: 최소 1개 빈칸 (필수)\n" +
+                        "   - 단어 3-5개: 2개 빈칸\n" +
+                        "   - 단어 6개 이상: 2-3개 빈칸\n" +
+                        "   - ⚠️ 빈칸이 없는 문장은 절대 불가\n\n" +
 
                         "3. **similarity_phrases** (유사 표현 2개)\n" +
                         "   - 'en'과 완전히 같은 의미의 다른 영어 문장\n" +
@@ -188,10 +193,14 @@ public class GptService {
         }
     }
 
+    public String callGptRaw(String prompt) {
+        return callGptRaw(prompt, null);
+    }
+
     /**
      * GPT 호출 (JSON 문자열 반환)
      */
-    public String callGptRaw(String prompt) {
+    public String callGptRaw(String prompt, Double temperature) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + gmsToken);
@@ -199,6 +208,9 @@ public class GptService {
         Map<String, Object> body = new HashMap<>();
         body.put("model", "gpt-4o-mini");
         body.put("messages", List.of(Map.of("role", "user", "content", prompt)));
+        if (temperature != null) {
+            body.put("temperature", temperature);
+        }
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.postForEntity(GMS_URL, entity, Map.class);

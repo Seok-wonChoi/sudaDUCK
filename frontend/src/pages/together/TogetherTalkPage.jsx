@@ -1698,7 +1698,7 @@ export default function TogetherTalkPage() {
       }
     };
 
-    // scheduleRandomQuiz(); // 👈 돌발 퀴즈 자동 호출 중단 (주석 처리)
+    // scheduleRandomQuiz();
   }, [
     currentTurn,
     questRunning,
@@ -2233,6 +2233,7 @@ export default function TogetherTalkPage() {
           notifications={[]}
           logoExitMessage="메인 화면으로 나가시겠습니까?"
           onLogoExit={doLeaveRoom}
+          disableProfileClick={isConnected}
         />
 
         <div className={styles.Content}>

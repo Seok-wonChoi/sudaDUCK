@@ -21,6 +21,8 @@ export default function MiniGameLayout({
   // 리뷰 모드 관련
   isReviewMode = false,
   onComplete,
+  // 프로필 클릭 차단
+  disableProfileClick = false,
 }) {
   return (
     <div className={styles.layout}>
@@ -28,6 +30,7 @@ export default function MiniGameLayout({
         userName={userName}
         logoExitMessage={logoExitMessage}
         onLogoExit={onLogoExit || onExit}
+        disableProfileClick={disableProfileClick}
       />
 
       <main className={styles.main}>

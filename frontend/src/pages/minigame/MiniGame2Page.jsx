@@ -185,6 +185,7 @@ export default function MiniGame2Page() {
       participants={MOCK_PARTICIPANTS}
       logoExitMessage="메인 화면으로 나가시겠습니까?"
       onLogoExit={handleLogoExit}
+      disableProfileClick={true}
     >
       {phase === GAME_PHASE.PLAYING && (
         <div className="flex flex-col h-full">
