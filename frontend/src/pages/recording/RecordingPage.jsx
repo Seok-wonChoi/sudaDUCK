@@ -367,6 +367,7 @@ console.log(`📤 발음 평가 전송 시작`, {
     console.log('🎮 모든 참여자 미니게임으로 이동 시작');
     navigate("/minigame1", { 
       state: { 
+        ...state, // 기존 state(openviduSessionId 포함) 유지
         roomId: roomId,
         roomCode: roomCode,
         isHost: amIHost, 
@@ -374,7 +375,7 @@ console.log(`📤 발음 평가 전송 시작`, {
         timeLimit: roomInfo.timeLimit || 40
       } 
     });
-  }, [navigate, roomId, roomCode, amIHost, participants.length, roomInfo.timeLimit]);
+  }, [navigate, state, roomId, roomCode, amIHost, participants.length, roomInfo.timeLimit]);
 
   const handleComplete = () => {
     console.log("🎮 미니게임 시작 신호는 handleStartNextTurn에서 처리됩니다.");
