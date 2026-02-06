@@ -919,6 +919,14 @@ export default function WaitingRoomPage() {
     (payloadOrData) => {
       if (isStarting) return;
       console.log("🎮 [WaitingRoom] ROOM_STARTED 수신 - 카운트다운 시작");
+      
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith(`timer_start_${inviteCode}`)) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      console.log("🧹 [WaitingRoom] 새 게임 시작을 위해 타이머 기록 초기화 완료");
+      
       startDataRef.current = payloadOrData;
       setIsStarting(true);
       startTimer();
@@ -1199,7 +1207,9 @@ export default function WaitingRoomPage() {
     if (!canStart) return;
 
     try {
+
       await startRoom(inviteCode);
+
     } catch {
       showToast("방을 시작하는데 실패했습니다.");
       return;
