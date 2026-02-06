@@ -25,47 +25,50 @@
 }
 
 .Message {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 900;
   color: #111827;
   line-height: 1.5;
+  text-align: center;
 }
 
 .Message.HasTitle {
-  margin-top: 10px;
-  font-size: 12px;
+  margin-top: 12px;
+  font-size: 15px;
   font-weight: 700;
-  color: #6b7280;
+  color: #374151;
   text-align: center;
   white-space: pre-line;
 }
 
 .Actions {
-  margin-top: 14px;
+  margin-top: 20px;
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  justify-content: center;
+  gap: 12px;
 }
 
 .CancelButton {
-  height: 36px;
-  padding: 0 14px;
+  flex: 1;
+  height: 40px;
+  padding: 0 16px;
   border-radius: 10px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
   color: #111827;
   cursor: pointer;
 }
 
 .ConfirmButton {
-  height: 36px;
-  padding: 0 14px;
+  flex: 1;
+  height: 40px;
+  padding: 0 16px;
   border-radius: 10px;
   background: #4f46e5;
   border: 1px solid #4f46e5;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
   color: #ffffff;
   cursor: pointer;

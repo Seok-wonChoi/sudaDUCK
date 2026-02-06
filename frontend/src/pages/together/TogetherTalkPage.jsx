@@ -666,7 +666,7 @@ export default function TogetherTalkPage() {
     [resolvedRoomCode],
   );
 
-  // 대화 종료 시 모든 참여자가 /recording으로 이동
+  // 턴 종료 시 모든 참여자가 /recording으로 이동
   const handleRoomEnded = useCallback(
     (payload) => {
       console.log(
@@ -1149,10 +1149,10 @@ export default function TogetherTalkPage() {
   // ★ handleEnd: sendEndRoom(WS) 대신 endRoom REST API 호출
   // 백엔드에 /app/rooms/{roomCode}/end WS 핸들러가 없음 → REST API만 존재
   const handleEnd = useCallback(async () => {
-    // 방장만 대화 종료 가능
+    // 방장만 턴 종료 가능
     if (!isHost) return;
 
-    console.log("[TogetherTalkPage] 대화 종료 - 전달할 데이터:", {
+    console.log("[TogetherTalkPage] 턴 종료 - 전달할 데이터:", {
       roomId,
       roomCode: resolvedRoomCode,
       currentTurn,
@@ -2406,14 +2406,14 @@ export default function TogetherTalkPage() {
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
-                {/* 대화 종료 버튼은 방장에게만 표시 */}
+                {/* 턴 종료 버튼은 방장에게만 표시 */}
                 {isHost && (
                   <button
                     type="button"
                     className={styles.SecondaryButton}
                     onClick={handleEnd}
                   >
-                    대화 종료
+                    턴 종료
                   </button>
                 )}
               </div>
