@@ -37,3 +37,9 @@ export async function clearReviewData(roomId) {
     return null;
   }
 }
+
+// 게임 데이터 정리 API 호출
+export async function cleanupGameData(roomId) {
+  const { data } = await api.post(`/api/v1/mini_game/${roomId}/cleanup`);
+  return data;
+}
