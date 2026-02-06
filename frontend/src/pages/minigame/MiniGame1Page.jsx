@@ -9,7 +9,7 @@ import ResultPanel from '@/components/features/minigame1/result/ResultPanel';
 import ReviewPanel from '@/components/features/minigame1/review/ReviewPanel';
 import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
 import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
-import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewData } from '@/api/miniGame';
+import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewData, cleanupGameData } from '@/api/miniGame';
 import { getMyProfileCustom } from '@/api/mypage';
 import { leaveRoom, getRoomLobby } from '@/api/rooms';
 import useMicAnalyzer from '@/hooks/useMicAnalyzer';
@@ -372,6 +372,10 @@ export default function MiniGame1Page() {
   // [추가] 대기방(채팅방)으로 돌아가기
   const handleReturnToRoom = async () => {
     try {
+      if (isHost) {
+        await cleanupGameData(roomId); // 데이터 정리
+      }
+
       if (roomCode) {
         navigate('/together/waiting', {
           state: {
@@ -379,6 +383,7 @@ export default function MiniGame1Page() {
             roomCode,
             roomId,
             isHost,
+            currentTurn: 1,
             // WaitingRoomPage는 sessionStorage도 확인하지만, 
             // state로 명시적으로 넘겨주는 것이 더 안전합니다.
           }
@@ -578,7 +583,7 @@ export default function MiniGame1Page() {
         await leaveRoom({ roomCode });
       }
       
-      await clearReviewData(roomId);
+      await cleanupGameData(roomId);
       
       navigate('/together');
     } catch (error) {
