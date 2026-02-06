@@ -13,6 +13,7 @@ import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewD
 import { getMyProfileCustom } from '@/api/mypage';
 import { leaveRoom, getRoomLobby } from '@/api/rooms';
 import useMicAnalyzer from '@/hooks/useMicAnalyzer';
+import useRoomWebSocket from '@/hooks/useRoomWebSocket';
 import { useOpenVidu } from '@/context/OpenViduContext'; // 👈 OpenVidu Hook 추가
 
 const GAME_PHASE = {
@@ -104,40 +105,134 @@ export default function MiniGame1Page() {
     holdMs: 220,
   });
 
-  // 마이크 시작 (게임 시작 시)
+  // 마이크 시작 (게임 진행 중 및 리뷰 화면)
   useEffect(() => {
-    if (phase === GAME_PHASE.PLAYING) {
+    if (phase === GAME_PHASE.PLAYING || phase === GAME_PHASE.REVIEW || phase === GAME_PHASE.RESULT) {
       startMic();
+    } else {
+      stopMic();
     }
-    return () => stopMic();
   }, [phase, startMic, stopMic]);
 
   // 음성 레벨 맵 (throttle 적용 - 200ms)
   const [voiceLevelsMap, setVoiceLevelsMap] = useState({});
-  const [lastVoiceUpdate, setLastVoiceUpdate] = useState(0);
 
-  useEffect(() => {
-    if (!isSpeaking || voiceLevel < 0.05) return;
+  // 웹소켓 연결 - 음성 레벨 동기화
+  const handleVoiceLevelChanged = useCallback((payload, senderKey) => {
+    console.log('🔊 [MiniGame1] Voice level changed:', { payload, senderKey });
 
-    const now = Date.now();
-    if (now - lastVoiceUpdate < 200) return;
+    // userId 또는 senderKey를 key로 사용
+    const key = payload?.userId || senderKey;
+    const level = payload?.level;
 
-    const myId = 'me';
+    if (!key || typeof level !== 'number') {
+      console.warn('⚠️ [MiniGame1] Invalid voice level data:', { key, level, payload });
+      return;
+    }
+
+    console.log('✅ [MiniGame1] Setting voice level:', { key, level });
     setVoiceLevelsMap((prev) => ({
       ...prev,
-      [myId]: voiceLevel,
+      [String(key)]: level || 0,
     }));
-    setLastVoiceUpdate(now);
 
-    const timeout = setTimeout(() => {
+    // 일정 시간 후 자동으로 0으로 설정
+    setTimeout(() => {
       setVoiceLevelsMap((prev) => ({
         ...prev,
-        [myId]: 0,
+        [String(key)]: 0,
       }));
     }, 500);
+  }, []);
 
-    return () => clearTimeout(timeout);
-  }, [isSpeaking, voiceLevel, lastVoiceUpdate]);
+  // 랭킹 업데이트 핸들러 (실시간)
+  const handleRankingUpdated = useCallback((payload) => {
+    console.log('🏆 [MiniGame1] Ranking updated:', payload);
+
+    if (payload?.rankings && Array.isArray(payload.rankings)) {
+      setRankings(payload.rankings);
+
+      // 제출한 사람 수 업데이트 (score가 정의되어 있거나 hasSubmitted가 true인 경우)
+      const submitted = payload.rankings.filter(r =>
+        r.hasSubmitted === true ||
+        typeof r.score === 'number' ||
+        r.score !== undefined
+      ).length;
+      setSubmittedCount(submitted);
+
+      console.log('✅ [MiniGame1] Rankings updated:', {
+        rankings: payload.rankings,
+        submittedCount: submitted,
+        totalParticipants,
+        phase,
+        willTransition: submitted >= totalParticipants && totalParticipants > 0 && phase === GAME_PHASE.WAITING
+      });
+
+      // 모든 참가자가 제출했으면 결과 화면으로 이동
+      if (submitted >= totalParticipants && totalParticipants > 0 && phase === GAME_PHASE.WAITING) {
+        console.log('🎉 [MiniGame1] All participants submitted, moving to RESULT phase');
+        setPhase(GAME_PHASE.RESULT);
+      }
+    }
+  }, [totalParticipants, phase]);
+
+  const { sendVoiceLevel, isConnected } = useRoomWebSocket(roomCode, {
+    onVoiceLevelChanged: handleVoiceLevelChanged,
+    onRankingUpdated: handleRankingUpdated,
+    onConnected: () => {
+      console.log('[MiniGame1] ✅ WebSocket 연결 성공');
+    },
+    onDisconnected: () => {
+      console.log('[MiniGame1] ❌ WebSocket 연결 해제');
+    },
+  });
+
+  // 내 음성 레벨 전송 (throttle 적용)
+  const lastLocalSentRef = useRef({ at: 0, level: 0 });
+
+  useEffect(() => {
+    if (!isConnected) return;
+    if (!isSpeaking && voiceLevel < 0.05) return;
+
+    const now = Date.now();
+    const last = lastLocalSentRef.current;
+
+    if (now - last.at < 120) return;
+    if (Math.abs(voiceLevel - last.level) < 0.02) return;
+
+    lastLocalSentRef.current = { at: now, level: voiceLevel };
+    if (voiceLevel > 0) sendVoiceLevel(voiceLevel);
+  }, [voiceLevel, isSpeaking, isConnected, sendVoiceLevel]);
+
+  // 내 음성 레벨을 로컬 voiceLevelsMap에도 추가 (즉시 UI 반영)
+  useEffect(() => {
+    const myParticipant = participants.find(p => p.isMe);
+    if (!myParticipant) return;
+
+    if (isSpeaking && voiceLevel >= 0.05) {
+      // 말하고 있을 때
+      setVoiceLevelsMap((prev) => ({
+        ...prev,
+        [myParticipant.key]: voiceLevel,
+      }));
+
+      // 일정 시간 후 자동으로 0으로 설정
+      const timeout = setTimeout(() => {
+        setVoiceLevelsMap((prev) => ({
+          ...prev,
+          [myParticipant.key]: 0,
+        }));
+      }, 500);
+
+      return () => clearTimeout(timeout);
+    } else {
+      // 말하지 않을 때는 0으로 설정
+      setVoiceLevelsMap((prev) => ({
+        ...prev,
+        [myParticipant.key]: 0,
+      }));
+    }
+  }, [isSpeaking, voiceLevel, participants]);
 
   // 🔥 문제 5 해결: 방 참가자 정보 초기 로드
   useEffect(() => {
@@ -150,6 +245,7 @@ export default function MiniGame1Page() {
         
         if (lobbyData && lobbyData.members && Array.isArray(lobbyData.members)) {
           const participantsList = lobbyData.members.map(member => ({
+            key: String(member.userId || member.memberId || ''),
             id: member.userId || member.memberId,
             userId: member.userId || member.memberId,
             name: member.nickname,
@@ -166,7 +262,8 @@ export default function MiniGame1Page() {
           
           console.log('✅ 참가자 목록 설정:', participantsList);
           setParticipants(participantsList);
-          setTotalParticipants(participantsList.length);
+          // 참가자 수가 0이면 최소 1로 설정 (혼자 플레이하는 경우)
+          setTotalParticipants(Math.max(participantsList.length, 1));
 
           const me = participantsList.find(p => p.isMe);
 
@@ -176,9 +273,15 @@ export default function MiniGame1Page() {
               profileImageUrl: me.profileImageUrl
             });
           }
+        } else {
+          // 참가자 정보를 못 받아온 경우, 최소 1명으로 설정
+          console.warn('⚠️ 참가자 정보가 없습니다. 혼자 플레이로 가정합니다.');
+          setTotalParticipants(1);
         }
       } catch (error) {
         console.error('❌ 방 참가자 정보 로드 실패:', error);
+        // 에러 발생 시에도 최소 1명으로 설정
+        setTotalParticipants(1);
       }
     };
 
@@ -219,84 +322,56 @@ export default function MiniGame1Page() {
   }, []); // 마운트 시 1회 실행
 
 
-  // 🔥 문제 3 해결: 대기 중 제출 상태 확인 (3초마다)
+  // 🔥 WebSocket 메시지가 안 올 때를 대비한 폴링 (5초마다, 깜빡임 방지)
   useEffect(() => {
     if (phase !== GAME_PHASE.WAITING) return;
 
-    const checkSubmissionStatus = async () => {
+    const checkRankingStatus = async () => {
       try {
         const rankingData = await getReviewRanking(roomId);
-        
-        console.log('📊 대기 상태 확인:', {
-          rankingData: rankingData.length,
-          totalParticipants,
-          제출여부: rankingData.map(r => ({ 이름: r.nickname, 점수: r.score }))
-        });
-        
-        if (rankingData && Array.isArray(rankingData)) {
-          // 제출한 사람 수 계산 (점수가 있는 사람)
-          const submittedUsers = rankingData.filter(r => r.score > 0 || r.hasSubmitted);
-          setSubmittedCount(submittedUsers.length);
-          
-          // [수정] 랭킹 데이터에 참가자 정보(오리 커스텀 등)를 병합
-          const mergedRankings = rankingData.map(rank => {
-            // ID로 매칭 (문자열로 변환하여 비교)
-            const participantInfo = participants.find(p => 
-              String(p.userId) === String(rank.userId)
-            );
+        console.log('🔄 [Polling] 랭킹 상태 체크:', rankingData);
 
-            // 해당 유저를 찾았다면 그 유저의 duckCustomJson을 사용
-            return {
-              ...rank,
-              duckCustomJson: participantInfo?.duckCustomJson || null,
-              avatarCustomJson: participantInfo?.avatarCustomJson || null // 닉네임 효과도 있다면 추가
-            };
+        // API가 배열을 직접 반환하거나 { rankings: [...] } 형태로 반환하는 경우 모두 처리
+        const rankings = Array.isArray(rankingData) ? rankingData : rankingData?.rankings;
+
+        if (rankings && Array.isArray(rankings)) {
+          setRankings(rankings);
+
+          const submitted = rankings.filter(r =>
+            r.hasSubmitted === true ||
+            typeof r.score === 'number' ||
+            r.score !== undefined
+          ).length;
+          setSubmittedCount(submitted);
+
+          console.log('🔍 [Polling] 제출 상태:', {
+            submitted,
+            totalParticipants,
+            rankings,
+            willTransition: submitted >= totalParticipants
           });
-          
-          // 랭킹 데이터로 참가자 정보 업데이트
-          const updatedParticipants = rankingData.map(rank => ({
-            id: rank.userId || rank.nickname,
-            userId: rank.userId || rank.nickname,
-            name: rank.nickname,
-            nickname: rank.nickname,
-            profileImageUrl: rank.profileImageUrl,
-            avatar: rank.profileImageUrl,
-            isActive: true,
-            isMe: rank.isMe || false,
-            voiceLevel: 0,
-          }));
-          
-          // 기존 참가자 정보와 병합
-          setParticipants(prevParticipants => {
-            const updatedMap = new Map();
-            
-            prevParticipants.forEach(p => {
-              updatedMap.set(p.userId, p);
-            });
-            
-            updatedParticipants.forEach(p => {
-              updatedMap.set(p.userId, { ...updatedMap.get(p.userId), ...p });
-            });
-            
-            return Array.from(updatedMap.values());
-          });
-          
-          // 모든 참가자가 제출했으면 결과 화면으로
-          if (rankingData.length >= totalParticipants && totalParticipants > 0) {
-            setRankings(mergedRankings);
+
+          // 모든 참가자가 제출했으면 결과 화면으로 이동
+          if (submitted >= totalParticipants && totalParticipants > 0) {
+            console.log('🎉 [Polling] 모두 제출 완료, 결과 화면으로 이동');
             setPhase(GAME_PHASE.RESULT);
           }
+        } else {
+          console.warn('⚠️ [Polling] 랭킹 데이터 형식 오류:', rankingData);
         }
       } catch (error) {
-        console.error('❌ 제출 상태 확인 실패:', error);
+        console.warn('⚠️ [Polling] 랭킹 조회 실패:', error);
       }
     };
 
-    checkSubmissionStatus();
-    const interval = setInterval(checkSubmissionStatus, 3000);
-    
+    // 최초 1회 즉시 체크
+    checkRankingStatus();
+
+    // 5초마다 체크 (깜빡임 방지를 위해 3초 → 5초)
+    const interval = setInterval(checkRankingStatus, 5000);
+
     return () => clearInterval(interval);
-  }, [phase, roomId, totalParticipants, participants]);
+  }, [phase, roomId, totalParticipants]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -310,15 +385,26 @@ export default function MiniGame1Page() {
         setIsLoading(true);
 
         const questionsData = await getReviewQuestions(roomId);
-        
+
         console.log('📊 받아온 문제 데이터:', questionsData);
 
+        // scriptId 기준으로 중복 제거
+        const uniqueQuestionsMap = new Map();
+        questionsData.forEach(item => {
+          if (!uniqueQuestionsMap.has(item.scriptId)) {
+            uniqueQuestionsMap.set(item.scriptId, item);
+          }
+        });
+        const uniqueQuestions = Array.from(uniqueQuestionsMap.values());
+
+        console.log(`📊 중복 제거: ${questionsData.length}개 → ${uniqueQuestions.length}개`);
+
         // 유효한 문제 필터링
-        const validQuestions = questionsData.filter(
+        const validQuestions = uniqueQuestions.filter(
           item => {
             if (item.scriptId === 'scores') return false;
             if (!item.blank_script || !item.korean || !item.english) return false;
-            
+
             const hasBlanks = item.blank_script.includes('[') && item.blank_script.includes(']');
             if (!hasBlanks) {
               console.warn('❌ 빈칸이 없는 문제 제외:', item);
@@ -561,7 +647,7 @@ export default function MiniGame1Page() {
       console.log('📤 답안 제출:', apiAnswers);
 
       const response = await submitReviewAnswers(roomId, apiAnswers);
-      
+
       setSubmitResult({
         message: response.message || '제출 완료!',
         correctCount: response.correctCount || 0,
@@ -569,6 +655,44 @@ export default function MiniGame1Page() {
       });
 
       setPhase(GAME_PHASE.WAITING);
+
+      // 백엔드가 WebSocket 메시지를 보내지 않는 경우를 대비해 직접 랭킹 조회
+      try {
+        const rankingData = await getReviewRanking(roomId);
+        console.log('🏆 [MiniGame1] 제출 후 랭킹 조회:', rankingData);
+
+        // API가 배열을 직접 반환하거나 { rankings: [...] } 형태로 반환하는 경우 모두 처리
+        const rankings = Array.isArray(rankingData) ? rankingData : rankingData?.rankings;
+
+        if (rankings && Array.isArray(rankings)) {
+          setRankings(rankings);
+
+          const submitted = rankings.filter(r =>
+            r.hasSubmitted === true ||
+            typeof r.score === 'number' ||
+            r.score !== undefined
+          ).length;
+          setSubmittedCount(submitted);
+
+          console.log('✅ [MiniGame1] 제출 카운트 확인:', {
+            submitted,
+            totalParticipants,
+            rankings,
+            willTransition: submitted >= totalParticipants
+          });
+
+          // 모든 참가자가 제출했으면 결과 화면으로 즉시 이동
+          if (submitted >= totalParticipants && totalParticipants > 0) {
+            console.log('🎉 [MiniGame1] 모두 제출 완료, 결과 화면으로 이동');
+            setTimeout(() => setPhase(GAME_PHASE.RESULT), 100);
+          }
+        } else {
+          console.warn('⚠️ 랭킹 데이터 형식이 올바르지 않습니다:', rankingData);
+        }
+      } catch (rankingError) {
+        console.warn('⚠️ 랭킹 조회 실패 (WebSocket 메시지 대기):', rankingError);
+        // WebSocket 메시지를 기다림
+      }
     } catch (error) {
       console.error('❌ 답안 제출 실패:', error);
       alert('답안 제출에 실패했습니다.');
@@ -600,7 +724,7 @@ export default function MiniGame1Page() {
 
   if (isLoading) {
     return (
-      <MiniGameLayout>
+      <MiniGameLayout disableProfileClick={true}>
         <div style={{ textAlign: 'center', padding: '2rem' }}>
           로딩 중...
         </div>
@@ -621,6 +745,7 @@ export default function MiniGame1Page() {
       totalProgress={timeLimit}
       isReviewMode={phase === GAME_PHASE.REVIEW}
       onComplete={phase === GAME_PHASE.REVIEW ? handleBackToResult : null}
+      disableProfileClick={true}
     >
       {/* 👇 상대방 소리를 재생하기 위한 오디오 컴포넌트 추가 */}
       {subscribers.map((sub) => (
@@ -677,7 +802,21 @@ export default function MiniGame1Page() {
 
       {phase === GAME_PHASE.REVIEW && (
         <ReviewPanel
-          questions={answeredQuestions}
+          questions={questions.map((q, idx) => {
+            // answeredQuestions에서 해당 scriptId의 답변 찾기
+            const answered = answeredQuestions.find(a => a.scriptId === q.scriptId);
+
+            return {
+              koreanSentence: q.korean,
+              englishSentence: q.english,
+              englishParts: q.englishParts,
+              blanks: q.blanks.map((blank, blankIdx) => ({
+                answer: blank.answer,
+                userAnswer: answered?.blanks[blankIdx]?.userAnswer || '',
+                isCorrect: answered?.blanks[blankIdx]?.isCorrect || false,
+              })),
+            };
+          })}
           onBack={handleBackToResult}
         />
       )}

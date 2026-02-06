@@ -24,6 +24,8 @@ export default function RecordingLayout({
   // 로고 클릭 나가기 관련 props
   logoExitMessage,
   onLogoExit,
+  // 프로필 클릭 차단
+  disableProfileClick = false,
 }) {
   const isRecordingPhase = activeCardState === 'record_timer' || activeCardState === 'recording' || activeCardState === 'record_done';
 
@@ -36,7 +38,7 @@ export default function RecordingLayout({
   return (
     <div className={styles.page}>
       <div className={styles.shell}>
-        <AppHeader logoExitMessage={logoExitMessage} onLogoExit={onLogoExit} />
+        <AppHeader logoExitMessage={logoExitMessage} onLogoExit={onLogoExit} disableProfileClick={disableProfileClick} />
 
         <main className={styles.content}>
           <ScriptHeader />

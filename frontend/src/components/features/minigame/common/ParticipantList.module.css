@@ -63,12 +63,30 @@
   }
 }
 
+@keyframes glow {
+  0%, 100% {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+  }
+  50% {
+    border-color: #10b981;
+    box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.6), 0 0 20px rgba(34, 197, 94, 0.4);
+  }
+}
+
 .avatarImage {
   width: 100%;
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #22c55e;
+  border: 2px solid #e5e7eb;
+  transition: border-color 0.3s ease;
+}
+
+.avatarImage.speaking {
+  border-color: #22c55e;
+  animation: glow 1.5s ease-in-out infinite;
+  transition: none; /* animation과 transition 충돌 방지 */
 }
 
 .avatarPlaceholder {
@@ -82,7 +100,14 @@
   font-weight: 600;
   color: #6b7280;
   font-size: 1.25rem;
-  border: 2px solid #22c55e;
+  border: 2px solid #e5e7eb;
+  transition: border-color 0.3s ease;
+}
+
+.avatarPlaceholder.speaking {
+  border-color: #22c55e;
+  animation: glow 1.5s ease-in-out infinite;
+  transition: none; /* animation과 transition 충돌 방지 */
 }
 
 .name {

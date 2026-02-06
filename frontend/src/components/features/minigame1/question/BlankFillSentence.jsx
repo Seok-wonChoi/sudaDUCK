@@ -118,6 +118,11 @@ export default function BlankFillSentence({
                       ? styles.active
                       : styles.empty
                   }`}
+                  style={{
+                    width: blanks[idx].answer
+                      ? `${blanks[idx].answer.length * 1.5 + 2}ch`
+                      : '7ch'
+                  }}
                   value={blanks[idx].value || ''}
                   onChange={(e) => handleChange(e, idx)}
                   onKeyDown={(e) => handleKeyDown(e, idx)}

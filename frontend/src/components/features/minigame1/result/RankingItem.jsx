@@ -62,7 +62,8 @@ export default function RankingItem({
   duckCustomJson,
   score,
   total = 4,
-  isMe = false
+  isMe = false,
+  isSpeaking = false
 }) {
 
   const profileInfo = useMemo(() => getDuckProfileInfo(duckCustomJson), [duckCustomJson]);
@@ -100,17 +101,20 @@ export default function RankingItem({
       {/* 중앙: 오리 프로필 + 이름 */}
       <div className={styles.userInfo}>
         {/* 오리 아이콘 래퍼 */}
-        <div 
-          className={styles.duckWrapper} 
+        <div
+          className={`${styles.duckWrapper} ${isSpeaking ? styles.speaking : ''}`}
           style={{ backgroundColor: profileInfo.color }}
         >
-          <img 
-            src={profileInfo.image} 
-            alt="duck" 
-            className={styles.duckImage} 
+          <img
+            src={profileInfo.image}
+            alt="duck"
+            className={styles.duckImage}
           />
           {profileInfo.accessory && (
             <span className={styles.accessory}>{profileInfo.accessory}</span>
+          )}
+          {isSpeaking && (
+            <span className={styles.micIcon}>🎤</span>
           )}
         </div>
 

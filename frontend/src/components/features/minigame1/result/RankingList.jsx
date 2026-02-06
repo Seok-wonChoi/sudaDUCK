@@ -22,6 +22,7 @@ export default function RankingList({ rankings = [], myProfile = null, totalQues
             score={player.score}
             total={totalQuestions}
             isMe={isMe}
+            isSpeaking={player.isSpeaking || false}
           />
         );
       })}

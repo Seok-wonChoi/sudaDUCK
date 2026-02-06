@@ -31,19 +31,14 @@
 }
 
 .blank {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 70px;
-  height: 34px;
-  padding: 0 12px;
+  display: inline-block;
+  padding: 4px 12px;
   margin: 0 4px;
   border-radius: 8px;
   text-align: center;
   font-weight: 700;
   vertical-align: middle;
-  position: relative;
-  top: -2px;
+  box-sizing: border-box;
 }
 
 .blankInput {

@@ -64,8 +64,9 @@ export default function ConfirmModal({
 
   if (!open) return null;
 
+  // 버튼 배열 생성 (cancelText가 있을 때만 취소 버튼 포함)
   const buttons = [];
-  
+
   if (cancelText) {
     buttons.push(
       <button
@@ -85,8 +86,8 @@ export default function ConfirmModal({
     <button
       key="confirm"
       type="button"
-      className={`${styles.ConfirmButton} ${small ? styles.Small : ""}`}
-      onClick={onConfirm}
+      className={styles.ConfirmButton}
+      onClick={onConfirm || handleClose}
     >
       {confirmText}
     </button>
