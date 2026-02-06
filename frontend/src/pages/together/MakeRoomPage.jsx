@@ -5,6 +5,7 @@ import { createSession } from "@/api/openVidu"; // 👈 오픈비듀
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
 import { useSoundContext } from "@/context/SoundContext";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 
 import { createRoom, getTopics, joinRoom } from "@/api/rooms";
 import lightButtonSound from "@/assets/sounds/light_button.wav";
@@ -33,6 +34,11 @@ export default function MakeRoomPage() {
   const [timeLimit, setTimeLimit] = useState(40);
   const [loading, setLoading] = useState(false);
   const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
+
+  // 모달 상태
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
 
   const titleCount = title.length;
 
@@ -148,7 +154,17 @@ export default function MakeRoomPage() {
       const errorMessage =
         e.response?.data?.message || e.message || "방 생성에 실패했습니다.";
 
-      alert(errorMessage);
+      if (errorMessage.includes("방 제목") && errorMessage.includes("부적절")) {
+        setModalTitle("⚠️ 주의");
+        setModalMessage("부적절한 방 제목 다시 생성해주세요");
+        setModalOpen(true);
+      } else if (errorMessage.includes("방 주제") || (errorMessage.includes("주제") && errorMessage.includes("부적절"))) {
+        setModalTitle("⚠️ 주의");
+        setModalMessage("부적절한 방 주제입니다.");
+        setModalOpen(true);
+      } else {
+        alert(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -322,6 +338,18 @@ export default function MakeRoomPage() {
           </div>
         </main>
       </div>
+
+      {/* 부적절한 표현 모달 */}
+      <ConfirmModal
+        open={modalOpen}
+        title={modalTitle}
+        message={modalMessage}
+        confirmText="확인"
+        onConfirm={() => setModalOpen(false)}
+        onClose={() => setModalOpen(false)}
+        cancelText=""
+        small={true}
+      />
     </div>
   );
 }
