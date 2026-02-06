@@ -1698,7 +1698,7 @@ export default function TogetherTalkPage() {
       }
     };
 
-    scheduleRandomQuiz();
+    // scheduleRandomQuiz(); // 👈 돌발 퀴즈 자동 호출 중단 (주석 처리)
   }, [
     currentTurn,
     questRunning,
