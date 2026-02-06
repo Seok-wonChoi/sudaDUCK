@@ -39,7 +39,7 @@ public class GptService {
                 "]";
 
         try {
-            String jsonResponse = callGptRaw(prompt, 1.3);
+            String jsonResponse = callGptRaw(prompt, 2.0);
             @SuppressWarnings("unchecked")
             List<String> topics = objectMapper.readValue(jsonResponse, List.class);
 
