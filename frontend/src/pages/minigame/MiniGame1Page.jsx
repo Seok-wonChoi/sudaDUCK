@@ -152,14 +152,20 @@ export default function MiniGame1Page() {
     if (payload?.rankings && Array.isArray(payload.rankings)) {
       setRankings(payload.rankings);
 
-      // 제출한 사람 수 업데이트
-      const submitted = payload.rankings.filter(r => r.score > 0 || r.hasSubmitted).length;
+      // 제출한 사람 수 업데이트 (score가 정의되어 있거나 hasSubmitted가 true인 경우)
+      const submitted = payload.rankings.filter(r =>
+        r.hasSubmitted === true ||
+        typeof r.score === 'number' ||
+        r.score !== undefined
+      ).length;
       setSubmittedCount(submitted);
 
       console.log('✅ [MiniGame1] Rankings updated:', {
         rankings: payload.rankings,
         submittedCount: submitted,
-        totalParticipants
+        totalParticipants,
+        phase,
+        willTransition: submitted >= totalParticipants && totalParticipants > 0 && phase === GAME_PHASE.WAITING
       });
 
       // 모든 참가자가 제출했으면 결과 화면으로 이동
@@ -256,7 +262,8 @@ export default function MiniGame1Page() {
           
           console.log('✅ 참가자 목록 설정:', participantsList);
           setParticipants(participantsList);
-          setTotalParticipants(participantsList.length);
+          // 참가자 수가 0이면 최소 1로 설정 (혼자 플레이하는 경우)
+          setTotalParticipants(Math.max(participantsList.length, 1));
 
           const me = participantsList.find(p => p.isMe);
 
@@ -266,9 +273,15 @@ export default function MiniGame1Page() {
               profileImageUrl: me.profileImageUrl
             });
           }
+        } else {
+          // 참가자 정보를 못 받아온 경우, 최소 1명으로 설정
+          console.warn('⚠️ 참가자 정보가 없습니다. 혼자 플레이로 가정합니다.');
+          setTotalParticipants(1);
         }
       } catch (error) {
         console.error('❌ 방 참가자 정보 로드 실패:', error);
+        // 에러 발생 시에도 최소 1명으로 설정
+        setTotalParticipants(1);
       }
     };
 
@@ -309,15 +322,56 @@ export default function MiniGame1Page() {
   }, []); // 마운트 시 1회 실행
 
 
-  // 🔥 폴링 제거: 웹소켓으로 실시간 랭킹 업데이트 사용
-  // 이전에는 3초마다 폴링으로 체크했지만, 이제 웹소켓 메시지로 실시간 업데이트
-  // useEffect(() => {
-  //   if (phase !== GAME_PHASE.WAITING) return;
-  //   const checkSubmissionStatus = async () => { ... };
-  //   checkSubmissionStatus();
-  //   const interval = setInterval(checkSubmissionStatus, 3000);
-  //   return () => clearInterval(interval);
-  // }, [phase, roomId, totalParticipants, participants]);
+  // 🔥 WebSocket 메시지가 안 올 때를 대비한 폴링 (5초마다, 깜빡임 방지)
+  useEffect(() => {
+    if (phase !== GAME_PHASE.WAITING) return;
+
+    const checkRankingStatus = async () => {
+      try {
+        const rankingData = await getReviewRanking(roomId);
+        console.log('🔄 [Polling] 랭킹 상태 체크:', rankingData);
+
+        // API가 배열을 직접 반환하거나 { rankings: [...] } 형태로 반환하는 경우 모두 처리
+        const rankings = Array.isArray(rankingData) ? rankingData : rankingData?.rankings;
+
+        if (rankings && Array.isArray(rankings)) {
+          setRankings(rankings);
+
+          const submitted = rankings.filter(r =>
+            r.hasSubmitted === true ||
+            typeof r.score === 'number' ||
+            r.score !== undefined
+          ).length;
+          setSubmittedCount(submitted);
+
+          console.log('🔍 [Polling] 제출 상태:', {
+            submitted,
+            totalParticipants,
+            rankings,
+            willTransition: submitted >= totalParticipants
+          });
+
+          // 모든 참가자가 제출했으면 결과 화면으로 이동
+          if (submitted >= totalParticipants && totalParticipants > 0) {
+            console.log('🎉 [Polling] 모두 제출 완료, 결과 화면으로 이동');
+            setPhase(GAME_PHASE.RESULT);
+          }
+        } else {
+          console.warn('⚠️ [Polling] 랭킹 데이터 형식 오류:', rankingData);
+        }
+      } catch (error) {
+        console.warn('⚠️ [Polling] 랭킹 조회 실패:', error);
+      }
+    };
+
+    // 최초 1회 즉시 체크
+    checkRankingStatus();
+
+    // 5초마다 체크 (깜빡임 방지를 위해 3초 → 5초)
+    const interval = setInterval(checkRankingStatus, 5000);
+
+    return () => clearInterval(interval);
+  }, [phase, roomId, totalParticipants]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -593,7 +647,7 @@ export default function MiniGame1Page() {
       console.log('📤 답안 제출:', apiAnswers);
 
       const response = await submitReviewAnswers(roomId, apiAnswers);
-      
+
       setSubmitResult({
         message: response.message || '제출 완료!',
         correctCount: response.correctCount || 0,
@@ -601,6 +655,44 @@ export default function MiniGame1Page() {
       });
 
       setPhase(GAME_PHASE.WAITING);
+
+      // 백엔드가 WebSocket 메시지를 보내지 않는 경우를 대비해 직접 랭킹 조회
+      try {
+        const rankingData = await getReviewRanking(roomId);
+        console.log('🏆 [MiniGame1] 제출 후 랭킹 조회:', rankingData);
+
+        // API가 배열을 직접 반환하거나 { rankings: [...] } 형태로 반환하는 경우 모두 처리
+        const rankings = Array.isArray(rankingData) ? rankingData : rankingData?.rankings;
+
+        if (rankings && Array.isArray(rankings)) {
+          setRankings(rankings);
+
+          const submitted = rankings.filter(r =>
+            r.hasSubmitted === true ||
+            typeof r.score === 'number' ||
+            r.score !== undefined
+          ).length;
+          setSubmittedCount(submitted);
+
+          console.log('✅ [MiniGame1] 제출 카운트 확인:', {
+            submitted,
+            totalParticipants,
+            rankings,
+            willTransition: submitted >= totalParticipants
+          });
+
+          // 모든 참가자가 제출했으면 결과 화면으로 즉시 이동
+          if (submitted >= totalParticipants && totalParticipants > 0) {
+            console.log('🎉 [MiniGame1] 모두 제출 완료, 결과 화면으로 이동');
+            setTimeout(() => setPhase(GAME_PHASE.RESULT), 100);
+          }
+        } else {
+          console.warn('⚠️ 랭킹 데이터 형식이 올바르지 않습니다:', rankingData);
+        }
+      } catch (rankingError) {
+        console.warn('⚠️ 랭킹 조회 실패 (WebSocket 메시지 대기):', rankingError);
+        // WebSocket 메시지를 기다림
+      }
     } catch (error) {
       console.error('❌ 답안 제출 실패:', error);
       alert('답안 제출에 실패했습니다.');

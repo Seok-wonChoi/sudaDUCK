@@ -14,6 +14,7 @@ export default function ConfirmModal({
   onClose,
   onCancel,
   reverseButtons = false, // 👈 버튼 순서 반전 옵션 추가
+  small = false, // 👈 버튼 크기 축소 옵션 추가
 }) {
   const cancelRef = useRef(null);
   const { getEffectiveVolume, isMuted } = useSoundContext();
@@ -71,7 +72,7 @@ export default function ConfirmModal({
       <button
         key="cancel"
         type="button"
-        className={styles.CancelButton}
+        className={`${styles.CancelButton} ${small ? styles.Small : ""}`}
         onClick={handleClose}
         ref={cancelRef}
         data-click-sound="false"

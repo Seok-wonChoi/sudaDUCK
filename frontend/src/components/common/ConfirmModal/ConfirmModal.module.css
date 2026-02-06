@@ -48,7 +48,8 @@
   gap: 12px;
 }
 
-.CancelButton {
+.CancelButton,
+.ConfirmButton {
   flex: 1;
   height: 40px;
   padding: 0 16px;
@@ -61,17 +62,19 @@
   cursor: pointer;
 }
 
+.CancelButton.Small,
+.ConfirmButton.Small {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  flex: initial;
+  min-width: 80px;
+}
+
 .ConfirmButton {
-  flex: 1;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 10px;
   background: #4f46e5;
   border: 1px solid #4f46e5;
-  font-size: 14px;
-  font-weight: 900;
   color: #ffffff;
-  cursor: pointer;
 }
 
 .CancelButton:focus-visible,
