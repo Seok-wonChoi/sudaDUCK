@@ -1,32 +1,42 @@
 import styles from './ReviewPanel.module.css';
 import ReviewCard from './ReviewCard';
 
-export default function ReviewPanel({ questions = [], onComplete }) {
+export default function ReviewPanel({ 
+  questions = [],
+  onBack
+}) {
+  if (questions.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.empty}>
+          리뷰할 문제가 없습니다.
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.panel}>
+    <div className={styles.wrapper}>
+      {/* 헤더 */}
       <div className={styles.header}>
         <h2 className={styles.title}>전체 문제 리뷰</h2>
-        <p className={styles.subtitle}>맞춘 문제와 틀린 문제를 모두 확인해보세요</p>
+        <p className={styles.subtitle}>
+          모든 문제의 정답 풀이를 다시 확인해보세요
+        </p>
       </div>
 
-      <div className={styles.list}>
-        {questions.map((q, idx) => (
+      {/* 문제 카드 리스트 - 세로 스크롤 */}
+      <div className={styles.cardList}>
+        {questions.map((question, idx) => (
           <ReviewCard
             key={idx}
             questionNumber={idx + 1}
-            correctCount={q.correctCount}
-            totalBlanks={q.totalBlanks}
-            koreanSentence={q.koreanSentence}
-            englishParts={q.englishParts}
-            blanks={q.blanks}
+            korean={question.koreanSentence}
+            english={question.englishSentence}
+            blanks={question.blanks}
+            englishParts={question.englishParts}
           />
         ))}
-      </div>
-
-      <div className={styles.footer}>
-        <button className={styles.completeBtn} onClick={onComplete}>
-          완료
-        </button>
       </div>
     </div>
   );

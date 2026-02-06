@@ -12,6 +12,7 @@ import SentenceDetailModal from "@/components/features/mypage/modals/SentenceDet
 import NicknameStyleModal from "@/components/features/mypage/modals/NicknameStyleModal/NicknameStyleModal";
 import DuckStyleModal from "@/components/features/mypage/modals/DuckStyleModal/DuckStyleModal";
 import DuckBotModal from "@/components/features/mypage/modals/DuckBotModal/DuckBotModal";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal"; // 👈 ConfirmModal 추가
 
 import duckBotCyan from "@/assets/images/duck_bot_cyan.png";
 import duckBotOrange from "@/assets/images/duck_bot_orange.png";
@@ -22,6 +23,9 @@ import duckProfile1 from "@/assets/images/duck_profile1.png";
 import duckProfile2 from "@/assets/images/duck_profile2.png";
 import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
+import { toggleScriptLike } from "@/api/shadowing.js";
+
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const DUCK_BOT_IMAGES = {
   cyan: duckBotCyan,
@@ -44,6 +48,18 @@ export default function MyPage() {
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [showDuckModal, setShowDuckModal] = useState(false);
   const [showDuckBotModal, setShowDuckBotModal] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  // 👈 토스트 및 삭제 모달 상태 추가
+  const [toastMessage, setToastMessage] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [sentenceToDelete, setSentenceToDelete] = useState(null);
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(""), 2500);
+  };
+
 
   // localStorage에서 프로필 정보 읽어오기 (초기 렌더링 플래시 방지)
   const getInitialProfile = () => {
@@ -90,8 +106,9 @@ export default function MyPage() {
 
   // 통계 데이터
   const [totalPlaytime, setTotalPlaytime] = useState(0); // 총 플레이 타임 (초)
-  const [consecutiveDays, setConsecutiveDays] = useState(0); // 연속 학습 일수
-  const [sentenceCount, setSentenceCount] = useState(0); // 저장된 문장 개수
+  const [consecutiveDays, setConsecutiveDays] = useState(null);
+  const [sentenceCount, setSentenceCount] = useState(null);
+
 
   // 코인 시스템
   const [coins, setCoins] = useState(200); // 초기 코인 (테스트용 200코인)
@@ -108,6 +125,11 @@ export default function MyPage() {
   // 아이템 목록 로드 및 itemKey -> itemId 매핑 생성
   useEffect(() => {
     const fetchItemsAndProfile = async () => {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setIsReady(true);
+        return;
+      }
       try {
         // 1. 모든 카테고리의 아이템 목록 조회
         const categories = ["DUCK_STYLE", "DUCK_COLOR", "DUCK_ACCESSORY", "AVATAR_BG", "AVATAR_EFFECT", "AI_DUCKBOT_MODEL"];
@@ -126,8 +148,9 @@ export default function MyPage() {
         itemsResults.forEach((result) => {
           if (result && result.items) {
             result.items.forEach((item) => {
+              const uniqueKey = `${result.category}:${item.itemKey}`;
               // itemKey -> itemId 매핑
-              keyToIdMap[item.itemKey] = item.itemId;
+              keyToIdMap[uniqueKey] = item.itemId;
 
               // owned 아이템 분류
               if (item.owned) {
@@ -217,8 +240,12 @@ export default function MyPage() {
         if (summaryData.attendanceDays !== undefined) setConsecutiveDays(summaryData.attendanceDays);
         if (summaryData.sentenceCount !== undefined) setSentenceCount(summaryData.sentenceCount);
 
+        setIsReady(true);
+
       } catch (error) {
         console.error("데이터 로드 실패:", error);
+      } finally {
+        setIsReady(true);
       }
     };
     fetchItemsAndProfile();
@@ -229,26 +256,66 @@ export default function MyPage() {
     const fetchMyScripts = async () => {
       try {
         const data = await getMyScripts();
+        console.log("[MyPage] API 응답 전체 데이터:", data);
+        console.log("[MyPage] API 응답 타입:", typeof data, Array.isArray(data));
 
         // 백엔드 응답을 컴포넌트 형식으로 변환
-        const formattedSentences = Array.isArray(data) ? data.map(item => ({
-          id: item.sentenceId || item.id,
-          english: item.englishSentence || item.english || '',
-          korean: item.koreanSentence || item.korean || '',
-          topic: item.topic || '',
-          score: item.score,
-          date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
-          bookmarked: true,
-          // 추가 정보
-          speakerName: item.speakerName,
-          participants: item.participants,
-        })) : [];
+        const formattedSentences = Array.isArray(data) ? data.map((item, index) => {
+          console.log(`[MyPage] 문장 ${index} 원본 데이터:`, item);
+          console.log(`[MyPage] topic 필드:`, item.topic, item.scriptTopic, item.script?.topic);
+          console.log(`[MyPage] participants 필드:`, item.participants, item.participantNames, item.script?.participants);
+          console.log(`[MyPage] blank_script 필드:`, item.blank_script, item.blankScript);
 
+          // topic 필드 확인 (여러 가능성 고려)
+          const topic = item.topic || item.scriptTopic || item.script?.topic || '';
+
+          // participants 필드 확인 (여러 가능성 고려)
+          let participants = [];
+          if (Array.isArray(item.participants)) {
+            participants = item.participants;
+          } else if (Array.isArray(item.participantNames)) {
+            participants = item.participantNames;
+          } else if (Array.isArray(item.script?.participants)) {
+            participants = item.script.participants;
+          }
+
+          // blank_script 필드 확인 및 파싱
+          const blankScript = item.blank_script || item.blankScript || '';
+          let blankWords = [];
+          if (blankScript) {
+            // [단어] 형식의 빈칸 추출
+            const matches = blankScript.match(/\[([^\]]+)\]/g);
+            if (matches) {
+              blankWords = matches.map(match => match.slice(1, -1));
+            }
+          }
+
+          const formatted = {
+            id: item.sentenceId || item.id || item.scriptId,
+            english: item.englishSentence || item.english || '',
+            korean: item.koreanSentence || item.korean || '',
+            topic: topic,
+            score: item.score,
+            date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '',
+            bookmarked: true,
+            speakerName: item.speakerName,
+            participants: participants,
+            blankScript: blankScript,
+            blankWords: blankWords,
+            ttsUrl: item.ttsUrl ? `${BACKEND_URL}${item.ttsUrl}` : '',
+            similarityPhrases: item.similarityPhrases || []
+          };
+
+          console.log(`[MyPage] 문장 ${index} 포맷 결과:`, formatted);
+          return formatted;
+        }) : [];
+
+        console.log("[MyPage] 최종 포맷된 문장 목록:", formattedSentences);
         setSentences(formattedSentences);
       } catch (error) {
         console.error("스크립트 조회 실패:", error);
-        // 실패 시 MOCK 데이터 사용
-        setSentences(MOCK_SENTENCES);
+        // 실패 시 빈 배열로 설정
+        setSentences([]);
       }
     };
     fetchMyScripts();
@@ -257,17 +324,36 @@ export default function MyPage() {
 
   const stats = [
     { value: "✨", label: "수다DUCK과 함께 한 문장 연습!" },
-    { value: consecutiveDays, label: "연속 학습", unit: "일" },
-    { value: sentenceCount, label: "저장된 문장", unit: "개" },
+    { value: consecutiveDays ?? "—", label: "연속 학습", unit: "일" },
+    { value: sentenceCount ?? "—", label: "저장된 문장", unit: "개" },
   ];
 
   const handleSentenceClick = (sentence) => {
+    console.log("[MyPage] 선택된 문장:", sentence);
+    console.log("[MyPage] 주제:", sentence.topic);
+    console.log("[MyPage] 참여자:", sentence.participants);
     setSelectedSentence(sentence);
   };
 
-  const handleDeleteSentence = (id) => {
-    if (window.confirm("이 문장을 삭제하시겠습니까?")) {
-      setSentences((prev) => prev.filter((s) => s.id !== id));
+  const handleDeleteSentence = (sentenceId) => {
+    setSentenceToDelete(sentenceId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!sentenceToDelete) return;
+
+    try {
+      await toggleScriptLike(sentenceToDelete, null, null);
+      setSentences((prev) => prev.filter((s) => s.id !== sentenceToDelete));
+      setSentenceCount((prev) => Math.max(0, prev - 1));
+      showToast("문장이 삭제되었습니다.");
+    } catch (error) {
+      console.error("삭제 실패:", error);
+      showToast("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setShowDeleteModal(false);
+      setSentenceToDelete(null);
     }
   };
 
@@ -358,7 +444,19 @@ export default function MyPage() {
       return false;
     }
 
-    const numericItemId = itemKeyToIdMap[itemKey];
+    let categoryPrefix = "";
+    switch (itemType) {
+    case "profile": categoryPrefix = "DUCK_STYLE"; break;
+    case "color": categoryPrefix = "DUCK_COLOR"; break;
+    case "accessory": categoryPrefix = "DUCK_ACCESSORY"; break;
+    case "duckBot": categoryPrefix = "AI_DUCKBOT_MODEL"; break;
+    case "background": categoryPrefix = "AVATAR_BG"; break; // 닉네임 모달용
+    case "effect": categoryPrefix = "AVATAR_EFFECT"; break; // 닉네임 모달용
+    default: console.error("알 수 없는 아이템 타입:", itemType); return false;
+    }
+    const uniqueKey = `${categoryPrefix}:${itemKey}`;
+
+    const numericItemId = itemKeyToIdMap[uniqueKey];
     if (!numericItemId) {
       alert('아이템 정보를 찾을 수 없습니다.');
       return false;
@@ -388,11 +486,37 @@ export default function MyPage() {
     }
   };
 
+    if (!isReady) {
+    return (
+      <div className={styles.Page}>
+        <div className={styles.Shell}>
+          <main className={styles.LoadingWrap} aria-label="로딩 중">
+            <div className={styles.LoadingCard}>
+              {/* 이미 쓰고 있는 프로필 오리 이미지 재사용 */}
+              <img
+                className={styles.LoadingDuck}
+                src={DUCK_PROFILE_IMAGES[duckProfileId] ?? DUCK_PROFILE_IMAGES.profile1}
+                alt="로딩 오리"
+              />
+
+              <p className={styles.LoadingTitle}>오리들이 준비 중이에요…</p>
+              <p className={styles.LoadingSub}>
+                커스터마이징과 통계를 불러오는 중 <span className={styles.Dots} />
+              </p>
+
+              <div className={styles.Spinner} aria-hidden="true" />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        <AppHeader userName="장가은" />
-
+        <AppHeader userName="" />
         <main className={styles.Main}>
           <ProfileSection
             profileImage={DUCK_PROFILE_IMAGES[duckProfileId]}
@@ -417,6 +541,21 @@ export default function MyPage() {
           />
         </main>
       </div>
+
+      {toastMessage && <div className={styles.Toast}>{toastMessage}</div>}
+
+      {showDeleteModal && (
+        <ConfirmModal
+          open={showDeleteModal}
+          title="문장 삭제"
+          message="이 문장을 저장 목록에서 삭제하시겠습니까?"
+          confirmText="🗑️ 삭제"
+          cancelText="취소"
+          onConfirm={confirmDelete}
+          onClose={() => setShowDeleteModal(false)}
+          reverseButtons={true}
+        />
+      )}
 
       {selectedSentence && (
         <SentenceDetailModal

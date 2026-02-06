@@ -31,13 +31,21 @@ public class ScriptService {
 
     //스크립트 좋아요 + 취소
     @Transactional
-    public Map<String, Object> likeSentence(Long userId, Long roomId, int turnNo, String scriptId){
+    public Map<String, Object> likeSentence(Long userId, Long roomId, Integer turnNo, String scriptId){
 
         //좋아요 누른 유저 객체 조회
         Member member = memberRepository.findById(userId)
                 .orElseThrow(()-> new RuntimeException("존재하지 않는 사용자입니다."));
 
-        String sentenceId = member.getId() + "_" + scriptId;
+        String prefix = userId + "_";
+        String sentenceId;
+
+        if (scriptId.startsWith(prefix)) {
+            sentenceId = scriptId;
+        } else {
+            sentenceId = prefix + scriptId;
+        }
+
         Optional<Sentence> existingSentence = scriptRepository.findById(sentenceId);
 
         //이미 있다면 좋아요 취소
@@ -45,6 +53,11 @@ public class ScriptService {
             scriptRepository.delete(existingSentence.get());
             return Map.of("message", "좋아요가 취소되었습니다.", "isLiked", false);
         }
+
+        if (roomId == null || turnNo == null) {
+            throw new RuntimeException("저장을 위해서는 방 정보(roomId, turnNo)가 필요합니다.");
+        }
+
         String redisKey = String.format("room:%d:turn:%d:script:%s", roomId, turnNo, scriptId);
         Map<Object, Object> data = redisTemplate.opsForHash().entries(redisKey);
 
@@ -68,6 +81,7 @@ public class ScriptService {
             cleanParticipants = rawParticipants.trim().replace("\u0000", "");
         }
 
+        String similarityPhrases = (String) data.getOrDefault("similarity_phrases", "");
 
         //MySql Entity로 변환
         Sentence sentence = Sentence.builder()
@@ -78,7 +92,9 @@ public class ScriptService {
                 .koreanSentence((String) data.get("korean"))
                 .score(Integer.parseInt((String)data.get("score")))
                 .topic((String) data.get("topic"))
+                .ttsUrl((String) data.getOrDefault("tts_url", null))
                 .participantList(cleanParticipants)
+                .similarityPhrases(similarityPhrases)
                 .createdAt(createdAt)
                 .build();
 
@@ -95,7 +111,7 @@ public class ScriptService {
             List<String> participantList;
             try{
                 String jsonStr = s.getParticipantList(); // 1. DB에서 꺼낸 원본 문자열 확인
-                log.info("DB 원본 데이터: [{}]", jsonStr);
+//                log.info("DB 원본 데이터: [{}]", jsonStr);
 
                 if (jsonStr == null || jsonStr.isBlank()) {
                     participantList = List.of();
@@ -107,6 +123,13 @@ public class ScriptService {
                 log.error("JSON 파싱 에러! 데이터: {}, 원인: {}", s.getParticipantList(), e.getMessage());
                 participantList = List.of();
             }
+
+            List<String> similarList = List.of();
+            if (s.getSimilarityPhrases() != null && !s.getSimilarityPhrases().isBlank()) {
+                // 쉼표(,)를 기준으로 나누어 리스트로 변환
+                similarList = List.of(s.getSimilarityPhrases().split(","));
+            }
+
             return MySentenceResponse.builder()
                     .sentenceId(s.getSentenceId())
                     .englishSentence(s.getEnglishSentence())
@@ -116,6 +139,8 @@ public class ScriptService {
                     .speakerName(s.getSpeakerName())
                     .participants(participantList)
                     .createdAt(s.getCreatedAt())
+                    .ttsUrl(s.getTtsUrl())
+                    .similarityPhrases(similarList)
                     .build();
         }).collect(Collectors.toList());
     }

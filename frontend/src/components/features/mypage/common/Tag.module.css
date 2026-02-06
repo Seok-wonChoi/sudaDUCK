@@ -37,3 +37,24 @@
   border: 1px solid #c7d2fe;
   color: #4f46e5;
 }
+
+/* Score Color Variants */
+.scoreRed {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.scoreOrange {
+  background: #ffedd5;
+  color: #f97316;
+}
+
+.scoreYellow {
+  background: #fef9c3;
+  color: #eab308;
+}
+
+.scoreGreen {
+  background: #dcfce7;
+  color: #22c55e;
+}

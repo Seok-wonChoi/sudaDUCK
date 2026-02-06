@@ -15,6 +15,7 @@ export default function UnexpectedQuestOverlay({
   subTone = "normal",
   countdownNumber,
   speechBubbleType = 1, // 1, 2, 3 중 선택
+  textSize = "normal", // "normal", "large", "small"
 
   // 추가: 버튼 없는 화면을 클릭으로 넘기기
   clickAnywhere = false,     // true면 화면 아무 곳이나 클릭 시 onClose 호출
@@ -89,7 +90,10 @@ export default function UnexpectedQuestOverlay({
             {bubbleTitle ? (
               <div className={styles.BubbleTitle}>{bubbleTitle}</div>
             ) : null}
-            <div className={styles.BubbleText}>{bubbleText}</div>
+            <div className={`${styles.BubbleText} ${
+              textSize === "large" ? styles.BubbleTextLarge :
+              textSize === "small" ? styles.BubbleTextSmall : ""
+            }`}>{bubbleText}</div>
 
             {subText ? (
               <div

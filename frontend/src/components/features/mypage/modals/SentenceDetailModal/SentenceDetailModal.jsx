@@ -19,6 +19,10 @@ export default function SentenceDetailModal({ sentence, onClose }) {
     similarExpressions = [],
     quizQuestion,
     quizAnswer,
+    blankWords = [],
+    blankScript = '',
+    ttsUrl,
+    similarityPhrases = []
   } = sentence;
 
   const handlePlayAudio = () => {
@@ -41,19 +45,23 @@ export default function SentenceDetailModal({ sentence, onClose }) {
         <SentenceCard
           english={english}
           korean={korean}
+          blankWords={blankWords}
           onPlayAudio={handlePlayAudio}
+          ttsUrl={ttsUrl}
         />
 
         <InfoGrid topic={topic} participants={participants} />
 
-        <SimilarExpressions expressions={similarExpressions} />
+        <SimilarExpressions expressions={similarityPhrases} />
 
-        <QuizSection
+        {/* <QuizSection
           isOpen={quizOpen}
           onToggle={() => setQuizOpen(!quizOpen)}
           question={quizQuestion}
           answer={quizAnswer}
-        />
+          blankScript={blankScript}
+          blankWords={blankWords}
+        /> */}
       </div>
     </ModalWrapper>
   );

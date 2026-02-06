@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import styles from "./ConfirmModal.module.css";
+import lightButtonSound from "@/assets/sounds/light_button.wav";
+import { useSoundContext } from "@/context/SoundContext";
 
 export default function ConfirmModal({
   open,
@@ -11,10 +13,27 @@ export default function ConfirmModal({
   onConfirm,
   onClose,
   onCancel,
+  reverseButtons = false, // 👈 버튼 순서 반전 옵션 추가
 }) {
   const cancelRef = useRef(null);
+  const { getEffectiveVolume, isMuted } = useSoundContext();
 
-  const handleClose = onClose || onCancel;
+  const playSound = () => {
+    if (!isMuted) {
+      try {
+        const audio = new Audio(lightButtonSound);
+        audio.volume = getEffectiveVolume(0.1);
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+    }
+  };
+
+  const handleClose = () => {
+    playSound();
+    (onClose || onCancel)?.();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -44,6 +63,27 @@ export default function ConfirmModal({
 
   if (!open) return null;
 
+  const buttons = [
+    <button
+      key="cancel"
+      type="button"
+      className={styles.CancelButton}
+      onClick={handleClose}
+      ref={cancelRef}
+      data-click-sound="false"
+    >
+      {cancelText}
+    </button>,
+    <button
+      key="confirm"
+      type="button"
+      className={styles.ConfirmButton}
+      onClick={onConfirm}
+    >
+      {confirmText}
+    </button>,
+  ];
+
   return createPortal(
     <div className={styles.Overlay} role="presentation" onClick={handleClose}>
       <div
@@ -59,22 +99,7 @@ export default function ConfirmModal({
         </div>
 
         <div className={styles.Actions}>
-          <button
-            type="button"
-            className={styles.CancelButton}
-            onClick={handleClose}
-            ref={cancelRef}
-          >
-            {cancelText}
-          </button>
-
-          <button
-            type="button"
-            className={styles.ConfirmButton}
-            onClick={onConfirm}
-          >
-            {confirmText}
-          </button>
+          {reverseButtons ? buttons.reverse() : buttons}
         </div>
       </div>
     </div>,

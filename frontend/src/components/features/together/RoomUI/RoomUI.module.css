@@ -68,14 +68,20 @@
 }
 
 .TopicBubble {
-  padding: 10px 12px;
+  padding: 10px 16px;
   border-radius: 14px;
   background: #ffffff;
   border: 1px solid #e8edf6;
   box-shadow: 0 14px 26px rgba(17, 24, 39, 0.10);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
   color: #111827;
+}
+
+.TopicHighlight {
+  color: #2b7fff;
+  font-weight: 900;
+  padding: 0 2px;
 }
 
 .Main {

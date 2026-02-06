@@ -125,6 +125,12 @@
   line-height: 1.45;
 }
 
+.TopicHighlight {
+  color: #2b7fff;
+  font-weight: 900;
+  padding: 0 2px;
+}
+
 /* 참여자 카드 */
 .ParticipantsCard {
   margin-top: 18px;
@@ -190,27 +196,31 @@
 .RoomInfoText {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px; /* 간격 확대 */
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: 14px; /* 12px -> 14px */
   justify-content: center;
   flex: 1;
+  background: rgba(243, 244, 246, 0.5); /* 연한 배경 추가로 구분감 부여 */
+  padding: 8px 16px;
+  border-radius: 99px;
 }
 
 .RoomInfoLabel {
-  font-weight: 700;
-  color: #6b7280;
+  font-weight: 800;
+  color: #4b5563; /* 조금 더 진한 회색 */
 }
 
 .RoomInfoValue {
   font-weight: 900;
   color: #111827;
+  padding: 0 2px;
 }
 
 .RoomInfoSeparator {
-  color: #d1d5db;
+  color: #cbd5e1;
   font-weight: 400;
-  margin: 0 4px;
+  margin: 0 6px;
 }
 
 /* 참여 코드 박스 */
@@ -360,18 +370,20 @@
 
 /* 유저 아이콘 이미지 */
 .UserIconImg {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 999px;
 }
 
 /* 프로필 악세서리 */
 .ProfileAccessory {
-  position: absolute;
-  top: -6px;
+   position: absolute;
+  top: -8px; /* ✅ 정상 px + 50px 아바타 기준 */
   left: 50%;
-  transform: translateX(-50%);
-  font-size: 20px;
+  transform: translate(-50%, 0);
+  font-size: 18px;
+  line-height: 1;
   pointer-events: none;
 }
 
@@ -604,6 +616,11 @@
   z-index: 1000;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   animation: toastSlideUp 0.3s ease-out;
+  /* 가로 길이 수정 */
+  width: max-content;
+  max-width: clamp(280px, 80%, 600px);
+  text-align: center;
+  word-break: keep-all;
 }
 
 @keyframes toastSlideUp {
@@ -1183,6 +1200,51 @@
 
 .PopupTurnCardActive .PopupTurnText {
   color: #4f46e5;
+}
+
+.PopupStepper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(243, 244, 246, 0.7);
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(229, 231, 235, 1);
+  width: fit-content;
+}
+
+.PopupStepButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.PopupStepButton:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.PopupStepButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.PopupStepValue {
+  font-size: 16px;
+  font-weight: 900;
+  color: #111827;
+  min-width: 60px;
+  text-align: center;
 }
 
 .PopupFooter {

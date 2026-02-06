@@ -3,7 +3,7 @@ import styles from './GameHeader.module.css';
 export default function GameHeader({
   title = '빈칸 채우기',
   timer = '0:00',
-  badge = 'MINI 2'
+  badge = 'MINI 1'
 }) {
   return (
     <div className={styles.header}>

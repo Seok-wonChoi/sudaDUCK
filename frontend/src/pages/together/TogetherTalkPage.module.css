@@ -102,44 +102,17 @@
   border: 1px solid #e8edf6;
   border-radius: clamp(12px, 1.5vw, 16px);
   padding: clamp(10px, 1.2vw, 12px) clamp(12px, 1.5vw, 16px);
-  font-size: clamp(12px, 1.3vw, 13px);
+  font-size: 14px;
   font-weight: 900;
   color: #111827;
   box-shadow: 0 14px 26px rgba(17, 24, 39, 0.1);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.QuestButtons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.QuestBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid rgba(79, 70, 229, 0.25);
-  background: rgba(79, 70, 229, 0.08);
-  color: #4f46e5;
-  cursor: pointer;
+.TopicHighlight {
+  color: #2b7fff;
   font-weight: 900;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.QuestBtn:hover {
-  background: rgba(79, 70, 229, 0.14);
-  border-color: rgba(79, 70, 229, 0.35);
-}
-
-.QuestBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  padding: 0 2px;
 }
 
 .Stage {
@@ -247,7 +220,7 @@
 
 .ProfileAccessory {
   position: absolute;
-  top: -6px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 22px;

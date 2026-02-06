@@ -1,94 +1,304 @@
 .card {
-  border-radius: 16px;
+  width: 100%;
+  max-width: 600px; /* 너무 넓어지지 않게 제한 */
+  background-color: #ffffff;
+  border-radius: 20px;
   padding: 24px;
-  margin-bottom: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 2px solid transparent; /* 테두리 공간 확보 */
 }
 
-.correct {
-  border: 2px solid #22c55e;
-  background: #fff;
+/* 정답/오답 카드 스타일 차별화 */
+.correctCard {
+  border-color: #86EFAC; /* 연한 초록 테두리 */
+  background-color: #F0FDF4; /* 아주 연한 초록 배경 */
 }
 
-.wrong {
-  border: 2px solid #ef4444;
-  background: #fff;
+.wrongCard {
+  border-color: #FCA5A5; /* 연한 빨강 테두리 */
+  background-color: #FEF2F2; /* 아주 연한 빨강 배경 */
 }
 
+/* 카드 헤더 (뱃지 + 번호) */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
   font-size: 13px;
   font-weight: 700;
-  padding: 6px 14px;
-  border-radius: 20px;
-  color: #fff;
+  letter-spacing: -0.01em;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-.badgeCorrect {
-  background: #22c55e;
+.correctBadge {
+  background-color: #10B981;
+  color: white;
 }
 
-.badgeWrong {
-  background: #ef4444;
+.wrongBadge {
+  background-color: #EF4444;
+  color: white;
 }
 
 .questionNum {
   font-size: 13px;
-  color: #6b7280;
+  font-weight: 600;
+  color: #9CA3AF;
 }
 
+/* 섹션 공통 */
 .section {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+}
+.section:last-child {
+  margin-bottom: 0;
 }
 
 .label {
-  display: inline-block;
-  background: #f3f4f6;
-  color: #374151;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin-bottom: 8px;
 }
 
+/* 한국어 문장 */
 .koreanText {
-  margin: 0;
-  font-size: 15px;
-  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1F2937;
+  line-height: 1.5;
+  word-break: keep-all;
 }
 
-.englishSentence {
-  background: #f9fafb;
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 15px;
-  color: #111827;
-  line-height: 1.8;
+/* 영어 완성 문장 (flex-wrap으로 줄바꿈 처리) */
+.completedSentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline; /* 텍스트 베이스라인 정렬 */
+  gap: 6px 4px; /* 가로 세로 간격 */
+  font-size: 18px;
+  font-family: 'Pretendard', sans-serif; /* 영문 폰트 권장 */
+  color: #374151;
+  line-height: 1.6;
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
-.blankWord {
-  display: inline-block;
-  padding: 2px 10px;
+.sentencePart {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: pre-wrap;
+}
+
+/* 문장 속 정답 빈칸 */
+.blankBox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  margin: 0 2px;
+  background-color: #10B981; /* 정답 강조색 */
+  color: white;
   border-radius: 6px;
-  margin: 0 4px;
+  font-weight: 700;
+  font-size: 0.95em;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* 빈칸 상세 리스트 */
+.blankList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blankItem {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 상세 내 뱃지 */
+.blankBadge {
+  align-self: flex-start;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.blankContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 정답만 있을 때 */
+.answerOnly {
+  font-size: 16px;
+  font-weight: 700;
+  color: #10B981;
+}
+
+/* 오답일 때 비교 */
+.answerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  padding: 4px 0;
+  border-bottom: 1px dashed #F3F4F6;
+}
+.answerRow:last-child {
+  border-bottom: none;
+}
+
+.answerLabel {
+  font-size: 13px;
   font-weight: 600;
+  color: #9CA3AF;
+  min-width: 60px;
 }
 
-.blankCorrect {
-  background: #dcfce7;
-  color: #22c55e;
+.wrongAnswer {
+  color: #EF4444; /* 빨강 */
+  font-weight: 700;
+  text-decoration: line-through; /* 취소선 효과 */
+  opacity: 0.8;
 }
 
-.blankWrong {
-  background: #fee2e2;
-  color: #ef4444;
+.correctAnswer {
+  color: #10B981; /* 초록 */
+  font-weight: 700;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .card {
+    padding: 28px 24px;
+    max-width: 100%;
+  }
+
+  .header {
+    margin-bottom: 24px;
+  }
+
+  .badge {
+    padding: 5px 14px;
+    font-size: 13px;
+  }
+
+  .label {
+    font-size: 13px;
+  }
+
+  .koreanText {
+    font-size: 17px;
+  }
+
+  .completedSentence {
+    font-size: 16px;
+  }
+
+  .blankBox {
+    padding: 5px 12px;
+    font-size: 16px;
+  }
+
+  .blankItem {
+    padding: 18px 22px;
+    min-height: 90px;
+  }
+
+  .answerOnly {
+    font-size: 18px;
+  }
+
+  .answerRow {
+    font-size: 16px;
+  }
+
+  .answerLabel {
+    font-size: 13px;
+  }
+
+  .correctAnswer,
+  .wrongAnswer {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 24px 20px;
+    margin-bottom: 20px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .badge {
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+
+  .label {
+    font-size: 12px;
+  }
+
+  .koreanText {
+    font-size: 16px;
+  }
+
+  .completedSentence {
+    font-size: 15px;
+  }
+
+  .blankBox {
+    padding: 4px 10px;
+    font-size: 15px;
+  }
+
+  .blankItem {
+    padding: 16px 18px;
+    min-height: 80px;
+  }
+
+  .answerOnly {
+    font-size: 17px;
+  }
+
+  .answerRow {
+    font-size: 15px;
+  }
+
+  .answerLabel {
+    font-size: 12px;
+  }
+
+  .correctAnswer,
+  .wrongAnswer {
+    font-size: 16px;
+  }
 }

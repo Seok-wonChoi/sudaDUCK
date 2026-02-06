@@ -19,6 +19,25 @@
               0 10px 10px -5px rgba(43, 127, 255, 0.1);
 }
 
+/* 점수 등급별 테마 */
+.excellent {
+  border-color: #10b981 !important;
+  background-color: #f0fdf4 !important;
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.1), 0 4px 6px -2px rgba(16, 185, 129, 0.05) !important;
+}
+
+.good {
+  border-color: #f59e0b !important;
+  background-color: #fffbeb !important;
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.1), 0 4px 6px -2px rgba(245, 158, 11, 0.05) !important;
+}
+
+.poor {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.1), 0 4px 6px -2px rgba(239, 68, 68, 0.05) !important;
+}
+
 .sentenceCard:hover {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
               0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -63,17 +82,81 @@
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
-.score {
-  font-size: 14px;
-  color: #6b7280;
+.scoreContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
 }
 
-.scoreValue {
-  color: #2b7fff;
+.scoreLabel {
+  font-size: 11px;
   font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scoreWrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.gradeBadge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.excellent .gradeBadge { background: #d1fae5; color: #059669; }
+.good .gradeBadge { background: #fef3c7; color: #d97706; }
+.poor .gradeBadge { background: #fee2e2; color: #dc2626; }
+
+.scoreValueBig {
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1;
+  font-family: 'Inter', sans-serif;
+}
+
+.excellent .scoreValueBig { color: #059669; }
+.good .scoreValueBig { color: #d97706; }
+.poor .scoreValueBig { color: #dc2626; }
+
+.scoreUnit {
+  font-size: 16px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.averageScore {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Score Color Classes */
+.scoreRed {
+  color: #ef4444 !important;
+}
+
+.scoreOrange {
+  color: #f97316 !important;
+}
+
+.scoreYellow {
+  color: #eab308 !important;
+}
+
+.scoreGreen {
+  color: #22c55e !important;
 }
 
 .progress {
@@ -113,8 +196,21 @@
   border-color: #2b7fff;
 }
 
-.bookmarkButton.bookmarked svg {
+.bookmarkIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  transition: all 0.3s ease;
+  filter: grayscale(100%) brightness(0.6);
+}
+
+.bookmarkButton.bookmarked .bookmarkIcon {
   animation: bookmarkPop 0.4s ease;
+  filter: brightness(0) saturate(100%) invert(42%) sepia(97%) saturate(3129%) hue-rotate(200deg) brightness(101%) contrast(101%);
+}
+
+.bookmarkButton:hover .bookmarkIcon {
+  filter: grayscale(0%) brightness(0.8);
 }
 
 .bookmarkText {
@@ -207,6 +303,13 @@
   margin: 0 1px;
 }
 
+.blankTextHint {
+  color: #2b7fff;
+  font-weight: 700;
+  border-bottom: 1px dashed #2b7fff;
+  padding-bottom: 1px;
+}
+
 .blankBracket {
   color: #2b7fff;
   font-weight: 700;
@@ -227,16 +330,41 @@
   height: 20px;
 }
 
-/* Recording Box */
-.recordingBox {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+.nextSentenceHint {
+  font-size: 18px;
+  color: #64748b;
+  font-weight: 700;
+  margin-top: 8px;
+  animation: fadeInHint 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes fadeInHint {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.countdownWrapper {
+  background: transparent;
+  border: none;
   padding: 12px;
   min-height: 80px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.recordingAreaWrapper {
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .recordingContent {
@@ -262,25 +390,240 @@
 }
 
 .statusText.statusSuccess {
+  font-size: 24px;
+  font-weight: 900;
   color: #10b981;
 }
 
-.recordingActive {
+.recordingColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.statusColumn {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
 }
 
+.countdownCircleBig {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #2b7fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  animation: pulseBlue 1s infinite;
+}
+
+@keyframes pulseBlue {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(43, 127, 255, 0.4); }
+  50% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(43, 127, 255, 0); }
+}
+
+.countdownNumberBig {
+  font-size: 42px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.statusTextLarge {
+  font-size: 26px;
+  color: #1e2939;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+}
+
+.recordingHintLarge {
+  font-size: 20px;
+  color: #2b7fff;
+  font-weight: 800;
+}
+
+.recordingHint {
+  font-size: 13px;
+  color: #2b7fff;
+  font-weight: 700;
+}
+
+.recordingHintText {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 600;
+  text-align: center;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.recordingActive {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.sideArea {
+  width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.centerArea {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* iOS Style Switch */
+.switchWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.switchLabel {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.iosSwitch {
+  width: 50px;
+  height: 26px;
+  background-color: #cbd5e1;
+  border-radius: 99px;
+  position: relative;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  padding: 0;
+}
+
+.switchOn {
+  background-color: #2b7fff;
+}
+
+.switchHandle {
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.switchOn .switchHandle {
+  transform: translateX(24px);
+}
+
+.stopActionIconWrap {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stopButtonCircle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  padding: 0;
+  min-width: 60px;
+}
+
+.stopButtonCircle:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.stopButtonCircle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.stopIcon {
+  width: 28px;
+  height: 28px;
+  background: #ef4444;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
+}
+
+.stopText {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ef4444;
+  white-space: nowrap;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(239, 68, 68, 0.2);
+  border-top: 3px solid #ef4444;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinnerBlue {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(43, 127, 255, 0.2);
+  border-top: 3px solid #2b7fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+.submittingStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .recordingCircle {
-  width: 100px;
-  height: 100px;
+  width: clamp(70px, 8vw, 90px);
+  height: clamp(70px, 8vw, 90px);
   border-radius: 50%;
   background: #ef4444;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: pulse 1s infinite;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
 }
 
 @keyframes pulse {
@@ -295,8 +638,8 @@
 }
 
 .countdownNumber {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
   color: #ffffff;
 }
 

@@ -5,12 +5,16 @@
 }
 
 .Preview {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   border-radius: 16px;
   padding: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s ease;
+  background: #ffffff;
 }
 
 .DuckWrapper {
@@ -27,8 +31,8 @@
 
 .Accessory {
   position: absolute;
-  top: -20px;
-  left: 50%;
+  top: 4px;
+  left: 52%;
   transform: translateX(-50%);
   font-size: 32px;
 }
@@ -107,6 +111,10 @@
 .ColorButton.Selected {
   outline: 3px solid #4f46e5;
   outline-offset: 2px;
+}
+
+.ColorButton.WhiteBorder {
+  border: 2px solid #e5e7eb;
 }
 
 .AccessoriesRow {

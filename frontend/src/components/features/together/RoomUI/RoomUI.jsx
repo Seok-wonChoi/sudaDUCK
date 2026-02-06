@@ -58,7 +58,7 @@ export default function RoomUI({
   topic = "좋아하는 음식",
   rightTitle = "AI 설명",
   rightBody = "편하게 말해보세요.",
-  durationMs = 60_000,
+  durationMs = 40000,
   onTimeDone,
   exitTo = "/",
   exitMessage = "정말 나가시겠습니까?",
@@ -101,7 +101,7 @@ export default function RoomUI({
         </div>
 
         <div className={styles.TopicRow}>
-          <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다.</div>
+          <div className={styles.TopicBubble}>대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다.</div>
         </div>
 
         <main className={styles.Main}>

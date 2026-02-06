@@ -1,6 +1,8 @@
 import styles from "./ProfileSection.module.css";
 import NicknameBadge from "./NicknameBadge";
 import coinImage from "@/assets/images/coin.png";
+import tapSound from "@/assets/sounds/tap.wav";
+import { useSoundContext } from "@/context/SoundContext";
 
 const COLOR_MAP = {
   white: "#ffffff",
@@ -33,10 +35,29 @@ export default function ProfileSection({
   onEditDuckBot,
   onLogout,
 }) {
+  const { getEffectiveVolume, isMuted } = useSoundContext();
+
+  const playTapSound = () => {
+    if (isMuted) return;
+    try {
+      const audio = new Audio(tapSound);
+      audio.volume = getEffectiveVolume(0.1);
+      audio.play().catch(() => {});
+    } catch (e) {
+      // 사운드 재생 실패 무시
+    }
+  };
+
   return (
     <div className={styles.Section}>
       <div className={styles.ImagesWrapper}>
-        <div className={styles.ProfileImageContainer}>
+        <button
+          type="button"
+          className={styles.ProfileImageContainer}
+          onClick={onEditProfile}
+          onMouseEnter={playTapSound}
+          aria-label="프로필 바꾸기"
+        >
           <div
             className={styles.ProfileImage}
             style={{ background: COLOR_MAP[profileColor] || "#f3f4f6" }}
@@ -52,31 +73,27 @@ export default function ProfileSection({
               </span>
             )}
           </div>
-          <button
-            type="button"
-            className={styles.EditButton}
-            onClick={onEditProfile}
-            aria-label="프로필 바꾸기"
-          >
+          <span className={styles.EditButton} aria-hidden="true">
             <span className={styles.PencilIcon}>✏️</span>
-          </button>
-        </div>
+          </span>
+        </button>
 
-        <div className={styles.DuckImageContainer}>
+        <button
+          type="button"
+          className={styles.DuckImageContainer}
+          onClick={onEditDuckBot}
+          onMouseEnter={playTapSound}
+          aria-label="AI오리봇 바꾸기"
+        >
           <div className={styles.DuckImage}>
             {duckBotImage && (
               <img src={duckBotImage} alt="AI 오리봇" className={styles.Image} />
             )}
           </div>
-          <button
-            type="button"
-            className={styles.EditButton}
-            onClick={onEditDuckBot}
-            aria-label="AI오리봇 바꾸기"
-          >
+          <span className={styles.EditButton} aria-hidden="true">
             <span className={styles.PencilIcon}>✏️</span>
-          </button>
-        </div>
+          </span>
+        </button>
       </div>
 
       <div className={styles.InfoCard}>

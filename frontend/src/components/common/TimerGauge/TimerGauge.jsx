@@ -10,7 +10,7 @@ function formatMMSS(totalSeconds) {
 }
 
 export default function TimerGauge({
-  durationMs = 60_000,
+  durationMs = 40_000,
   isRunning = true,
   onDone,
   startTimeMs = null, // 절대 시작 시간 (timestamp)

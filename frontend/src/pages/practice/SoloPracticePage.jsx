@@ -39,7 +39,7 @@ function VoiceWave({ level, enabled }) {
 export default function SoloPracticePage() {
   const navigate = useNavigate();
   const topic = useMemo(() => "좋아하는 음식", []);
-  const DURATION_MS = 60_000;
+  const DURATION_MS = 40_000;
 
   const [showBackConfirm, setShowBackConfirm] = useState(false);
 
@@ -305,7 +305,7 @@ export default function SoloPracticePage() {
 
             <div className={styles.TopicRow}>
               <img className={styles.SmallDuck} src={duckImg} alt="오리" />
-              <div className={styles.TopicBubble}>첫 번째 대화 주제는 {topic}입니다!</div>
+              <div className={styles.TopicBubble}>대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다!</div>
             </div>
 
             <div className={styles.TimerCol}>

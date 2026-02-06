@@ -4,13 +4,16 @@ import styles from "./MakeRoomPage.module.css";
 import { createSession } from "@/api/openVidu"; // 👈 오픈비듀
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import TipBanner from "@/components/common/TipBanner/TipBanner";
+import { useSoundContext } from "@/context/SoundContext";
 
 import { createRoom, getTopics, joinRoom } from "@/api/rooms";
+import lightButtonSound from "@/assets/sounds/light_button.wav";
 
 const ROOM_INFO_KEY = "together_room_info";
 
 export default function MakeRoomPage() {
   const navigate = useNavigate();
+  const { getEffectiveVolume, isMuted } = useSoundContext();
 
   const hotTopics = useMemo(
     () => [
@@ -27,12 +30,22 @@ export default function MakeRoomPage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
   const [turn, setTurn] = useState(3);
+  const [timeLimit, setTimeLimit] = useState(40);
   const [loading, setLoading] = useState(false);
   const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
   const titleCount = title.length;
 
   const handleBack = () => {
+    if (!isMuted) {
+      try {
+        const audio = new Audio(lightButtonSound);
+        audio.volume = getEffectiveVolume(0.1);
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+    }
     if (window.history.length > 1) navigate(-1);
     else navigate("/together");
   };
@@ -123,6 +136,7 @@ export default function MakeRoomPage() {
         roomTitle: res.title,
         topic: res.topic,
         turnCount: res.turnCnt,
+        timeLimit: res.timeLimit || timeLimit,
 
         joinCode: res.roomCode,
         inviteCode: res.roomCode, // joinCode와 inviteCode 모두 설정
@@ -152,6 +166,7 @@ export default function MakeRoomPage() {
             onClick={handleBack}
             aria-label="뒤로 가기"
             disabled={loading}
+            data-click-sound="false"
           >
             &lt;
           </button>
@@ -260,6 +275,32 @@ export default function MakeRoomPage() {
             </button>
           );
         })}
+      </div>
+    </div>
+
+    <div className={styles.Field}>
+      <div className={styles.LabelRow}>
+        <span className={styles.Label}>턴당 제한시간 (초)</span>
+      </div>
+
+      <div className={styles.Stepper}>
+        <button
+          type="button"
+          className={styles.StepButton}
+          onClick={() => setTimeLimit(Math.max(15, timeLimit - 5))}
+          disabled={loading || timeLimit <= 15}
+        >
+          -
+        </button>
+        <span className={styles.StepValue}>{timeLimit}초</span>
+        <button
+          type="button"
+          className={styles.StepButton}
+          onClick={() => setTimeLimit(Math.min(60, timeLimit + 5))}
+          disabled={loading || timeLimit >= 60}
+        >
+          +
+        </button>
       </div>
     </div>
 

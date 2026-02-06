@@ -86,12 +86,40 @@ const LandingPage = () => {
 
       {/* Hero Section - Card 1 */}
       <section className={`${styles.section} ${styles.heroSection}`}>
-        <div className={styles.heroContent}>
-          <h1 className={styles.title}>
-            <span className={styles.char} style={{ animationDelay: '0.1s' }}>수</span>
-            <span className={styles.char} style={{ animationDelay: '0.6s' }}>다</span>
-            <span className={`${styles.char} ${styles.duckText}`} style={{ animationDelay: '1.1s' }}>DUCK</span>
-          </h1>
+        <div className={styles.heroContent} >
+          <h1 
+  className={styles.title} 
+  style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    gap: '0px' // 수, 다 사이는 붙임
+  }}
+>
+  <span 
+    className={styles.char} 
+    style={{ animationDelay: '0.1s', margin: '0' }}
+  >
+    수
+  </span>
+  <span 
+    className={styles.char} 
+    style={{ animationDelay: '0.6s', margin: '0' }}
+  >
+    다
+  </span>
+  
+  <span 
+    className={`${styles.char} ${styles.duckText}`} 
+    style={{ 
+      animationDelay: '1.1s', 
+      margin: '0', 
+      marginLeft: '10px' // ⭐ 8px ~ 12px 정도 추천!
+    }}
+  >
+    DUCK
+  </span>
+</h1>
           
           <div className={`${styles.fadeWrapper} ${showContent ? styles.visible : ''}`}>
             <p className={styles.subTitle}>

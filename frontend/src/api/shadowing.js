@@ -28,10 +28,9 @@ export async function saveAssessment(audioBlob, roomId, turnNo, scriptId) {
   formData.append("turnNo", turnNo);
   formData.append("scriptId", scriptId);
 
-  const token = localStorage.getItem("accessToken");
   // ⚠️ FormData 전송 시 Content-Type 헤더를 명시하지 않아야 함
   // axios가 자동으로 boundary를 포함한 multipart/form-data를 설정함
-  // 명시적으로 설정하면 Authorization 헤더가 누락될 수 있음
+  // api.js의 request interceptor가 자동으로 Authorization 헤더 추가
   const { data } = await api.post("/api/v1/assessment", formData, {
     timeout: 30000, // ← 30초 타임아웃 추가!
   });

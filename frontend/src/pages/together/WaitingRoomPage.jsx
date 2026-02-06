@@ -28,6 +28,9 @@ import {
 } from "@/api/rooms";
 
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
+import useSmoothCountdown from "@/hooks/useSmoothCountdown";
+import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
+import duckHappy from "@/assets/images/duck_happy.png";
 
 const ROOM_INFO_KEY = "together_room_info";
 
@@ -233,14 +236,9 @@ export default function WaitingRoomPage() {
 
       return () => {
           window.removeEventListener('beforeunload', handleBeforeUnload);
-          // 게임 시작으로 이동하는 경우(isTransitioningRef.current === true)에는 끊지 않음!
-          // [수정] 의존성 배열을 비우고([]) Ref를 사용하여, 불필요한 재실행(연결 끊김) 방지
-          if (isOvConnectedRef.current && !isTransitioningRef.current) {
-             console.log("👋 [WaitingRoom] 대기실 퇴장 -> 세션 종료");
-             if (leaveSessionRef.current) leaveSessionRef.current(); 
-          } else {
-             console.log("🚀 [WaitingRoom] 게임 시작 -> 세션 유지하며 이동");
-          }
+          // [수정] 대기실 언마운트 시 자동으로 세션을 끊지 않도록 변경합니다.
+          // 세션 종료는 handleExit(나가기 버튼)에서만 명시적으로 수행합니다.
+          console.log("📍 [WaitingRoom] 페이지 벗어남 (세션 유지)");
       };
   }, []); // 👈 [중요] 빈 배열로 설정하여 언마운트 시에만 실행!
 
@@ -275,6 +273,11 @@ export default function WaitingRoomPage() {
   const [turnCount, setTurnCount] = useState(
     roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
   );
+  const [timeLimit, setTimeLimit] = useState(() => {
+    const raw = roomInfo.timeLimit ?? 40;
+    const num = parseInt(raw, 10);
+    return isNaN(num) ? 40 : num;
+  });
 
   const [participants, setParticipants] = useState([]);
   const participantsRef = useRef([]);
@@ -286,6 +289,46 @@ export default function WaitingRoomPage() {
   const [readyCount, setReadyCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStarting, setIsStarting] = useState(false);
+  const startDataRef = useRef(null);
+
+  const { remainingSec, start: startTimer } = useSmoothCountdown(5, {
+    onDone: () => {
+      if (hasNavigatedRef.current) return;
+      hasNavigatedRef.current = true;
+      isTransitioningRef.current = true;
+
+      const payloadOrData = startDataRef.current;
+
+      navigate("/together/talk", {
+        replace: true,
+        state: {
+          ...roomInfo,
+          roomId: payloadOrData?.roomId ?? roomId ?? roomInfo.roomId,
+          roomCode: payloadOrData?.roomCode ?? inviteCode,
+          inviteCode,
+          joinCode: inviteCode,
+          roomTitle,
+          title: roomTitle,
+          topic,
+          turnCount,
+          turnCnt: turnCount,
+          timeLimit,
+          maxCount,
+          currentTurn: 1,
+          myUserId: myKey ? Number(myKey) : roomInfo.myUserId,
+          participants: participants.map((p) => ({
+            id: p.key,
+            name: p.nickname,
+            isMe: p.key === myKey,
+            micOn: p.key === myKey ? myMicOn : (p.micOn ?? false),
+            voiceLevel: 0,
+            isHost: p.isHost,
+          })),
+        },
+      });
+    },
+  });
 
   const [myMicOn, setMyMicOn] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
@@ -296,6 +339,7 @@ export default function WaitingRoomPage() {
   const [editTitle, setEditTitle] = useState(roomTitle);
   const [editTopic, setEditTopic] = useState(topic);
   const [editTurn, setEditTurn] = useState(turnCount);
+  const [editTimeLimit, setEditTimeLimit] = useState(timeLimit);
   const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
   const hotTopics = useMemo(
@@ -470,14 +514,14 @@ export default function WaitingRoomPage() {
 
   const fetchLobbyRef = useRef(null);
 
-  const fetchLobby = useCallback(async () => {
+  const fetchLobby = useCallback(async (isSilent = false) => {
     if (!inviteCode || inviteCode === "000000") {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
       return;
     }
 
     try {
-      setIsLoading(true);
+      if (!isSilent) setIsLoading(true);
       const data = await getRoomLobby(inviteCode);
 
       const members = data.participants ?? [];
@@ -487,6 +531,7 @@ export default function WaitingRoomPage() {
       const nextTitle = data.title ?? data.roomTitle;
       const nextTopic = data.topic ?? data.roomTopic;
       const nextTurn = data.turnCnt ?? data.turnCount;
+      // const nextTimeLimit = data.timeLimit; // 서버 미지원 필드 제외
 
       if (typeof nextTitle === "string" && nextTitle.trim())
         setRoomTitle(nextTitle);
@@ -494,6 +539,8 @@ export default function WaitingRoomPage() {
         setTopic(nextTopic);
       if (nextTurn !== undefined && nextTurn !== null)
         setTurnCount(Number(nextTurn));
+      // if (nextTimeLimit !== undefined && nextTimeLimit !== null)
+      //   setTimeLimit(Number(nextTimeLimit));
 
       const tokenKey = getUserIdFromToken();
       const resolvedMyKey =
@@ -557,6 +604,7 @@ export default function WaitingRoomPage() {
           topic: nextTopic ?? topic,
           turnCnt: nextTurn ?? turnCount,
           turnCount: nextTurn ?? turnCount,
+          timeLimit: timeLimit, // 로컬 설정값 유지
           maxCount,
         };
         sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(nextRoomInfo));
@@ -566,7 +614,7 @@ export default function WaitingRoomPage() {
     } catch {
       showToast("참여자 목록을 불러오는데 실패했습니다.");
     } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
   }, [
     inviteCode,
@@ -664,9 +712,12 @@ export default function WaitingRoomPage() {
       nickname: payload?.nickname ?? "참여자",
       isHost: payload?.isHost ?? false,
       isReady: payload?.isReady ?? false,
-      micOn: payload?.micOn ?? false,
+      micOn: payload?.micOn ?? true,
       voiceLevel: 0,
       isSpeaking: false,
+      avatarCustomJson: payload?.avatarCustomJson ?? null,
+      duckCustomJson: payload?.duckCustomJson ?? null,
+      aiDuckbotCustomJson: payload?.aiDuckbotCustomJson ?? null,
     };
 
     setParticipants((prev) => {
@@ -679,6 +730,9 @@ export default function WaitingRoomPage() {
     });
 
     if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
+
+    // 새로운 멤버가 입장했을 때 최신 정보를 다시 가져옴 (프로필 커스터마이징 동기화)
+    fetchLobbyRef.current?.(true);
 
     // 새로운 멤버가 입장했을 때 내 마이크 상태를 전송하여 동기화
     if (sendMicRef.current) {
@@ -863,52 +917,21 @@ export default function WaitingRoomPage() {
 
   const onRoomStarted = useCallback(
     (payloadOrData) => {
-      if (hasNavigatedRef.current) return;
-      hasNavigatedRef.current = true;
+      if (isStarting) return;
+      console.log("🎮 [WaitingRoom] ROOM_STARTED 수신 - 카운트다운 시작");
       
-      // 👇 게임 화면으로 이동하므로 세션 유지 플래그 ON
-      isTransitioningRef.current = true;
-
-      navigate("/together/talk", {
-        replace: true,
-        state: {
-          ...roomInfo,
-          roomId: payloadOrData?.roomId ?? roomId ?? roomInfo.roomId,
-          roomCode: payloadOrData?.roomCode ?? inviteCode,
-          inviteCode,
-          joinCode: inviteCode,
-          roomTitle,
-          title: roomTitle,
-          topic,
-          turnCount,
-          turnCnt: turnCount,
-          maxCount,
-          currentTurn: 1,
-          myUserId: myKey ? Number(myKey) : roomInfo.myUserId,
-          participants: participants.map((p) => ({
-            id: p.key,
-            name: p.nickname,
-            isMe: p.key === myKey,
-            micOn: p.key === myKey ? myMicOn : (p.micOn ?? false),
-            voiceLevel: 0,
-            isHost: p.isHost,
-          })),
-        },
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith(`timer_start_${inviteCode}`)) {
+          sessionStorage.removeItem(key);
+        }
       });
+      console.log("🧹 [WaitingRoom] 새 게임 시작을 위해 타이머 기록 초기화 완료");
+      
+      startDataRef.current = payloadOrData;
+      setIsStarting(true);
+      startTimer();
     },
-    [
-      navigate,
-      roomInfo,
-      roomId,
-      inviteCode,
-      roomTitle,
-      topic,
-      turnCount,
-      maxCount,
-      myKey,
-      participants,
-      myMicOn,
-    ],
+    [isStarting, startTimer],
   );
 
   const { sendReady, sendMic, sendVoiceLevel, isConnected } = useRoomWebSocket(inviteCode, {
@@ -946,7 +969,13 @@ export default function WaitingRoomPage() {
       sendMic(myMicOn);
       initialMicSentRef.current = true;
     }
-  }, [isConnected, sendMic, myMicOn]);
+
+    // 👇 [추가] 이미 오픈비두 연결된 상태로 돌아왔을 때 마이크 상태 동기화
+    if (isOvConnected && publisher) {
+        console.log("🎤 [WaitingRoom] 기존 오픈비두 연결 감지 - 마이크 동기화:", myMicOn);
+        publisher.publishAudio(myMicOn);
+    }
+  }, [isConnected, sendMic, myMicOn, isOvConnected, publisher]);
 
   const lastLocalSentRef = useRef({ at: 0, level: 0 });
   useEffect(() => {
@@ -1077,8 +1106,9 @@ export default function WaitingRoomPage() {
     setEditTitle(roomTitle);
     setEditTopic(topic);
     setEditTurn(turnCount);
+    setEditTimeLimit(timeLimit);
     setEditPopupOpen(true);
-  }, [isHost, roomTitle, topic, turnCount]);
+  }, [isHost, roomTitle, topic, turnCount, timeLimit]);
 
   const handleCloseEditPopup = useCallback(() => {
     setEditPopupOpen(false);
@@ -1137,6 +1167,7 @@ export default function WaitingRoomPage() {
         title: editTitle.trim(),
         topic: editTopic.trim(),
         turnCnt: editTurn,
+        // timeLimit는 서버 미지원으로 제외 (api/rooms.js에서 필터링됨)
       });
     } catch {
       showToast("방 설정 변경에 실패했습니다.");
@@ -1146,6 +1177,7 @@ export default function WaitingRoomPage() {
     setRoomTitle(editTitle.trim());
     setTopic(editTopic.trim());
     setTurnCount(editTurn);
+    setTimeLimit(editTimeLimit);
 
     try {
       const stored = sessionStorage.getItem(ROOM_INFO_KEY);
@@ -1159,6 +1191,7 @@ export default function WaitingRoomPage() {
           topic: editTopic.trim(),
           turnCount: editTurn,
           turnCnt: editTurn,
+          timeLimit: editTimeLimit,
         }),
       );
     } catch {
@@ -1174,7 +1207,9 @@ export default function WaitingRoomPage() {
     if (!canStart) return;
 
     try {
+
       await startRoom(inviteCode);
+
     } catch {
       showToast("방을 시작하는데 실패했습니다.");
       return;
@@ -1251,7 +1286,7 @@ export default function WaitingRoomPage() {
           <div className={styles.TopHeaderRow}>
             <div className={styles.SpeechRight}>
               <div className={styles.SpeechBubbleRight}>
-                첫 번째 대화 주제는 {topic}입니다!
+                대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다!
               </div>
               <img className={styles.Duck} src={duckImg} alt="오리" />
             </div>
@@ -1283,6 +1318,9 @@ export default function WaitingRoomPage() {
                     <span className={styles.RoomInfoSeparator}>|</span>
                     <span className={styles.RoomInfoLabel}>턴 수:</span>
                     <span className={styles.RoomInfoValue}>{turnCount}턴</span>
+                    <span className={styles.RoomInfoSeparator}>|</span>
+                    <span className={styles.RoomInfoLabel}>턴당 제한시간:</span>
+                    <span className={styles.RoomInfoValue}>{timeLimit}초</span>
                   </div>
 
                   <div className={styles.InviteCodeBox}>
@@ -1537,58 +1575,6 @@ export default function WaitingRoomPage() {
                     )}
                   </button>
                 </div>
-
-                <div className={styles.PopupHotRow}>
-                  <span className={styles.PopupHotDot} aria-hidden="true" />
-                  <span className={styles.PopupHotText}>인기 주제</span>
-                </div>
-
-                <div className={styles.PopupTopicRow}>
-                  {hotTopics.map((t) => {
-                    const active = editTopic === t;
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        className={`${styles.PopupTopicChip} ${ 
-                          active ? styles.PopupTopicChipActive : ""
-                        }`}
-                        onClick={() => handlePickEditTopic(t)}
-                      >
-                        {t}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className={styles.PopupField}>
-                <div className={styles.PopupLabelRow}>
-                  <span className={styles.PopupLabel}>턴 수</span>
-                </div>
-                <div className={styles.PopupTurnRow}>
-                  {[3, 4, 5].map((n) => {
-                    const active = editTurn === n;
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        className={`${styles.PopupTurnCard} ${ 
-                          active ? styles.PopupTurnCardActive : ""
-                        }`}
-                        onClick={() => setEditTurn(n)}
-                      >
-                        <span
-                          className={styles.PopupTurnIcon}
-                          aria-hidden="true"
-                        >
-                          ↻
-                        </span>
-                        <span className={styles.PopupTurnText}>{n}턴</span>
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
             </div>
 
@@ -1611,6 +1597,14 @@ export default function WaitingRoomPage() {
           </div>
         </div>
       ) : null}
+
+      {isStarting && (
+        <LoadingOverlay
+          title="대화 준비!"
+          subtitle="스크립트를 모으는 자유말하기가 시작됩니다"
+          image={duckHappy}
+        />
+      )}
     </div>
   );
 }

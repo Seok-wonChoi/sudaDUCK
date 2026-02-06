@@ -4,48 +4,90 @@ import { useEffect, useState, useCallback } from "react";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ActionCard from "@/components/common/ActionCard/ActionCard";
+import StatsSection from "@/components/features/main/StatsSection/StatsSection";
+import TipBanner from "@/components/common/TipBanner/TipBanner";
+import { getMypageSummary } from "@/api/mypage";
+import { useSoundContext } from "@/context/SoundContext";
 
-import makeRoomIcon from "@/assets/icons/make_room.png";
-import joinRoomIcon from "@/assets/icons/join_room.png";
+import makeRoomIcon from "@/assets/icons/make_room2.png";
+import joinRoomIcon from "@/assets/icons/join_room2.png";
+import lightButtonSound from "@/assets/sounds/light_button.wav";
 
 export default function TogetherPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { getEffectiveVolume, isMuted } = useSoundContext();
+
+  // ✅ MainPage에서 넘겨준 summary 있으면 그걸 초기값으로 사용
+  const state = location.state ?? {};
+  const initialSummary = state.summary;
+
   const [toastMessage, setToastMessage] = useState("");
+  const [summary, setSummary] = useState(() =>
+    initialSummary ?? { attendanceDays: 0, sentenceCount: 0 }
+  );
 
   const showToast = useCallback((message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(""), 3000);
   }, []);
 
+  // 통계 데이터 로드 (최신화)
+  useEffect(() => {
+    let alive = true;
+
+    const loadSummary = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) return;
+
+        const summaryData = await getMypageSummary();
+        if (!alive) return;
+
+        if (summaryData) {
+          setSummary({
+            attendanceDays: summaryData.attendanceDays ?? 0,
+            sentenceCount: summaryData.sentenceCount ?? 0,
+          });
+        }
+      } catch (error) {
+        console.error("통계 데이터 로드 실패:", error);
+      }
+    };
+
+    loadSummary();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // location state에서 토스트 메시지 확인
   useEffect(() => {
-    if (location.state?.toastMessage) {
-      showToast(location.state.toastMessage);
-      // state 정리 (뒤로가기 시 다시 표시되지 않도록)
-      navigate(location.pathname, { replace: true, state: {} });
+    if (state.toastMessage) {
+      showToast(state.toastMessage);
+
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...state, toastMessage: undefined },
+      });
     }
-  }, [location.state, location.pathname, navigate, showToast]);
+  }, [state.toastMessage, navigate, location.pathname, showToast]);
 
   const handleBack = () => {
-    navigate("/main");
+    if (!isMuted) {
+      try {
+        const audio = new Audio(lightButtonSound);
+        audio.volume = getEffectiveVolume(0.1);
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+    }
+    navigate("/main", { state: { summary } });
   };
-
-  const handleMakeRoom = () => {
-    navigate("/together/make");
-  };
-
-  const handleJoinRoom = () => {
-    navigate("/together/join");
-  };
-
-  const topics = [
-    "첫 아르바이트 추억",
-    "최악의 데이트",
-    "나만의 취미생활",
-    "학창시절 이야기",
-    "여행 경험담",
-  ];
+  const handleMakeRoom = () => navigate("/together/make");
+  const handleJoinRoom = () => navigate("/together/join");
 
   return (
     <div className={styles.Page}>
@@ -58,12 +100,15 @@ export default function TogetherPage() {
             type="button"
             onClick={handleBack}
             aria-label="뒤로 가기"
+            data-click-sound="false"
           >
             &lt;
           </button>
 
           <h1 className={styles.Title}>함께 하기</h1>
-          <p className={styles.Subtitle}>새로운 방을 만들거나 친구의 방에 참여해보세요</p>
+          <p className={styles.Subtitle}>
+            새로운 방을 만들거나 친구의 방에 참여해보세요 🎮
+          </p>
 
           <section className={styles.CardRow} aria-label="함께하기 메뉴">
             <ActionCard
@@ -72,6 +117,7 @@ export default function TogetherPage() {
               iconSrc={makeRoomIcon}
               iconAlt="방 만들기"
               onClick={handleMakeRoom}
+              variant="make"
             />
             <ActionCard
               title="참여하기"
@@ -83,23 +129,15 @@ export default function TogetherPage() {
           </section>
         </main>
 
-        <section className={styles.Bottom} aria-label="공유 및 인기 주제">
-          <div className={styles.ShareBanner}>
-            <span className={styles.ShareText}>
-              친구에게 참여 코드를 <span className={styles.Emph}>카톡</span>으로 공유하세요!
-            </span>
-          </div>
-
-          <div className={styles.Popular}>
-            <div className={styles.PopularTitle}>지금 인기있는 주제</div>
-            <div className={styles.TopicRow}>
-              {topics.map((t) => (
-                <button key={t} type="button" className={styles.TopicChip}>
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
+        <section className={styles.Bottom} aria-label="통계">
+          <TipBanner text="Tip: 방을 만들거나 참여해서 함께 하기 모드를 시작해보세요!" />
+          <StatsSection
+            stats={[
+              { value: "🔥", label: "오늘도 열심히 해볼까요?" },
+              { value: `${summary.attendanceDays}일`, label: "연속 학습" },
+              { value: `${summary.sentenceCount}개`, label: "저장된 문장" },
+            ]}
+          />
         </section>
 
         {toastMessage ? <div className={styles.Toast}>{toastMessage}</div> : null}

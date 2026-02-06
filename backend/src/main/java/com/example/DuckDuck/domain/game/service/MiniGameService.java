@@ -4,14 +4,18 @@ import com.example.DuckDuck.domain.game.dto.response.ReviewQuestionResponse;
 import com.example.DuckDuck.domain.game.dto.request.ReviewSubmitRequest;
 import com.example.DuckDuck.domain.game.dto.response.ReviewRankingResponse;
 import com.example.DuckDuck.domain.game.dto.response.ReviewSubmitResponse;
+import com.example.DuckDuck.domain.room.repository.RoomParticipantsRepository;
 import com.example.DuckDuck.domain.user.entity.Member;
 import com.example.DuckDuck.domain.user.repository.MemberRepository;
+import com.example.DuckDuck.domain.user.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -22,13 +26,17 @@ public class MiniGameService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final MemberRepository memberRepository;
+    private final ProfileRepository profileRepository;
+    private final RoomParticipantsRepository roomParticipantsRepository;
 
+    // ========== 수정 : 방 단위 문제 생성 + 유효한 문제만 필터링 ==========
     public List<ReviewQuestionResponse> getReviewQuestions(Long userId, Long roomId){
 
-        String userReviewKey = "room:"+roomId+":review:user"+userId+":questions";
+        // 변경: 유저별 키 → 방 단위 키
+        String roomQuestionsKey = "room:" + roomId + ":review:questions";
 
-        //이미 이 유저를 위해 생성된 문제가 있는지 확인
-        List<Object> savedKeys = redisTemplate.opsForList().range(userReviewKey, 0, -1);
+        //이미 방에 생성된 문제가 있는지 확인 (모든 참가자가 같은 문제)
+        List<Object> savedKeys = redisTemplate.opsForList().range(roomQuestionsKey, 0, -1);
 
         if (savedKeys != null && !savedKeys.isEmpty()){
             return fetchQuestionsByKeys(savedKeys);
@@ -42,20 +50,69 @@ public class MiniGameService {
             return Collections.emptyList();
         }
 
-        //리스트 섞어서 랜덤 4개 추출
-        List<String> shuffledKeys = new ArrayList<>(allScriptKeys);
-        Collections.shuffle(shuffledKeys);
-        List<String> selectedKeys = shuffledKeys.stream()
-                .limit(4)
-                .toList();
+        // 변경: 먼저 유효한 문제만 필터링 후 4개 선택
+        List<ReviewQuestionResponse> allValidQuestions = new ArrayList<>();
 
-        //추출된 키를 유저 전용 키에 저장
-        redisTemplate.opsForList().rightPushAll(userReviewKey, selectedKeys.toArray());
-        //1시간 뒤 만료
-        redisTemplate.expire(userReviewKey, Duration.ofMinutes(10));
+        for (String key : allScriptKeys) {
+            if (key.endsWith(":scores")) {
+                continue;
+            }
 
-        return fetchQuestionsByKeys(new ArrayList<>(selectedKeys));
+            Map<Object, Object> data = redisTemplate.opsForHash().entries(key);
+
+            // 빈 데이터 필터링
+            if (data.isEmpty() ||
+                    data.get("korean") == null ||
+                    data.get("english") == null ||
+                    data.get("blank_script") == null) {
+                continue;
+            }
+
+            String blankScript = (String) data.get("blank_script");
+
+            // 빈칸이 없는 문제 제외
+            if (!blankScript.contains("[") || !blankScript.contains("]")) {
+                continue;
+            }
+
+            allValidQuestions.add(ReviewQuestionResponse.builder()
+                    .scriptId(key.substring(key.lastIndexOf(":") + 1))
+                    .korean((String) data.get("korean"))
+                    .english((String) data.get("english"))
+                    .blank_script(blankScript)
+                    .build());
+        }
+
+        if (allValidQuestions.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 유효한 문제 중에서 랜덤 4개 선택
+        Collections.shuffle(allValidQuestions);
+        int selectCount = Math.min(4, allValidQuestions.size());
+        List<ReviewQuestionResponse> selectedQuestions = allValidQuestions.subList(0, selectCount);
+
+        // 선택된 문제의 키를 방 단위로 저장
+        List<String> selectedKeys = selectedQuestions.stream()
+                .map(q -> {
+                    for (String key : allScriptKeys) {
+                        if (key.endsWith(":" + q.getScriptId())) {
+                            return key;
+                        }
+                    }
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        //추출된 키를 방 단위 키에 저장
+        redisTemplate.opsForList().rightPushAll(roomQuestionsKey, selectedKeys.toArray());
+        //10분 뒤 만료
+        redisTemplate.expire(roomQuestionsKey, Duration.ofMinutes(10));
+
+        return selectedQuestions;
     }
+    // ========== 수정 끝 ==========
 
     //키 리스트를 받아 실제 데이터(hash)를 조회하는 공통 메서드
     private List<ReviewQuestionResponse> fetchQuestionsByKeys(List<Object> keys){
@@ -63,16 +120,28 @@ public class MiniGameService {
 
         for(Object keyObj : keys){
             String key = (String) keyObj;
+
+            // "scores" 키 필터링 추가
+            if (key.endsWith(":scores")) {
+                continue;
+            }
             Map<Object, Object> data = redisTemplate.opsForHash().entries(key);
 
-            if (!data.isEmpty()){
-                questions.add(ReviewQuestionResponse.builder()
-                        .scriptId(key.substring(key.lastIndexOf(":") + 1))
-                        .korean((String) data.get("korean"))
-                        .english((String) data.get("english"))
-                        .blank_script((String) data.get("blank_script"))
-                        .build());
+            // 빈 데이터 필터링
+            if (data.isEmpty() ||
+                    data.get("korean") == null ||
+                    data.get("english") == null ||
+                    data.get("blank_script") == null) {
+                continue;
             }
+
+            questions.add(ReviewQuestionResponse.builder()
+                    .scriptId(key.substring(key.lastIndexOf(":") + 1))
+                    .korean((String) data.get("korean"))
+                    .english((String) data.get("english"))
+                    .blank_script((String) data.get("blank_script"))
+                    .build());
+
         }
         return questions;
     }
@@ -81,9 +150,9 @@ public class MiniGameService {
         int correctCount = 0;
         int totalQuestions = request.getAnswers().size();
 
-        // 1. 이미 유저에게 배정된 문제 키 리스트를 가져옴 (List 구조)
-        String userReviewKey = "room:" + roomId + ":review:user" + userId + ":questions";
-        List<Object> assignedKeys = redisTemplate.opsForList().range(userReviewKey, 0, -1);
+        // 1. 변경: 방 단위 문제 키 리스트를 가져옴
+        String roomQuestionsKey = "room:" + roomId + ":review:questions";
+        List<Object> assignedKeys = redisTemplate.opsForList().range(roomQuestionsKey, 0, -1);
 
         if (assignedKeys == null || assignedKeys.isEmpty()) {
             throw new RuntimeException("진행 중인 복습 게임 정보가 없습니다.");
@@ -121,6 +190,10 @@ public class MiniGameService {
         String scoreKey = "room:" + roomId + ":review:scores";
         redisTemplate.opsForHash().put(scoreKey, userId.toString(), String.valueOf(correctCount));
 
+        // 4. 제출 완료 플래그 저장
+        String submittedKey = "room:" + roomId + ":review:submitted";
+        redisTemplate.opsForHash().put(submittedKey, userId.toString(), "true");
+
         return ReviewSubmitResponse.builder()
                 .correctCount(correctCount)
                 .totalQuestions(totalQuestions)
@@ -128,48 +201,61 @@ public class MiniGameService {
                 .build();
     }
 
+    // ========== 수정 : 전체 참가자 포함 + 제출 여부 확인 ==========
+    @Transactional
     public List<ReviewRankingResponse> getReviewRanking(Long userId, Long roomId) {
-        // 1. Redis에서 복습 게임 점수 데이터 조회 (userId -> score)
-        String scoreKey = "room:" + roomId + ":review:scores";
-        Map<Object, Object> scores = redisTemplate.opsForHash().entries(scoreKey);
+        // 1. Room의 전체 참가자 조회
+        List<Member> allParticipants = roomParticipantsRepository.findMembersByRoomId(roomId);
 
-        if (scores.isEmpty()) {
+        if (allParticipants.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // 2. 점수가 있는 유저 ID 리스트 추출 (Long 타입 변환)
-        List<Long> userIds = scores.keySet().stream()
-                .map(id -> Long.parseLong(id.toString()))
-                .collect(Collectors.toList());
+        // 2. Redis에서 복습 게임 점수 데이터 조회
+        String scoreKey = "room:" + roomId + ":review:scores";
+        Map<Object, Object> scores = redisTemplate.opsForHash().entries(scoreKey);
 
-        // 3. DB에서 해당 유저들의 닉네임과 프로필 이미지 한 번에 조회
-        List<Member> participants = memberRepository.findAllById(userIds);
+        // 3. 제출 완료 플래그 조회
+        String submittedKey = "room:" + roomId + ":review:submitted";
+        Map<Object, Object> submitted = redisTemplate.opsForHash().entries(submittedKey);
 
-        // 4. 조회를 위해 Map으로 변환 (Key: userId, Value: Member 객체)
-        Map<Long, Member> memberMap = participants.stream()
-                .collect(Collectors.toMap(Member::getId, member -> member));
-
-        // 5. 점수 데이터와 멤버 정보 결합
+        // 4. 전체 참가자 기준으로 랭킹 생성
         List<ReviewRankingResponse> ranking = new ArrayList<>();
-        for (Map.Entry<Object, Object> entry : scores.entrySet()) {
-            Long entryUserId = Long.parseLong(entry.getKey().toString());
-            int score = Integer.parseInt(entry.getValue().toString());
 
-            Member m = memberMap.get(entryUserId);
+        for (Member member : allParticipants) {
+            Long memberId = member.getId();
+            String scoreStr = (String) scores.get(memberId.toString());
+            String submittedStr = (String) submitted.get(memberId.toString());  // ✅ 추가
+
+            // 제출 여부 확인
+            boolean hasSubmitted = "true".equals(submittedStr);
+            int score = scoreStr != null ? Integer.parseInt(scoreStr) : 0;
 
             ranking.add(ReviewRankingResponse.builder()
-                    .nickname(m != null ? m.getNickname() : "알 수 없음")
-                    .profileImageUrl(m != null ? m.getProfileImageUrl() : null)
+                    .userId(memberId)
+                    .nickname(member.getNickname())
+                    .profileImageUrl(member.getProfileImageUrl())
                     .score(score)
-                    .isMe(entryUserId.equals(userId))
+                    .isMe(memberId.equals(userId))
+                    .hasSubmitted(hasSubmitted)
                     .build());
         }
 
-        // 6. 점수 높은 순(내림차순)으로 정렬
-        return ranking.stream()
-                .sorted(Comparator.comparing(ReviewRankingResponse::getScore).reversed())
-                .collect(Collectors.toList());
+        // 5. 점수 높은 순(내림차순)으로 정렬
+        ranking.sort(Comparator.comparing(ReviewRankingResponse::getScore).reversed());
+
+        // 6. 코인 보상
+        String rewardKey = "room:" + roomId + ":reward:completed";
+        Boolean alreadyRewarded = redisTemplate.hasKey(rewardKey);
+
+        if (Boolean.FALSE.equals(alreadyRewarded)) {
+            rewardCoins(ranking);
+            redisTemplate.opsForValue().set(rewardKey, "true", 1, TimeUnit.HOURS);
+        }
+
+        return ranking;
     }
+    // ========== 수정 끝 ==========
 
     private List<String> extractWordsInBrackets(String text) {
         List<String> words = new ArrayList<>();
@@ -198,21 +284,22 @@ public class MiniGameService {
 
     //redis 정보 삭제
     public void clearReviewData(Long roomId) {
-        // 1. 유저별 문제 리스트 삭제 (room:roomId:review:user:*)
-        String userQuestionsPattern = "room:" + roomId + ":review:user*";
-        Set<String> questionKeys = redisTemplate.keys(userQuestionsPattern);
-        if (questionKeys != null && !questionKeys.isEmpty()) {
-            redisTemplate.delete(questionKeys);
-        }
+        // 1. 방 단위 문제 리스트 삭제
+        String roomQuestionsKey = "room:" + roomId + ":review:questions";
+        redisTemplate.delete(roomQuestionsKey);
 
-        // 2. 복습 게임 점수 데이터 삭제 (room:roomId:review:scores)
+        // 2. 복습 게임 점수 데이터 삭제
         String scoreKey = "room:" + roomId + ":review:scores";
         redisTemplate.delete(scoreKey);
 
-        // 3. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
+        // 3. 제출 완료 플래그 삭제
+        String submittedKey = "room:" + roomId + ":review:submitted";
+        redisTemplate.delete(submittedKey);
+
+        // 4. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
         List<String> patterns = Arrays.asList(
-                "room:" + roomId + ":turn:*",  // 개별 스크립트 (단수)
-                "room:" + roomId + ":scripts"// 스크립트 묶음 (복수, 혹시 모를 대비)
+                "room:" + roomId + ":turn:*",
+                "room:" + roomId + ":scripts"
         );
         for (String pattern : patterns) {
             Set<String> keys = redisTemplate.keys(pattern);
@@ -220,5 +307,91 @@ public class MiniGameService {
                 redisTemplate.delete(keys);
             }
         }
+    }
+
+    //코인 지급 처리 메서드
+    private void rewardCoins(List<ReviewRankingResponse> ranking) {
+
+        // [조건 1] 참여자가 1명 이하이면 지급 안 함
+        if (ranking.size() <= 1) return;
+
+        // [조건 2] 1등 점수 확인 및 0점 제외
+        int maxScore = ranking.get(0).getScore();
+        if (maxScore <= 0) return;
+
+        // 공동 1등에게 2코인 지급
+        ranking.stream()
+                .filter(r -> r.getScore() == maxScore)
+                .forEach(r -> profileRepository.updateCoins(r.getUserId(), 2));
+
+        // [조건 3] 2등 점수 확인 (1등보다 낮으면서 0보다 큰 점수)
+        ranking.stream()
+                .map(ReviewRankingResponse::getScore)
+                .filter(score -> score < maxScore && score > 0)
+                .findFirst()
+                .ifPresent(secondScore -> {
+                    // 공동 2등에게 1코인 지급
+                    ranking.stream()
+                            .filter(r -> r.getScore() == secondScore)
+                            .forEach(r -> profileRepository.updateCoins(r.getUserId(), 1));
+                });
+    }
+
+    // 기존 랭킹 리스트 생성 로직 (조회만 수행)
+    public List<ReviewRankingResponse> getReviewRankingList(Long userId, Long roomId) {
+        String scoreKey = "room:" + roomId + ":review:scores";
+        Map<Object, Object> scores = redisTemplate.opsForHash().entries(scoreKey);
+
+        if (scores.isEmpty()) return Collections.emptyList();
+
+        List<Long> userIds = scores.keySet().stream()
+                .map(id -> Long.parseLong(id.toString()))
+                .collect(Collectors.toList());
+
+        Map<Long, Member> memberMap = memberRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(Member::getId, m -> m));
+
+        return scores.entrySet().stream()
+                .map(entry -> {
+                    Long entryUserId = Long.parseLong(entry.getKey().toString());
+                    Member m = memberMap.get(entryUserId);
+                    return ReviewRankingResponse.builder()
+                            .userId(entryUserId)
+                            .nickname(m != null ? m.getNickname() : "알 수 없음")
+                            .profileImageUrl(m != null ? m.getProfileImageUrl() : null)
+                            .score(Integer.parseInt(entry.getValue().toString()))
+                            .isMe(entryUserId.equals(userId))
+                            .hasSubmitted(true)
+                            .build();
+                })
+                .sorted(Comparator.comparing(ReviewRankingResponse::getScore).reversed())
+                .collect(Collectors.toList());
+    }
+
+    // 랭킹 리스트 변환 로직
+    private List<ReviewRankingResponse> convertToRankingList(Map<Object, Object> scores, Long currentUserId) {
+        List<Long> userIds = scores.keySet().stream()
+                .map(id -> Long.parseLong(id.toString()))
+                .collect(Collectors.toList());
+
+        Map<Long, Member> memberMap = memberRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(Member::getId, m -> m));
+
+        return scores.entrySet().stream()
+                .map(entry -> {
+                    Long uid = Long.parseLong(entry.getKey().toString());
+                    int score = Integer.parseInt(entry.getValue().toString());
+                    Member m = memberMap.get(uid);
+                    return ReviewRankingResponse.builder()
+                            .userId(uid)
+                            .nickname(m != null ? m.getNickname() : "(알수없음)")
+                            .profileImageUrl(m != null ? m.getProfileImageUrl() : null)
+                            .score(score)
+                            .isMe(uid.equals(currentUserId))
+                            .hasSubmitted(true)
+                            .build();
+                })
+                .sorted(Comparator.comparing(ReviewRankingResponse::getScore).reversed())
+                .collect(Collectors.toList());
     }
 }
