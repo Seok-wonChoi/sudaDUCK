@@ -60,7 +60,7 @@ public class RoomController {
                     .body(Map.of(
                             "status", 400,
                             "error", "Bad Request",
-                            "message", e.getMessage() // <- 이 부분이 핵심!
+                            "message", e.getMessage()
                     ));
         }
     }
