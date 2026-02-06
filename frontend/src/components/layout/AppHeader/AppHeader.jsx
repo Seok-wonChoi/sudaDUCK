@@ -50,6 +50,8 @@ export default function AppHeader({
   logoExitConfirmText = "나가기",
   logoExitCancelText = "취소",
   onLogoExit,
+  // 프로필 클릭 차단 (웹소켓 연결 중)
+  disableProfileClick = false,
 }) {
   const navigate = useNavigate();
   const rootRef = useRef(null);
@@ -170,6 +172,11 @@ export default function AppHeader({
   }, [logoExitProcessing]);
 
   const onProfileClick = () => {
+    // 웹소켓 연결 중에는 프로필 페이지 이동 차단
+    if (disableProfileClick) {
+      alert("게임이 진행 중일 때는 마이페이지로 이동할 수 없습니다.");
+      return;
+    }
     navigate("/mypage");
   };
 

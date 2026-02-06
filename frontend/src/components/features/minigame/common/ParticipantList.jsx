@@ -8,9 +8,9 @@ export default function ParticipantList({
   // 참가자 데이터와 음성 레벨 매칭 - voiceLevel > 0인 경우만 업데이트
   const participantsWithVoice = useMemo(() => {
     return participants.map(p => {
-      const level = voiceLevels[p.id] || voiceLevels[p.userId] || 0;
+      const level = voiceLevels[p.key] || voiceLevels[p.id] || voiceLevels[p.userId] || 0;
       const isSpeaking = level > 0.05;
-      
+
       return {
         ...p,
         voiceLevel: level,
@@ -51,10 +51,10 @@ export default function ParticipantList({
 
                 {/* 아바타 이미지 또는 이니셜 */}
                 {profileUrl ? (
-                  <img 
-                    src={profileUrl} 
-                    alt={p.name || p.nickname} 
-                    className={styles.avatarImage}
+                  <img
+                    src={profileUrl}
+                    alt={p.name || p.nickname}
+                    className={`${styles.avatarImage} ${p.isSpeaking ? styles.speaking : ''}`}
                     onError={(e) => {
                       // 이미지 로드 실패 시 이니셜로 대체
                       console.error('❌ 이미지 로드 실패:', profileUrl);
@@ -62,14 +62,14 @@ export default function ParticipantList({
                       // 이니셜 표시를 위해 부모 요소에 fallback 클래스 추가
                       if (e.target.parentElement) {
                         const placeholder = document.createElement('div');
-                        placeholder.className = styles.avatarPlaceholder;
+                        placeholder.className = `${styles.avatarPlaceholder} ${p.isSpeaking ? styles.speaking : ''}`;
                         placeholder.textContent = (p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?';
                         e.target.parentElement.appendChild(placeholder);
                       }
                     }}
                   />
                 ) : (
-                  <div className={styles.avatarPlaceholder}>
+                  <div className={`${styles.avatarPlaceholder} ${p.isSpeaking ? styles.speaking : ''}`}>
                     {(p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                 )}

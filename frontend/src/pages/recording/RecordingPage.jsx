@@ -1187,6 +1187,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       selectedTurnForReport={selectedTurnForReport}
       logoExitMessage="메인 화면으로 나가시겠습니까?"
       onLogoExit={handleLogoExit}
+      disableProfileClick={true}
       />
       {isTransitioning && (
         <LoadingOverlay

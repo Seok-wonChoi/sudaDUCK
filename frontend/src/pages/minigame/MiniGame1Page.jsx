@@ -13,6 +13,7 @@ import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewD
 import { getMyProfileCustom } from '@/api/mypage';
 import { leaveRoom, getRoomLobby } from '@/api/rooms';
 import useMicAnalyzer from '@/hooks/useMicAnalyzer';
+import useRoomWebSocket from '@/hooks/useRoomWebSocket';
 import { useOpenVidu } from '@/context/OpenViduContext'; // 👈 OpenVidu Hook 추가
 
 const GAME_PHASE = {
@@ -104,40 +105,93 @@ export default function MiniGame1Page() {
     holdMs: 220,
   });
 
-  // 마이크 시작 (게임 시작 시)
+  // 마이크 시작 (게임 진행 중 및 리뷰 화면)
   useEffect(() => {
-    if (phase === GAME_PHASE.PLAYING) {
+    if (phase === GAME_PHASE.PLAYING || phase === GAME_PHASE.REVIEW || phase === GAME_PHASE.RESULT) {
       startMic();
+    } else {
+      stopMic();
     }
-    return () => stopMic();
   }, [phase, startMic, stopMic]);
 
   // 음성 레벨 맵 (throttle 적용 - 200ms)
   const [voiceLevelsMap, setVoiceLevelsMap] = useState({});
-  const [lastVoiceUpdate, setLastVoiceUpdate] = useState(0);
 
-  useEffect(() => {
-    if (!isSpeaking || voiceLevel < 0.05) return;
+  // 웹소켓 연결 - 음성 레벨 동기화
+  const handleVoiceLevelChanged = useCallback((payload) => {
+    const { key, level } = payload;
+    if (!key) return;
 
-    const now = Date.now();
-    if (now - lastVoiceUpdate < 200) return;
-
-    const myId = 'me';
     setVoiceLevelsMap((prev) => ({
       ...prev,
-      [myId]: voiceLevel,
+      [key]: level || 0,
     }));
-    setLastVoiceUpdate(now);
 
-    const timeout = setTimeout(() => {
+    // 일정 시간 후 자동으로 0으로 설정
+    setTimeout(() => {
       setVoiceLevelsMap((prev) => ({
         ...prev,
-        [myId]: 0,
+        [key]: 0,
       }));
     }, 500);
+  }, []);
 
-    return () => clearTimeout(timeout);
-  }, [isSpeaking, voiceLevel, lastVoiceUpdate]);
+  const { sendVoiceLevel, isConnected } = useRoomWebSocket(roomCode, {
+    onVoiceLevelChanged: handleVoiceLevelChanged,
+    onConnected: () => {
+      console.log('[MiniGame1] ✅ WebSocket 연결 성공');
+    },
+    onDisconnected: () => {
+      console.log('[MiniGame1] ❌ WebSocket 연결 해제');
+    },
+  });
+
+  // 내 음성 레벨 전송 (throttle 적용)
+  const lastLocalSentRef = useRef({ at: 0, level: 0 });
+
+  useEffect(() => {
+    if (!isConnected) return;
+    if (!isSpeaking && voiceLevel < 0.05) return;
+
+    const now = Date.now();
+    const last = lastLocalSentRef.current;
+
+    if (now - last.at < 120) return;
+    if (Math.abs(voiceLevel - last.level) < 0.02) return;
+
+    lastLocalSentRef.current = { at: now, level: voiceLevel };
+    if (voiceLevel > 0) sendVoiceLevel(voiceLevel);
+  }, [voiceLevel, isSpeaking, isConnected, sendVoiceLevel]);
+
+  // 내 음성 레벨을 로컬 voiceLevelsMap에도 추가 (즉시 UI 반영)
+  useEffect(() => {
+    const myParticipant = participants.find(p => p.isMe);
+    if (!myParticipant) return;
+
+    if (isSpeaking && voiceLevel >= 0.05) {
+      // 말하고 있을 때
+      setVoiceLevelsMap((prev) => ({
+        ...prev,
+        [myParticipant.key]: voiceLevel,
+      }));
+
+      // 일정 시간 후 자동으로 0으로 설정
+      const timeout = setTimeout(() => {
+        setVoiceLevelsMap((prev) => ({
+          ...prev,
+          [myParticipant.key]: 0,
+        }));
+      }, 500);
+
+      return () => clearTimeout(timeout);
+    } else {
+      // 말하지 않을 때는 0으로 설정
+      setVoiceLevelsMap((prev) => ({
+        ...prev,
+        [myParticipant.key]: 0,
+      }));
+    }
+  }, [isSpeaking, voiceLevel, participants]);
 
   // 🔥 문제 5 해결: 방 참가자 정보 초기 로드
   useEffect(() => {
@@ -150,6 +204,7 @@ export default function MiniGame1Page() {
         
         if (lobbyData && lobbyData.members && Array.isArray(lobbyData.members)) {
           const participantsList = lobbyData.members.map(member => ({
+            key: String(member.userId || member.memberId || ''),
             id: member.userId || member.memberId,
             userId: member.userId || member.memberId,
             name: member.nickname,
@@ -310,15 +365,26 @@ export default function MiniGame1Page() {
         setIsLoading(true);
 
         const questionsData = await getReviewQuestions(roomId);
-        
+
         console.log('📊 받아온 문제 데이터:', questionsData);
 
+        // scriptId 기준으로 중복 제거
+        const uniqueQuestionsMap = new Map();
+        questionsData.forEach(item => {
+          if (!uniqueQuestionsMap.has(item.scriptId)) {
+            uniqueQuestionsMap.set(item.scriptId, item);
+          }
+        });
+        const uniqueQuestions = Array.from(uniqueQuestionsMap.values());
+
+        console.log(`📊 중복 제거: ${questionsData.length}개 → ${uniqueQuestions.length}개`);
+
         // 유효한 문제 필터링
-        const validQuestions = questionsData.filter(
+        const validQuestions = uniqueQuestions.filter(
           item => {
             if (item.scriptId === 'scores') return false;
             if (!item.blank_script || !item.korean || !item.english) return false;
-            
+
             const hasBlanks = item.blank_script.includes('[') && item.blank_script.includes(']');
             if (!hasBlanks) {
               console.warn('❌ 빈칸이 없는 문제 제외:', item);
@@ -589,7 +655,7 @@ export default function MiniGame1Page() {
 
   if (isLoading) {
     return (
-      <MiniGameLayout>
+      <MiniGameLayout disableProfileClick={true}>
         <div style={{ textAlign: 'center', padding: '2rem' }}>
           로딩 중...
         </div>
@@ -610,6 +676,7 @@ export default function MiniGame1Page() {
       totalProgress={timeLimit}
       isReviewMode={phase === GAME_PHASE.REVIEW}
       onComplete={phase === GAME_PHASE.REVIEW ? handleBackToResult : null}
+      disableProfileClick={true}
     >
       {/* 👇 상대방 소리를 재생하기 위한 오디오 컴포넌트 추가 */}
       {subscribers.map((sub) => (

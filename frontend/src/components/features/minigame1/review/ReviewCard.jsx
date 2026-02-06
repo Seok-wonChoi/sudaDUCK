@@ -36,8 +36,12 @@ export default function ReviewCard({
             <span key={idx} className={styles.sentencePart}>
               {part}
               {idx < blanks.length && (
-                <span className={styles.blankBox}>
-                  {blanks[idx].answer}
+                <span className={`${styles.blankBox} ${
+                  blanks[idx].isCorrect
+                    ? styles.correctBlank
+                    : styles.wrongBlank
+                }`}>
+                  {blanks[idx].userAnswer || '_'.repeat(blanks[idx].answer.length)}
                 </span>
               )}
             </span>
@@ -45,43 +49,27 @@ export default function ReviewCard({
         </div>
       </div>
 
-      {/* 빈칸 상세 */}
-      <div className={styles.section}>
-        <div className={styles.label}>빈칸 상세</div>
-        <div className={styles.blankList}>
-          {blanks.map((blank, idx) => (
-            <div key={idx} className={styles.blankItem}>
-              <div className={`${styles.blankBadge} ${blank.isCorrect ? styles.correctBadge : styles.wrongBadge}`}>
-                {blank.isCorrect ? '✓ 정답' : '✗ 오답'}
-              </div>
-              <div className={styles.blankContent}>
-                {blank.isCorrect ? (
-                  // 정답일 때는 답만 표시 (레이블 없음)
-                  <div className={styles.answerOnly}>
+      {/* 틀린 단어 */}
+      {blanks.some(b => !b.isCorrect) && (
+        <div className={styles.section}>
+          <div className={styles.label}>틀린 단어</div>
+          <div className={styles.wrongWordsList}>
+            {blanks
+              .filter(blank => !blank.isCorrect)
+              .map((blank, idx) => (
+                <div key={idx} className={styles.wrongWordItem}>
+                  <span className={styles.wrongUserAnswer}>
+                    {blank.userAnswer || '(입력하지 않음)'}
+                  </span>
+                  <span className={styles.arrow}> → </span>
+                  <span className={styles.correctAnswerText}>
                     {blank.answer}
-                  </div>
-                ) : (
-                  // 오답일 때는 "내 답변"과 "정답" 표시
-                  <>
-                    <div className={styles.answerRow}>
-                      <span className={styles.answerLabel}>내 답변</span>
-                      <span className={styles.wrongAnswer}>
-                        {blank.userAnswer ? blank.userAnswer : '(입력하지 않음)'}
-                      </span>
-                    </div>
-                    <div className={styles.answerRow}>
-                      <span className={styles.answerLabel}>정답</span>
-                      <span className={styles.correctAnswer}>
-                        {blank.answer}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
+                  </span>
+                </div>
+              ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

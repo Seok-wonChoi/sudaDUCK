@@ -1259,6 +1259,7 @@ export default function WaitingRoomPage() {
           logoExitConfirmText="나가기"
           logoExitCancelText="취소"
           onLogoExit={handleExit}
+          disableProfileClick={isConnected}
         />
 
         <div className={styles.Top}>

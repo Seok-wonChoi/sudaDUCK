@@ -30,13 +30,13 @@
 
 .blank {
   display: inline-block;
-  min-width: 80px;
   padding: 4px 12px;
   margin: 0 4px;
   border-radius: 6px;
   text-align: center;
   font-weight: 500;
   vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .blankInput {
