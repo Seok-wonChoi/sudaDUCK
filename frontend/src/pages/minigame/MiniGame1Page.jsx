@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import MiniGameLayout from '@/components/features/minigame/layout/MiniGameLayout';
@@ -10,8 +10,10 @@ import ReviewPanel from '@/components/features/minigame1/review/ReviewPanel';
 import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
 import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
 import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewData } from '@/api/miniGame';
+import { getMyProfileCustom } from '@/api/mypage';
 import { leaveRoom, getRoomLobby } from '@/api/rooms';
 import useMicAnalyzer from '@/hooks/useMicAnalyzer';
+import { useOpenVidu } from '@/context/OpenViduContext'; // 👈 OpenVidu Hook 추가
 
 const GAME_PHASE = {
   COUNTDOWN: 'countdown',
@@ -59,6 +61,9 @@ export default function MiniGame1Page() {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // 👇 OpenVidu Context 연결
+  const { publisher, subscribers } = useOpenVidu();
+
   // Location state에서 초기값 가져오기
   const roomId = location.state?.roomId;
   const roomCode = location.state?.roomCode;
@@ -69,6 +74,15 @@ export default function MiniGame1Page() {
   const [phase, setPhase] = useState(GAME_PHASE.COUNTDOWN);
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState(timeLimit);
+
+  // 🎤 [추가] 미니게임 진입 시 마이크 무조건 활성화
+  useEffect(() => {
+    if (publisher) {
+      console.log("🎤 [MiniGame1] 마이크 활성화");
+      publisher.publishAudio(true);
+    }
+  }, [publisher]);
+
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [currentBlank, setCurrentBlank] = useState(0);
   const [blanksState, setBlanksState] = useState([]);
@@ -145,11 +159,23 @@ export default function MiniGame1Page() {
             isActive: true,
             isMe: member.isMe || false,
             voiceLevel: 0,
+
+            duckCustomJson: member.duckCustomJson || null,
+            avatarCustomJson: member.avatarCustomJson || null,
           }));
           
           console.log('✅ 참가자 목록 설정:', participantsList);
           setParticipants(participantsList);
           setTotalParticipants(participantsList.length);
+
+          const me = participantsList.find(p => p.isMe);
+
+          if (me) {
+            setMyProfile({
+              nickname: me.nickname,
+              profileImageUrl: me.profileImageUrl
+            });
+          }
         }
       } catch (error) {
         console.error('❌ 방 참가자 정보 로드 실패:', error);
@@ -158,6 +184,40 @@ export default function MiniGame1Page() {
 
     loadRoomParticipants();
   }, [roomCode]);
+
+  useEffect(() => {
+    const fetchMyProfileDetail = async () => {
+      try {
+        // API 호출하여 내 커스텀 정보 가져오기
+        const myData = await getMyProfileCustom();
+        console.log("🦆 내 오리 정보 로드:", myData);
+
+        if (myData) {
+          setMyProfile({
+            nickname: myData.nickname,
+            // profileImageUrl: myData.profileImageUrl, // API 응답에 없으면 생략 가능
+            duckCustomJson: myData.duckCustomJson,     // 👈 핵심
+            avatarCustomJson: myData.avatarCustomJson, // 👈 닉네임 꾸미기용
+            aiDuckbotCustomJson: myData.aiDuckbotCustomJson
+          });
+          
+          // participants 목록에도 내 정보 업데이트 (동기화)
+          setParticipants(prev => prev.map(p => 
+            p.isMe ? { 
+              ...p, 
+              duckCustomJson: myData.duckCustomJson,
+              avatarCustomJson: myData.avatarCustomJson
+            } : p
+          ));
+        }
+      } catch (error) {
+        console.error("❌ 내 프로필 로드 실패:", error);
+      }
+    };
+
+    fetchMyProfileDetail();
+  }, []); // 마운트 시 1회 실행
+
 
   // 🔥 문제 3 해결: 대기 중 제출 상태 확인 (3초마다)
   useEffect(() => {
@@ -177,6 +237,21 @@ export default function MiniGame1Page() {
           // 제출한 사람 수 계산 (점수가 있는 사람)
           const submittedUsers = rankingData.filter(r => r.score > 0 || r.hasSubmitted);
           setSubmittedCount(submittedUsers.length);
+          
+          // [수정] 랭킹 데이터에 참가자 정보(오리 커스텀 등)를 병합
+          const mergedRankings = rankingData.map(rank => {
+            // ID로 매칭 (문자열로 변환하여 비교)
+            const participantInfo = participants.find(p => 
+              String(p.userId) === String(rank.userId)
+            );
+
+            // 해당 유저를 찾았다면 그 유저의 duckCustomJson을 사용
+            return {
+              ...rank,
+              duckCustomJson: participantInfo?.duckCustomJson || null,
+              avatarCustomJson: participantInfo?.avatarCustomJson || null // 닉네임 효과도 있다면 추가
+            };
+          });
           
           // 랭킹 데이터로 참가자 정보 업데이트
           const updatedParticipants = rankingData.map(rank => ({
@@ -208,7 +283,7 @@ export default function MiniGame1Page() {
           
           // 모든 참가자가 제출했으면 결과 화면으로
           if (rankingData.length >= totalParticipants && totalParticipants > 0) {
-            setRankings(rankingData);
+            setRankings(mergedRankings);
             setPhase(GAME_PHASE.RESULT);
           }
         }
@@ -221,7 +296,7 @@ export default function MiniGame1Page() {
     const interval = setInterval(checkSubmissionStatus, 3000);
     
     return () => clearInterval(interval);
-  }, [phase, roomId, totalParticipants]);
+  }, [phase, roomId, totalParticipants, participants]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -292,6 +367,31 @@ export default function MiniGame1Page() {
 
     fetchData();
   }, [roomId, navigate]);
+
+
+  // [추가] 대기방(채팅방)으로 돌아가기
+  const handleReturnToRoom = async () => {
+    try {
+      if (roomCode) {
+        navigate('/together/waiting', {
+          state: {
+            ...location.state, // 여기에 openviduSessionId 등 중요 정보가 들어있음
+            roomCode,
+            roomId,
+            isHost,
+            // WaitingRoomPage는 sessionStorage도 확인하지만, 
+            // state로 명시적으로 넘겨주는 것이 더 안전합니다.
+          }
+        });
+      } else {
+        console.warn("⚠️ [MiniGame] roomCode가 없어 로비로 이동합니다.");
+        navigate('/together'); // 뒤로 가기(-1) 대신 로비로 안전하게 이동
+      }
+    } catch (error) {
+      console.error('❌ 대기방 이동 중 에러:', error);
+      navigate('/together');
+    }
+  };
 
   const initQuestion = useCallback((qIdx, qs = questions) => {
     const q = qs[qIdx];
@@ -436,7 +536,7 @@ export default function MiniGame1Page() {
       };
       finalAnswers.push(answered);
     }
-
+    setAnsweredQuestions(finalAnswers);
     submitAnswers(finalAnswers);
   }, [answeredQuestions, currentQuestion, questions, blanksState]);
 
@@ -511,6 +611,13 @@ export default function MiniGame1Page() {
       isReviewMode={phase === GAME_PHASE.REVIEW}
       onComplete={phase === GAME_PHASE.REVIEW ? handleBackToResult : null}
     >
+      {/* 👇 상대방 소리를 재생하기 위한 오디오 컴포넌트 추가 */}
+      {subscribers.map((sub) => (
+        <div key={sub.stream.connection.connectionId} style={{ display: 'none' }}>
+          <UserAudioComponent streamManager={sub} />
+        </div>
+      ))}
+
       {phase === GAME_PHASE.COUNTDOWN && (
         <CountdownOverlay count={countdown} />
       )}
@@ -552,6 +659,7 @@ export default function MiniGame1Page() {
           myProfile={myProfile}
           totalQuestions={questions.length}
           onShowReview={handleShowReview}
+          onReturnToRoom={handleReturnToRoom}
           onExit={handleExit}
         />
       )}
@@ -572,3 +680,18 @@ export default function MiniGame1Page() {
     </MiniGameLayout>
   );
 }
+
+/**
+ * 👇 다른 사용자 소리 재생용 컴포넌트
+ */
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};

@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./ExitButton.module.css";
+import lightButtonSound from "@/assets/sounds/light_button.wav";
+import { useSoundContext } from "@/context/SoundContext";
 
 import ConfirmModal from "../ConfirmModal/ConfirmModal";
 
@@ -22,11 +24,25 @@ export default function ExitButton({
   disabled = false,
 }) {
   const navigate = useNavigate();
+  const { getEffectiveVolume, isMuted } = useSoundContext();
   const [open, setOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
 
+  const playSound = () => {
+    if (!isMuted) {
+      try {
+        const audio = new Audio(lightButtonSound);
+        audio.volume = getEffectiveVolume(0.1);
+        audio.play().catch(() => {});
+      } catch (e) {
+        // 사운드 재생 실패 무시
+      }
+    }
+  };
+
   const handleOpen = useCallback(() => {
     if (disabled || processing) return;
+    playSound();
     setOpen(true);
   }, [disabled, processing]);
 

@@ -6,14 +6,15 @@ export default function ResultPanel({
   myProfile = null,
   totalQuestions = 4,
   onShowReview,
+  onReturnToRoom,
   onExit
 }) {
   // 랭킹 데이터를 순위별로 정렬 (score 내림차순)
   const sortedRankings = [...rankings].sort((a, b) => b.score - a.score);
 
   // 본인 정보
-  const myRanking = sortedRankings.find(r => r.me);
-  const myRank = sortedRankings.findIndex(r => r.me) + 1;
+  const myRanking = sortedRankings.find(r => r.isMe || r.me); 
+  const myRank = sortedRankings.findIndex(r => r.isMe || r.me) + 1;
 
   return (
     <div className={styles.container}>
@@ -37,18 +38,30 @@ export default function ResultPanel({
         />
 
         {/* 버튼 */}
-        <div className={styles.buttons}>
+        {/* 버튼 그룹 */}
+        <div className={styles.buttonGroup}>
+          {/* 1. 복습하기 (보조 기능) */}
           <button 
-            className={styles.reviewButton}
+            className={`${styles.button} ${styles.reviewButton}`}
             onClick={onShowReview}
           >
-            전체 리뷰 보기
+            📝 전체 리뷰
           </button>
+
+          {/* 2. 대기방으로 돌아가기 (주요 기능 - 게임만 종료) */}
           <button 
-            className={styles.exitButton}
+            className={`${styles.button} ${styles.returnButton}`}
+            onClick={onReturnToRoom}
+          >
+            🏠 대기방으로
+          </button>
+
+          {/* 3. 방 나가기 (이탈 기능) */}
+          <button 
+            className={`${styles.button} ${styles.exitButton}`}
             onClick={onExit}
           >
-            나가기
+            🚪 방 나가기
           </button>
         </div>
       </div>

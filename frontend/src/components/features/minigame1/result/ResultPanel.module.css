@@ -7,12 +7,20 @@
 }
 
 .panel {
-  background: white;
+  /* background: white;
   border-radius: 20px;
   padding: 2.5rem;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   max-width: 600px;
-  width: 100%;
+  width: 100%; */
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  animation: slideUp 0.5s ease-out;
 }
 
 .title {
@@ -24,10 +32,20 @@
 }
 
 .myInfo {
-  text-align: center;
+  /* text-align: center;
   margin-bottom: 2rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #6b7280; */
+  background: #f8f9fa;
+  padding: 0.8rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  color: #555;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .myRankText {
@@ -83,4 +101,63 @@
 
 .exitButton:hover {
   background: #4f46e5;
+}
+
+/* 버튼 그룹 스타일 */
+.buttonGroup {
+  display: flex;
+  gap: 10px;
+  margin-top: 2rem;
+  justify-content: center;
+}
+
+.button {
+  flex: 1;
+  padding: 0.8rem 0.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease; /* 부드러운 전환 */
+  white-space: nowrap;
+  color: white; /* 텍스트는 항상 흰색 */
+}
+
+.button:active {
+  transform: translateY(2px);
+}
+
+/* 1. 리뷰 버튼 (파랑/보라) */
+.reviewButton {
+  background-color: #6C63FF;
+}
+/* 호버 시: 약간 더 진하게 (하얀색 필터 제거) */
+.reviewButton:hover {
+  background-color: #5a52d5; 
+  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+}
+
+/* 2. 대기방 버튼 (민트) */
+.returnButton {
+  background-color: #2EC4B6;
+  flex: 1.2;
+}
+.returnButton:hover {
+  background-color: #25a094;
+  box-shadow: 0 4px 12px rgba(46, 196, 182, 0.3);
+}
+
+/* 3. 나가기 버튼 (빨강) */
+.exitButton {
+  background-color: #FF6B6B;
+}
+.exitButton:hover {
+  background-color: #e55a5a;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
