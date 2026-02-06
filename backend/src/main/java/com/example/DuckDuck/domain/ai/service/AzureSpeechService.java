@@ -57,15 +57,21 @@ public class AzureSpeechService {
                 );
                 pronConfig.applyTo(recognizer);
 
-                // 4. 비동기 실행 (블로킹 아님!)
+                // 4. 비동기 실행
                 SpeechRecognitionResult result = recognizer.recognizeOnceAsync().get();
 
                 if (result.getReason() == ResultReason.RecognizedSpeech) {
                     PronunciationAssessmentResult pronResult = 
                         PronunciationAssessmentResult.fromResult(result);
-                    int score = pronResult.getAccuracyScore().intValue();
-                    
-                    log.info("발음 평가 완료 - 점수: {}, 인식: {}", score, result.getText());
+
+                    double accuracy = pronResult.getAccuracyScore();
+                    double fluency = pronResult.getFluencyScore();
+                    double completeness = pronResult.getCompletenessScore();
+
+                    int score = (int)(
+                            accuracy * 0.5 + fluency * 0.2 + completeness * 0.3
+                    );
+
                     return CompletableFuture.completedFuture(score);
                 } else {
                     log.warn("음성 인식 실패: {}", result.getReason());
