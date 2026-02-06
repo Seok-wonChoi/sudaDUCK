@@ -1309,7 +1309,7 @@ export default function WaitingRoomPage() {
                     <span className={styles.RoomInfoLabel}>턴 수:</span>
                     <span className={styles.RoomInfoValue}>{turnCount}턴</span>
                     <span className={styles.RoomInfoSeparator}>|</span>
-                    <span className={styles.RoomInfoLabel}>타이머:</span>
+                    <span className={styles.RoomInfoLabel}>턴당 제한시간:</span>
                     <span className={styles.RoomInfoValue}>{timeLimit}초</span>
                   </div>
 
