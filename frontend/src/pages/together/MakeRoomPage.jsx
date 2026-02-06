@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./MakeRoomPage.module.css";
-import { createSession } from "@/api/openVidu"; // 👈 오픈비듀
+import { createSession } from "@/api/openVidu";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
-import TipBanner from "@/components/common/TipBanner/TipBanner";
 import { useSoundContext } from "@/context/SoundContext";
 import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 
@@ -49,7 +48,7 @@ export default function MakeRoomPage() {
         audio.volume = getEffectiveVolume(0.1);
         audio.play().catch(() => {});
       } catch (e) {
-        // 사운드 재생 실패 무시
+        // 무시
       }
     }
     if (window.history.length > 1) navigate(-1);
@@ -65,23 +64,17 @@ export default function MakeRoomPage() {
     setTopic(e.target.value);
   };
 
-  const handlePickTopic = (t) => {
-    setTopic(t);
-  };
-
   const handleAiRecommend = async () => {
     setIsLoadingAiRecommend(true);
     try {
       const data = await getTopics();
       const topics = data.topics || [];
       if (topics.length > 0) {
-        // 서버에서 받은 주제 중 랜덤으로 하나 선택
         const randomTopic = topics[Math.floor(Math.random() * topics.length)];
         setTopic(randomTopic);
       }
     } catch (e) {
       console.error("AI 주제 추천 API 호출 실패:", e);
-      // API 실패 시 로컬 hotTopics에서 선택 (fallback)
       if (hotTopics.length > 0) {
         const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
         setTopic(next);
@@ -105,60 +98,44 @@ export default function MakeRoomPage() {
 
     setLoading(true);
     try {
-      //오픈비듀 관련 세션 생성
       const ovSessionId = await createSession();
-      console.log("1. 오픈비두 세션 확보:", ovSessionId);
-
-      // 1. 방 생성: POST /api/v1/rooms
       const res = await createRoom({
         title: title.trim(),
         topic: topic.trim(),
         turnCnt: turn,
-        openviduSessionId: ovSessionId, // 👈 백엔드 DTO에 추가한 필드 오픈비듀 세션이올시다!핳핳
+        openviduSessionId: ovSessionId,
       });
 
-      // 2. 방 참가: POST /api/v1/rooms/join (방장도 명시적으로 참가해야 함)
       try {
         await joinRoom({ roomCode: res.roomCode });
-        console.log("방 생성 후 자동 참가 성공");
       } catch (joinError) {
         console.error("방 참가 실패:", joinError);
-        // 참가 실패해도 방 생성은 성공했으므로 계속 진행
       }
 
-      // WaitingRoomPage에서 쓰는 형태로 맞춤
       const roomInfo = {
         isHost: true,
         maxCount: 4,
-
         roomId: res.roomId,
         hostUserId: res.hostUserId,
         createdAt: res.createdAt,
-
         roomTitle: res.title,
         topic: res.topic,
         turnCount: res.turnCnt,
         timeLimit: res.timeLimit || timeLimit,
-
         joinCode: res.roomCode,
-        inviteCode: res.roomCode, // joinCode와 inviteCode 모두 설정
-
-        // ★ [중요] 세션 ID를 꼭 저장해서 대기실로 가져가야 함!
+        inviteCode: res.roomCode,
         openviduSessionId: ovSessionId,
       };
 
       sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));
       navigate("/together/waiting", { state: roomInfo });
     } catch (e) {
-      // 백엔드에서 보낸 메시지 추출
-      const errorMessage =
-        e.response?.data?.message || e.message || "방 생성에 실패했습니다.";
-
+      const errorMessage = e.response?.data?.message || e.message || "방 생성에 실패했습니다.";
       if (errorMessage.includes("방 제목") && errorMessage.includes("부적절")) {
         setModalTitle("⚠️ 주의");
         setModalMessage("부적절한 방 제목 다시 생성해주세요");
         setModalOpen(true);
-      } else if (errorMessage.includes("방 주제") || (errorMessage.includes("주제") && errorMessage.includes("부적절"))) {
+      } else if (errorMessage.includes("주제") && errorMessage.includes("부적절")) {
         setModalTitle("⚠️ 주의");
         setModalMessage("부적절한 방 주제입니다.");
         setModalOpen(true);
@@ -187,7 +164,7 @@ export default function MakeRoomPage() {
             &lt;
           </button>
 
-          <h1 className={styles.Title}>방 만들기 </h1>
+          <h1 className={styles.Title}>방 만들기</h1>
           <p className={styles.Subtitle}>
             친구들과 함께할 수다방을 만들어보세요 🎮
           </p>
@@ -199,7 +176,6 @@ export default function MakeRoomPage() {
                   <span className={styles.Label}>방 제목</span>
                   <span className={styles.Required}>*</span>
                 </div>
-
                 <input
                   className={styles.Input}
                   value={title}
@@ -207,7 +183,6 @@ export default function MakeRoomPage() {
                   placeholder="예: 친구들과 수다타임"
                   disabled={loading}
                 />
-
                 <div className={styles.Counter}>{titleCount}/30</div>
               </div>
 
@@ -216,7 +191,6 @@ export default function MakeRoomPage() {
                   <span className={styles.Label}>수다 주제</span>
                   <span className={styles.Required}>*</span>
                 </div>
-
                 <div className={styles.TopicInputRow}>
                   <input
                     className={styles.Input}
@@ -225,7 +199,6 @@ export default function MakeRoomPage() {
                     placeholder="직접 입력하거나 아래에서 선택하세요"
                     disabled={loading}
                   />
-
                   <button
                     type="button"
                     className={styles.AiButton}
@@ -235,44 +208,19 @@ export default function MakeRoomPage() {
                     {isLoadingAiRecommend ? (
                       <span className={styles.AiButtonContent}>
                         <span className={styles.AiSpinner} />
-                        AI 추천
+                        추천 중...
                       </span>
                     ) : (
                       "AI 추천"
                     )}
                   </button>
                 </div>
-
-                {/* <div className={styles.HotRow}>
-        <span className={styles.HotDot} aria-hidden="true" />
-        <span className={styles.HotText}>인기 주제</span>
-      </div>
-
-      <div className={styles.TopicRow}>
-        {hotTopics.map((t) => {
-          const active = topic === t;
-          return (
-            <button
-              key={t}
-              type="button"
-              className={`${styles.TopicChip} ${
-                active ? styles.TopicChipActive : ""
-              }`}
-              onClick={() => handlePickTopic(t)}
-              disabled={loading}
-            >
-              {t}
-            </button>
-          );
-        })}
-      </div> */}
               </div>
 
               <div className={styles.Field}>
                 <div className={styles.LabelRow}>
                   <span className={styles.Label}>턴 수</span>
                 </div>
-
                 <div className={styles.TurnRow}>
                   {[3, 4, 5].map((n) => {
                     const active = turn === n;
@@ -280,15 +228,11 @@ export default function MakeRoomPage() {
                       <button
                         key={n}
                         type="button"
-                        className={`${styles.TurnCard} ${
-                          active ? styles.TurnCardActive : ""
-                        }`}
+                        className={`${styles.TurnCard} ${active ? styles.TurnCardActive : ""}`}
                         onClick={() => setTurn(n)}
                         disabled={loading}
                       >
-                        <span className={styles.TurnIcon} aria-hidden="true">
-                          ↻
-                        </span>
+                        <span className={styles.TurnIcon} aria-hidden="true">↻</span>
                         <span className={styles.TurnText}>{n}턴</span>
                       </button>
                     );
@@ -300,11 +244,10 @@ export default function MakeRoomPage() {
                 <div className={styles.LabelRow}>
                   <span className={styles.Label}>턴당 제한시간 (초)</span>
                 </div>
-
                 <div className={styles.Stepper}>
                   <button
-                    type="button"
                     className={styles.StepButton}
+                    type="button"
                     onClick={() => setTimeLimit(Math.max(15, timeLimit - 5))}
                     disabled={loading || timeLimit <= 15}
                   >
@@ -312,8 +255,8 @@ export default function MakeRoomPage() {
                   </button>
                   <span className={styles.StepValue}>{timeLimit}초</span>
                   <button
-                    type="button"
                     className={styles.StepButton}
+                    type="button"
                     onClick={() => setTimeLimit(Math.min(60, timeLimit + 5))}
                     disabled={loading || timeLimit >= 60}
                   >
@@ -331,15 +274,10 @@ export default function MakeRoomPage() {
                 {loading ? "생성 중..." : "방 만들기"}
               </button>
             </section>
-
-            <div className={styles.TipWrap}>
-              <TipBanner text="Tip: 방을 만들면 참여 코드가 생성되어 친구들에게 공유할 수 있어요!" />
-            </div>
           </div>
         </main>
       </div>
 
-      {/* 부적절한 표현 모달 */}
       <ConfirmModal
         open={modalOpen}
         title={modalTitle}

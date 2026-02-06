@@ -1,23 +1,90 @@
 .Section {
-  margin-top: 20px;
+  margin-top: 26px; /* TogetherPage의 CardRow 마진과 일치 */
+  position: relative;
+  height: 320px; /* 카드 높이와 동일하게 고정 */
+  width: 100%;
   display: flex;
   justify-content: center;
-  gap: 32px;
-  flex-wrap: wrap;
+  align-items: center;
+  perspective: 2000px;
+  overflow: visible;
 }
 
-/* 태블릿 이하 */
-@media (max-width: 768px) {
-  .Section {
-    margin-top: 16px;
-    gap: 24px;
-  }
+.CarouselContainer {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  transform-style: preserve-3d;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* 모바일 */
-@media (max-width: 600px) {
-  .Section {
-    margin-top: 12px;
-    gap: 20px;
-  }
+.CardWrapper {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+  z-index: 1;
+}
+
+.Active {
+  transform: translate3d(0, 0, 0) scale(1.02); /* 불필요한 확대 줄여서 정렬 유지 */
+  z-index: 10;
+  opacity: 1;
+}
+
+.Left {
+  transform: translate3d(-310px, 0, -250px) rotateY(35deg) scale(0.85);
+  z-index: 5;
+  opacity: 0.35;
+}
+
+.Right {
+  transform: translate3d(310px, 0, -280px) rotateY(-35deg) scale(0.85);
+  z-index: 5;
+  opacity: 0.35;
+}
+
+.Arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 60px;
+  background: white;
+  border: 2px solid #eef0f6;
+  border-radius: 50%;
+  color: #6366f1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s ease;
+}
+
+.Arrow svg { width: 30px; height: 30px; }
+.Arrow:hover { background: #6366f1; color: white; transform: translateY(-50%) scale(1.1); }
+
+/* 🏁 화살표 위치를 중앙으로 더 모음 (380px -> 320px) */
+.ArrowLeft { left: calc(50% - 320px); }
+.ArrowRight { right: calc(50% - 320px); }
+
+@media (max-width: 1100px) {
+  /* 작은 화면에서도 너무 멀어지지 않게 조정 */
+  .ArrowLeft { left: 10px; }
+  .ArrowRight { right: 10px; }
+}
+
+@media (max-width: 750px) {
+  .Section { height: 320px; }
+  .Arrow { width: 45px; height: 45px; }
+  .Arrow svg { width: 24px; height: 24px; }
+  .CarouselContainer { width: 260px; }
+  .CardWrapper { width: 260px; }
+  .ArrowLeft { left: 5px; }
+  .ArrowRight { right: 5px; }
 }
