@@ -247,13 +247,21 @@ export default function MiniGame1Page() {
     }
   };
 
+  // 최종 제출 (가장 중요한 스나이퍼 로직)
   const handleFinalSubmit = async () => {
+    // 🏁 낙관적 업데이트: 서버 응답 전에도 내가 제출했음을 UI에 즉시 반영
+    setRankings(prev => prev.map(r => r.isMe ? { ...r, hasSubmitted: true } : r));
+    setSubmittedCount(prev => prev + 1);
     setPhase(GAME_PHASE.WAITING);
+
     try {
       const currentText = blanksState.map(b => b.value.trim() || '').join(', ');
       const finalPayload = allAnswersSnapshot.map((ans, idx) => idx === currentQuestion ? { ...ans, userAnswer: currentText } : ans);
       await submitReviewAnswers(roomId, finalPayload);
-    } catch (error) { console.error(error); }
+    } catch (error) { 
+      console.error(error); 
+      // 에러 시 롤백 로직 (선택 사항)
+    }
   };
 
   const handleReturnToRoom = async () => {
