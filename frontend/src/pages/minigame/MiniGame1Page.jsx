@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import MiniGameLayout from '@/components/features/minigame/layout/MiniGameLayout';
@@ -13,6 +13,7 @@ import { getReviewQuestions, submitReviewAnswers, getReviewRanking, clearReviewD
 import { getMyProfileCustom } from '@/api/mypage';
 import { leaveRoom, getRoomLobby } from '@/api/rooms';
 import useMicAnalyzer from '@/hooks/useMicAnalyzer';
+import { useOpenVidu } from '@/context/OpenViduContext'; // 👈 OpenVidu Hook 추가
 
 const GAME_PHASE = {
   COUNTDOWN: 'countdown',
@@ -60,6 +61,9 @@ export default function MiniGame1Page() {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // 👇 OpenVidu Context 연결
+  const { publisher, subscribers } = useOpenVidu();
+
   // Location state에서 초기값 가져오기
   const roomId = location.state?.roomId;
   const roomCode = location.state?.roomCode;
@@ -70,6 +74,15 @@ export default function MiniGame1Page() {
   const [phase, setPhase] = useState(GAME_PHASE.COUNTDOWN);
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState(timeLimit);
+
+  // 🎤 [추가] 미니게임 진입 시 마이크 무조건 활성화
+  useEffect(() => {
+    if (publisher) {
+      console.log("🎤 [MiniGame1] 마이크 활성화");
+      publisher.publishAudio(true);
+    }
+  }, [publisher]);
+
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [currentBlank, setCurrentBlank] = useState(0);
   const [blanksState, setBlanksState] = useState([]);
@@ -603,6 +616,13 @@ export default function MiniGame1Page() {
       isReviewMode={phase === GAME_PHASE.REVIEW}
       onComplete={phase === GAME_PHASE.REVIEW ? handleBackToResult : null}
     >
+      {/* 👇 상대방 소리를 재생하기 위한 오디오 컴포넌트 추가 */}
+      {subscribers.map((sub) => (
+        <div key={sub.stream.connection.connectionId} style={{ display: 'none' }}>
+          <UserAudioComponent streamManager={sub} />
+        </div>
+      ))}
+
       {phase === GAME_PHASE.COUNTDOWN && (
         <CountdownOverlay count={countdown} />
       )}
@@ -665,3 +685,18 @@ export default function MiniGame1Page() {
     </MiniGameLayout>
   );
 }
+
+/**
+ * 👇 다른 사용자 소리 재생용 컴포넌트
+ */
+const UserAudioComponent = ({ streamManager }) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (streamManager && audioRef.current) {
+      streamManager.addVideoElement(audioRef.current);
+    }
+  }, [streamManager]);
+
+  return <audio autoPlay ref={audioRef} />;
+};

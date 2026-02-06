@@ -236,14 +236,9 @@ export default function WaitingRoomPage() {
 
       return () => {
           window.removeEventListener('beforeunload', handleBeforeUnload);
-          // 게임 시작으로 이동하는 경우(isTransitioningRef.current === true)에는 끊지 않음!
-          // [수정] 의존성 배열을 비우고([]) Ref를 사용하여, 불필요한 재실행(연결 끊김) 방지
-          if (isOvConnectedRef.current && !isTransitioningRef.current) {
-             console.log("👋 [WaitingRoom] 대기실 퇴장 -> 세션 종료");
-             if (leaveSessionRef.current) leaveSessionRef.current(); 
-          } else {
-             console.log("🚀 [WaitingRoom] 게임 시작 -> 세션 유지하며 이동");
-          }
+          // [수정] 대기실 언마운트 시 자동으로 세션을 끊지 않도록 변경합니다.
+          // 세션 종료는 handleExit(나가기 버튼)에서만 명시적으로 수행합니다.
+          console.log("📍 [WaitingRoom] 페이지 벗어남 (세션 유지)");
       };
   }, []); // 👈 [중요] 빈 배열로 설정하여 언마운트 시에만 실행!
 
@@ -966,7 +961,13 @@ export default function WaitingRoomPage() {
       sendMic(myMicOn);
       initialMicSentRef.current = true;
     }
-  }, [isConnected, sendMic, myMicOn]);
+
+    // 👇 [추가] 이미 오픈비두 연결된 상태로 돌아왔을 때 마이크 상태 동기화
+    if (isOvConnected && publisher) {
+        console.log("🎤 [WaitingRoom] 기존 오픈비두 연결 감지 - 마이크 동기화:", myMicOn);
+        publisher.publishAudio(myMicOn);
+    }
+  }, [isConnected, sendMic, myMicOn, isOvConnected, publisher]);
 
   const lastLocalSentRef = useRef({ at: 0, level: 0 });
   useEffect(() => {
@@ -1317,7 +1318,7 @@ export default function WaitingRoomPage() {
                     <span className={styles.RoomInfoLabel}>턴 수:</span>
                     <span className={styles.RoomInfoValue}>{turnCount}턴</span>
                     <span className={styles.RoomInfoSeparator}>|</span>
-                    <span className={styles.RoomInfoLabel}>타이머:</span>
+                    <span className={styles.RoomInfoLabel}>턴당 제한시간:</span>
                     <span className={styles.RoomInfoValue}>{timeLimit}초</span>
                   </div>
 
