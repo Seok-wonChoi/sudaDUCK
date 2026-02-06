@@ -545,6 +545,12 @@ export default function MiniGame1Page() {
     submitAnswers(finalAnswers);
   }, [answeredQuestions, currentQuestion, questions, blanksState]);
 
+  const handleTimeUpRef = useRef(handleTimeUp);
+
+  useEffect(() => {
+    handleTimeUpRef.current = handleTimeUp;
+  }, [handleTimeUp]);
+
   const submitAnswers = async (answers) => {
     try {
       const apiAnswers = answers.map(ans => ({
