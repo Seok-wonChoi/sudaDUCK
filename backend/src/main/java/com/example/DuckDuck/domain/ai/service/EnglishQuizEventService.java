@@ -180,7 +180,7 @@ public class EnglishQuizEventService {
     }
 
     /**
-     * 퀴즈 프롬프트 생성
+     * 돌발 퀴즈 프롬프트 생성
      */
     private String buildQuizPrompt(AiContextService.ConversationContext context) {
 
