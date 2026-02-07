@@ -8,9 +8,11 @@ import WaitingPanel from '@/components/features/minigame1/waiting/WaitingPanel';
 import ResultPanel from '@/components/features/minigame1/result/ResultPanel';
 import ReviewPanel from '@/components/features/minigame1/review/ReviewPanel';
 import DuckGuide from '@/components/features/minigame2/game/DuckGuide';
+import ConfirmModal from '@/components/common/ConfirmModal/ConfirmModal';
+import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
 import { getReviewQuestions, submitReviewAnswers, getReviewRanking, cleanupGameData } from '@/api/miniGame';
 import { getMyProfileCustom } from '@/api/mypage';
-import { leaveRoom, getRoomLobby } from '@/api/rooms';
+import { leaveRoom, getRoomLobby, toggleReady, endRoom } from '@/api/rooms';
 import useMicAnalyzer from '@/hooks/useMicAnalyzer';
 import useRoomWebSocket from '@/hooks/useRoomWebSocket';
 import { useOpenVidu } from '@/context/OpenViduContext';
@@ -50,7 +52,7 @@ function parseBlankScript(blankScript) {
 export default function MiniGame1Page() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { publisher, subscribers } = useOpenVidu();
+  const { publisher, subscribers, leaveSession } = useOpenVidu();
 
   const roomId = location.state?.roomId;
   const roomCode = location.state?.roomCode;
@@ -73,6 +75,40 @@ export default function MiniGame1Page() {
   const [submittedCount, setSubmittedCount] = useState(0);
   const [totalParticipants, setTotalParticipants] = useState(initialParticipantsCount);
   const [showGuide, setShowGuide] = useState(false);
+  const [showCoinReward, setShowCoinReward] = useState(false);
+  const hasShownRewardRef = useRef(false);
+
+  // ✅ 최신 상태를 참조하기 위한 Ref들 (타이머 클로저 문제 해결)
+  const currentQuestionRef = useRef(0);
+  const blanksStateRef = useRef([]);
+  const allAnswersSnapshotRef = useRef([]);
+
+  useEffect(() => { currentQuestionRef.current = currentQuestion; }, [currentQuestion]);
+  useEffect(() => { blanksStateRef.current = blanksState; }, [blanksState]);
+  useEffect(() => { allAnswersSnapshotRef.current = allAnswersSnapshot; }, [allAnswersSnapshot]);
+
+  useEffect(() => {
+    if (phase === GAME_PHASE.RESULT && rankings.length >= 2 && !hasShownRewardRef.current && myProfile) {
+      // 1. 점수순 정렬 (점수가 같으면 배열 순서 유지)
+      const sorted = [...rankings].sort((a, b) => (b.score || 0) - (a.score || 0));
+      const winner = sorted[0];
+      if (!winner) return;
+
+      // 2. 내 ID와 1등 ID 비교
+      const myId = String(myProfile.userId || myProfile.memberId || myProfile.id);
+      const winnerId = String(winner.userId || winner.memberId || winner.id);
+      
+      const isWinnerMe = winner.isMe || winner.me || (winnerId !== 'undefined' && winnerId === myId);
+
+      // 3. 내가 1등이고 점수가 1점 이상이면 실행
+      if (isWinnerMe && (winner.score || 0) > 0) {
+        hasShownRewardRef.current = true;
+        setTimeout(() => {
+          setShowCoinReward(true);
+        }, 800);
+      }
+    }
+  }, [phase, rankings, myProfile]);
 
   // 🎤 뒤로가기 차단 및 세션 종료 로직
   useEffect(() => {
@@ -93,6 +129,13 @@ export default function MiniGame1Page() {
   useEffect(() => {
     if (publisher) publisher.publishAudio(true);
   }, [publisher]);
+
+  // ✅ 게임 시작 시 모든 참여자의 레디 상태를 해제 (대기방 복귀 시 초기화 목적)
+  useEffect(() => {
+    if (roomCode) {
+      toggleReady(roomCode, false).catch(() => {});
+    }
+  }, [roomCode]);
 
   const { voiceLevel, start: startMic, stop: stopMic } = useMicAnalyzer({ threshold: 0.03, holdMs: 220 });
 
@@ -127,9 +170,20 @@ export default function MiniGame1Page() {
     }, 500);
   }, []);
 
+  // 방장 퇴장 시 메인 화면으로 강제 이동
+  const handleRoomClosed = useCallback(() => {
+    console.log("[MiniGame1Page] ROOM_CLOSED 수신 - 방장 퇴장");
+    leaveSession();
+    navigate("/main", {
+      replace: true,
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+    });
+  }, [navigate, leaveSession]);
+
   const { sendVoiceLevel, isConnected } = useRoomWebSocket(roomCode, {
     onVoiceLevelChanged: handleVoiceLevelChanged,
     onRankingUpdated: handleRankingUpdated,
+    onRoomClosed: handleRoomClosed,
   });
 
   useEffect(() => {
@@ -204,10 +258,24 @@ export default function MiniGame1Page() {
         setAllAnswersSnapshot(formatted.map(q => ({ scriptId: q.scriptId, userAnswer: Array(q.blanks.length).fill('').join(', ') })));
         initBlanks(0, formatted);
         setIsLoading(false);
-      } catch (error) { navigate('/together', { replace: true }); }
+      } catch (error) {
+        console.error('[MiniGame1] 데이터 로드 실패:', error);
+        // 즉시 대기방으로 이동하며 토스트 메시지 전달
+        navigate('/together/waiting', { 
+          state: { 
+            roomId, 
+            roomCode, 
+            isHost,
+            participantsCount: initialParticipantsCount,
+            timeLimit,
+            toastMessage: '대화 기록이 부족하여 복습 게임을 진행할 수 없습니다.'
+          }, 
+          replace: true 
+        });
+      }
     };
     fetchData();
-  }, [roomId, navigate]);
+  }, [roomId, roomCode, isHost, initialParticipantsCount, timeLimit, navigate]);
 
   const initBlanks = (qIdx, qs) => {
     const q = qs[qIdx];
@@ -255,22 +323,52 @@ export default function MiniGame1Page() {
     setPhase(GAME_PHASE.WAITING);
 
     try {
-      const currentText = blanksState.map(b => b.value.trim() || '').join(', ');
-      const finalPayload = allAnswersSnapshot.map((ans, idx) => idx === currentQuestion ? { ...ans, userAnswer: currentText } : ans);
+      // ✅ Ref를 사용하여 클로저에 갇히지 않은 최신 값 참조
+      const currentText = blanksStateRef.current.map(b => b.value.trim() || '').join(', ');
+      const finalPayload = allAnswersSnapshotRef.current.map((ans, idx) => 
+        idx === currentQuestionRef.current ? { ...ans, userAnswer: currentText } : ans
+      );
+      
+      console.log("[MiniGame1] 최종 제출 데이터:", finalPayload);
       await submitReviewAnswers(roomId, finalPayload);
     } catch (error) { 
-      console.error(error); 
-      // 에러 시 롤백 로직 (선택 사항)
+      console.error("[MiniGame1] 최종 제출 실패:", error); 
     }
   };
 
   const handleReturnToRoom = async () => {
-    if (isHost) await cleanupGameData(roomId);
-    navigate('/together/waiting', { state: { ...location.state }, replace: true });
+    try {
+      if (isHost && roomCode) {
+        await endRoom(roomCode);
+        await cleanupGameData(roomId);
+      }
+      if (roomCode) {
+        await toggleReady(roomCode, false);
+      }
+    } catch (e) {
+      console.error('[MiniGame1] 대기방 복귀 처리 중 오류(무시하고 이동):', e);
+    }
+
+    // API 성공 여부와 관계없이 반드시 대기방으로 이동
+    navigate('/together/waiting', { 
+      state: { 
+        ...location.state,
+        fromGame: true,
+        // 참여자 명단은 유지하되, 상태만 전부 대기로 강제 초기화해서 넘김
+        participants: participants.map(p => ({ ...p, isReady: false, readyStatus: 'NOT_READY' })),
+        readyCount: 0 
+      }, 
+      replace: true 
+    });
   };
+
+  const handleCoinRewardComplete = useCallback(() => {
+    setShowCoinReward(false);
+  }, []);
 
   const handleExit = async () => {
     try {
+      leaveSession();
       if (roomCode) await leaveRoom({ roomCode });
       await cleanupGameData(roomId);
     } catch(e) {}
@@ -337,6 +435,11 @@ export default function MiniGame1Page() {
           onBack={() => setPhase(GAME_PHASE.RESULT)}
         />
       )}
+
+      <CoinRewardNotification 
+        show={showCoinReward} 
+        onComplete={handleCoinRewardComplete}
+      />
     </MiniGameLayout>
   );
 }

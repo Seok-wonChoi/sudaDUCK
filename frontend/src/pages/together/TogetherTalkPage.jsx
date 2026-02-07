@@ -569,6 +569,145 @@ export default function TogetherTalkPage() {
   const [micStateBeforeQuest, setMicStateBeforeQuest] = useState(true);
   const [myQuizResult, setMyQuizResult] = useState(null);
 
+  /* =========================
+     한국어→영어 번역 (Chrome STT) - 상단 이동
+  ========================= */
+  const recognitionRef = useRef(null);
+
+  // [필수] 턴 번호 최신화 Ref
+  const currentTurnRef = useRef(currentTurn);
+  useEffect(() => {
+    currentTurnRef.current = currentTurn;
+  }, [currentTurn]);
+
+  // [추가] 의도적으로 STT를 껐는지 확인하는 플래그
+  const isSTTIntentionallyStopped = useRef(false);
+
+  // STT 시작
+  // STT 시작 함수 (완성본)
+  const startSTT = useCallback(() => {
+    // 1. 이미 실행 중이거나 페이지 전환 중이면 중복 실행 방지
+    if (recognitionRef.current || isTransitioning) return;
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.warn("[STT] 미지원 브라우저");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ko-KR";
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      // 시작 시 "의도적 중지" 플래그 해제
+      isSTTIntentionallyStopped.current = false;
+
+      recognition.onresult = async (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            const transcript = event.results[i][0].transcript;
+
+            // 공백이거나 너무 짧으면(1글자 미만) 무시 (로그 과다 방지)
+            if (!transcript || transcript.trim().length < 2) continue;
+
+            // [로그] 인식된 내용만 심플하게 출력
+            console.log("🎤", transcript);
+
+            // Ref를 통해 최신 턴 번호 조회
+            const currentTurnVal = currentTurnRef.current;
+
+            // 말했으니 정적 감지 리셋 신호 전송
+            if (roomId && myUserId && currentTurnVal) {
+              recordVoiceActivity(roomId, myUserId, currentTurnVal).catch(
+                () => {},
+              );
+            }
+
+            try {
+              // 번역 API 호출
+              await translateToEnglish(
+                roomId,
+                transcript,
+                currentTurnVal,
+                myUserId,
+              );
+            } catch (error) {
+              console.error("[STT] 번역 전송 실패");
+            }
+          }
+        }
+      };
+
+      recognition.onerror = (event) => {
+        // no-speech: 음성 감지 안됨 (정상, 무시)
+        if (event.error === "no-speech") {
+          console.log("[STT] 💤 음성이 감지되지 않음 (정상, 계속 대기 중)");
+          return;
+        }
+
+        // aborted: 의도적 중지 (정상)
+        if (event.error === "aborted") {
+          console.log("[STT] 🛑 음성 인식 중지됨");
+          return;
+        }
+
+        // not-allowed: 마이크 권한 거부
+        if (
+          event.error === "not-allowed" ||
+          event.error === "service-not-allowed"
+        ) {
+          console.error("[STT] ❌ 마이크 권한 거부!");
+          alert(
+            "🎤 마이크 권한을 허용해주세요.\n\n브라우저 설정 > 개인정보 보호 > 마이크에서 권한을 허용하세요.",
+          );
+          // 권한 거부 시 recognition 정리
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+          }
+          return;
+        }
+
+        // 기타 에러: 로그만 출력
+        console.error("[STT] ⚠️ 에러:", event.error);
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (error) {
+      console.error("[STT] 시작 오류");
+    }
+  }, [roomId, myUserId, isTransitioning]); // [중요] currentTurn 제거, isTransitioning 추가
+
+  // STT 중지
+  const stopSTT = useCallback(() => {
+    isSTTIntentionallyStopped.current = true; // 재시작 방지 플래그 설정
+
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+  }, []);
+
+  // 한국어 대화 시작 시 STT 자동 시작 (마이크가 켜져 있을 때만)
+  useEffect(() => {
+    const isQuestRunning = questStep !== "idle"; // questRunning 변수 대신 직접 비교
+    if (!isQuestRunning && roomId && micOn && !isTransitioning) {
+      startSTT();
+    } else {
+      stopSTT();
+    }
+
+    // 컴포넌트 언마운트 시 중지
+    return () => {
+      stopSTT();
+    };
+  }, [questStep, roomId, micOn, startSTT, stopSTT, isTransitioning]);
+
   const handleConversationSuggestion = useCallback(
     (question) => {
       // 돌발 퀘스트 진행 중에는 AI 추천 무시
@@ -702,14 +841,12 @@ export default function TogetherTalkPage() {
         });
       };
 
-      if (!isLastTurn) {
-        setIsTransitioning(true);
-        setTimeout(() => {
-          navigateToRecording();
-        }, 5000);
-      } else {
+      // ✅ 마지막 턴 여부와 상관없이 항상 로딩 화면 표시
+      setIsTransitioning(true);
+      stopSTT(); // 로딩 시작 시 STT 즉시 중단
+      setTimeout(() => {
         navigateToRecording();
-      }
+      }, 5000);
     },
     [
       navigate,
@@ -719,6 +856,7 @@ export default function TogetherTalkPage() {
       currentTurn,
       resolvedRoomCode,
       myUserId,
+      stopSTT,
     ],
   );
 
@@ -1215,14 +1353,12 @@ export default function TogetherTalkPage() {
       });
     };
 
-    if (!isLastTurn) {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        navigateToRecording();
-      }, 5000);
-    } else {
+    // ✅ 마지막 턴 여부와 상관없이 항상 로딩 화면 표시
+    setIsTransitioning(true);
+    stopSTT(); // 로딩 시작 시 STT 즉시 중단
+    setTimeout(() => {
       navigateToRecording();
-    }
+    }, 5000);
   }, [
     doLeaveRoom,
     navigate,
@@ -1233,6 +1369,7 @@ export default function TogetherTalkPage() {
     currentTurn,
     myUserId,
     stopMediaProcessing,
+    stopSTT,
   ]);
 
   //타이머 컴포넌트를 기억하여 리렌더링 방지
@@ -2044,143 +2181,7 @@ export default function TogetherTalkPage() {
     setQuestStep(correct ? "resultSuccess" : "resultFail");
   }, []);
 
-  /* =========================
-     한국어→영어 번역 (Chrome STT)
-  ========================= */
-  const recognitionRef = useRef(null);
-
-  // [필수] 턴 번호 최신화 Ref
-  const currentTurnRef = useRef(currentTurn);
-  useEffect(() => {
-    currentTurnRef.current = currentTurn;
-  }, [currentTurn]);
-
-  // [추가] 의도적으로 STT를 껐는지 확인하는 플래그
-  const isSTTIntentionallyStopped = useRef(false);
-
-  // STT 시작
-  // STT 시작 함수 (완성본)
-  const startSTT = useCallback(() => {
-    // 1. 이미 실행 중이면 중복 실행 방지
-    if (recognitionRef.current) return;
-
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      console.warn("[STT] 미지원 브라우저");
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "ko-KR";
-      recognition.continuous = true;
-      recognition.interimResults = false;
-
-      // 시작 시 "의도적 중지" 플래그 해제
-      isSTTIntentionallyStopped.current = false;
-
-      recognition.onresult = async (event) => {
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            const transcript = event.results[i][0].transcript;
-
-            // 공백이거나 너무 짧으면(1글자 미만) 무시 (로그 과다 방지)
-            if (!transcript || transcript.trim().length < 2) continue;
-
-            // [로그] 인식된 내용만 심플하게 출력
-            console.log("🎤", transcript);
-
-            // Ref를 통해 최신 턴 번호 조회
-            const currentTurnVal = currentTurnRef.current;
-
-            // 말했으니 정적 감지 리셋 신호 전송
-            if (roomId && myUserId && currentTurnVal) {
-              recordVoiceActivity(roomId, myUserId, currentTurnVal).catch(
-                () => {},
-              );
-            }
-
-            try {
-              // 번역 API 호출
-              await translateToEnglish(
-                roomId,
-                transcript,
-                currentTurnVal,
-                myUserId,
-              );
-            } catch (error) {
-              console.error("[STT] 번역 전송 실패");
-            }
-          }
-        }
-      };
-
-      recognition.onerror = (event) => {
-        // no-speech: 음성 감지 안됨 (정상, 무시)
-        if (event.error === "no-speech") {
-          console.log("[STT] 💤 음성이 감지되지 않음 (정상, 계속 대기 중)");
-          return;
-        }
-
-        // aborted: 의도적 중지 (정상)
-        if (event.error === "aborted") {
-          console.log("[STT] 🛑 음성 인식 중지됨");
-          return;
-        }
-
-        // not-allowed: 마이크 권한 거부
-        if (
-          event.error === "not-allowed" ||
-          event.error === "service-not-allowed"
-        ) {
-          console.error("[STT] ❌ 마이크 권한 거부!");
-          alert(
-            "🎤 마이크 권한을 허용해주세요.\n\n브라우저 설정 > 개인정보 보호 > 마이크에서 권한을 허용하세요.",
-          );
-          // 권한 거부 시 recognition 정리
-          if (recognitionRef.current) {
-            recognitionRef.current.stop();
-            recognitionRef.current = null;
-          }
-          return;
-        }
-
-        // 기타 에러: 로그만 출력
-        console.error("[STT] ⚠️ 에러:", event.error);
-      };
-
-      recognition.start();
-      recognitionRef.current = recognition;
-    } catch (error) {
-      console.error("[STT] 시작 오류");
-    }
-  }, [roomId, myUserId]); // [중요] currentTurn 제거!
-
-  // STT 중지
-  const stopSTT = useCallback(() => {
-    isSTTIntentionallyStopped.current = true; // 재시작 방지 플래그 설정
-
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-  }, []);
-
-  // 한국어 대화 시작 시 STT 자동 시작 (마이크가 켜져 있을 때만)
-  useEffect(() => {
-    if (!questRunning && roomId && micOn) {
-      startSTT();
-    } else {
-      stopSTT();
-    }
-
-    // 컴포넌트 언마운트 시 중지
-    return () => {
-      stopSTT();
-    };
-  }, [questRunning, roomId, micOn, startSTT, stopSTT]);
+  /* STT 코드 상단 이동됨 */
 
   // 퀘스트 텍스트
   const quest1IntroTitle = "돌발 퀘스트!!";
@@ -2450,7 +2451,7 @@ export default function TogetherTalkPage() {
                     </div>
                     {!aiSuggestion && (
                       <div className={styles.AiSubText}>
-                        15초 동안 침묵이 지속되면 제가 도와드릴게요.
+                        침묵이 지속되면 제가 도와드릴게요.
                       </div>
                     )}
                   </>

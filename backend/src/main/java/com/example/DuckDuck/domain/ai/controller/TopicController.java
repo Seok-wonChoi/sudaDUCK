@@ -20,11 +20,6 @@ public class TopicController {
     /**
      * 대화 주제 추천
      * GET /api/v1/topics
-     *
-     * Response:
-     * {
-     *   "topics": ["오늘 뭐 했어?", "좋아하는 음식은?", "요즘 취미가 뭐야?"]
-     * }
      */
     @GetMapping
     public Map<String, Object> getTopics() {

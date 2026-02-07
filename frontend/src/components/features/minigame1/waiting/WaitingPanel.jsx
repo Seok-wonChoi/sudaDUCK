@@ -16,9 +16,6 @@ export default function WaitingPanel({
         </div>
         
         <h2 className={styles.title}>다른 참가자를 기다리고 있어요</h2>
-        <p className={styles.subtitle}>
-          현재 <span className={styles.count}>{submittedCount}</span> / {totalParticipants} 명 제출 완료
-        </p>
 
         <div className={styles.participantGrid}>
           {rankings.map((user) => (

@@ -35,15 +35,6 @@ export default function BlankFillSentence({
     }
   }, [currentBlankIndex]);
 
-  // 글자 수에 따른 동적 너비 계산 (최소 4ch, 최대 20ch)
-  const getInputWidth = (idx) => {
-    const answerLen = blanks[idx]?.answer?.length || 0;
-    const valueLen = (blanks[idx]?.value || "").length;
-    const maxLen = Math.max(answerLen, valueLen, 4);
-    // 너비를 기존 대비 약 2배로 확대
-    return `${maxLen * 2.5 + 4}ch`;
-  };
-
   return (
     <div className={styles.wrapper}>
       <div className={styles.label}>
@@ -60,7 +51,7 @@ export default function BlankFillSentence({
                   ref={(el) => (inputRefs.current[idx] = el)}
                   type="text"
                   className={`${styles.blank} ${idx === currentBlankIndex ? styles.active : styles.filled}`}
-                  style={{ width: getInputWidth(idx) }}
+                  style={{ width: '100px' }} // 👈 6글자 정도의 고정 너비로 변경
                   value={blanks[idx].value || ''}
                   onChange={(e) => onBlankChange?.(idx, e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && onBlankSubmit?.(idx)}

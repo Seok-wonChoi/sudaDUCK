@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { leaveRoom } from '@/api/rooms';
+import { leaveRoom, toggleReady, endRoom } from '@/api/rooms';
 import useRoomWebSocket from '@/hooks/useRoomWebSocket';
+import { useOpenVidu } from '@/context/OpenViduContext';
 
 import MiniGameLayout from '@/components/features/minigame/layout/MiniGameLayout';
 import CountdownOverlay from '@/components/features/minigame/countdown/CountdownOverlay';
@@ -50,6 +51,7 @@ const GAME_TIME = 30;
 export default function MiniGame2Page() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { leaveSession } = useOpenVidu();
 
   const currentUserId = 1; // 현재 사용자 ID
   const roomId = location.state?.roomId;
@@ -64,6 +66,15 @@ export default function MiniGame2Page() {
 
   const isCleared = removedCards.length >= MOCK_CARDS.length;
   const isTimeOver = timeLeft <= 0;
+
+  const roomCode = location.state?.roomCode;
+
+  // ✅ 게임 시작 시 모든 참여자의 레디 상태를 해제 (대기방 복귀 시 초기화 목적)
+  useEffect(() => {
+    if (roomCode) {
+      toggleReady(roomCode, false).catch(() => {});
+    }
+  }, [roomCode]);
 
   const phase =
     countdown > 0
@@ -134,11 +145,12 @@ export default function MiniGame2Page() {
   // 방장 퇴장 시 메인 화면으로 강제 이동
   const handleRoomClosed = useCallback(() => {
     console.log("[MiniGame2Page] ROOM_CLOSED 수신 - 방장 퇴장");
+    leaveSession();
     navigate("/main", {
       replace: true,
       state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
-  }, [navigate]);
+  }, [navigate, leaveSession]);
 
   useRoomWebSocket(roomId, {
     onRoomClosed: handleRoomClosed,
@@ -148,16 +160,39 @@ export default function MiniGame2Page() {
   const handleLogoExit = useCallback(async () => {
     if (roomId) {
       try {
+        leaveSession();
         await leaveRoom({ roomCode: roomId });
         console.log("[MiniGame2Page] 방 퇴장 성공");
       } catch (e) {
         console.error("[MiniGame2Page] 방 퇴장 실패:", e);
       }
     }
-  }, [roomId]);
+  }, [roomId, leaveSession]);
 
-  const handleComplete = () => {
-    navigate('/main');
+  const handleComplete = async () => {
+    const isHost = location.state?.isHost;
+    const roomCode = location.state?.roomCode;
+
+    try {
+      if (isHost && roomCode) {
+        await endRoom(roomCode);
+      }
+      if (roomCode) {
+        await toggleReady(roomCode, false);
+      }
+    } catch (e) {
+      console.error('[MiniGame2] 대기방 복귀 처리 중 오류(무시하고 이동):', e);
+    }
+
+    navigate('/together/waiting', { 
+      state: { 
+        ...location.state,
+        fromGame: true,
+        participants: [], // 👈 빈 배열로 넘겨서 서버 데이터 새로고침 유도
+        readyCount: 0 
+      },
+      replace: true 
+    });
   };
 
   if (phase === GAME_PHASE.COUNTDOWN) {
