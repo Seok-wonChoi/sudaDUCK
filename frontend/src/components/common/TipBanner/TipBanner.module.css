@@ -1,40 +1,128 @@
 .Banner {
-  max-width: 760px;
+  max-width: 640px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(229, 231, 235, 1);
-  border-radius: 14px;
-  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.10);
-  padding: 14px 18px;
-  text-align: center;
+  background: linear-gradient(
+    180deg, 
+    #cbd5e1 0%, 
+    #f8fafc 15%, 
+    #ffffff 50%, 
+    #f8fafc 85%, 
+    #cbd5e1 100%
+  );
+  border-radius: 99px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 16px rgba(0, 0, 0, 0.06),
+    inset 0 3px 8px rgba(0, 0, 0, 0.04);
+}
+
+.GlassShine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 35%;
+  background: linear-gradient(
+    to bottom, 
+    rgba(255, 255, 255, 0.8) 0%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 5;
+}
+
+.BottomShadow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 25%;
+  background: linear-gradient(
+    to top, 
+    rgba(0, 0, 0, 0.05) 0%, 
+    rgba(0, 0, 0, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 5;
+}
+
+.FixedLabel {
+  margin-left: 12px;
+  background: #6366f1;
+  color: white;
+  font-family: 'Jalnan', sans-serif; /* 👈 몽글몽글한 폰트 복구 */
+  font-size: 15px; /* 크기 상향 */
+  padding: 5px 15px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  z-index: 10;
+  flex-shrink: 0;
+  /* 하얀색 겉면에 차게 테두리 추가 */
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.SlotWindow {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 20%,
+    black 80%,
+    transparent 100%
+  );
+}
+
+.RouletteContent {
+  width: 100%;
+  height: 100%;
+}
+
+.TipItem {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ContentGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .Text {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 800;
-  color: #374151;
+  color: #1e293b;
+  white-space: nowrap;
+  text-align: center;
 }
 
-/* 태블릿 이하 */
+.Emoji {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.1));
+  line-height: 1;
+}
+
 @media (max-width: 768px) {
-  .Banner {
-    max-width: 100%;
-    padding: 12px 16px;
-  }
-
-  .Text {
-    font-size: 13px;
-  }
+  .Banner { height: 44px; max-width: 92%; }
+  .TipItem { height: 44px; }
+  .FixedLabel { font-size: 11px; padding: 3px 10px; border-width: 2px; }
+  .Text { font-size: 13px; }
+  .Emoji { font-size: 20px; }
 }
 
-/* 모바일 */
 @media (max-width: 480px) {
-  .Banner {
-    padding: 11px 14px;
-    border-radius: 12px;
-  }
-
-  .Text {
-    font-size: 12px;
-  }
+  .FixedLabel { display: none; }
+  .ContentGroup { gap: 8px; }
 }

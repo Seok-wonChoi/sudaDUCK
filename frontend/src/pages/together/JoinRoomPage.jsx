@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import styles from "./JoinRoomPage.module.css";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
-import TipBanner from "@/components/common/TipBanner/TipBanner";
 
 import duckImg from "@/assets/images/duck.png";
 import { joinRoom } from "@/api/rooms";
@@ -46,7 +45,7 @@ export default function JoinRoomPage() {
       audio.volume = getEffectiveVolume(0.25);
       audio.play().catch(() => {});
     } catch (e) {
-      // 사운드 재생 실패 무시
+      // 무시
     }
   };
 
@@ -61,7 +60,7 @@ export default function JoinRoomPage() {
         audio.volume = getEffectiveVolume(0.1);
         audio.play().catch(() => {});
       } catch (e) {
-        // 사운드 재생 실패 무시
+        // 무시
       }
     }
     if (window.history.length > 1) navigate(-1);
@@ -100,7 +99,6 @@ export default function JoinRoomPage() {
       return;
     }
 
-    // 한 글자씩 입력할 때 사운드 재생
     playTypeSound();
     setAt(idx, v);
     if (idx < CODE_LEN - 1) focusAt(idx + 1);
@@ -126,7 +124,6 @@ export default function JoinRoomPage() {
     const pasted = normalizeCode(e.clipboardData.getData("text"));
     if (!pasted) return;
 
-    // 붙여넣기 시 사운드 한 번만 재생
     playTypeSound();
 
     const chars = pasted.split("");
@@ -147,23 +144,16 @@ export default function JoinRoomPage() {
 
     setLoading(true);
     try {
-      console.log("[JoinRoom] 방 참가 시도:", roomCode);
-
-      // POST /api/v1/rooms/join
       const res = await joinRoom({ roomCode });
-
-      console.log("[JoinRoom] 방 참가 성공:", res);
 
       const roomInfo = {
         isHost: false,
         maxCount: MAX_PARTICIPANTS,
-
         roomId: res.roomId,
         joinCode: res.roomCode,
         readyStatus: res.readyStatus,
         alreadyJoined: res.alreadyJoined,
-        // ★ [추가] 백엔드 응답에서 받은 세션 ID 저장!
-        openviduSessionId: res.openviduSessionId, // 백엔드 RoomJoinResponse에서 옴
+        openviduSessionId: res.openviduSessionId,
         roomTitle: "-",
         topic: "-",
         turnCount: "-",
@@ -173,20 +163,10 @@ export default function JoinRoomPage() {
       sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));
       navigate("/together/waiting", { state: roomInfo });
     } catch (e) {
-      console.error("[JoinRoom] 방 참가 실패:", e);
-
-      // 에러 메시지에서 인원 초과 여부 확인
       const errorMsg = e?.response?.data?.message || e?.message || "";
-
-      if (
-        errorMsg.includes("인원") ||
-        errorMsg.includes("가득") ||
-        errorMsg.includes("full") ||
-        errorMsg.includes("maximum") ||
-        e?.response?.status === 400
-      ) {
+      if (errorMsg.includes("인원") || errorMsg.includes("가득")) {
         showToast("인원이 가득 찬 방입니다.");
-      } else if (errorMsg.includes("존재하지 않") || errorMsg.includes("not found")) {
+      } else if (errorMsg.includes("존재하지 않")) {
         showToast("존재하지 않는 방입니다.");
       } else if (errorMsg) {
         showToast(errorMsg);
@@ -250,10 +230,6 @@ export default function JoinRoomPage() {
               {loading ? "입장 중..." : "참여하기"}
             </button>
           </section>
-
-          <div className={styles.TipWrap}>
-            <TipBanner text="Tip: 코드를 복사해서 붙여넣기 할 수 있어요!" />
-          </div>
 
           <div className={styles.DuckWrap}>
             <img className={styles.DuckImg} src={duckImg} alt="오리" />

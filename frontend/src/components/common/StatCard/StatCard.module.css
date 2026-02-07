@@ -1,59 +1,72 @@
-/* src/components/Main/StatCard/StatCard.module.css */
-
 .Card {
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(238, 240, 246, 0.9);
-  border-radius: 16px;
+  /* 원통형 굴곡을 위한 그라데이션 */
+  background: linear-gradient(
+    180deg, 
+    #cbd5e1 0%, 
+    #f8fafc 15%, 
+    #ffffff 50%, 
+    #f8fafc 85%, 
+    #cbd5e1 100%
+  );
+  border: none;
+  border-radius: 20px;
 
-  padding: 22px 18px;
+  padding: 24px 20px;
   text-align: center;
 
-  box-shadow: 0 12px 26px rgba(17, 24, 39, 0.08);
-  backdrop-filter: blur(6px);
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.06),
+    inset 0 4px 10px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 상단 반사광 효과 (팁과 동일) */
+.Card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 35%;
+  background: linear-gradient(
+    to bottom, 
+    rgba(255, 255, 255, 0.8) 0%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
 .Value {
+  position: relative;
+  z-index: 2;
   font-size: 28px;
-  font-weight: 900;
-  letter-spacing: -0.4px;
+  font-weight: 950;
+  letter-spacing: -0.5px;
   color: #4f46e5;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
 }
 
 .Label {
+  position: relative;
+  z-index: 2;
   margin-top: 10px;
   font-size: 14px;
-  color: #6b7280;
-  font-weight: 600;
+  color: #1e293b;
+  font-weight: 800;
 }
 
 /* 태블릿 이하 */
 @media (max-width: 768px) {
-  .Card {
-    padding: 20px 16px;
-  }
-
-  .Value {
-    font-size: 26px;
-  }
-
-  .Label {
-    font-size: 13px;
-  }
+  .Card { padding: 20px 16px; }
+  .Value { font-size: 26px; }
+  .Label { font-size: 13px; }
 }
 
 /* 모바일 */
 @media (max-width: 480px) {
-  .Card {
-    padding: 18px 14px;
-    border-radius: 14px;
-  }
-
-  .Value {
-    font-size: 24px;
-  }
-
-  .Label {
-    font-size: 12px;
-    margin-top: 8px;
-  }
+  .Card { padding: 18px 14px; border-radius: 16px; }
+  .Value { font-size: 24px; }
+  .Label { font-size: 12px; margin-top: 8px; }
 }

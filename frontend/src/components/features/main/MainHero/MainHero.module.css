@@ -1,49 +1,21 @@
 .Wrap {
   text-align: center;
-  padding: 24px 0 12px;
+  padding: 8px 0 0;
 }
 
 .Title {
   margin: 0;
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -0.4px;
+  font-family: 'Jalnan', sans-serif; /* 👈 잘난체 */
+  font-size: 32px;
   color: #111827;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .Subtitle {
-  margin: 10px 0 0;
-  font-size: 14px;
-  font-weight: 700;
+  margin: 12px 0 0;
+  font-family: 'Jalnan', sans-serif; /* 👈 잘난체 */
+  font-size: 15px;
   color: #6b7280;
-}
-
-/* 태블릿 이하 */
-@media (max-width: 768px) {
-  .Wrap {
-    padding: 20px 0 10px;
-  }
-
-  .Title {
-    font-size: 26px;
-  }
-
-  .Subtitle {
-    font-size: 13px;
-  }
-}
-
-/* 모바일 */
-@media (max-width: 480px) {
-  .Wrap {
-    padding: 16px 0 8px;
-  }
-
-  .Title {
-    font-size: 24px;
-  }
-
-  .Subtitle {
-    font-size: 12px;
-  }
+  font-weight: normal;
 }
