@@ -38,7 +38,7 @@ public class EnglishQuizEventService {
 
     private static final int TARGET_TURN = 3;
     private static final int MIN_DELAY_SECONDS = 15;
-    private static final int MAX_DELAY_SECONDS = 40;
+    private static final int MAX_DELAY_SECONDS = 16;
 
     // ============================================
     // 내부 클래스 (단순화)
