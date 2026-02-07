@@ -31,7 +31,7 @@ public class PreprocessingConfig {
     /**
      * 최대 텍스트 길이
      */
-    private int maxLength = 100;
+    private int maxLength = 70;
     
     // ====================================
     // Setter 메서드들 (필요시 설정 변경 가능)
