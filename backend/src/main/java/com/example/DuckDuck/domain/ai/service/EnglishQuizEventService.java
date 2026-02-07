@@ -188,14 +188,13 @@ public class EnglishQuizEventService {
             return String.format("""
                 You are teaching English to Korean beginners.
                 
-                Topic: %s
                 Their conversation so far:
                 %s
                 
                 Create a VERY SIMPLE English question that:
                 1. Uses basic vocabulary (elementary level)
                 2. Can be answered in just 3-5 words or one simple sentence
-                3. Relates to their conversation
+                3. Relates to their conversation above
                 4. Uses present tense mostly
                 
                 Examples of GOOD simple questions:
@@ -216,7 +215,6 @@ public class EnglishQuizEventService {
                   "hint": "한글로 질문 의미 설명"
                 }
                 """,
-                    context.getTopic(),
                     context.getFormattedConversation()
             );
         } else {

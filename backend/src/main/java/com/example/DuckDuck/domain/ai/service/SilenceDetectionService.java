@@ -200,14 +200,13 @@ public class SilenceDetectionService {
             return String.format("""
                     당신은 영어 회화 학습을 돕는 친근한 코치입니다.
                     
-                    주제: %s
                     현재까지의 대화:
                     %s
                     
-                    대화가 잠시 멈췄습니다. 대화를 자연스럽게 이어갈 수 있는 질문을 추천해주세요.
+                    대화가 잠시 멈췄습니다. 현재까지의 대화를 참고하여 대화를 자연스럽게 이어갈 수 있는 질문을 추천해주세요.
                     
                     요구사항:
-                    - 이전 대화의 구체적인 내용을 언급하며 이어가는 질문
+                    - 현재까지의 대화 내용을 언급하며 이어가는 질문
                     - 추상적이거나 뻔한 질문 금지 (예: "경험이 어땠나요?", "어떻게 생각하나요?" 등)
                     - 대답하기 쉽고 재미있는 개방형 질문
                     - 친구와 대화하듯 자연스럽고 구체적으로
@@ -228,7 +227,6 @@ public class SilenceDetectionService {
                       "koreanQuestion": "한국어 질문"
                     }
                     """,
-                    context.getTopic(),
                     context.getFormattedConversation()
             );
         } else {
