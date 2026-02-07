@@ -281,7 +281,7 @@ export default function MiniGame1Page() {
 
   return (
     <MiniGameLayout
-      showGameHeader={phase !== GAME_PHASE.REVIEW}
+      showGameHeader={phase !== GAME_PHASE.REVIEW && phase !== GAME_PHASE.RESULT}
       participants={participants}
       voiceLevels={voiceLevelsMap}
       onExit={handleExit}
@@ -319,7 +319,7 @@ export default function MiniGame1Page() {
       )}
 
       {phase === GAME_PHASE.RESULT && (
-        <ResultPanel rankings={rankings} myProfile={myProfile} onShowReview={() => setPhase(GAME_PHASE.REVIEW)} onReturnToRoom={handleReturnToRoom} onExit={handleExit} />
+        <ResultPanel rankings={rankings} myProfile={myProfile} totalQuestions={questions.length} onShowReview={() => setPhase(GAME_PHASE.REVIEW)} onReturnToRoom={handleReturnToRoom} onExit={handleExit} />
       )}
 
       {phase === GAME_PHASE.REVIEW && (

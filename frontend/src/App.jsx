@@ -42,36 +42,41 @@ function AppContent() {
 
   useClickSound(clickSoundEnabled, { volume: 0.1 });
 
+  const content = (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+      <Route path="/main" element={<MainPage />} />
+
+      <Route path="/practice" element={<PracticePage />} />
+      <Route path="/practice/solo" element={<SoloPracticePage />} />
+      <Route path="/practice/ai" element={<AiPracticePage />} />
+
+      <Route path="/together" element={<TogetherPage />} />
+      <Route path="/together/make" element={<MakeRoomPage />} />
+      <Route path="/together/join" element={<JoinRoomPage />} />
+      <Route path="/together/waiting" element={<WaitingRoomPage />} />
+      <Route path="/together/talk" element={<TogetherTalkPage />} />
+
+      <Route path="/recording" element={<RecordingPage />} />
+      <Route path="/mypage" element={<MyPage />} />
+
+      <Route path="/minigame1" element={<MiniGame1Page />} />
+      <Route path="/minigame2" element={<MiniGame2Page />} />
+
+      <Route path="/test" element={<VoiceRoom />} />
+    </Routes>
+  );
+
   return (
     <OpenViduProvider>
-      {/* 
-        👇 key={pathname}으로 리마운트 유도 + 클래스로 애니메이션 효과 
-      */}
-      <div key={pathname} className="page-transition">
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-          <Route path="/main" element={<MainPage />} />
-
-          <Route path="/practice" element={<PracticePage />} />
-          <Route path="/practice/solo" element={<SoloPracticePage />} />
-          <Route path="/practice/ai" element={<AiPracticePage />} />
-
-          <Route path="/together" element={<TogetherPage />} />
-          <Route path="/together/make" element={<MakeRoomPage />} />
-          <Route path="/together/join" element={<JoinRoomPage />} />
-          <Route path="/together/waiting" element={<WaitingRoomPage />} />
-          <Route path="/together/talk" element={<TogetherTalkPage />} />
-
-          <Route path="/recording" element={<RecordingPage />} />
-          <Route path="/mypage" element={<MyPage />} />
-
-          <Route path="/minigame1" element={<MiniGame1Page />} />
-          <Route path="/minigame2" element={<MiniGame2Page />} />
-
-          <Route path="/test" element={<VoiceRoom />} />
-        </Routes>
-      </div>
+      {pathname === "/" ? (
+        content
+      ) : (
+        <div key={pathname} className="page-transition">
+          {content}
+        </div>
+      )}
     </OpenViduProvider>
   );
 }

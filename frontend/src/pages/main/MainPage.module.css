@@ -68,11 +68,7 @@
 }
 
 /* 중형 화면 (1024px ~ 1440px) */
-@media (max-width: 1440px) {
-  .Shell {
-    max-width: min(1200px, 92vw);
-  }
-}
+/* 이 구간에서 너비가 갑자기 줄어들지 않도록 1200px 제한 제거 */
 
 /* 태블릿 화면 (768px ~ 1024px) */
 @media (max-width: 1024px) {
