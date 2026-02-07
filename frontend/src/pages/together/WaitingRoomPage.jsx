@@ -248,7 +248,17 @@ export default function WaitingRoomPage() {
 
 
   const initialRoomInfo = useMemo(() => {
-    if (state) return state;
+    if (state) {
+      // 게임에서 돌아온 경우, 참여자들의 레디 상태를 로컬에서 즉시 강제 초기화
+      if (state.fromGame && state.participants) {
+        return {
+          ...state,
+          participants: state.participants.map(p => ({ ...p, isReady: false, readyStatus: 'NOT_READY' })),
+          readyCount: 0
+        };
+      }
+      return state;
+    }
     try {
       const stored = sessionStorage.getItem(ROOM_INFO_KEY);
       if (stored) return JSON.parse(stored);
@@ -280,7 +290,9 @@ export default function WaitingRoomPage() {
     return isNaN(num) ? 40 : num;
   });
 
-  const [participants, setParticipants] = useState([]);
+  const [participants, setParticipants] = useState(() => {
+    return initialRoomInfo?.participants || [];
+  });
   const participantsRef = useRef([]);
   useEffect(() => {
     participantsRef.current = participants;
@@ -364,6 +376,15 @@ export default function WaitingRoomPage() {
     setToastMessage(message);
     setTimeout(() => setToastMessage(""), 2000);
   }, []);
+
+  // location.state에 toastMessage가 있으면 표시
+  useEffect(() => {
+    if (state?.toastMessage) {
+      showToast(state.toastMessage);
+      // 표시 후 state에서 제거 (뒤로가기 시 다시 뜨지 않도록)
+      window.history.replaceState({ ...state, toastMessage: null }, '');
+    }
+  }, [state, showToast]);
 
   const getUserIdFromToken = useCallback(() => {
     try {
@@ -636,8 +657,16 @@ export default function WaitingRoomPage() {
   fetchLobbyRef.current = fetchLobby;
 
   useEffect(() => {
-    fetchLobby();
-  }, [fetchLobby]);
+    if (state?.fromGame) {
+      // 게임에서 돌아온 경우 서버 DB가 갱신될 시간을 충분히 벌어줌 (1초 지연)
+      const timer = setTimeout(() => {
+        fetchLobby();
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      fetchLobby();
+    }
+  }, [fetchLobby, state?.fromGame]);
 
   // 👇 오픈비두 연결 중복 방지용 Ref
   const isConnectingRef = useRef(false);

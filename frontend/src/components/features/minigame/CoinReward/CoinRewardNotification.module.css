@@ -1,4 +1,4 @@
-.Overlay {
+.OverlayReward {
   position: fixed;
   top: 0;
   left: 0;
@@ -8,20 +8,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 10000;
   backdrop-filter: blur(4px);
+  opacity: 1;
 }
 
-.FadeIn {
-  animation: fadeIn 0.5s ease-in-out;
+.FadeInReward {
+  animation: fadeInReward 0.5s ease-in-out;
 }
 
-.FadeOut {
-  animation: fadeOut 0.5s ease-in-out;
+.FadeOutReward {
+  animation: fadeOutReward 0.5s ease-in-out;
   opacity: 0;
 }
 
-@keyframes fadeIn {
+@keyframes fadeInReward {
   from {
     opacity: 0;
     transform: scale(0.8);
@@ -32,7 +33,7 @@
   }
 }
 
-@keyframes fadeOut {
+@keyframes fadeOutReward {
   from {
     opacity: 1;
     transform: scale(1);
@@ -43,13 +44,13 @@
   }
 }
 
-.Content {
+.ContentReward {
   text-align: center;
   color: #ffffff;
-  animation: slideUp 0.5s ease-out;
+  animation: slideUpReward 0.5s ease-out;
 }
 
-@keyframes slideUp {
+@keyframes slideUpReward {
   from {
     transform: translateY(30px);
     opacity: 0;

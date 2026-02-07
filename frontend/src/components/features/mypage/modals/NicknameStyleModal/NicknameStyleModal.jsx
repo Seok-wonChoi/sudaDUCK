@@ -203,7 +203,12 @@ export default function NicknameStyleModal({
               type="text"
               className={styles.NicknameInput}
               value={editedNickname}
-              onChange={(e) => setEditedNickname(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                // 한글, 영문, 숫자만 허용하는 정규식
+                const filtered = val.replace(/[^ㄱ-ㅎ가-힣a-zA-Z0-9]/g, '');
+                setEditedNickname(filtered);
+              }}
               placeholder="닉네임을 입력하세요"
               maxLength={12}
             />
