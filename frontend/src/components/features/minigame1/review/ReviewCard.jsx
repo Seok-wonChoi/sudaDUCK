@@ -23,11 +23,17 @@ export default function ReviewCard({
             {part}
             {idx < blanks.length && (
               <span className={styles.blankWrapper}>
-                <span className={`${styles.userAnswer} ${blanks[idx].isCorrect ? styles.correct : styles.wrong}`}>
+                <span 
+                  className={`${styles.userAnswer} ${blanks[idx].isCorrect ? styles.correct : styles.wrong}`}
+                  style={{ minWidth: `${(blanks[idx].answer?.length || 4) * 2.5 + 4}ch`, textAlign: 'center' }}
+                >
                   {blanks[idx].userAnswer || '(미입력)'}
                 </span>
                 {!blanks[idx].isCorrect && (
-                  <span className={styles.correctAnswer}>
+                  <span 
+                    className={styles.correctAnswer}
+                    style={{ minWidth: `${(blanks[idx].answer?.length || 4) * 2.5 + 4}ch`, textAlign: 'center' }}
+                  >
                     {blanks[idx].answer}
                   </span>
                 )}

@@ -40,7 +40,8 @@ export default function BlankFillSentence({
     const answerLen = blanks[idx]?.answer?.length || 0;
     const valueLen = (blanks[idx]?.value || "").length;
     const maxLen = Math.max(answerLen, valueLen, 4);
-    return `${maxLen * 1.2 + 2}ch`;
+    // 너비를 기존 대비 약 2배로 확대
+    return `${maxLen * 2.5 + 4}ch`;
   };
 
   return (
