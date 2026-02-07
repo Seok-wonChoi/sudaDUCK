@@ -2,12 +2,15 @@ package com.example.DuckDuck.domain.ai.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
@@ -26,6 +29,7 @@ public class SilenceDetectionService {
     private final GptService gptService;
     private final SimpMessagingTemplate messagingTemplate;
     private final TaskScheduler taskScheduler;
+    private final StringRedisTemplate redisTemplate;
 
     // 방별 마지막 음성 활동 시간
     private final Map<Long, Long> lastVoiceActivityTime = new ConcurrentHashMap<>();
@@ -36,7 +40,7 @@ public class SilenceDetectionService {
     // 방별 정적 체크 스케줄
     private final Map<Long, ScheduledFuture<?>> silenceCheckSchedules = new ConcurrentHashMap<>();
 
-    private static final long SILENCE_THRESHOLD_MS = 7000;
+    private static final long SILENCE_THRESHOLD_MS = 10000;
 
     /**
      * 음성 활동 알림 (프론트에서 호출)
@@ -97,7 +101,7 @@ public class SilenceDetectionService {
             oldFuture.cancel(false);
         }
 
-        // 새 스케줄 시작 (10초 후)
+        // 새 스케줄 시작
         ScheduledFuture<?> future = taskScheduler.schedule(
                 () -> checkSilence(roomId),
                 Instant.now().plusMillis(SILENCE_THRESHOLD_MS)
@@ -109,7 +113,7 @@ public class SilenceDetectionService {
     }
 
     /**
-     * 정적 체크 (10초 후 자동 실행)
+     * 정적 체크
      */
     private void checkSilence(Long roomId) {
 
@@ -129,7 +133,7 @@ public class SilenceDetectionService {
             log.info("🔇 [정적 감지!] roomId={}, 추천 생성 시작", roomId);
             generateAndBroadcastSuggestion(roomId);
 
-            // ✅ 추천 후 다시 모니터링 시작 (계속 추천 가능)
+            // 추천 후 다시 모니터링 시작 (계속 추천 가능)
             lastVoiceActivityTime.put(roomId, System.currentTimeMillis());
             startSilenceCheck(roomId);
 
@@ -192,7 +196,53 @@ public class SilenceDetectionService {
      * 현재 턴 조회 (메모리에서)
      */
     private Integer getCurrentTurn(Long roomId) {
-        return currentTurns.getOrDefault(roomId, 1);  // 기본값 1
+        try {
+            // 1. Redis에서 현재 턴 조회
+            String turnKey = "room:" + roomId + ":current_turn";
+            String turnStr = redisTemplate.opsForValue().get(turnKey);
+
+            if (turnStr != null) {
+                int turn = Integer.parseInt(turnStr);
+                log.info("Redis에서 턴 조회: roomId={}, turn={}", roomId, turn);
+                return turn;
+            }
+
+            // 2. Redis 없으면 스크립트 기반 추론
+            Set<String> keys = redisTemplate.keys("room:" + roomId + ":turn:*:scripts");
+
+            if (keys != null && !keys.isEmpty()) {
+                int maxTurn = 1;
+                for (String key : keys) {
+                    // "room:1:turn:3:scripts" → 3 추출
+                    String[] parts = key.split(":");
+                    if (parts.length >= 4) {
+                        try {
+                            int turn = Integer.parseInt(parts[3]);
+                            if (!redisTemplate.opsForZSet().range(key, 0, -1).isEmpty()) {
+                                maxTurn = Math.max(maxTurn, turn);
+                            }
+                        } catch (NumberFormatException ignored) {}
+                    }
+                }
+                log.info("스크립트 기반 턴 추론: roomId={}, turn={}", roomId, maxTurn);
+                return maxTurn;
+            }
+
+            // 3. 메모리 Map 백업
+            Integer memoryTurn = currentTurns.get(roomId);
+            if (memoryTurn != null) {
+                log.warn("메모리에서 턴 조회: roomId={}, turn={}", roomId, memoryTurn);
+                return memoryTurn;
+            }
+
+            // 4. 기본값
+            log.warn("턴 정보 없음 - 기본값 1: roomId={}", roomId);
+            return 1;
+
+        } catch (Exception e) {
+            log.error("턴 조회 실패: roomId={}, error={}", roomId, e.getMessage());
+            return currentTurns.getOrDefault(roomId, 1);
+        }
     }
 
     private String buildPrompt(AiContextService.ConversationContext context) {
