@@ -67,6 +67,15 @@ export default function MiniGame2Page() {
   const isCleared = removedCards.length >= MOCK_CARDS.length;
   const isTimeOver = timeLeft <= 0;
 
+  const roomCode = location.state?.roomCode;
+
+  // ✅ 게임 시작 시 모든 참여자의 레디 상태를 해제 (대기방 복귀 시 초기화 목적)
+  useEffect(() => {
+    if (roomCode) {
+      toggleReady(roomCode, false).catch(() => {});
+    }
+  }, [roomCode]);
+
   const phase =
     countdown > 0
       ? GAME_PHASE.COUNTDOWN

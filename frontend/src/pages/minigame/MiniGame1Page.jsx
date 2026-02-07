@@ -130,6 +130,13 @@ export default function MiniGame1Page() {
     if (publisher) publisher.publishAudio(true);
   }, [publisher]);
 
+  // ✅ 게임 시작 시 모든 참여자의 레디 상태를 해제 (대기방 복귀 시 초기화 목적)
+  useEffect(() => {
+    if (roomCode) {
+      toggleReady(roomCode, false).catch(() => {});
+    }
+  }, [roomCode]);
+
   const { voiceLevel, start: startMic, stop: stopMic } = useMicAnalyzer({ threshold: 0.03, holdMs: 220 });
 
   useEffect(() => {

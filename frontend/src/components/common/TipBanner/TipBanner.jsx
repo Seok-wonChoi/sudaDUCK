@@ -24,7 +24,7 @@ export default function TipBanner({ text }) {
     timerRef.current = setInterval(() => {
       setIsTransitioning(true);
       setCurrentIndex((prev) => prev + 1);
-    }, 3000);
+    }, 2000);
 
     return () => clearInterval(timerRef.current);
   }, []);
