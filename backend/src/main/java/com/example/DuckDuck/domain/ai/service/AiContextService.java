@@ -48,8 +48,18 @@ public class AiContextService {
             
             log.info("대화 스크립트 조회 완료 - roomId: {}, turn: {}, count: {}", 
                     roomId, turn, scriptIds.size());
-            
-            return new ArrayList<>(scriptIds);
+
+            List<String> conversations = new ArrayList<>();
+            for (String scriptId : scriptIds) {
+                String detailKey = String.format("room:%d:turn:%d:script:%s", roomId, turn, scriptId);
+                String english = (String) redisTemplate.opsForHash().get(detailKey, "english");
+                String korean = (String) redisTemplate.opsForHash().get(detailKey, "korean");
+
+                if (english != null && korean != null) {
+                    conversations.add(String.format("%s (%s)", english, korean));
+                }
+            }
+            return conversations;
             
         } catch (Exception e) {
             log.error("Redis 조회 실패 - roomId: {}, turn: {}, error: {}", 
