@@ -31,9 +31,9 @@ public class AzureSpeechService {
      */
     @Async("azureTaskExecutor")
     public CompletableFuture<Integer> getPronunciationScore(
-            byte[] audioData, 
+            byte[] audioData,
             String referenceText) {
-        
+
         File tempFile = null;
         try {
             // 1. 임시 파일 생성
@@ -44,7 +44,7 @@ public class AzureSpeechService {
 
             // 2. Azure 설정
             SpeechConfig speechConfig = SpeechConfig.fromSubscription(speechKey, speechRegion);
-            
+
             try (AudioConfig audioConfig = AudioConfig.fromWavFileInput(tempFile.getAbsolutePath());
                  SpeechRecognizer recognizer = new SpeechRecognizer(speechConfig, audioConfig)) {
 
@@ -61,17 +61,9 @@ public class AzureSpeechService {
                 SpeechRecognitionResult result = recognizer.recognizeOnceAsync().get();
 
                 if (result.getReason() == ResultReason.RecognizedSpeech) {
-                    PronunciationAssessmentResult pronResult = 
-                        PronunciationAssessmentResult.fromResult(result);
-
-                    double accuracy = pronResult.getAccuracyScore();
-                    double fluency = pronResult.getFluencyScore();
-                    double completeness = pronResult.getCompletenessScore();
-
-                    int score = (int)(
-                            accuracy * 0.5 + fluency * 0.2 + completeness * 0.3
-                    );
-
+                    PronunciationAssessmentResult pronResult =
+                            PronunciationAssessmentResult.fromResult(result);
+                    int score = pronResult.getAccuracyScore().intValue();
                     return CompletableFuture.completedFuture(score);
                 } else {
                     log.warn("음성 인식 실패: {}", result.getReason());

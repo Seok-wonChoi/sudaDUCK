@@ -61,9 +61,10 @@
 /* Title: 페이지 메인 제목 */
 .Title {
   margin: clamp(50px, 6vw, 60px) 0 0;
+  font-family: 'Jalnan', sans-serif;
   font-size: clamp(24px, 3vw, 30px);
-  font-weight: 900;
-  letter-spacing: -0.4px;
+  font-weight: normal;
+  letter-spacing: -0.02em;
   text-align: center;
   color: #111827;
 }
@@ -71,10 +72,11 @@
 /* Subtitle: 제목 아래 설명 문구 */
 .Subtitle {
   margin: clamp(10px, 1.2vw, 12px) 0 0;
+  font-family: 'Jalnan', sans-serif;
   font-size: clamp(13px, 1.4vw, 14px);
   text-align: center;
   color: #6b7280;
-  font-weight: 700;
+  font-weight: normal;
 }
 
 /* FormCard: 코드 입력과 참여 버튼을 담는 중앙 카드 */

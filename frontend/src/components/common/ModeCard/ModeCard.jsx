@@ -4,6 +4,7 @@ import duckHeadsetImg from "@/assets/images/duck_headset.png";
 import duckTogetherImg from "@/assets/images/duck_together2.png";
 import duckSoloImg from "@/assets/images/duck_solo.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
+import duckExcellentImg from "@/assets/images/duck_excellent.png"; // 👈 추가
 import tapSound from "@/assets/sounds/tap.wav";
 import { useSoundContext } from "@/context/SoundContext";
 
@@ -14,12 +15,14 @@ export default function ModeCard({
   variant = "practice",
   disabled = false,
   disabledMessage = "오픈 예정입니다",
+  className = "",
+  isActive = true, // 👈 추가: 활성화된 카드(중앙)인지 여부
 }) {
   const [hovered, setHovered] = useState(false);
   const { getEffectiveVolume, isMuted } = useSoundContext();
 
   const playTapSound = () => {
-    if (isMuted) return;
+    if (isMuted || !isActive) return; // 👈 비활성화된 카드는 소리 재생 안 함
     try {
       const audio = new Audio(tapSound);
       audio.volume = getEffectiveVolume(0.1);
@@ -44,20 +47,25 @@ export default function ModeCard({
     case "ai":
       duckSrc = duckBotCyanImg;
       break;
+    case "mypage":
+      duckSrc = duckExcellentImg; // 👈 교체
+      break;
     default:
       duckSrc = duckHeadsetImg;
   }
 
-  const duckClassName =
-    variant === "together"
+  // 이미지 및 특수 효과 적용 여부 판단 (중앙에 있을 때만 적용)
+  const isSpecialVariant = (variant === "together" || variant === "mypage") && isActive;
+
+  const duckClassName = isSpecialVariant
       ? `${styles.Duck} ${styles.DuckTogether}`
       : styles.Duck;
 
-  const cardClassName = `${styles.Card} ${disabled ? styles.Disabled : ""} ${variant === "together" ? styles.CardTogether : ""}`;
+  const cardClassName = `${styles.Card} ${disabled ? styles.Disabled : ""} ${isSpecialVariant ? styles.CardTogether : ""} ${!isActive ? styles.NotActive : ""} ${className}`;
 
-  const handleClick = () => {
+  const handleClick = (e) => {
     if (disabled) return;
-    onClick?.();
+    onClick?.(e);
   };
 
   return (
