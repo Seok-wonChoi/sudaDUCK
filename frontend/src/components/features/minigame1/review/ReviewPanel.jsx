@@ -7,13 +7,14 @@ export default function ReviewPanel({
 }) {
   return (
     <div className={styles.wrapper}>
+      <div className={styles.topActions}>
+        <button className={styles.backButton} onClick={onBack}>
+          &larr; 결과로 돌아가기
+        </button>
+      </div>
+      
       <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <button className={styles.backButton} onClick={onBack}>
-            &lt; 결과로 돌아가기
-          </button>
-          <h2 className={styles.title}>전체 문제 리뷰</h2>
-        </div>
+        <h2 className={styles.title}>전체 문제 리뷰</h2>
         <p className={styles.subtitle}>틀린 부분과 정답을 확인해보세요</p>
       </div>
 
