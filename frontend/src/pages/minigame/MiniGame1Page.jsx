@@ -78,7 +78,7 @@ export default function MiniGame1Page() {
   const [showCoinReward, setShowCoinReward] = useState(false);
   const hasShownRewardRef = useRef(false);
 
-  // ??최신 ?�태�?참조?�기 ?�한 Ref??(?�?�머 ?�로?� 문제 ?�결)
+  // ✅ 최신 상태를 참조하기 위한 Ref들 (타이머 클로저 문제 해결)
   const currentQuestionRef = useRef(0);
   const blanksStateRef = useRef([]);
   const allAnswersSnapshotRef = useRef([]);
@@ -89,18 +89,18 @@ export default function MiniGame1Page() {
 
   useEffect(() => {
     if (phase === GAME_PHASE.RESULT && rankings.length >= 2 && !hasShownRewardRef.current && myProfile) {
-      // 1. ?�수???�렬 (?�수가 같으�?배열 ?�서 ?��?)
+      // 1. 점수순 정렬 (점수가 같으면 배열 순서 유지)
       const sorted = [...rankings].sort((a, b) => (b.score || 0) - (a.score || 0));
       const winner = sorted[0];
       if (!winner) return;
 
-      // 2. ??ID?� 1??ID 비교
+      // 2. 내 ID와 1등 ID 비교
       const myId = String(myProfile.userId || myProfile.memberId || myProfile.id);
       const winnerId = String(winner.userId || winner.memberId || winner.id);
       
       const isWinnerMe = winner.isMe || winner.me || (winnerId !== 'undefined' && winnerId === myId);
 
-      // 3. ?��? 1?�이�??�수가 1???�상?�면 ?�행
+      // 3. 내가 1등이고 점수가 1점 이상이면 실행
       if (isWinnerMe && (winner.score || 0) > 0) {
         hasShownRewardRef.current = true;
         setTimeout(() => {
@@ -110,11 +110,11 @@ export default function MiniGame1Page() {
     }
   }, [phase, rankings, myProfile]);
 
-  // ?�� ?�로가�?차단 �??�션 종료 로직
+  // 🎤 뒤로가기 차단 및 세션 종료 로직
   useEffect(() => {
     const handlePopState = async (e) => {
       e.preventDefault();
-      if (confirm("게임???��??�겠?�니�? 진행 중인 ?�이?��? ??��?�니??")) {
+      if (confirm("게임을 나가시겠습니까? 진행 중인 데이터가 삭제됩니다.")) {
         await handleExit();
       } else {
         window.history.pushState(null, "", window.location.href);
@@ -130,7 +130,7 @@ export default function MiniGame1Page() {
     if (publisher) publisher.publishAudio(true);
   }, [publisher]);
 
-  // ??게임 ?�작 ??모든 참여?�의 ?�디 ?�태�??�제 (?�기방 복�? ??초기??목적)
+  // ✅ 게임 시작 시 모든 참여자의 레디 상태를 해제 (대기방 복귀 시 초기화 목적)
   useEffect(() => {
     if (roomCode) {
       toggleReady(roomCode, false).catch(() => {});
@@ -147,7 +147,7 @@ export default function MiniGame1Page() {
     }
   }, [phase, startMic, stopMic]);
 
-  // ??�� ?�이?�에 ?�로???�보(duckCustomJson ?? 병합?�는 ?�퍼 ?�수
+  // 랭킹 데이터에 프로필 정보(duckCustomJson 등) 병합하는 헬퍼 함수
   const mergeRankingData = useCallback((ranks) => {
     if (!ranks || !Array.isArray(ranks)) return [];
     
@@ -157,17 +157,17 @@ export default function MiniGame1Page() {
       const itemId = String(item.userId || item.memberId || item.id || '');
       const itemNickname = item.nickname;
       
-      // 참여??목록?�서 ?�당 ?��? 찾기 (ID ?�선, ?�네??차선)
+      // 참여자 목록에서 해당 유저 찾기 (ID 우선, 닉네임 차선)
       const originalInfo = participants.find(p => 
         (itemId && itemId !== 'undefined' && String(p.key) === itemId) || 
         (itemNickname && p.nickname === itemNickname)
       );
 
-      // ?�버?�서 직접 준 커스?� ?�보가 ?�는지 ?�인
+      // 서버에서 직접 준 커스텀 정보가 있는지 확인
       const hasValidServerJson = item.duckCustomJson && 
         (typeof item.duckCustomJson === 'object' || (typeof item.duckCustomJson === 'string' && item.duckCustomJson.trim().length > 0));
       
-      // 최종?�으�??�용??duckCustomJson 결정 (?�버 ?�이??> 로컬 참여???�보 > ?�버 ?�이??
+      // 최종적으로 사용할 duckCustomJson 결정 (서버 데이터 > 로컬 참여자 정보 > 서버 데이터)
       const finalDuckJson = hasValidServerJson ? item.duckCustomJson : (originalInfo?.duckCustomJson || item.duckCustomJson);
 
       return {
@@ -191,13 +191,13 @@ export default function MiniGame1Page() {
     }
   }, [totalParticipants, phase, mergeRankingData]);
 
-  // 방장 ?�장 ??메인 ?�면?�로 강제 ?�동
+  // 방장 퇴장 시 메인 화면으로 강제 이동
   const handleRoomClosed = useCallback(() => {
-    // console.log("[MiniGame1Page] ROOM_CLOSED ?�신 - 방장 ?�장");
+    console.log("[MiniGame1Page] ROOM_CLOSED 수신 - 방장 퇴장");
     leaveSession();
     navigate("/main", {
       replace: true,
-      state: { toastMessage: "방장???�장?�여 ?�?��? 종료?�었?�니??" },
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
   }, [navigate, leaveSession]);
 
@@ -216,7 +216,7 @@ export default function MiniGame1Page() {
       if (!roomCode) return;
       try {
         const lobbyData = await getRoomLobby(roomCode);
-        // WaitingRoomPage?� ?�일?�게 participants ?�는 members ?�드�?모두 ?�인
+        // WaitingRoomPage와 동일하게 participants 또는 members 필드를 모두 확인
         const members = lobbyData?.participants || lobbyData?.members || [];
         
         if (members.length > 0) {
@@ -226,13 +226,13 @@ export default function MiniGame1Page() {
             isMe: m.isMe,
             profileImageUrl: m.profileImageUrl,
             duckCustomJson: m.duckCustomJson,
-            avatarCustomJson: m.avatarCustomJson // ?�네???��??????�시 모�? ?�장 ?��?
+            avatarCustomJson: m.avatarCustomJson // 닉네임 스타일 등 혹시 모를 확장 대비
           }));
-          // console.log("[MiniGame1] 참여???�로??로드 ?�공:", list.length, "�?);
+          console.log("[MiniGame1] 참여자 프로필 로드 성공:", list.length, "명");
           setParticipants(list);
           setTotalParticipants(list.length);
         }
-      } catch (error) { console.error("[MiniGame1] 참여??로드 ?�패:", error); }
+      } catch (error) { console.error("[MiniGame1] 참여자 로드 실패:", error); }
     };
     loadRoomParticipants();
   }, [roomCode]);
@@ -285,8 +285,8 @@ export default function MiniGame1Page() {
         initBlanks(0, formatted);
         setIsLoading(false);
       } catch (error) {
-        console.error('[MiniGame1] ?�이??로드 ?�패:', error);
-        // 즉시 ?�기방?�로 ?�동?�며 ?�스??메시지 ?�달
+        console.error('[MiniGame1] 데이터 로드 실패:', error);
+        // 즉시 대기방으로 이동하며 토스트 메시지 전달
         navigate('/together/waiting', { 
           state: { 
             roomId, 
@@ -294,7 +294,7 @@ export default function MiniGame1Page() {
             isHost,
             participantsCount: initialParticipantsCount,
             timeLimit,
-            toastMessage: '?�??기록??부족하??복습 게임??진행?????�습?�다.'
+            toastMessage: '대화 기록이 부족하여 복습 게임을 진행할 수 없습니다.'
           }, 
           replace: true 
         });
@@ -341,24 +341,24 @@ export default function MiniGame1Page() {
     }
   };
 
-  // 최종 ?�출 (가??중요???�나?�퍼 로직)
+  // 최종 제출 (가장 중요한 스나이퍼 로직)
   const handleFinalSubmit = async () => {
-    // ?�� ?��????�데?�트: ?�버 ?�답 ?�에???��? ?�출?�음??UI??즉시 반영
+    // 🏁 낙관적 업데이트: 서버 응답 전에도 내가 제출했음을 UI에 즉시 반영
     setRankings(prev => prev.map(r => r.isMe ? { ...r, hasSubmitted: true } : r));
     setSubmittedCount(prev => prev + 1);
     setPhase(GAME_PHASE.WAITING);
 
     try {
-      // ??Ref�??�용?�여 ?�로?�??갇히지 ?��? 최신 �?참조
+      // ✅ Ref를 사용하여 클로저에 갇히지 않은 최신 값 참조
       const currentText = blanksStateRef.current.map(b => b.value.trim() || '').join(', ');
       const finalPayload = allAnswersSnapshotRef.current.map((ans, idx) => 
         idx === currentQuestionRef.current ? { ...ans, userAnswer: currentText } : ans
       );
       
-      // console.log("[MiniGame1] 최종 ?�출 ?�이??", finalPayload);
+      console.log("[MiniGame1] 최종 제출 데이터:", finalPayload);
       await submitReviewAnswers(roomId, finalPayload);
     } catch (error) { 
-      console.error("[MiniGame1] 최종 ?�출 ?�패:", error); 
+      console.error("[MiniGame1] 최종 제출 실패:", error); 
     }
   };
 
@@ -372,15 +372,15 @@ export default function MiniGame1Page() {
         await toggleReady(roomCode, false);
       }
     } catch (e) {
-      console.error('[MiniGame1] ?�기방 복�? 처리 �??�류(무시?�고 ?�동):', e);
+      console.error('[MiniGame1] 대기방 복귀 처리 중 오류(무시하고 이동):', e);
     }
 
-    // API ?�공 ?��??� 관계없??반드???�기방?�로 ?�동
+    // API 성공 여부와 관계없이 반드시 대기방으로 이동
     navigate('/together/waiting', { 
       state: { 
         ...location.state,
         fromGame: true,
-        // 참여??명단?� ?��??�되, ?�태�??��? ?�기로 강제 초기?�해???��?
+        // 참여자 명단은 유지하되, 상태만 전부 대기로 강제 초기화해서 넘김
         participants: participants.map(p => ({ ...p, isReady: false, readyStatus: 'NOT_READY' })),
         readyCount: 0 
       }, 
@@ -401,7 +401,7 @@ export default function MiniGame1Page() {
     navigate('/together', { replace: true });
   };
 
-  if (isLoading) return <MiniGameLayout disableProfileClick={true}>로딩 �?..</MiniGameLayout>;
+  if (isLoading) return <MiniGameLayout disableProfileClick={true}>로딩 중...</MiniGameLayout>;
 
   return (
     <MiniGameLayout
@@ -421,7 +421,7 @@ export default function MiniGame1Page() {
 
       {phase === GAME_PHASE.PLAYING && (
         <>
-          {showGuide && <DuckGuide message="빈칸??채우�?Enter�??�르?�요!" />}
+          {showGuide && <DuckGuide message="빈칸을 채우고 Enter를 누르세요!" />}
           <QuestionPanel
             current={currentQuestion + 1}
             total={questions.length}

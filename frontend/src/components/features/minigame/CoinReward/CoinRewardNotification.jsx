@@ -14,23 +14,23 @@ export default function CoinRewardNotification({ show, onComplete }) {
       setActive(true);
       setFadingOut(false);
 
-      // 코인 ?�과???�생
+      // 코인 효과음 재생
       if (!isMuted) {
         try {
           const audio = new Audio(coinSound);
           audio.volume = getEffectiveVolume(0.4);
           audio.play().catch(() => {});
         } catch (e) {
-          console.warn('코인 ?�과???�생 ?�패:', e);
+          console.warn('코인 효과음 재생 실패:', e);
         }
       }
 
-      // 2.5�????�이?�아???�작
+      // 2.5초 후 페이드아웃 시작
       const fadeOutTimer = setTimeout(() => {
         setFadingOut(true);
       }, 2500);
 
-      // 3�???즉시 종료 �?부�??�태 변�?
+      // 3초 후 즉시 종료 및 부모 상태 변경
       const completeTimer = setTimeout(() => {
         setActive(false);
         if (onComplete) onComplete();
@@ -55,9 +55,9 @@ export default function CoinRewardNotification({ show, onComplete }) {
           <img src={coinImage} alt="코인" className={styles.CoinImage} />
           <div className={styles.CoinGlow} />
         </div>
-        <h2 className={styles.Title}>축하?�니?? ?��</h2>
+        <h2 className={styles.Title}>축하합니다! 🎉</h2>
         <p className={styles.Message}>
-          1?�으�?<span className={styles.CoinAmount}>코인</span>??지급되?�습?�다!
+          1등으로 <span className={styles.CoinAmount}>코인</span>이 지급되었습니다!
         </p>
       </div>
     </div>

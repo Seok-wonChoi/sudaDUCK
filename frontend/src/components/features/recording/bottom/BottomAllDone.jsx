@@ -9,10 +9,10 @@ export default function BottomAllDone({ onRestart, onComplete, isHost }) {
         </svg>
       </div>
       <div className={styles.content}>
-        <p className={styles.message}>모든 문장???�음???�료?�었?�니??</p>
+        <p className={styles.message}>모든 문장의 녹음이 완료되었습니다!</p>
         <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
           <button className={styles.restartBtn} onClick={onRestart}>
-            ?�시?�기
+            다시하기
           </button>
           <button
             className={styles.completeBtn}
@@ -30,7 +30,7 @@ export default function BottomAllDone({ onRestart, onComplete, isHost }) {
               opacity: isHost ? 1 : 0.6
             }}
           >
-            {isHost ? '모두 복습게임 ?�작' : '방장???�작???�까지 ?��?}
+            {isHost ? '모두 복습게임 시작' : '방장이 시작할 때까지 대기'}
           </button>
         </div>
       </div>

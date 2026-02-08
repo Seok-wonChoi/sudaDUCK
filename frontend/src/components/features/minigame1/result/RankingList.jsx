@@ -9,7 +9,7 @@ export default function RankingList({ rankings = [], totalQuestions = 4 }) {
 
       {rankings.map((player, idx) => {
 
-        // 부�?MiniGame1Page)?�서 ?��? 병합???�이?��? 그�?�??�용
+        // 부모(MiniGame1Page)에서 이미 병합된 데이터를 그대로 사용
 
         const customJsonToUse = player.duckCustomJson;
 

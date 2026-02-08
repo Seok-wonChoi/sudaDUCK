@@ -13,7 +13,7 @@ export default function QuizSection({
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
-  // blankScript가 ?�으�??�동?�로 ?�즈 ?�성
+  // blankScript가 있으면 자동으로 퀴즈 생성
   const displayQuestion = question || blankScript.replace(/\[([^\]]+)\]/g, '______');
   const displayAnswer = answer || (blankWords.length > 0 ? blankWords.join(', ') : '');
 
@@ -33,25 +33,25 @@ export default function QuizSection({
   return (
     <div className={styles.Container}>
       <div className={styles.Header}>
-        <span className={styles.Title}>빈칸 ?�즈</span>
+        <span className={styles.Title}>빈칸 퀴즈</span>
         <button
           type="button"
           className={styles.ToggleButton}
           onClick={onToggle}
         >
-          {isOpen ? "?�즈 ?�기" : "?�즈 ?��?}
+          {isOpen ? "퀴즈 닫기" : "퀴즈 풀기"}
         </button>
       </div>
 
       {isOpen && (displayQuestion || question) && (
         <div className={styles.QuizBox}>
-          <div className={styles.QuizLabel}>빈칸??채워보세??/div>
+          <div className={styles.QuizLabel}>빈칸을 채워보세요</div>
           <div className={styles.Question}>{displayQuestion}</div>
 
           <input
             type="text"
             className={styles.Input}
-            placeholder="빈칸???�어�??�어?�을 ?�력?�세??(?�러 개인 경우 ?�표�?구분)"
+            placeholder="빈칸에 들어갈 단어들을 입력하세요 (여러 개인 경우 쉼표로 구분)"
             value={userAnswer}
             onChange={(e) => setUserAnswer(e.target.value)}
             disabled={showResult}
@@ -59,7 +59,7 @@ export default function QuizSection({
 
           {showResult && (
             <div className={`${styles.Result} ${isCorrect ? styles.Correct : styles.Wrong}`}>
-              {isCorrect ? "?�답?�니?? ?��" : `?�답?�니?? ?�답: ${displayAnswer}`}
+              {isCorrect ? "정답입니다! 🎉" : `오답입니다. 정답: ${displayAnswer}`}
             </div>
           )}
 
@@ -70,14 +70,14 @@ export default function QuizSection({
               onClick={handleCheck}
               disabled={showResult || !userAnswer.trim()}
             >
-              ???�답 ?�인
+              ✓ 정답 확인
             </button>
             <button
               type="button"
               className={styles.RetryButton}
               onClick={handleRetry}
             >
-              ???�시?�기
+              ↻ 다시하기
             </button>
           </div>
         </div>

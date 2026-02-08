@@ -4,10 +4,10 @@ import bookmarkAddIcon from '@/assets/icons/bookmark_add.png';
 import bookmarkAddedIcon from '@/assets/icons/bookmakr_added.png';
 
 export default function SentenceCard({
-  speaker = '??,
+  speaker = '나',
   currentSentence = 1,
   totalSentences = 3,
-  korean = '?�는 카페?�서 ?�르바이?��? ?�는?? ?�말 ?�들?�어??',
+  korean = '나는 카페에서 아르바이트를 했는데, 정말 힘들었어요.',
   english = 'I worked at a coffee shop, and it was really tough.',
   blankWords = [],
   score = null,
@@ -39,10 +39,10 @@ export default function SentenceCard({
       onBookmarkToggle(sentenceId, newBookmarkedState);
     }
 
-    // console.log('북마???��?:', sentenceId, newBookmarkedState);
+    console.log('북마크 토글:', sentenceId, newBookmarkedState);
   };
 
-  // ?�수???�른 ?�상 ?�래??반환
+  // 점수에 따른 색상 클래스 반환
   const getScoreColorClass = (scoreValue) => {
     if (scoreValue < 40) return styles.scoreRed;
     if (scoreValue < 60) return styles.scoreOrange;
@@ -55,7 +55,7 @@ export default function SentenceCard({
       return <>{english}</>;
     }
 
-    // AI가 ?�는 중이거나 ?�음 ?��?중에???�체 문장 보여주기
+    // AI가 읽는 중이거나 녹음 대기 중에는 전체 문장 보여주기
     if (cardState === 'ai_playing' || cardState === 'record_timer') {
       return <>{english}</>;
     }
@@ -111,7 +111,7 @@ export default function SentenceCard({
                   </span>
                 );
               } else {
-                // 빈칸 모드가 꺼져?�을 ?�는 ?�스?��? 보여주되 강조 ?�시
+                // 빈칸 모드가 꺼져있을 때는 텍스트를 보여주되 강조 표시
                 newParts.push(
                   <span key={`hint-${word}-${idx}`} className={styles.blankTextHint}>
                     {split}
@@ -146,8 +146,8 @@ export default function SentenceCard({
                 <div className={styles.countdownCircleBig}>
                   <span className={styles.countdownNumberBig}>{Math.max(0, countdown)}</span>
                 </div>
-                <span className={styles.statusTextLarge}>?�시 ???�음???�작?�니??/span>
-                <span className={styles.recordingHintLarge}>?�어�??�을 준�?!! ?���?/span>
+                <span className={styles.statusTextLarge}>잠시 후 녹음이 시작됩니다</span>
+                <span className={styles.recordingHintLarge}>영어로 읽을 준비!!! 🎙️</span>
               </div>
             </div>
           </div>
@@ -163,7 +163,7 @@ export default function SentenceCard({
         return (
           <div className={styles.recordingColumn}>
             <div className={styles.recordingActive}>
-              {/* 좌측: ?�위�??��? ?�역 */}
+              {/* 좌측: 스위치 토글 영역 */}
               <div className={styles.sideArea}>
                 <div className={styles.switchWrapper}>
                   <span className={styles.switchLabel}>빈칸</span>
@@ -172,28 +172,28 @@ export default function SentenceCard({
                     className={`${styles.iosSwitch} ${showBlanks ? styles.switchOn : ""}`}
                     onClick={onToggleBlanks}
                     disabled={isSubmitting}
-                    aria-label={showBlanks ? "빈칸 ?�기" : "빈칸 켜기"}
+                    aria-label={showBlanks ? "빈칸 끄기" : "빈칸 켜기"}
                   >
                     <div className={styles.switchHandle} />
                   </button>
                 </div>
               </div>
 
-              {/* 중앙: 카운?�다??*/}
+              {/* 중앙: 카운트다운 */}
               <div className={styles.centerArea}>
                 <div className={styles.recordingCircle}>
                   <span className={styles.countdownNumber}>{formatCountdown(recordingCountdown)}</span>
                 </div>
               </div>
 
-              {/* ?�측: ?��? 버튼 ?�역 */}
+              {/* 우측: 정지 버튼 영역 */}
               <div className={styles.sideArea}>
                 {onStop && (
                   <button 
                     className={styles.stopButtonCircle} 
                     onClick={onStop}
                     type="button"
-                    aria-label="?�음 ?�내�?
+                    aria-label="녹음 끝내기"
                     disabled={isSubmitting}
                   >
                     <div className={styles.stopActionIconWrap}>
@@ -204,13 +204,13 @@ export default function SentenceCard({
                       )}
                     </div>
                     <span className={styles.stopText}>
-                      {isSubmitting ? '?��? �? : '?�내�?}
+                      {isSubmitting ? '평가 중' : '끝내기'}
                     </span>
                   </button>
                 )}
               </div>
             </div>
-            <p className={styles.recordingHintText}>문장??천천???�박?�박 ?�라 말해보세??</p>
+            <p className={styles.recordingHintText}>문장을 천천히 또박또박 따라 말해보세요.</p>
           </div>
         );
 
@@ -220,14 +220,14 @@ export default function SentenceCard({
             {isSubmitting ? (
               <div className={styles.submittingStatus}>
                 <div className={styles.spinnerBlue} />
-                <span className={styles.statusText}>?��? ?�송 �?..</span>
+                <span className={styles.statusText}>평가 전송 중...</span>
               </div>
             ) : (
               <div className={styles.statusColumn}>
                 <span className={`${styles.statusText} ${styles.statusSuccess}`}>
-                  ??문장 ?�음 ?�료!
+                  ✅ 문장 녹음 완료!
                 </span>
-                <span className={styles.nextSentenceHint}>?�음 문장?�로..</span>
+                <span className={styles.nextSentenceHint}>다음 문장으로..</span>
               </div>
             )}
           </div>
@@ -240,7 +240,7 @@ export default function SentenceCard({
 
   const showRecordingBox = isActive && (cardState === 'record_timer' || cardState === 'recording' || cardState === 'record_done');
 
-  // ?�수???�른 ?�급 ?�래??결정
+  // 점수에 따른 등급 클래스 결정
   const getScoreGradeClass = () => {
     if (score === null || cardState !== 'idle') return '';
     if (score >= 90) return styles.excellent; // Green
@@ -259,7 +259,7 @@ export default function SentenceCard({
     <div className={`${styles.sentenceCard} ${isActive ? styles.active : ''} ${getScoreGradeClass()}`}>
       <div className={styles.header}>
         <div className={styles.speakerInfo}>
-          <span className={styles.speakerName}>?���?발화??: {speaker}</span>
+          <span className={styles.speakerName}>🎙️ 발화자 : {speaker}</span>
         </div>
         <div className={styles.headerRight}>
           {score !== null && cardState === 'idle' && (
@@ -281,8 +281,8 @@ export default function SentenceCard({
             <button
               className={`${styles.bookmarkButton} ${isBookmarked ? styles.bookmarked : ''}`}
               onClick={handleBookmark}
-              aria-label={isBookmarked ? "?�???�제" : "?�?�하�?}
-              title={isBookmarked ? "?�???�제" : "?�?�하�?}
+              aria-label={isBookmarked ? "저장 해제" : "저장하기"}
+              title={isBookmarked ? "저장 해제" : "저장하기"}
             >
               <img
                 src={isBookmarked ? bookmarkAddedIcon : bookmarkAddIcon}
@@ -290,7 +290,7 @@ export default function SentenceCard({
                 className={styles.bookmarkIcon}
               />
               <span className={styles.bookmarkText}>
-                {isBookmarked ? "?�?�됨" : "?�?�하�?}
+                {isBookmarked ? "저장됨" : "저장하기"}
               </span>
             </button>
           )}
@@ -299,7 +299,7 @@ export default function SentenceCard({
 
       <div className={styles.content}>
         <div className={styles.section}>
-          <span className={styles.label}>?�국??/span>
+          <span className={styles.label}>한국어</span>
           <p className={styles.text}>{korean}</p>
         </div>
 
@@ -311,7 +311,7 @@ export default function SentenceCard({
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M2 8h4l3-6 3 12 3-6h3" stroke="#2B7FFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                AI ?�는 �?..
+                AI 읽는 중...
               </span>
             )}
           </div>

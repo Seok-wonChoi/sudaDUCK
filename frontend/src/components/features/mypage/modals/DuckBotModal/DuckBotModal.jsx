@@ -10,9 +10,9 @@ import duckBotDigital from "@/assets/images/duck_bot_digital.png";
 import duckBotMecha from "@/assets/images/duck_bot_mecha.png";
 
 const DUCK_OPTIONS = [
-  { id: "cyan", label: "?�이�?, image: duckBotCyan, cost: 0 },
-  { id: "orange", label: "?�머", image: duckBotOrange, cost: 20 },
-  { id: "digital", label: "?��???, image: duckBotDigital, cost: 20 },
+  { id: "cyan", label: "사이버", image: duckBotCyan, cost: 0 },
+  { id: "orange", label: "아머", image: duckBotOrange, cost: 20 },
+  { id: "digital", label: "디지털", image: duckBotDigital, cost: 20 },
   { id: "mecha", label: "메카", image: duckBotMecha, cost: 20 },
 ];
 
@@ -29,7 +29,7 @@ export default function DuckBotModal({
   const [pendingPurchaseId, setPendingPurchaseId] = useState(null);
   const [purchaseModal, setPurchaseModal] = useState(null);
 
-  // ?�치 + ?�릭 ?�으�??�일 ?�력??2�??�어?�는(?�령 ?�릭) 케?�스 방�?
+  // 터치 + 클릭 등으로 동일 입력이 2번 들어오는(유령 클릭) 케이스 방지
   const lastTapRef = useRef({ id: null, ts: 0 });
 
   useEffect(() => {
@@ -46,10 +46,10 @@ export default function DuckBotModal({
 
   const openPurchaseModalFor = (duckId, cost) => {
     const duckName =
-      DUCK_OPTIONS.find((d) => d.id === duckId)?.label || "?�리�?;
+      DUCK_OPTIONS.find((d) => d.id === duckId)?.label || "오리봇";
     setPurchaseModal({
       id: duckId,
-      name: `${duckName} ?�리�?,
+      name: `${duckName} 오리봇`,
       cost,
     });
   };
@@ -57,32 +57,32 @@ export default function DuckBotModal({
   const handleDuckClick = (duckId, cost) => {
     const isUnlocked = unlockedDuckBots.includes(duckId);
 
-    // 1) 미리보기????�� 갱신
+    // 1) 미리보기는 항상 갱신
     setPreviewId(duckId);
 
     if (isUnlocked) {
-      // ?�금 ?�이?��? 즉시 ?�택(?�???�??
+      // 해금 아이템은 즉시 선택(저장 대상)
       setSelectedId(duckId);
       setPendingPurchaseId(null);
       return;
     }
 
-    // ?�금 ?�이?�에???�령 ?�릭(?�치+?�릭 ?? 방�?
+    // 잠금 아이템에서 유령 클릭(터치+클릭 등) 방지
     const now = Date.now();
     if (lastTapRef.current.id === duckId && now - lastTapRef.current.ts < 250) {
       return;
     }
     lastTapRef.current = { id: duckId, ts: now };
 
-    // ?�금 ?�이?��? 2?�계 ?�릭
+    // 잠금 아이템은 2단계 클릭
     if (pendingPurchaseId === duckId) {
-      // ??번째 ?�릭: 구매 모달
+      // 두 번째 클릭: 구매 모달
       setPendingPurchaseId(null);
       openPurchaseModalFor(duckId, cost);
       return;
     }
 
-    // �?번째 ?�릭: 구매 ?��??�태�??�정 (미리보기�?바�?
+    // 첫 번째 클릭: 구매 대기 상태만 설정 (미리보기만 바뀜)
     setPendingPurchaseId(duckId);
   };
 
@@ -96,7 +96,7 @@ export default function DuckBotModal({
     );
 
     if (ok) {
-      // 구매 ?�공 ???�택 + 미리보기 ?�정
+      // 구매 성공 시 선택 + 미리보기 확정
       setSelectedId(purchaseModal.id);
       setPreviewId(purchaseModal.id);
     }
@@ -116,7 +116,7 @@ export default function DuckBotModal({
         취소
       </button>
       <button type="button" className={styles.SaveBtn} onClick={handleSave} data-click-sound="false">
-        ?�??
+        저장
       </button>
     </>
   );
@@ -136,7 +136,7 @@ export default function DuckBotModal({
         />
       )}
 
-      <ModalWrapper title="AI?�리�?바꾸�? onClose={onClose} footer={footer}>
+      <ModalWrapper title="AI오리봇 바꾸기" onClose={onClose} footer={footer}>
         <div className={styles.Content}>
           <div className={styles.Preview}>
             <img
@@ -171,7 +171,7 @@ export default function DuckBotModal({
                     />
                     {!isUnlocked && (
                       <div className={styles.LockOverlay}>
-                        <span className={styles.LockIcon}>?��</span>
+                        <span className={styles.LockIcon}>🔒</span>
                         <div className={styles.CoinBadge}>
                           <img
                             src={coinImage}
@@ -188,7 +188,7 @@ export default function DuckBotModal({
 
                   {!isUnlocked && isPending && (
                     <span className={styles.PendingHint}>
-                      ??�????�르�?구매
+                      한 번 더 누르면 구매
                     </span>
                   )}
                 </button>

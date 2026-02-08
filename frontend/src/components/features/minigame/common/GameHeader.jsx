@@ -1,7 +1,7 @@
 import styles from './GameHeader.module.css';
 
 export default function GameHeader({
-  title = '빈칸 채우�?,
+  title = '빈칸 채우기',
   timer = '0:00',
   badge = 'MINI 1'
 }) {

@@ -7,14 +7,14 @@ import { useSoundContext } from "@/context/SoundContext";
 export default function ConfirmModal({
   open,
   title,
-  message = "?�말 ?��??�겠?�니�?",
-  confirmText = "?��?�?,
+  message = "정말 나가시겠습니까?",
+  confirmText = "나가기",
   cancelText = "취소",
   onConfirm,
   onClose,
   onCancel,
-  reverseButtons = false, // ?�� 버튼 ?�서 반전 ?�션 추�?
-  small = false, // ?�� 버튼 ?�기 축소 ?�션 추�?
+  reverseButtons = false, // 👈 버튼 순서 반전 옵션 추가
+  small = false, // 👈 버튼 크기 축소 옵션 추가
 }) {
   const cancelRef = useRef(null);
   const { getEffectiveVolume, isMuted } = useSoundContext();
@@ -26,7 +26,7 @@ export default function ConfirmModal({
         audio.volume = getEffectiveVolume(0.1);
         audio.play().catch(() => {});
       } catch (e) {
-        // ?�운???�생 ?�패 무시
+        // 사운드 재생 실패 무시
       }
     }
   };
@@ -64,7 +64,7 @@ export default function ConfirmModal({
 
   if (!open) return null;
 
-  // 버튼 배열 ?�성 (cancelText가 ?�을 ?�만 취소 버튼 ?�함)
+  // 버튼 배열 생성 (cancelText가 있을 때만 취소 버튼 포함)
   const buttons = [];
 
   if (cancelText) {
@@ -99,7 +99,7 @@ export default function ConfirmModal({
         className={styles.Dialog}
         role="dialog"
         aria-modal="true"
-        aria-label={title || "?�인"}
+        aria-label={title || "확인"}
         onClick={(e) => e.stopPropagation()}
       >
         {title && <div className={styles.Title}>{title}</div>}

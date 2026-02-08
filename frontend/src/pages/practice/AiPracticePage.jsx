@@ -38,7 +38,7 @@ function VoiceWave({ level, enabled }) {
 
 export default function AiPracticePage() {
   const navigate = useNavigate();
-  const topic = useMemo(() => "좋아?�는 ?�식", []);
+  const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 40_000;
 
   const [showBackConfirm, setShowBackConfirm] = useState(false);
@@ -62,13 +62,13 @@ export default function AiPracticePage() {
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [aiVoiceLevel, setAiVoiceLevel] = useState(0);
-  const [aiMessage, setAiMessage] = useState("?��? ?�일 좋아?�는 ?�식?� 뭐야?");
+  const [aiMessage, setAiMessage] = useState("너가 제일 좋아하는 음식은 뭐야?");
 
   const [isCountdownOpen, setIsCountdownOpen] = useState(true);
   const [countdownSec, setCountdownSec] = useState(3);
   const [isRunning, setIsRunning] = useState(false);
 
-  // ?�?�머 ?�작 ?�간 (?��? timestamp)
+  // 타이머 시작 시간 (절대 timestamp)
   const [timerStartedAt] = useState(() => {
     try {
       const saved = sessionStorage.getItem('ai_practice_timer');
@@ -78,7 +78,7 @@ export default function AiPracticePage() {
     }
   });
 
-  // sessionStorage ?�??
+  // sessionStorage 저장
   useEffect(() => {
     try {
       sessionStorage.setItem('ai_practice_timer', String(timerStartedAt));
@@ -99,7 +99,7 @@ export default function AiPracticePage() {
     lastUiAt: 0,
   });
 
-  // AI ?�결 ???�용??ref (?�재??미사??
+  // AI 연결 시 사용할 ref (현재는 미사용)
   // const aiTimerRef = useRef(null);
   // const aiAnimationRef = useRef(null);
 
@@ -221,7 +221,7 @@ export default function AiPracticePage() {
           window.clearInterval(id);
           setIsCountdownOpen(false);
           setIsRunning(true);
-          // 카운?�다??종료 ??마이???�동 켜기
+          // 카운트다운 종료 시 마이크 자동 켜기
           startAudioAnalysis();
           return 0;
         }
@@ -238,8 +238,8 @@ export default function AiPracticePage() {
     };
   }, [stopAudioAnalysis]);
 
-  // AI 발화 ?�태???�중???�제 AI ?�결 ???�용
-  // setIsAiSpeaking(true/false), setAiVoiceLevel(0~1) �??�어
+  // AI 발화 상태는 나중에 실제 AI 연결 시 사용
+  // setIsAiSpeaking(true/false), setAiVoiceLevel(0~1) 로 제어
 
   const toggleMic = useCallback(async () => {
     if (micOn) {
@@ -254,7 +254,7 @@ export default function AiPracticePage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
-    // ?�??종료 ???�음 ?�이지�??�동
+    // 대화 종료 후 녹음 페이지로 이동
     navigate("/recording", {
       replace: true,
       state: {
@@ -267,9 +267,9 @@ export default function AiPracticePage() {
   const handleDone = useCallback(async () => {
     await stopAudioAnalysis();
     setMicOn(false);
-    // console.log("?�간 종료");
+    console.log("시간 종료");
 
-    // ?�??종료 ???�음 ?�이지�??�동
+    // 대화 종료 후 녹음 페이지로 이동
     navigate("/recording", {
       replace: true,
       state: {
@@ -282,15 +282,15 @@ export default function AiPracticePage() {
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        <ExitGuard to="/" message="메인 ?�면?�로 ?��??�겠?�니�?" />
+        <ExitGuard to="/" message="메인 화면으로 나가시겠습니까?" />
         <AppHeader userName="user" notifications={[]} />
 
         {isCountdownOpen && (
-          <div className={styles.CountdownOverlay} role="dialog" aria-label="?�습 ?�작 카운?�다??>
+          <div className={styles.CountdownOverlay} role="dialog" aria-label="연습 시작 카운트다운">
             <div className={styles.CountdownModal}>
-              <div className={styles.CountdownTitle}>�??�작?�니??/div>
+              <div className={styles.CountdownTitle}>곧 시작합니다</div>
               <div className={styles.CountdownNumber}>{countdownSec}</div>
-              <div className={styles.CountdownHint}>마이?��? 준비해 주세??/div>
+              <div className={styles.CountdownHint}>마이크를 준비해 주세요</div>
             </div>
           </div>
         )}
@@ -300,19 +300,19 @@ export default function AiPracticePage() {
             className={styles.BackButton}
             type="button"
             onClick={handleBack}
-            aria-label="?�로 가�?
+            aria-label="뒤로 가기"
           >
             &lt;
           </button>
 
           <div className={styles.HeaderRow}>
             <div className={styles.ExitCol}>
-              <ExitButton to="/" label="?��?�? confirmMessage="?�습??종료?�고 ?��??�겠?�니�?" />
+              <ExitButton to="/" label="나가기" confirmMessage="연습을 종료하고 나가시겠습니까?" />
             </div>
 
             <div className={styles.TopicRow}>
-              <img className={styles.SmallDuck} src={duckImg} alt="?�리" />
-              <div className={styles.TopicBubble}>?�??주제??<span className={styles.TopicHighlight}>{topic}</span>?�니??</div>
+              <img className={styles.SmallDuck} src={duckImg} alt="오리" />
+              <div className={styles.TopicBubble}>대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다!</div>
             </div>
 
             <div className={styles.TimerCol}>
@@ -331,17 +331,17 @@ export default function AiPracticePage() {
                   >
                     <div className={styles.VideoInner}>
                       <div className={styles.AvatarCircle}>
-                        <img className={styles.AvatarDuck} src={duckImg} alt="???�바?�" />
+                        <img className={styles.AvatarDuck} src={duckImg} alt="내 아바타" />
                       </div>
                     </div>
 
                     <div className={styles.VideoFooter}>
                       <div className={styles.VideoFooterLeft}>
-                        <span className={styles.MeLabel}>??/span>
+                        <span className={styles.MeLabel}>나</span>
                         <img
                           className={styles.MicMini}
                           src={micOn ? micOffIcon : micOnIcon}
-                          alt={micOn ? "마이??켜짐" : "마이??꺼짐"}
+                          alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                         />
                       </div>
 
@@ -356,22 +356,22 @@ export default function AiPracticePage() {
               <div className={styles.BottomActions}>
                 <button type="button" className={styles.PrimaryButton} onClick={toggleMic}>
                   <img className={styles.ButtonIcon} src={micOn ? micOffIcon : micOnIcon} alt="" aria-hidden="true" />
-                  {micOn ? "마이???�기" : "마이??켜기"}
+                  {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
                 <button type="button" className={styles.SecondaryButton} onClick={handleEnd}>
-                  ?�??종료
+                  대화 종료
                 </button>
               </div>
             </div>
 
-            <aside className={styles.RightStage} aria-label="AI ?�우�?>
+            <aside className={styles.RightStage} aria-label="AI 도우미">
               <div className={styles.AiSpeechBubble}>
-                <div className={styles.AiSpeechDot}>??AI ?�덕 ??/div>
+                <div className={styles.AiSpeechDot}>• AI 수덕 •</div>
                 <div className={styles.AiSpeechText}>{aiMessage}</div>
               </div>
 
-              <img className={styles.BigDuck} src={duckBotCyanImg} alt="AI ?�리" />
+              <img className={styles.BigDuck} src={duckBotCyanImg} alt="AI 오리" />
             </aside>
           </div>
         </div>
@@ -379,8 +379,8 @@ export default function AiPracticePage() {
 
       <ConfirmModal
         open={showBackConfirm}
-        message="?�습??종료?�고 ?��??�겠?�니�?"
-        confirmText="?��?�?
+        message="연습을 종료하고 나가시겠습니까?"
+        confirmText="나가기"
         cancelText="취소"
         onConfirm={handleBackConfirm}
         onClose={handleBackCancel}

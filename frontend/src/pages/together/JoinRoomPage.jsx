@@ -164,14 +164,14 @@ export default function JoinRoomPage() {
       navigate("/together/waiting", { state: roomInfo });
     } catch (e) {
       const errorMsg = e?.response?.data?.message || e?.message || "";
-      if (errorMsg.includes("?�원") || errorMsg.includes("가??)) {
-        showToast("?�원??가??�?방입?�다.");
-      } else if (errorMsg.includes("존재?��? ??)) {
-        showToast("존재?��? ?�는 방입?�다.");
+      if (errorMsg.includes("인원") || errorMsg.includes("가득")) {
+        showToast("인원이 가득 찬 방입니다.");
+      } else if (errorMsg.includes("존재하지 않")) {
+        showToast("존재하지 않는 방입니다.");
       } else if (errorMsg) {
         showToast(errorMsg);
       } else {
-        showToast("�?참�????�패?�습?�다.");
+        showToast("방 참가에 실패했습니다.");
       }
     } finally {
       setLoading(false);
@@ -188,17 +188,17 @@ export default function JoinRoomPage() {
             className={styles.BackButton}
             type="button"
             onClick={handleBack}
-            aria-label="?�로 가�?
+            aria-label="뒤로 가기"
             disabled={loading}
             data-click-sound="false"
           >
             &lt;
           </button>
 
-          <h1 className={styles.Title}>참여 코드�??�력?�세??</h1>
-          <p className={styles.Subtitle}>친구?�게 받�? 6?�리 코드�??�력?�주?�요.</p>
+          <h1 className={styles.Title}>참여 코드를 입력하세요.</h1>
+          <p className={styles.Subtitle}>친구에게 받은 6자리 코드를 입력해주세요.</p>
 
-          <section className={styles.FormCard} aria-label="참여 코드 ?�력">
+          <section className={styles.FormCard} aria-label="참여 코드 입력">
             <div className={styles.InputRow} onPaste={handlePaste}>
               {codeArr.map((v, idx) => (
                 <input
@@ -213,7 +213,7 @@ export default function JoinRoomPage() {
                   inputMode="text"
                   autoComplete="one-time-code"
                   maxLength={1}
-                  aria-label={`코드 ${idx + 1}번째 ?�리`}
+                  aria-label={`코드 ${idx + 1}번째 자리`}
                   disabled={loading}
                 />
               ))}
@@ -227,13 +227,13 @@ export default function JoinRoomPage() {
               onClick={handleSubmit}
               disabled={!isComplete || loading}
             >
-              {loading ? "?�장 �?.." : "참여?�기"}
+              {loading ? "입장 중..." : "참여하기"}
             </button>
           </section>
 
           <div className={styles.DuckWrap}>
-            <img className={styles.DuckImg} src={duckImg} alt="?�리" />
-            <div className={styles.DuckText}>친구?�이 기다리고 ?�어??</div>
+            <img className={styles.DuckImg} src={duckImg} alt="오리" />
+            <div className={styles.DuckText}>친구들이 기다리고 있어요!</div>
           </div>
         </main>
 

@@ -38,7 +38,7 @@ function VoiceWave({ level, enabled }) {
 
 export default function SoloPracticePage() {
   const navigate = useNavigate();
-  const topic = useMemo(() => "좋아?�는 ?�식", []);
+  const topic = useMemo(() => "좋아하는 음식", []);
   const DURATION_MS = 40_000;
 
   const [showBackConfirm, setShowBackConfirm] = useState(false);
@@ -65,7 +65,7 @@ export default function SoloPracticePage() {
   const [countdownSec, setCountdownSec] = useState(3);
   const [isRunning, setIsRunning] = useState(false);
 
-  // ?�?�머 ?�작 ?�간 (?��? timestamp)
+  // 타이머 시작 시간 (절대 timestamp)
   const [timerStartedAt] = useState(() => {
     try {
       const saved = sessionStorage.getItem('solo_practice_timer');
@@ -75,7 +75,7 @@ export default function SoloPracticePage() {
     }
   });
 
-  // sessionStorage ?�??
+  // sessionStorage 저장
   useEffect(() => {
     try {
       sessionStorage.setItem('solo_practice_timer', String(timerStartedAt));
@@ -214,7 +214,7 @@ export default function SoloPracticePage() {
           window.clearInterval(id);
           setIsCountdownOpen(false);
           setIsRunning(true);
-          // 카운?�다??종료 ??마이???�동 켜기
+          // 카운트다운 종료 시 마이크 자동 켜기
           startAudioAnalysis();
           return 0;
         }
@@ -246,7 +246,7 @@ export default function SoloPracticePage() {
 
   const handleEnd = useCallback(async () => {
     await stopAudioAnalysis();
-    // ?�??종료 ???�음 ?�이지�??�동
+    // 대화 종료 후 녹음 페이지로 이동
     navigate("/recording", {
       replace: true,
       state: {
@@ -260,9 +260,9 @@ export default function SoloPracticePage() {
     await stopAudioAnalysis();
     setMicOn(false);
     setIsRunning(false);
-    // console.log("?�간 종료");
+    console.log("시간 종료");
 
-    // ?�??종료 ???�음 ?�이지�??�동
+    // 대화 종료 후 녹음 페이지로 이동
     navigate("/recording", {
       replace: true,
       state: {
@@ -275,15 +275,15 @@ export default function SoloPracticePage() {
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        <ExitGuard to="/" message="메인 ?�면?�로 ?��??�겠?�니�?" />
+        <ExitGuard to="/" message="메인 화면으로 나가시겠습니까?" />
         <AppHeader userName="user" notifications={[]} />
 
         {isCountdownOpen && (
-          <div className={styles.CountdownOverlay} role="dialog" aria-label="?�습 ?�작 카운?�다??>
+          <div className={styles.CountdownOverlay} role="dialog" aria-label="연습 시작 카운트다운">
             <div className={styles.CountdownModal}>
-              <div className={styles.CountdownTitle}>�??�작?�니??/div>
+              <div className={styles.CountdownTitle}>곧 시작합니다</div>
               <div className={styles.CountdownNumber}>{countdownSec}</div>
-              <div className={styles.CountdownHint}>마이?��? 준비해 주세??/div>
+              <div className={styles.CountdownHint}>마이크를 준비해 주세요</div>
             </div>
           </div>
         )}
@@ -293,19 +293,19 @@ export default function SoloPracticePage() {
             className={styles.BackButton}
             type="button"
             onClick={handleBack}
-            aria-label="?�로 가�?
+            aria-label="뒤로 가기"
           >
             &lt;
           </button>
 
           <div className={styles.HeaderRow}>
             <div className={styles.ExitCol}>
-              <ExitButton to="/" label="?��?�? confirmMessage="?�습??종료?�고 ?��??�겠?�니�?" />
+              <ExitButton to="/" label="나가기" confirmMessage="연습을 종료하고 나가시겠습니까?" />
             </div>
 
             <div className={styles.TopicRow}>
-              <img className={styles.SmallDuck} src={duckImg} alt="?�리" />
-              <div className={styles.TopicBubble}>?�??주제??<span className={styles.TopicHighlight}>{topic}</span>?�니??</div>
+              <img className={styles.SmallDuck} src={duckImg} alt="오리" />
+              <div className={styles.TopicBubble}>대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다!</div>
             </div>
 
             <div className={styles.TimerCol}>
@@ -324,17 +324,17 @@ export default function SoloPracticePage() {
                   >
                     <div className={styles.VideoInner}>
                       <div className={styles.AvatarCircle}>
-                        <img className={styles.AvatarDuck} src={duckImg} alt="???�바?�" />
+                        <img className={styles.AvatarDuck} src={duckImg} alt="내 아바타" />
                       </div>
                     </div>
 
                     <div className={styles.VideoFooter}>
                       <div className={styles.VideoFooterLeft}>
-                        <span className={styles.MeLabel}>??/span>
+                        <span className={styles.MeLabel}>나</span>
                         <img
                           className={styles.MicMini}
                           src={micOn ? micOffIcon : micOnIcon}
-                          alt={micOn ? "마이??켜짐" : "마이??꺼짐"}
+                          alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                         />
                       </div>
 
@@ -354,34 +354,34 @@ export default function SoloPracticePage() {
                   disabled={isCountdownOpen}
                 >
                   <img className={styles.ButtonIcon} src={micOn ? micOffIcon : micOnIcon} alt="" aria-hidden="true" />
-                  {micOn ? "마이???�기" : "마이??켜기"}
+                  {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
                 <button type="button" className={styles.SecondaryButton} onClick={handleEnd}>
-                  ?�??종료
+                  대화 종료
                 </button>
               </div>
             </div>
 
-            <aside className={styles.RightStage} aria-label="AI ?�우�?>
+            <aside className={styles.RightStage} aria-label="AI 도우미">
               <div className={styles.AiBubble}>
                 <div className={styles.AiHeader}>
                   <span className={styles.AiDot} aria-hidden="true" />
-                  <span className={styles.AiTitle}>AI ?�덕</span>
+                  <span className={styles.AiTitle}>AI 수덕</span>
                   <span className={styles.AiDot} aria-hidden="true" />
                 </div>
 
                 <div className={styles.AiFace} aria-hidden="true">
-                  ?��
+                  🙂
                 </div>
 
-                <div className={styles.AiMainText}>?�국?�로 ?�하�?말해보세??</div>
-                <div className={styles.AiSubText}>막히�?짧게?�도 ?�어??말하??것이 중요?�니??</div>
+                <div className={styles.AiMainText}>한국어로 편하게 말해보세요!</div>
+                <div className={styles.AiSubText}>막히면 짧게라도 이어서 말하는 것이 중요합니다.</div>
 
                 <div className={styles.AiPointer} aria-hidden="true" />
               </div>
 
-              <img className={styles.BigDuck} src={duckBotCyanImg} alt="AI ?�리" />
+              <img className={styles.BigDuck} src={duckBotCyanImg} alt="AI 오리" />
             </aside>
           </div>
         </div>
@@ -389,8 +389,8 @@ export default function SoloPracticePage() {
 
       <ConfirmModal
         open={showBackConfirm}
-        message="?�습??종료?�고 ?��??�겠?�니�?"
-        confirmText="?��?�?
+        message="연습을 종료하고 나가시겠습니까?"
+        confirmText="나가기"
         cancelText="취소"
         onConfirm={handleBackConfirm}
         onClose={handleBackCancel}

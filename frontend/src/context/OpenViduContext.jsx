@@ -11,13 +11,13 @@ export const OpenViduProvider = ({ children }) => {
     const [subscribers, setSubscribers] = useState([]);
     const [isConnected, setIsConnected] = useState(false);
 
-    // 1. ?�션 참�? (?�큰 -> ?�결)
+    // 1. 세션 참가 (토큰 -> 연결)
     const joinSession = useCallback(async (token, nickname) => {
         if (!token) return;
         
-        // ?�� ?��? ?�션???�으�?중복 ?�결??방�??�니??
+        // 👇 이미 세션이 있으면 중복 연결을 방지합니다.
         if (session) {
-            // console.log("?�� [OpenVidu] ?��? ?�션???�결?�어 ?�습?�다.");
+            console.log("🔒 [OpenVidu] 이미 세션에 연결되어 있습니다.");
             return;
         }
 
@@ -28,7 +28,7 @@ export const OpenViduProvider = ({ children }) => {
             const OV = new OpenVidu();
             newSession = OV.initSession();
 
-            // ?�트�?리스??(?��?�??�어?�면 ?�리/?�면 받기)
+            // 스트림 리스너 (상대방 들어오면 소리/화면 받기)
             newSession.on('streamCreated', (event) => {
                 const subscriber = newSession.subscribe(event.stream, undefined);
                 setSubscribers((prev) => [...prev, subscriber]);
@@ -42,10 +42,10 @@ export const OpenViduProvider = ({ children }) => {
                 console.warn('[OpenVidu] Exception:', exception);
             });
 
-            // ???�결 ?�행 ??
+            // ★ 연결 실행 ★
             await newSession.connect(token, { clientData: nickname });
 
-            // ??마이???�정 (?�디?�만 ON)
+            // 내 마이크 설정 (오디오만 ON)
             newPublisher = await OV.initPublisherAsync(undefined, {
                 audioSource: undefined,
                 videoSource: false,
@@ -58,12 +58,12 @@ export const OpenViduProvider = ({ children }) => {
             setSession(newSession);
             setPublisher(newPublisher);
             setIsConnected(true);
-            // console.log("?�� ?�픈비두 ?�결 ?�공!");
+            console.log("🎤 오픈비두 연결 성공!");
 
         } catch (error) {
-            console.error("???�결 ?�패:", error);
+            console.error("❌ 연결 실패:", error);
 
-            // ?�러 발생 ???�리
+            // 에러 발생 시 정리
             if (newPublisher) {
                 try {
                     newPublisher.stream.disposeWebRtcPeer();
@@ -79,20 +79,20 @@ export const OpenViduProvider = ({ children }) => {
                 }
             }
 
-            // ?�태 초기??
+            // 상태 초기화
             setSession(null);
             setPublisher(null);
             setSubscribers([]);
             setIsConnected(false);
 
-            throw error; // ?�러�??�시 ?�져???�출?��? 처리?????�게 ??
+            throw error; // 에러를 다시 던져서 호출자가 처리할 수 있게 함
         }
-    }, [session]); // ?�� session ?�태 감시
+    }, [session]); // 👈 session 상태 감시
 
-    // 2. ?��?�?(?�결 ?�기)
+    // 2. 나가기 (연결 끊기)
     const leaveSession = useCallback(() => {
         try {
-            // Publisher ?�리
+            // Publisher 정리
             if (publisher) {
                 try {
                     publisher.stream?.disposeWebRtcPeer();
@@ -101,7 +101,7 @@ export const OpenViduProvider = ({ children }) => {
                 }
             }
 
-            // Subscribers ?�리
+            // Subscribers 정리
             subscribers.forEach(subscriber => {
                 try {
                     subscriber.stream?.disposeWebRtcPeer();
@@ -110,7 +110,7 @@ export const OpenViduProvider = ({ children }) => {
                 }
             });
 
-            // ?�션 ?�결 ?�제
+            // 세션 연결 해제
             if (session) {
                 try {
                     session.disconnect();
@@ -119,11 +119,11 @@ export const OpenViduProvider = ({ children }) => {
                 }
             }
 
-            // console.log('?�� [OpenVidu] ?�결 ?�제 ?�료');
+            console.log('🔌 [OpenVidu] 연결 해제 완료');
         } catch (error) {
             console.error('[OpenVidu] Leave session error:', error);
         } finally {
-            // ?�태 초기??
+            // 상태 초기화
             setSession(null);
             setPublisher(null);
             setSubscribers([]);

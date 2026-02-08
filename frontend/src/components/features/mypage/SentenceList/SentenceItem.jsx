@@ -18,7 +18,7 @@ export default function SentenceItem({ sentence, onClick, onDelete }) {
     onDelete?.();
   };
 
-  // ?�수???�른 variant 결정
+  // 점수에 따른 variant 결정
   const getScoreVariant = (scoreValue) => {
     if (scoreValue < 40) return 'scoreRed';
     if (scoreValue < 60) return 'scoreOrange';
@@ -30,9 +30,9 @@ export default function SentenceItem({ sentence, onClick, onDelete }) {
     <div className={styles.Item} onClick={onClick}>
       <div className={styles.BookmarkIcon}>
         {bookmarked ? (
-          <span className={styles.BookmarkFilled}>?�️</span>
+          <span className={styles.BookmarkFilled}>☑️</span>
         ) : (
-          <span className={styles.BookmarkEmpty}>??/span>
+          <span className={styles.BookmarkEmpty}>☐</span>
         )}
       </div>
 
@@ -44,9 +44,9 @@ export default function SentenceItem({ sentence, onClick, onDelete }) {
           <div className={styles.Tags}>
             {topic && <Tag variant="topic">{topic}</Tag>}
             {score !== undefined && (
-              <Tag variant={getScoreVariant(score)}>{score}??/Tag>
+              <Tag variant={getScoreVariant(score)}>{score}점</Tag>
             )}
-            {needsReview && <Tag variant="review">복습?�요</Tag>}
+            {needsReview && <Tag variant="review">복습필요</Tag>}
           </div>
           {date && <div className={styles.Date}>{date}</div>}
         </div>
@@ -56,9 +56,9 @@ export default function SentenceItem({ sentence, onClick, onDelete }) {
         type="button"
         className={styles.DeleteButton}
         onClick={handleDeleteClick}
-        aria-label="??��"
+        aria-label="삭제"
       >
-        ?���?
+        🗑️
       </button>
     </div>
   );

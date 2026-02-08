@@ -27,11 +27,11 @@ const COLOR_OPTIONS = [
 ];
 
 const ACCESSORY_OPTIONS = [
-  { id: "none", icon: "??, label: "?�음", cost: 0 },
-  { id: "hat", icon: "?��", label: "모자", cost: 20 },
-  { id: "sunglasses", icon: "?���?, label: "?��??�스", cost: 20 },
-  { id: "ribbon", icon: "??", label: "리본", cost: 20 },
-  { id: "crown", icon: "?��", label: "?��?", cost: 20 },
+  { id: "none", icon: "❌", label: "없음", cost: 0 },
+  { id: "hat", icon: "🎩", label: "모자", cost: 20 },
+  { id: "sunglasses", icon: "🕶️", label: "선글라스", cost: 20 },
+  { id: "ribbon", icon: "🎀", label: "리본", cost: 20 },
+  { id: "crown", icon: "👑", label: "왕관", cost: 20 },
 ];
 
 export default function DuckStyleModal({
@@ -46,17 +46,17 @@ export default function DuckStyleModal({
   onSave,
   onClose,
 }) {
-  // ?�???�???�금??것만 ?�정)
+  // 저장 대상(해금된 것만 확정)
   const [selectedProfileId, setSelectedProfileId] = useState(currentProfileId);
   const [selectedColor, setSelectedColor] = useState(currentColor);
   const [selectedAccessory, setSelectedAccessory] = useState(currentAccessory);
 
-  // 미리보기???�긴 것도 반영
+  // 미리보기는 잠긴 것도 반영
   const [previewProfileId, setPreviewProfileId] = useState(currentProfileId);
   const [previewColor, setPreviewColor] = useState(currentColor);
   const [previewAccessory, setPreviewAccessory] = useState(currentAccessory);
 
-  // ?�금 ?�이??2?�계 ?�릭??pending
+  // 잠금 아이템 2단계 클릭용 pending
   const [pending, setPending] = useState({
     type: null, // "profile" | "color" | "accessory" | null
     id: null,
@@ -64,7 +64,7 @@ export default function DuckStyleModal({
 
   const [purchaseModal, setPurchaseModal] = useState(null);
 
-  // ?�령 ?�릭 방�?(type+id 기�?)
+  // 유령 클릭 방지(type+id 기준)
   const lastTapRef = useRef({ key: null, ts: 0 });
 
   useEffect(() => {
@@ -113,7 +113,7 @@ export default function DuckStyleModal({
   };
 
   const handleClickOption = (type, id, cost) => {
-    // 1) 미리보기????�� 갱신
+    // 1) 미리보기는 항상 갱신
     if (type === "profile") setPreviewProfileId(id);
     if (type === "color") setPreviewColor(id);
     if (type === "accessory") setPreviewAccessory(id);
@@ -124,7 +124,7 @@ export default function DuckStyleModal({
       (type === "accessory" && unlockedAccessories.includes(id));
 
     if (isUnlocked) {
-      // ?�금 ?�이?��? 즉시 ?�택(?�???�?? ?�정
+      // 해금 아이템은 즉시 선택(저장 대상) 확정
       if (type === "profile") setSelectedProfileId(id);
       if (type === "color") setSelectedColor(id);
       if (type === "accessory") setSelectedAccessory(id);
@@ -133,11 +133,11 @@ export default function DuckStyleModal({
       return;
     }
 
-    // ?�금 ?�이?��? ?�령 ?�릭 방�?
+    // 잠금 아이템은 유령 클릭 방지
     const ghostKey = `${type}:${id}`;
     if (guardGhostTap(ghostKey)) return;
 
-    // 2?�계 ?�릭: 같�? ?�이?�을 ?�속?�로 ?��????�만 구매 모달
+    // 2단계 클릭: 같은 아이템을 연속으로 눌렀을 때만 구매 모달
     if (pending.type === type && pending.id === id) {
       setPending({ type: null, id: null });
 
@@ -146,25 +146,25 @@ export default function DuckStyleModal({
           "profile",
           id,
           cost,
-          `?�리 ?�로??${String(id).slice(-1)}`,
+          `오리 프로필 ${String(id).slice(-1)}`,
         );
       } else if (type === "color") {
-        const colorName = COLOR_OPTIONS.find((c) => c.id === id)?.id || "?�상";
+        const colorName = COLOR_OPTIONS.find((c) => c.id === id)?.id || "색상";
         openPurchaseModalFor(
           "color",
           id,
           cost,
-          `${colorName.toUpperCase()} ?�상`,
+          `${colorName.toUpperCase()} 색상`,
         );
       } else {
         const accessoryName =
-          ACCESSORY_OPTIONS.find((a) => a.id === id)?.label || "?�세?�리";
+          ACCESSORY_OPTIONS.find((a) => a.id === id)?.label || "악세사리";
         openPurchaseModalFor("accessory", id, cost, accessoryName);
       }
       return;
     }
 
-    // �??�릭: pending�??�정 (미리보기�?바�?
+    // 첫 클릭: pending만 설정 (미리보기만 바뀜)
     setPending({ type, id });
   };
 
@@ -209,7 +209,7 @@ export default function DuckStyleModal({
         취소
       </button>
       <button type="button" className={styles.SaveBtn} onClick={handleSave} data-click-sound="false">
-        ?�??
+        저장
       </button>
     </>
   );
@@ -229,7 +229,7 @@ export default function DuckStyleModal({
         />
       )}
 
-      <ModalWrapper title="?�로??바꾸�? onClose={onClose} footer={footer}>
+      <ModalWrapper title="프로필 바꾸기" onClose={onClose} footer={footer}>
         <div className={styles.Content}>
           <div
             className={styles.Preview}
@@ -238,7 +238,7 @@ export default function DuckStyleModal({
             <div className={styles.DuckWrapper}>
               <img
                 src={selectedProfile?.image}
-                alt="?�로???�리"
+                alt="프로필 오리"
                 className={styles.DuckImage}
               />
               {previewAccessory && previewAccessory !== "none" && (
@@ -250,7 +250,7 @@ export default function DuckStyleModal({
           </div>
 
           <div className={styles.Section}>
-            <h3 className={styles.SectionTitle}>?�로??/h3>
+            <h3 className={styles.SectionTitle}>프로필</h3>
             <div className={styles.ProfileGrid}>
               {PROFILE_OPTIONS.map((option) => {
                 const isUnlocked = unlockedProfiles.includes(option.id);
@@ -280,7 +280,7 @@ export default function DuckStyleModal({
                     />
                     {!isUnlocked && (
                       <div className={styles.ProfileLockOverlay}>
-                        <span className={styles.LockIcon}>?��</span>
+                        <span className={styles.LockIcon}>🔒</span>
                         <div className={styles.CoinPrice}>
                           <img
                             src={coinImage}
@@ -294,7 +294,7 @@ export default function DuckStyleModal({
 
                     {!isUnlocked && isPending && (
                       <span className={styles.PendingHint}>
-                        ??�????�르�?구매
+                        한 번 더 누르면 구매
                       </span>
                     )}
                   </button>
@@ -304,7 +304,7 @@ export default function DuckStyleModal({
           </div>
 
           <div className={styles.Section}>
-            <h3 className={styles.SectionTitle}>?�상</h3>
+            <h3 className={styles.SectionTitle}>색상</h3>
             <div className={styles.ColorsRow}>
               {COLOR_OPTIONS.map((option) => {
                 const isUnlocked = unlockedColors.includes(option.id);
@@ -331,7 +331,7 @@ export default function DuckStyleModal({
                   >
                     {!isUnlocked && (
                       <div className={styles.LockOverlay}>
-                        <span className={styles.LockIcon}>?��</span>
+                        <span className={styles.LockIcon}>🔒</span>
                         <div className={styles.CoinPrice}>
                           <img
                             src={coinImage}
@@ -345,7 +345,7 @@ export default function DuckStyleModal({
 
                     {!isUnlocked && isPending && (
                       <span className={styles.PendingHintFloat}>
-                        ??�????�르�?구매
+                        한 번 더 누르면 구매
                       </span>
                     )}
                   </button>
@@ -355,7 +355,7 @@ export default function DuckStyleModal({
           </div>
 
           <div className={styles.Section}>
-            <h3 className={styles.SectionTitle}>?�세?�리</h3>
+            <h3 className={styles.SectionTitle}>액세서리</h3>
             <div className={styles.AccessoriesRow}>
               {ACCESSORY_OPTIONS.map((option) => {
                 const isUnlocked = unlockedAccessories.includes(option.id);
@@ -392,7 +392,7 @@ export default function DuckStyleModal({
                     )}
                     {!isUnlocked && isPending && (
                       <span className={styles.PendingHintTiny}>
-                        ??�????�르�?구매
+                        한 번 더 누르면 구매
                       </span>
                     )}
                   </button>
@@ -401,7 +401,7 @@ export default function DuckStyleModal({
             </div>
             <div className={styles.AccessoryLabel}>
               {ACCESSORY_OPTIONS.find((a) => a.id === previewAccessory)
-                ?.label || "?�음"}
+                ?.label || "없음"}
             </div>
           </div>
         </div>

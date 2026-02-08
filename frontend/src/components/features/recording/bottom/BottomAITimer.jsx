@@ -6,7 +6,7 @@ export default function BottomAITimer({ seconds = 3 }) {
       <div className={styles.iconCircle}>
         <span className={styles.number}>{Math.max(0, seconds)}</span>
       </div>
-      <p className={styles.message}>{Math.max(0, seconds)}�???AI가 문장???�어줍니??/p>
+      <p className={styles.message}>{Math.max(0, seconds)}초 후 AI가 문장을 읽어줍니다</p>
     </div>
   );
 }

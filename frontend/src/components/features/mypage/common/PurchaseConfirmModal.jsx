@@ -15,7 +15,7 @@ export default function PurchaseConfirmModal({
     <div className={styles.Overlay} onClick={onCancel}>
       <div className={styles.Modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.Header}>
-          <h3 className={styles.Title}>?�이??구매</h3>
+          <h3 className={styles.Title}>아이템 구매</h3>
         </div>
 
         <div className={styles.Content}>
@@ -31,7 +31,7 @@ export default function PurchaseConfirmModal({
             </div>
 
             <div className={styles.CoinRow}>
-              <span className={styles.Label}>가�?/span>
+              <span className={styles.Label}>가격</span>
               <div className={styles.CoinAmount}>
                 <img src={coinImage} alt="코인" className={styles.CoinIcon} />
                 <span className={styles.Amount}>-{cost}</span>
@@ -41,7 +41,7 @@ export default function PurchaseConfirmModal({
             <div className={styles.Divider} />
 
             <div className={styles.CoinRow}>
-              <span className={styles.LabelBold}>구매 ???�액</span>
+              <span className={styles.LabelBold}>구매 후 잔액</span>
               <div className={`${styles.CoinAmount} ${!canAfford ? styles.Insufficient : ""}`}>
                 <img src={coinImage} alt="코인" className={styles.CoinIcon} />
                 <span className={styles.Amount}>{remainingCoins}</span>
@@ -51,7 +51,7 @@ export default function PurchaseConfirmModal({
 
           {!canAfford && (
             <div className={styles.Warning}>
-              코인??부족합?�다!
+              코인이 부족합니다!
             </div>
           )}
         </div>
@@ -70,7 +70,7 @@ export default function PurchaseConfirmModal({
             onClick={onConfirm}
             disabled={!canAfford}
           >
-            구매?�기
+            구매하기
           </button>
         </div>
       </div>

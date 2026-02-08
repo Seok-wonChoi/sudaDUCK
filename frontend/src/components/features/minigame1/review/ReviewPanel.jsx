@@ -9,13 +9,13 @@ export default function ReviewPanel({
     <div className={styles.wrapper}>
       <div className={styles.topActions}>
         <button className={styles.backButton} onClick={onBack}>
-          &larr; 결과�??�아가�?
+          &larr; 결과로 돌아가기
         </button>
       </div>
       
       <div className={styles.header}>
-        <h2 className={styles.title}>?�체 문제 리뷰</h2>
-        <p className={styles.subtitle}>?��?부분과 ?�답???�인?�보?�요</p>
+        <h2 className={styles.title}>전체 문제 리뷰</h2>
+        <p className={styles.subtitle}>틀린 부분과 정답을 확인해보세요</p>
       </div>
 
       <div className={styles.cardList}>

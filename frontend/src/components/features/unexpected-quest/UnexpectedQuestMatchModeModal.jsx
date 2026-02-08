@@ -12,10 +12,10 @@ export default function UnexpectedQuestMatchModeModal({ open, duckSrc, onSubmit 
 
   const options = useMemo(
     () => [
-      { id: "a", text: "�?부분에 ?�전 공감?�요." },
-      { id: "b", text: "�?부분�? ??모르겠어??" },
-      { id: "c", text: "�?부분�? ?�의?�기 ?�려?�요." },
-      { id: "d", text: "�??�기???�어가�?" },
+      { id: "a", text: "그 부분에 완전 공감해요." },
+      { id: "b", text: "그 부분은 잘 모르겠어요." },
+      { id: "c", text: "그 부분은 동의하기 어려워요." },
+      { id: "d", text: "그 얘기는 넘어가죠." },
     ],
     []
   );
@@ -62,19 +62,19 @@ export default function UnexpectedQuestMatchModeModal({ open, duckSrc, onSubmit 
       <div className={styles.Stage}>
         <div className={styles.Card}>
           <div className={styles.CardTop}>
-            <div className={styles.CardTitle}>?�발 ?�스??- 매칭 모드</div>
-            <div className={styles.CardSub}>?�블리싱 ?�계: ?�무 ??��?�나 ?�택?�도 진행?�니??</div>
+            <div className={styles.CardTitle}>돌발 퀘스트 - 매칭 모드</div>
+            <div className={styles.CardSub}>퍼블리싱 단계: 아무 항목이나 선택해도 진행됩니다.</div>
           </div>
 
           <div className={styles.QuestionBox}>
-            <div className={styles.QuestionLabel}>?�어 문장</div>
+            <div className={styles.QuestionLabel}>영어 문장</div>
             <div className={styles.QuestionText}>{question}</div>
           </div>
 
           <div className={styles.Instruction}>
             <div className={styles.Badge}>매칭</div>
             <div className={styles.InstructionText}>
-              ??문장�??��?/?�앙?��? 가??가까운 ?�현??골라주세??
+              위 문장과 의미/뉘앙스가 가장 가까운 표현을 골라주세요.
             </div>
           </div>
 
@@ -98,7 +98,7 @@ export default function UnexpectedQuestMatchModeModal({ open, duckSrc, onSubmit 
           </div>
         </div>
 
-        {duckSrc ? <img className={styles.Duck} src={duckSrc} alt="?�발 ?�스???�리" /> : null}
+        {duckSrc ? <img className={styles.Duck} src={duckSrc} alt="돌발 퀘스트 오리" /> : null}
       </div>
     </div>
   );

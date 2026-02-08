@@ -3,9 +3,9 @@ import ConfirmModal from "../ConfirmModal/ConfirmModal";
 import { subscribeExitConfirm } from "./exitConfirmStore";
 
 export default function ExitGuard({
-  title = "?˜ê?ê¸?,
-  message = "?•ë§ ?˜ê??œê² ?µë‹ˆê¹?",
-  confirmText = "?˜ê?ê¸?,
+  title = "ë‚˜ê°€ê¸°",
+  message = "ì •ë§ ë‚˜ê°€ì‹œê² ìŠµë‹ˆê¹Œ?",
+  confirmText = "ë‚˜ê°€ê¸°",
   cancelText = "ì·¨ì†Œ",
 }) {
   const [dialog, setDialog] = useState(null);

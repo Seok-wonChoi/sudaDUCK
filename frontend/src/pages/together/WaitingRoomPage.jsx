@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
@@ -16,7 +16,7 @@ import micOffIcon from "@/assets/icons/mic_off.png";
 import usersIcon from "@/assets/icons/users_icon.png";
 
 import styles from "./WaitingRoomPage.module.css";
-// ?몙?ㅽ뵂鍮꾨몢 愿???꾪룷??!
+// 👇오픈비두 관련 임포트!!
 import { useOpenVidu } from "@/context/OpenViduContext";
 import { createToken, createSession } from "@/api/openVidu";
 import {
@@ -53,10 +53,10 @@ const COLOR_MAP = {
 };
 
 const ACCESSORY_MAP = {
-  hat: "?렔",
-  sunglasses: "?빒截?,
-  ribbon: "??",
-  crown: "?몣",
+  hat: "🎩",
+  sunglasses: "🕶️",
+  ribbon: "🎀",
+  crown: "👑",
   none: null,
 };
 
@@ -210,13 +210,13 @@ export default function WaitingRoomPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
 
-  // ?몙 ?ㅽ뵂鍮꾨몢?곗슦??Context?먯꽌 ?⑥닔 爰쇰궡?ㅺ린
+  // 👇 오픈비두우우우 Context에서 함수 꺼내오기
   const { joinSession, leaveSession, isConnected: isOvConnected, subscribers, publisher } = useOpenVidu();
   
-  // ?몙 寃뚯엫 ?쒖옉 ?깆쑝濡??섏씠吏 ?대룞 ?쒖뿉???몄뀡???딆? ?딅룄濡??뚮옒洹??ㅼ젙
+  // 👇 게임 시작 등으로 페이지 이동 시에는 세션을 끊지 않도록 플래그 설정
   const isTransitioningRef = useRef(false);
 
-  // ?몙 [踰꾧렇 ?섏젙] useEffect ?대??먯꽌 理쒖떊 ?곹깭瑜?李몄“?섍린 ?꾪븳 Ref
+  // 👇 [버그 수정] useEffect 내부에서 최신 상태를 참조하기 위한 Ref
   const isOvConnectedRef = useRef(isOvConnected);
   const leaveSessionRef = useRef(leaveSession);
 
@@ -228,7 +228,7 @@ export default function WaitingRoomPage() {
     leaveSessionRef.current = leaveSession;
   }, [leaveSession]);
 
-  // ?몙  ?ㅽ뵂鍮꾨??곗슦??釉뚮씪?곗? ?ㅻ줈媛湲??덈줈怨좎묠 ???곌껐 ?딄린
+  // 👇  오픈비듀우우우 브라우저 뒤로가기/새로고침 시 연결 끊기
   useEffect(() => {
       const handleBeforeUnload = () => {
           if (leaveSessionRef.current) leaveSessionRef.current();
@@ -237,11 +237,11 @@ export default function WaitingRoomPage() {
 
       return () => {
           window.removeEventListener('beforeunload', handleBeforeUnload);
-          // [?섏젙] ?湲곗떎 ?몃쭏?댄듃 ???먮룞?쇰줈 ?몄뀡???딆? ?딅룄濡?蹂寃쏀빀?덈떎.
-          // ?몄뀡 醫낅즺??handleExit(?섍?湲?踰꾪듉)?먯꽌留?紐낆떆?곸쑝濡??섑뻾?⑸땲??
-          // console.log("?뱧 [WaitingRoom] ?섏씠吏 踰쀬뼱??(?몄뀡 ?좎?)");
+          // [수정] 대기실 언마운트 시 자동으로 세션을 끊지 않도록 변경합니다.
+          // 세션 종료는 handleExit(나가기 버튼)에서만 명시적으로 수행합니다.
+          console.log("📍 [WaitingRoom] 페이지 벗어남 (세션 유지)");
       };
-  }, []); // ?몚 [以묒슂] 鍮?諛곗뿴濡??ㅼ젙?섏뿬 ?몃쭏?댄듃 ?쒖뿉留??ㅽ뻾!
+  }, []); // 👈 [중요] 빈 배열로 설정하여 언마운트 시에만 실행!
 
 
 
@@ -249,7 +249,7 @@ export default function WaitingRoomPage() {
 
   const initialRoomInfo = useMemo(() => {
     if (state) {
-      // 寃뚯엫?먯꽌 ?뚯븘??寃쎌슦, 李몄뿬?먮뱾???덈뵒 ?곹깭瑜?濡쒖뺄?먯꽌 利됱떆 媛뺤젣 珥덇린??
+      // 게임에서 돌아온 경우, 참여자들의 레디 상태를 로컬에서 즉시 강제 초기화
       if (state.fromGame && state.participants) {
         return {
           ...state,
@@ -276,10 +276,10 @@ export default function WaitingRoomPage() {
 
   const [roomId, setRoomId] = useState(roomInfo.roomId ?? null);
   const [roomTitle, setRoomTitle] = useState(
-    roomInfo.roomTitle ?? roomInfo.title ?? "?섎떎諛?,
+    roomInfo.roomTitle ?? roomInfo.title ?? "수다방",
   );
   const [topic, setTopic] = useState(
-    roomInfo.topic ?? roomInfo.roomTopic ?? "醫뗭븘?섎뒗 ?뚯떇",
+    roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식",
   );
   const [turnCount, setTurnCount] = useState(
     roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
@@ -355,19 +355,19 @@ export default function WaitingRoomPage() {
   const [editTimeLimit, setEditTimeLimit] = useState(timeLimit);
   const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
-  // 紐⑤떖 ?곹깭
+  // 모달 상태
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
 
   const hotTopics = useMemo(
     () => [
-      "泥??꾨Ⅴ諛붿씠??異붿뼲",
-      "理쒖븙???곗씠??,
-      "?섎쭔??痍⑤??앺솢",
-      "?숈갹?쒖젅 ?댁빞湲?,
-      "?ы뻾 寃쏀뿕??,
-      "醫뗭븘?섎뒗 ?뚯떇",
+      "첫 아르바이트 추억",
+      "최악의 데이트",
+      "나만의 취미생활",
+      "학창시절 이야기",
+      "여행 경험담",
+      "좋아하는 음식",
     ],
     [],
   );
@@ -377,11 +377,11 @@ export default function WaitingRoomPage() {
     setTimeout(() => setToastMessage(""), 2000);
   }, []);
 
-  // location.state??toastMessage媛 ?덉쑝硫??쒖떆
+  // location.state에 toastMessage가 있으면 표시
   useEffect(() => {
     if (state?.toastMessage) {
       showToast(state.toastMessage);
-      // ?쒖떆 ??state?먯꽌 ?쒓굅 (?ㅻ줈媛湲????ㅼ떆 ?⑥? ?딅룄濡?
+      // 표시 후 state에서 제거 (뒤로가기 시 다시 뜨지 않도록)
       window.history.replaceState({ ...state, toastMessage: null }, '');
     }
   }, [state, showToast]);
@@ -558,7 +558,7 @@ export default function WaitingRoomPage() {
       const nextTitle = data.title ?? data.roomTitle;
       const nextTopic = data.topic ?? data.roomTopic;
       const nextTurn = data.turnCnt ?? data.turnCount;
-      // const nextTimeLimit = data.timeLimit; // ?쒕쾭 誘몄????꾨뱶 ?쒖쇅
+      // const nextTimeLimit = data.timeLimit; // 서버 미지원 필드 제외
 
       if (typeof nextTitle === "string" && nextTitle.trim())
         setRoomTitle(nextTitle);
@@ -588,9 +588,9 @@ export default function WaitingRoomPage() {
         const prev = prevMap.get(key);
         const serverReady = m.readyStatus === "READY";
 
-        // ?쒕쾭 ?곹깭? ?댁쟾 ?곹깭媛 ?ㅻⅤ硫?濡쒓렇 異쒕젰
+        // 서버 상태와 이전 상태가 다르면 로그 출력
         if (prev && prev.isReady !== serverReady) {
-          // console.log("[WaitingRoom] fetchLobby - 以鍮??곹깭 蹂寃?媛먯?:", {
+          console.log("[WaitingRoom] fetchLobby - 준비 상태 변경 감지:", {
             key,
             nickname: m.nickname,
             prevReady: prev.isReady,
@@ -600,7 +600,7 @@ export default function WaitingRoomPage() {
 
         return {
           key,
-          nickname: m.nickname ?? "李몄뿬??,
+          nickname: m.nickname ?? "참여자",
           isHost: m.isHost ?? false,
           isReady: serverReady,
           micOn: m.micOn ?? prev?.micOn ?? true,
@@ -612,7 +612,7 @@ export default function WaitingRoomPage() {
         };
       });
 
-      // console.log("[WaitingRoom] fetchLobby ?꾨즺:", {
+      console.log("[WaitingRoom] fetchLobby 완료:", {
         participantCount: mapped.length,
         readyCount: mapped.filter((p) => p.isReady && !p.isHost).length,
       });
@@ -631,7 +631,7 @@ export default function WaitingRoomPage() {
           topic: nextTopic ?? topic,
           turnCnt: nextTurn ?? turnCount,
           turnCount: nextTurn ?? turnCount,
-          timeLimit: timeLimit, // 濡쒖뺄 ?ㅼ젙媛??좎?
+          timeLimit: timeLimit, // 로컬 설정값 유지
           maxCount,
         };
         sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(nextRoomInfo));
@@ -639,7 +639,7 @@ export default function WaitingRoomPage() {
         // ignore
       }
     } catch {
-      showToast("李몄뿬??紐⑸줉??遺덈윭?ㅻ뒗???ㅽ뙣?덉뒿?덈떎.");
+      showToast("참여자 목록을 불러오는데 실패했습니다.");
     } finally {
       if (!isSilent) setIsLoading(false);
     }
@@ -658,7 +658,7 @@ export default function WaitingRoomPage() {
 
   useEffect(() => {
     if (state?.fromGame) {
-      // 寃뚯엫?먯꽌 ?뚯븘??寃쎌슦 ?쒕쾭 DB媛 媛깆떊???쒓컙??異⑸텇??踰뚯뼱以?(1珥?吏??
+      // 게임에서 돌아온 경우 서버 DB가 갱신될 시간을 충분히 벌어줌 (1초 지연)
       const timer = setTimeout(() => {
         fetchLobby();
       }, 1000);
@@ -668,41 +668,41 @@ export default function WaitingRoomPage() {
     }
   }, [fetchLobby, state?.fromGame]);
 
-  // ?몙 ?ㅽ뵂鍮꾨몢 ?곌껐 以묐났 諛⑹???Ref
+  // 👇 오픈비두 연결 중복 방지용 Ref
   const isConnectingRef = useRef(false);
-  const hasAttemptedConnectionRef = useRef(false); // ?몚 [?듭떖] ?곌껐 ?쒕룄 ?щ?瑜?湲곗뼲?섎뒗 ?좉툑 ?μ튂
+  const hasAttemptedConnectionRef = useRef(false); // 👈 [핵심] 연결 시도 여부를 기억하는 잠금 장치
 
   useEffect(() => {
     const connectToOpenVidu = async () => {
       const ovSessionId = roomInfo.openviduSessionId;
       
-      // 1. ?대? ?곌껐?먭굅?? ?몄뀡 ID媛 ?녾굅?? ?대? ?곌껐???쒕룄 以묒씠嫄곕굹, ?대? ?쒕룄?덉뿀?ㅻ㈃ 利됱떆 以묐떒!
+      // 1. 이미 연결됐거나, 세션 ID가 없거나, 이미 연결을 시도 중이거나, 이미 시도했었다면 즉시 중단!
       if (isOvConnected || !ovSessionId || isConnectingRef.current || hasAttemptedConnectionRef.current) {
           return;
       }
 
       try {
-        isConnectingRef.current = true; // ?뵏 ?좉툑 ?쒖옉
-        hasAttemptedConnectionRef.current = true; // ???쒕룄 湲곕줉 (?깃났/?ㅽ뙣 ?곴??놁씠 ?ㅼ떆 ????
+        isConnectingRef.current = true; // 🔒 잠금 시작
+        hasAttemptedConnectionRef.current = true; // ✅ 시도 기록 (성공/실패 상관없이 다시 안 함)
         
-        // console.log("?? [OpenVidu] 理쒖큹 1???곌껐 ?쒕룄...");
+        console.log("🚀 [OpenVidu] 최초 1회 연결 시도...");
         
         const token = await createToken(ovSessionId);
         const myNickname = participants.find(p => p.key === myKey)?.nickname || "Guest";
 
         await joinSession(token, myNickname);
-        // console.log("??[OpenVidu] 理쒖큹 ?곌껐 ?깃났");
+        console.log("✅ [OpenVidu] 최초 연결 성공");
         
       } catch (e) {
-        console.error("??[OpenVidu] ?곌껐 ?ㅽ뙣:", e);
-        // ?ㅽ뙣 ?쒖뿉???ㅼ쓬 湲고쉶???ㅼ떆 ?쒕룄?????덈룄濡??좉툑???댁젣?⑸땲??
+        console.error("❌ [OpenVidu] 연결 실패:", e);
+        // 실패 시에는 다음 기회에 다시 시도할 수 있도록 잠금을 해제합니다.
         hasAttemptedConnectionRef.current = false;
       } finally {
-        isConnectingRef.current = false; // ?뵑 ?좉툑 ?댁젣
+        isConnectingRef.current = false; // 🔓 잠금 해제
       }
     };
 
-    // 議곌굔: 李멸???紐⑸줉???덇퀬 ???ㅺ? ?뺤씤?섏뿀???뚮쭔 ?ㅽ뻾
+    // 조건: 참가자 목록이 있고 내 키가 확인되었을 때만 실행
     if (participants.length > 0 && myKey) {
         connectToOpenVidu();
     }
@@ -734,7 +734,7 @@ export default function WaitingRoomPage() {
   }, [myMicOn]);
 
   const handleMemberJoined = useCallback((payload, senderKey) => {
-    // console.log("[WaitingRoom] ?윟 MEMBER_JOINED ?섏떊:", {
+    console.log("[WaitingRoom] 🟢 MEMBER_JOINED 수신:", {
       payload,
       senderKey,
       currentParticipants: participantsRef.current.length
@@ -744,7 +744,7 @@ export default function WaitingRoomPage() {
 
     const newMember = {
       key: String(senderKey),
-      nickname: payload?.nickname ?? "李몄뿬??,
+      nickname: payload?.nickname ?? "참여자",
       isHost: payload?.isHost ?? false,
       isReady: payload?.isReady ?? false,
       micOn: payload?.micOn ?? true,
@@ -756,7 +756,7 @@ export default function WaitingRoomPage() {
     };
 
     setParticipants((prev) => {
-      // ?대? 議댁옱?섎뒗 李몄뿬?먮㈃ ?낅뜲?댄듃, ?놁쑝硫?異붽?
+      // 이미 존재하는 참여자면 업데이트, 없으면 추가
       const exists = prev.some((p) => p.key === String(senderKey));
       if (exists) {
         return prev.map((p) => p.key === String(senderKey) ? { ...p, ...newMember } : p);
@@ -766,18 +766,18 @@ export default function WaitingRoomPage() {
 
     if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
 
-    // ?덈줈??硫ㅻ쾭媛 ?낆옣?덉쓣 ??理쒖떊 ?뺣낫瑜??ㅼ떆 媛?몄샂 (?꾨줈??而ㅼ뒪?곕쭏?댁쭠 ?숆린??
+    // 새로운 멤버가 입장했을 때 최신 정보를 다시 가져옴 (프로필 커스터마이징 동기화)
     fetchLobbyRef.current?.(true);
 
-    // ?덈줈??硫ㅻ쾭媛 ?낆옣?덉쓣 ????留덉씠???곹깭瑜??꾩넚?섏뿬 ?숆린??
+    // 새로운 멤버가 입장했을 때 내 마이크 상태를 전송하여 동기화
     if (sendMicRef.current) {
-      // console.log("[WaitingRoom] ??硫ㅻ쾭 ?낆옣 - ??留덉씠???곹깭 ?꾩넚:", myMicOnRef.current);
+      console.log("[WaitingRoom] 새 멤버 입장 - 내 마이크 상태 전송:", myMicOnRef.current);
       sendMicRef.current(myMicOnRef.current);
     }
   }, []);
 
   const handleMemberLeft = useCallback((payload, senderKey) => {
-    // console.log("[WaitingRoom] ?뵶 MEMBER_LEFT ?섏떊:", {
+    console.log("[WaitingRoom] 🔴 MEMBER_LEFT 수신:", {
       payload,
       senderKey,
       currentParticipants: participantsRef.current.length
@@ -791,19 +791,19 @@ export default function WaitingRoomPage() {
   }, []);
 
   const handleRoomClosed = useCallback(() => {
-    // console.log("[WaitingRoom] ROOM_CLOSED - 諛⑹옣???댁옣?섏뿬 諛?醫낅즺");
+    console.log("[WaitingRoom] ROOM_CLOSED - 방장이 퇴장하여 방 종료");
 
-    // ?몄뀡 ?뺣━
+    // 세션 정리
     sessionStorage.removeItem(ROOM_INFO_KEY);
 
-    // 硫붿씤 ?붾㈃?쇰줈 ?대룞?섎㈃???좎뒪??硫붿떆吏 ?꾨떖
+    // 메인 화면으로 이동하면서 토스트 메시지 전달
     navigate("/together", {
-      state: { toastMessage: "諛⑹옣???댁옣?섏뿬 ??붽? 醫낅즺?섏뿀?듬땲??" },
+      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
     });
   }, [navigate]);
 
   const handleReadyChanged = useCallback((payload, senderKey) => {
-    // console.log("[WaitingRoom] ?봽 READY_CHANGED ?섏떊:", {
+    console.log("[WaitingRoom] 🔄 READY_CHANGED 수신:", {
       payload,
       senderKey,
       currentParticipants: participantsRef.current.map(p => ({
@@ -817,7 +817,7 @@ export default function WaitingRoomPage() {
     if (payload?.totalCount !== undefined) setTotalCount(payload.totalCount);
 
     if (senderKey) {
-      // payload?먯꽌 以鍮??곹깭 ?뺤씤 (?щ윭 ?뺤떇 吏??
+      // payload에서 준비 상태 확인 (여러 형식 지원)
       let newReady = false;
       if (payload?.myReadyStatus === "READY" || payload?.readyStatus === "READY") {
         newReady = true;
@@ -829,7 +829,7 @@ export default function WaitingRoomPage() {
         newReady = payload.isReady === true;
       }
 
-      // console.log("[WaitingRoom] ??以鍮??곹깭 ?낅뜲?댄듃 ?곸슜:", {
+      console.log("[WaitingRoom] ✅ 준비 상태 업데이트 적용:", {
         senderKey: String(senderKey),
         newReady,
         payload,
@@ -839,7 +839,7 @@ export default function WaitingRoomPage() {
         const updated = prev.map((p) =>
           p.key === String(senderKey) ? { ...p, isReady: newReady } : p,
         );
-        // console.log("[WaitingRoom] ?낅뜲?댄듃 ??participants:", updated.map(p => ({
+        console.log("[WaitingRoom] 업데이트 후 participants:", updated.map(p => ({
           key: p.key,
           nickname: p.nickname,
           isReady: p.isReady
@@ -847,7 +847,7 @@ export default function WaitingRoomPage() {
         return updated;
       });
     } else {
-      console.warn("[WaitingRoom] ?좑툘 senderKey媛 ?놁뼱??以鍮??곹깭 ?낅뜲?댄듃 遺덇?", payload);
+      console.warn("[WaitingRoom] ⚠️ senderKey가 없어서 준비 상태 업데이트 불가", payload);
     }
   }, []);
 
@@ -862,7 +862,7 @@ export default function WaitingRoomPage() {
         prev.map((p) => {
           if (p.key === k) {
             const newMicOn = payload?.micOn ?? p.micOn;
-            // 留덉씠?ш? 爰쇱?硫?isSpeaking??false濡??ㅼ젙
+            // 마이크가 꺼지면 isSpeaking도 false로 설정
             return {
               ...p,
               micOn: newMicOn,
@@ -886,7 +886,7 @@ export default function WaitingRoomPage() {
         prev.map((p) => {
           if (p.key === k) {
             const level = payload?.level ?? 0;
-            // 留덉씠?ш? 耳쒖졇?덇퀬 voiceLevel???꾧퀎媛??댁긽???뚮쭔 諛쒗솕 以묒쑝濡??쒖떆
+            // 마이크가 켜져있고 voiceLevel이 임계값 이상일 때만 발화 중으로 표시
             const isSpeaking = p.micOn && level > 0.03;
             return { ...p, voiceLevel: level, isSpeaking };
           }
@@ -938,14 +938,14 @@ export default function WaitingRoomPage() {
       }
 
       fetchLobbyRef.current?.();
-      showToast("諛??뺣낫媛 蹂寃쎈릺?덉뒿?덈떎.");
+      showToast("방 정보가 변경되었습니다.");
     },
     [showToast],
   );
 
   const handleWebSocketError = useCallback(
     (msg) => {
-      showToast(msg || "?ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.");
+      showToast(msg || "오류가 발생했습니다.");
     },
     [showToast],
   );
@@ -953,14 +953,14 @@ export default function WaitingRoomPage() {
   const onRoomStarted = useCallback(
     (payloadOrData) => {
       if (isStarting) return;
-      // console.log("?렜 [WaitingRoom] ROOM_STARTED ?섏떊 - 移댁슫?몃떎???쒖옉");
+      console.log("🎮 [WaitingRoom] ROOM_STARTED 수신 - 카운트다운 시작");
       
       Object.keys(sessionStorage).forEach((key) => {
         if (key.startsWith(`timer_start_${inviteCode}`)) {
           sessionStorage.removeItem(key);
         }
       });
-      // console.log("?㏏ [WaitingRoom] ??寃뚯엫 ?쒖옉???꾪빐 ??대㉧ 湲곕줉 珥덇린???꾨즺");
+      console.log("🧹 [WaitingRoom] 새 게임 시작을 위해 타이머 기록 초기화 완료");
       
       startDataRef.current = payloadOrData;
       setIsStarting(true);
@@ -980,34 +980,34 @@ export default function WaitingRoomPage() {
     onRoomClosed: handleRoomClosed,
     onError: handleWebSocketError,
     onConnected: () => {
-      // console.log("[WaitingRoom] ??WebSocket ?곌껐 ?깃났! roomCode:", inviteCode);
+      console.log("[WaitingRoom] ✅ WebSocket 연결 성공! roomCode:", inviteCode);
       fetchLobbyRef.current?.();
     },
     onDisconnected: () => {
-      // console.log("[WaitingRoom] ??WebSocket ?곌껐 ?댁젣??);
+      console.log("[WaitingRoom] ❌ WebSocket 연결 해제됨");
     },
   });
 
-  // sendMic??ref?????
+  // sendMic을 ref에 저장
   useEffect(() => {
     sendMicRef.current = sendMic;
   }, [sendMic]);
 
-  // WebSocket ?곌껐 ?곹깭 濡쒓렇 諛?珥덇린 留덉씠???곹깭 ?꾩넚 (泥섏쓬 1踰덈쭔)
+  // WebSocket 연결 상태 로그 및 초기 마이크 상태 전송 (처음 1번만)
   const initialMicSentRef = useRef(false);
   useEffect(() => {
-    // console.log("[WaitingRoom] WebSocket ?곌껐 ?곹깭:", isConnected ? "???곌껐?? : "???딄?");
+    console.log("[WaitingRoom] WebSocket 연결 상태:", isConnected ? "✅ 연결됨" : "❌ 끊김");
 
-    // WebSocket ?곌껐 ??珥덇린 留덉씠???곹깭 ?꾩넚
+    // WebSocket 연결 시 초기 마이크 상태 전송
     if (isConnected && sendMic && !initialMicSentRef.current) {
-      // console.log("[WaitingRoom] 珥덇린 留덉씠???곹깭 ?꾩넚:", myMicOn);
+      console.log("[WaitingRoom] 초기 마이크 상태 전송:", myMicOn);
       sendMic(myMicOn);
       initialMicSentRef.current = true;
     }
 
-    // ?몙 [異붽?] ?대? ?ㅽ뵂鍮꾨몢 ?곌껐???곹깭濡??뚯븘?붿쓣 ??留덉씠???곹깭 ?숆린??
+    // 👇 [추가] 이미 오픈비두 연결된 상태로 돌아왔을 때 마이크 상태 동기화
     if (isOvConnected && publisher) {
-        // console.log("?렎 [WaitingRoom] 湲곗〈 ?ㅽ뵂鍮꾨몢 ?곌껐 媛먯? - 留덉씠???숆린??", myMicOn);
+        console.log("🎤 [WaitingRoom] 기존 오픈비두 연결 감지 - 마이크 동기화:", myMicOn);
         publisher.publishAudio(myMicOn);
     }
   }, [isConnected, sendMic, myMicOn, isOvConnected, publisher]);
@@ -1030,13 +1030,13 @@ export default function WaitingRoomPage() {
   const toggleMyMic = useCallback(async () => {
     const nextState = !myMicOn;
     
-    // 1. OpenVidu ?ㅼ젣 留덉씠???쒖뼱
+    // 1. OpenVidu 실제 마이크 제어
     if (publisher) {
       publisher.publishAudio(nextState);
-      // console.log(`?렎 [OpenVidu] 留덉씠??${nextState ? "ON" : "OFF"}`);
+      console.log(`🎤 [OpenVidu] 마이크 ${nextState ? "ON" : "OFF"}`);
     }
 
-    // 2. UI ?곹깭 諛??ㅻ뵒??遺꾩꽍湲??쒖뼱
+    // 2. UI 상태 및 오디오 분석기 제어
     setMyMicOn(nextState);
 
     if (nextState) {
@@ -1045,44 +1045,44 @@ export default function WaitingRoomPage() {
       await stopAudioAnalysis();
     }
 
-    // 3. ?뱀냼耳볦쑝濡??쒕쾭/?ㅻⅨ ?щ엺?먭쾶 ?뚮┝
+    // 3. 웹소켓으로 서버/다른 사람에게 알림
     if (sendMic) sendMic(nextState);
   }, [myMicOn, publisher, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
   const toggleMyReady = useCallback(async () => {
     if (!isConnected) {
-      console.warn("[WaitingRoom] ?좑툘 WebSocket 誘몄뿰寃??곹깭 - 以鍮?遺덇?");
-      showToast("?쒕쾭? ?곌껐?섏? ?딆븯?듬땲?? ?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂.");
+      console.warn("[WaitingRoom] ⚠️ WebSocket 미연결 상태 - 준비 불가");
+      showToast("서버와 연결되지 않았습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
     try {
-      // 1. [?덉퐫??諛⑹떇] 癒쇱? ?쒕쾭 DB瑜?怨좎묩?덈떎. (?붾㈃? ?꾩쭅 ??諛붽퓞)
+      // 1. [레코딩 방식] 먼저 서버 DB를 고칩니다. (화면은 아직 안 바꿈)
       const nextReady = !myReady;
-      // console.log("[WaitingRoom] ?뱻 API ?몄텧 (DB ???:", { inviteCode, nextReady });
+      console.log("[WaitingRoom] 📡 API 호출 (DB 저장):", { inviteCode, nextReady });
       await toggleReady(inviteCode, nextReady);
       
-      // 2. [?덉퐫??諛⑹떇] DB ??μ씠 ?뺤떎???깃났?덉쓣 ?뚮쭔 諛⑹넚???⑸땲??
+      // 2. [레코딩 방식] DB 저장이 확실히 성공했을 때만 방송을 쏩니다.
       if (sendReady) {
-        // console.log("[WaitingRoom] ?뱾 諛⑹넚 ?좏샇 諛쒖넚 (?깃났 ?뺤젙):", nextReady);
+        console.log("[WaitingRoom] 📤 방송 신호 발송 (성공 확정):", nextReady);
         sendReady(nextReady);
       }
 
-      // 3. ???붾㈃ ?낅뜲?댄듃???ш린??吏곸젒 ?섏? ?딆뒿?덈떎. 
-      // ?닿? 蹂대궦 諛⑹넚 ?좏샇瑜??닿? ?ㅼ떆 ?섏떊(handleReadyChanged)?????붾㈃??諛붾앸땲??
+      // 3. 내 화면 업데이트는 여기서 직접 하지 않습니다. 
+      // 내가 보낸 방송 신호를 내가 다시 수신(handleReadyChanged)할 때 화면이 바뀝니다.
       
     } catch (error) {
-      console.error("[WaitingRoom] ??以鍮??곹깭 ????ㅽ뙣:", error);
-      showToast("以鍮??곹깭 ??μ뿉 ?ㅽ뙣?덉뒿?덈떎.");
+      console.error("[WaitingRoom] ❌ 준비 상태 저장 실패:", error);
+      showToast("준비 상태 저장에 실패했습니다.");
     }
   }, [myKey, myReady, inviteCode, sendReady, showToast, isConnected]);
 
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(inviteCode);
-      showToast("李몄뿬 肄붾뱶媛 蹂듭궗?섏뿀?듬땲??");
+      showToast("참여 코드가 복사되었습니다.");
     } catch {
-      showToast("蹂듭궗???ㅽ뙣?덉뒿?덈떎.");
+      showToast("복사에 실패했습니다.");
     }
   }, [inviteCode, showToast]);
 
@@ -1090,24 +1090,24 @@ export default function WaitingRoomPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "?섎떎DUCK 諛?珥덈?",
-          text: `李몄뿬 肄붾뱶: ${inviteCode}\n諛??쒕ぉ: ${roomTitle}\n二쇱젣: ${topic}`,
+          title: "수다DUCK 방 초대",
+          text: `참여 코드: ${inviteCode}\n방 제목: ${roomTitle}\n주제: ${topic}`,
           url: window.location.href,
         });
-        showToast("怨듭쑀媛 ?꾨즺?섏뿀?듬땲??");
+        showToast("공유가 완료되었습니다.");
       } catch (e) {
-        if (e?.name !== "AbortError") showToast("怨듭쑀???ㅽ뙣?덉뒿?덈떎.");
+        if (e?.name !== "AbortError") showToast("공유에 실패했습니다.");
       }
       return;
     }
 
     try {
       await navigator.clipboard.writeText(
-        `李몄뿬 肄붾뱶: ${inviteCode}\n諛??쒕ぉ: ${roomTitle}\n二쇱젣: ${topic}`,
+        `참여 코드: ${inviteCode}\n방 제목: ${roomTitle}\n주제: ${topic}`,
       );
-      showToast("珥덈? ?뺣낫媛 蹂듭궗?섏뿀?듬땲??");
+      showToast("초대 정보가 복사되었습니다.");
     } catch {
-      showToast("怨듭쑀???ㅽ뙣?덉뒿?덈떎.");
+      showToast("공유에 실패했습니다.");
     }
   }, [inviteCode, roomTitle, topic, showToast]);
 
@@ -1145,14 +1145,14 @@ export default function WaitingRoomPage() {
         const randomTopic = topics[Math.floor(Math.random() * topics.length)];
         setEditTopic(randomTopic);
       } else {
-        // API ?묐떟? 諛쏆븯吏留?topics媛 鍮꾩뼱?덉쓣 ??fallback
+        // API 응답은 받았지만 topics가 비어있을 때 fallback
         if (hotTopics.length > 0) {
           const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
           setEditTopic(next);
         }
       }
     } catch {
-      // API ?ㅽ뙣 ??fallback
+      // API 실패 시 fallback
       if (hotTopics.length > 0) {
         const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
         setEditTopic(next);
@@ -1164,11 +1164,11 @@ export default function WaitingRoomPage() {
 
   const handleSaveEditRoomInfo = useCallback(async () => {
     if (!editTitle.trim()) {
-      showToast("諛??쒕ぉ???낅젰?댁＜?몄슂.");
+      showToast("방 제목을 입력해주세요.");
       return;
     }
     if (!editTopic.trim()) {
-      showToast("?섎떎 二쇱젣瑜??낅젰?섍굅???좏깮?댁＜?몄슂.");
+      showToast("수다 주제를 입력하거나 선택해주세요.");
       return;
     }
 
@@ -1177,18 +1177,18 @@ export default function WaitingRoomPage() {
         title: editTitle.trim(),
         topic: editTopic.trim(),
         turnCnt: editTurn,
-        // timeLimit???쒕쾭 誘몄??먯쑝濡??쒖쇅 (api/rooms.js?먯꽌 ?꾪꽣留곷맖)
+        // timeLimit는 서버 미지원으로 제외 (api/rooms.js에서 필터링됨)
       });
     } catch (e) {
-      const errorMessage = e.response?.data?.message || e.message || "諛??ㅼ젙 蹂寃쎌뿉 ?ㅽ뙣?덉뒿?덈떎.";
+      const errorMessage = e.response?.data?.message || e.message || "방 설정 변경에 실패했습니다.";
       
-      if (errorMessage.includes("諛??쒕ぉ") && errorMessage.includes("遺?곸젅")) {
-        setModalTitle("?좑툘 二쇱쓽");
-        setModalMessage("遺?곸젅??諛??쒕ぉ ?ㅼ떆 ?앹꽦?댁＜?몄슂");
+      if (errorMessage.includes("방 제목") && errorMessage.includes("부적절")) {
+        setModalTitle("⚠️ 주의");
+        setModalMessage("부적절한 방 제목 다시 생성해주세요");
         setModalOpen(true);
-      } else if (errorMessage.includes("諛?二쇱젣") || (errorMessage.includes("二쇱젣") && errorMessage.includes("遺?곸젅"))) {
-        setModalTitle("?좑툘 二쇱쓽");
-        setModalMessage("遺?곸젅??諛?二쇱젣?낅땲??");
+      } else if (errorMessage.includes("방 주제") || (errorMessage.includes("주제") && errorMessage.includes("부적절"))) {
+        setModalTitle("⚠️ 주의");
+        setModalMessage("부적절한 방 주제입니다.");
         setModalOpen(true);
       } else {
         showToast(errorMessage);
@@ -1222,7 +1222,7 @@ export default function WaitingRoomPage() {
 
     setEditPopupOpen(false);
     fetchLobbyRef.current?.();
-    showToast("諛??ㅼ젙??蹂寃쎈릺?덉뒿?덈떎.");
+    showToast("방 설정이 변경되었습니다.");
   }, [editTitle, editTopic, editTurn, editTimeLimit, showToast, inviteCode]);
   
   const handleStart = useCallback(async () => {
@@ -1233,7 +1233,7 @@ export default function WaitingRoomPage() {
       await startRoom(inviteCode);
 
     } catch {
-      showToast("諛⑹쓣 ?쒖옉?섎뒗???ㅽ뙣?덉뒿?덈떎.");
+      showToast("방을 시작하는데 실패했습니다.");
       return;
     }
 
@@ -1249,10 +1249,10 @@ export default function WaitingRoomPage() {
   }, [isHost, handleStart, toggleMyReady]);
 
   const primaryLabel = isHost
-    ? "????쒖옉?섍린"
+    ? "대화 시작하기"
     : myReady
-      ? "以鍮?痍⑥냼"
-      : "以鍮꾪븯湲?;
+      ? "준비 취소"
+      : "준비하기";
   const primaryDisabled = isHost ? !canStart : false;
 
   const handleExit = useCallback(async () => {
@@ -1262,7 +1262,7 @@ export default function WaitingRoomPage() {
       // ignore
     }
 
-    // ?몙 ?몙 ?ш린???ㅽ뵂鍮꾨몢 ?곌껐 ?뺤떎???딄린!
+    // 👇 👇 여기서 오픈비두 연결 확실히 끊기!
     leaveSession();
 
     if (inviteCode && inviteCode !== "000000") {
@@ -1274,7 +1274,7 @@ export default function WaitingRoomPage() {
     }
 
     sessionStorage.removeItem(ROOM_INFO_KEY);
-  }, [inviteCode, stopAudioAnalysis, leaveSession]); // ?몚 ?섏〈??諛곗뿴??leaveSession 異붽?
+  }, [inviteCode, stopAudioAnalysis, leaveSession]); // 👈 의존성 배열에 leaveSession 추가
 
   return (
     <div className={styles.Page}>
@@ -1287,9 +1287,9 @@ export default function WaitingRoomPage() {
         <AppHeader
           userName="user"
           notifications={[]}
-          logoExitMessage="硫붿씤 ?붾㈃?쇰줈 ?섍??쒓쿋?듬땲源?"
-          logoExitConfirmText="?섍?湲?
-          logoExitCancelText="痍⑥냼"
+          logoExitMessage="메인 화면으로 나가시겠습니까?"
+          logoExitConfirmText="나가기"
+          logoExitCancelText="취소"
           onLogoExit={handleExit}
           disableProfileClick={isConnected}
         />
@@ -1297,10 +1297,10 @@ export default function WaitingRoomPage() {
         <div className={styles.Top}>
           <ExitButton
             to="/main"
-            label="?ㅻ줈 媛湲?
-            message="硫붿씤 ?붾㈃?쇰줈 ?섍??쒓쿋?듬땲源?"
-            confirmText="?섍?湲?
-            cancelText="痍⑥냼"
+            label="뒤로 가기"
+            message="메인 화면으로 나가시겠습니까?"
+            confirmText="나가기"
+            cancelText="취소"
             onExit={handleExit}
             replace
             className={styles.BackButton}
@@ -1309,13 +1309,13 @@ export default function WaitingRoomPage() {
           <div className={styles.TopHeaderRow}>
             <div className={styles.SpeechRight}>
               <div className={styles.SpeechBubbleRight}>
-                ???二쇱젣??<span className={styles.TopicHighlight}>{topic}</span>?낅땲??
+                대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다!
               </div>
-              <img className={styles.Duck} src={duckImg} alt="?ㅻ━" />
+              <img className={styles.Duck} src={duckImg} alt="오리" />
             </div>
           </div>
 
-          <section className={styles.ParticipantsCard} aria-label="李몄뿬??紐⑸줉">
+          <section className={styles.ParticipantsCard} aria-label="참여자 목록">
             <div className={styles.ParticipantsHeader}>
               <div className={styles.HeaderLeft}>
                 <div className={styles.TopRow}>
@@ -1326,29 +1326,29 @@ export default function WaitingRoomPage() {
                       alt=""
                       aria-hidden="true"
                     />
-                    <span>李몄뿬??/span>
+                    <span>참여자</span>
                     <span className={styles.ParticipantsCount}>
                       ({currentCount}/{maxCount})
                     </span>
                   </div>
 
                   <div className={styles.RoomInfoText}>
-                    <span className={styles.RoomInfoLabel}>諛??쒕ぉ:</span>
+                    <span className={styles.RoomInfoLabel}>방 제목:</span>
                     <span className={styles.RoomInfoValue}>{roomTitle}</span>
                     <span className={styles.RoomInfoSeparator}>|</span>
-                    <span className={styles.RoomInfoLabel}>二쇱젣:</span>
+                    <span className={styles.RoomInfoLabel}>주제:</span>
                     <span className={styles.RoomInfoValue}>{topic}</span>
                     <span className={styles.RoomInfoSeparator}>|</span>
-                    <span className={styles.RoomInfoLabel}>????</span>
-                    <span className={styles.RoomInfoValue}>{turnCount}??/span>
+                    <span className={styles.RoomInfoLabel}>턴 수:</span>
+                    <span className={styles.RoomInfoValue}>{turnCount}턴</span>
                     <span className={styles.RoomInfoSeparator}>|</span>
-                    <span className={styles.RoomInfoLabel}>?대떦 ?쒗븳?쒓컙:</span>
-                    <span className={styles.RoomInfoValue}>{timeLimit}珥?/span>
+                    <span className={styles.RoomInfoLabel}>턴당 제한시간:</span>
+                    <span className={styles.RoomInfoValue}>{timeLimit}초</span>
                   </div>
 
                   <div className={styles.InviteCodeBox}>
                     <div className={styles.InviteCodeHeader}>
-                      <span className={styles.InviteCodeLabel}>李몄뿬 肄붾뱶</span>
+                      <span className={styles.InviteCodeLabel}>참여 코드</span>
                     </div>
                     <div className={styles.InviteCodeRow}>
                       <div className={styles.InviteCodeValue}>{inviteCode}</div>
@@ -1359,7 +1359,7 @@ export default function WaitingRoomPage() {
                           onClick={handleKakaoShare}
                         >
                           <ShareIcon />
-                          怨듭쑀
+                          공유
                         </button>
                         <button
                           type="button"
@@ -1367,7 +1367,7 @@ export default function WaitingRoomPage() {
                           onClick={handleCopy}
                         >
                           <CopyIcon />
-                          蹂듭궗
+                          복사
                         </button>
                       </div>
                     </div>
@@ -1381,7 +1381,7 @@ export default function WaitingRoomPage() {
                   className={styles.EditButton}
                   onClick={handleEditRoomInfo}
                 >
-                  諛??ㅼ젙 蹂寃?
+                  방 설정 변경
                 </button>
               )}
             </div>
@@ -1390,7 +1390,7 @@ export default function WaitingRoomPage() {
               {isLoading ? (
                 <div className={styles.ParticipantRowEmpty}>
                   <div className={styles.EmptySlotText}>
-                    李몄뿬??紐⑸줉 濡쒕뵫 以?..
+                    참여자 목록 로딩 중...
                   </div>
                 </div>
               ) : (
@@ -1403,7 +1403,7 @@ export default function WaitingRoomPage() {
                         key={`empty-${index}`}
                         className={styles.ParticipantRowEmpty}
                       >
-                        <div className={styles.EmptySlotText}>鍮??먮━</div>
+                        <div className={styles.EmptySlotText}>빈 자리</div>
                       </div>
                     );
                   }
@@ -1411,7 +1411,7 @@ export default function WaitingRoomPage() {
                   const isMe = p.key === myKey;
                   const micOn = isMe ? myMicOn : (p.micOn ?? false);
 
-                  // ?꾨줈??而ㅼ뒪?곕쭏?댁쭠 ?뺣낫 ?뚯떛
+                  // 프로필 커스터마이징 정보 파싱
                   const profileInfo = getDuckProfileInfo(p.duckCustomJson);
                   const nicknameStyleInfo = getNicknameStyle(p.avatarCustomJson);
 
@@ -1443,7 +1443,7 @@ export default function WaitingRoomPage() {
                               size="small"
                             />
                             {isMe && (
-                              <span className={styles.MeTag}>(??</span>
+                              <span className={styles.MeTag}>(나)</span>
                             )}
 
                             {!p.isHost ? (
@@ -1454,7 +1454,7 @@ export default function WaitingRoomPage() {
                                     : styles.ReadyTagOff
                                 }`}
                               >
-                                {p.isReady ? "以鍮??꾨즺" : "?湲?}
+                                {p.isReady ? "준비 완료" : "대기"}
                               </span>
                             ) : null}
                           </div>
@@ -1465,12 +1465,12 @@ export default function WaitingRoomPage() {
                               className={styles.MicButton}
                               onClick={isMe ? toggleMyMic : undefined}
                               disabled={!isMe}
-                              aria-label={micOn ? "留덉씠???꾧린" : "留덉씠??耳쒓린"}
+                              aria-label={micOn ? "마이크 끄기" : "마이크 켜기"}
                             >
                               <img
                                 className={styles.MicIconImg}
                                 src={micOn ? micOffIcon : micOnIcon}
-                                alt={micOn ? "留덉씠??耳쒖쭚" : "留덉씠??爰쇱쭚"}
+                                alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
                               />
                             </button>
 
@@ -1484,7 +1484,7 @@ export default function WaitingRoomPage() {
 
                       <div className={styles.ParticipantRight}>
                         {p.isHost ? (
-                          <span className={styles.HostTag}>諛⑹옣</span>
+                          <span className={styles.HostTag}>방장</span>
                         ) : null}
                       </div>
                     </div>
@@ -1503,7 +1503,7 @@ export default function WaitingRoomPage() {
               aria-disabled={primaryDisabled}
               title={
                 isHost && primaryDisabled
-                  ? "紐⑤뱺 李몄뿬?먭? 以鍮??꾨즺?댁빞 ?쒖옉?????덉뒿?덈떎."
+                  ? "모든 참여자가 준비 완료해야 시작할 수 있습니다."
                   : undefined
               }
             >
@@ -1512,26 +1512,26 @@ export default function WaitingRoomPage() {
             </button>
           </section>
 
-          <section className={styles.GuideBox} aria-label="?쒖옉 ???덈궡?ы빆">
+          <section className={styles.GuideBox} aria-label="시작 전 안내사항">
             <div className={styles.GuideHeader}>
               <span className={styles.GuideDot} aria-hidden="true" />
-              <span className={styles.GuideTitle}>?쒖옉 ???덈궡?ы빆</span>
+              <span className={styles.GuideTitle}>시작 전 안내사항</span>
             </div>
 
             <ul className={styles.GuideList}>
               <li className={styles.GuideItem}>
                 {isHost
-                  ? "紐⑤뱺 李몄뿬?먭? 以鍮??꾨즺?섎㈃ ??붾? ?쒖옉?????덉뒿?덈떎"
-                  : "以鍮꾪븯湲곕? ?꾨Ⅴ硫?諛⑹옣????붾? ?쒖옉?????덉뒿?덈떎"}
+                  ? "모든 참여자가 준비 완료하면 대화를 시작할 수 있습니다"
+                  : "준비하기를 누르면 방장이 대화를 시작할 수 있습니다"}
               </li>
               <li className={styles.GuideItem}>
-                媛??대쭏??1遺꾧컙 ?먯쑀濡?쾶 ??뷀븯?몄슂
+                각 턴마다 1분간 자유롭게 대화하세요
               </li>
               <li className={styles.GuideItem}>
-                AI媛 ??붾? 遺꾩꽍?섍퀬 ?쇰뱶諛깆쓣 ?쒓났?⑸땲??
+                AI가 대화를 분석하고 피드백을 제공합니다
               </li>
               <li className={styles.GuideItem}>
-                議곗슜???섍꼍?먯꽌 吏꾪뻾?섎㈃ ??醫뗭뒿?덈떎
+                조용한 환경에서 진행하면 더 좋습니다
               </li>
             </ul>
           </section>
@@ -1544,35 +1544,35 @@ export default function WaitingRoomPage() {
         <div className={styles.PopupOverlay}>
           <div className={styles.PopupContainer}>
             <div className={styles.PopupHeader}>
-              <h2 className={styles.PopupTitle}>諛??ㅼ젙 蹂寃?/h2>
+              <h2 className={styles.PopupTitle}>방 설정 변경</h2>
               <button
                 type="button"
                 className={styles.PopupCloseButton}
                 onClick={handleCloseEditPopup}
-                aria-label="?リ린"
+                aria-label="닫기"
               >
-                횞
+                ×
               </button>
             </div>
 
             <div className={styles.PopupBody}>
               <div className={styles.PopupField}>
                 <div className={styles.PopupLabelRow}>
-                  <span className={styles.PopupLabel}>諛??쒕ぉ</span>
+                  <span className={styles.PopupLabel}>방 제목</span>
                   <span className={styles.PopupRequired}>*</span>
                 </div>
                 <input
                   className={`${styles.PopupInput} ${styles.PopupTitleInput}`}
                   value={editTitle}
                   onChange={handleEditTitleChange}
-                  placeholder="?? 移쒓뎄?ㅺ낵 ?섎떎???
+                  placeholder="예: 친구들과 수다타임"
                 />
                 <div className={styles.PopupCounter}>{editTitle.length}/30</div>
               </div>
 
               <div className={styles.PopupField}>
                 <div className={styles.PopupLabelRow}>
-                  <span className={styles.PopupLabel}>?섎떎 二쇱젣</span>
+                  <span className={styles.PopupLabel}>수다 주제</span>
                   <span className={styles.PopupRequired}>*</span>
                 </div>
                 <div className={styles.PopupTopicInputRow}>
@@ -1580,7 +1580,7 @@ export default function WaitingRoomPage() {
                     className={styles.PopupInput}
                     value={editTopic}
                     onChange={handleEditTopicChange}
-                    placeholder="吏곸젒 ?낅젰?섍굅???꾨옒?먯꽌 ?좏깮?섏꽭??
+                    placeholder="직접 입력하거나 아래에서 선택하세요"
                   />
                   <button
                     type="button"
@@ -1591,10 +1591,10 @@ export default function WaitingRoomPage() {
                     {isLoadingAiRecommend ? (
                       <span className={styles.PopupAiButtonContent}>
                         <span className={styles.PopupAiSpinner} />
-                        AI 異붿쿇
+                        AI 추천
                       </span>
                     ) : (
-                      "AI 異붿쿇"
+                      "AI 추천"
                     )}
                   </button>
                 </div>
@@ -1607,14 +1607,14 @@ export default function WaitingRoomPage() {
                 className={styles.PopupCancelButton}
                 onClick={handleCloseEditPopup}
               >
-                痍⑥냼
+                취소
               </button>
               <button
                 type="button"
                 className={styles.PopupSaveButton}
                 onClick={handleSaveEditRoomInfo}
               >
-                ???
+                저장
               </button>
             </div>
           </div>
@@ -1623,18 +1623,18 @@ export default function WaitingRoomPage() {
 
       {isStarting && (
         <LoadingOverlay
-          title="???以鍮?"
-          subtitle="?ㅽ겕由쏀듃瑜?紐⑥쑝???먯쑀留먰븯湲곌? ?쒖옉?⑸땲??
+          title="대화 준비!"
+          subtitle="스크립트를 모으는 자유말하기가 시작됩니다"
           image={duckHappy}
         />
       )}
 
-      {/* 遺?곸젅???쒗쁽 紐⑤떖 */}
+      {/* 부적절한 표현 모달 */}
       <ConfirmModal
         open={modalOpen}
         title={modalTitle}
         message={modalMessage}
-        confirmText="?뺤씤"
+        confirmText="확인"
         onConfirm={() => setModalOpen(false)}
         onClose={() => setModalOpen(false)}
         cancelText=""
@@ -1644,7 +1644,7 @@ export default function WaitingRoomPage() {
   );
 }
 
-// ?몙 ?뚮━ ?ъ깮??而댄룷?뚰듃 !!!!!!
+// 👇 소리 재생용 컴포넌트 !!!!!!
 const UserAudioComponent = ({ streamManager }) => {
   const audioRef = useRef(null);
 

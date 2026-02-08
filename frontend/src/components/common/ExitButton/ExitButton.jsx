@@ -8,15 +8,15 @@ import ConfirmModal from "../ConfirmModal/ConfirmModal";
 
 export default function ExitButton({
   to = "/",
-  label = "?��?�?,
+  label = "나가기",
 
   // 기존 props
-  message = "메인 ?�면?�로 ?��??�겠?�니�?",
+  message = "메인 화면으로 나가시겠습니까?",
 
-  // ?�환: 기존??confirmMessage�??�기??경우??받도�?처리
+  // 호환: 기존에 confirmMessage로 넘기는 경우도 받도록 처리
   confirmMessage,
 
-  confirmText = "?��?�?,
+  confirmText = "나가기",
   cancelText = "취소",
   className = "",
   onExit,
@@ -35,7 +35,7 @@ export default function ExitButton({
         audio.volume = getEffectiveVolume(0.1);
         audio.play().catch(() => {});
       } catch (e) {
-        // ?�운???�생 ?�패 무시
+        // 사운드 재생 실패 무시
       }
     }
   };
@@ -56,7 +56,7 @@ export default function ExitButton({
 
     setProcessing(true);
     try {
-      // ?�예??버튼???��????�만 ?�행
+      // ‘예’ 버튼을 눌렀을 때만 실행
       if (typeof onExit === "function") {
         await onExit();
       }
@@ -64,8 +64,8 @@ export default function ExitButton({
       setOpen(false);
       navigate(to, { replace });
     } catch (e) {
-      alert(e?.message || "?��?기에 ?�패?�습?�다.");
-      // ?�패 ??모달?� ?�어??채로 ?��?(?�시??취소 가??
+      alert(e?.message || "나가기에 실패했습니다.");
+      // 실패 시 모달은 열어둔 채로 유지(재시도/취소 가능)
     } finally {
       setProcessing(false);
     }
@@ -88,7 +88,7 @@ export default function ExitButton({
       <ConfirmModal
         open={open}
         message={confirmMessage ?? message}
-        confirmText={processing ? "?��???�?.." : confirmText}
+        confirmText={processing ? "나가는 중..." : confirmText}
         cancelText={cancelText}
         onConfirm={handleConfirm}
         onClose={handleClose}

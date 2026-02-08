@@ -6,7 +6,7 @@ const STORAGE_KEY_VOLUME = "masterVolume";
 const STORAGE_KEY_MUTED = "isMuted";
 
 export function SoundProvider({ children }) {
-  // localStorage?�서 초기�?로드
+  // localStorage에서 초기값 로드
   const [masterVolume, setMasterVolume] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_VOLUME);
@@ -25,7 +25,7 @@ export function SoundProvider({ children }) {
     }
   });
 
-  // masterVolume 변�???localStorage???�??
+  // masterVolume 변경 시 localStorage에 저장
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_VOLUME, String(masterVolume));
@@ -34,7 +34,7 @@ export function SoundProvider({ children }) {
     }
   }, [masterVolume]);
 
-  // isMuted 변�???localStorage???�??
+  // isMuted 변경 시 localStorage에 저장
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_MUTED, String(isMuted));
@@ -44,9 +44,9 @@ export function SoundProvider({ children }) {
   }, [isMuted]);
 
   /**
-   * ?�제 ?�생??볼륨 계산
-   * @param {number} baseVolume - ?�본 볼륨 (0~1)
-   * @returns {number} 마스??볼륨???�용??최종 볼륨 (0~1)
+   * 실제 재생할 볼륨 계산
+   * @param {number} baseVolume - 원본 볼륨 (0~1)
+   * @returns {number} 마스터 볼륨이 적용된 최종 볼륨 (0~1)
    */
   const getEffectiveVolume = useCallback(
     (baseVolume) => {
@@ -57,8 +57,8 @@ export function SoundProvider({ children }) {
   );
 
   /**
-   * ?�운???�생 ?�퍼 ?�수
-   * @param {string|Audio} soundSource - ?�운???�일 경로 ?�는 Audio 객체
+   * 사운드 재생 헬퍼 함수
+   * @param {string|Audio} soundSource - 사운드 파일 경로 또는 Audio 객체
    * @param {number} baseVolume - 기본 볼륨 (0~1)
    */
   const playSound = useCallback(
@@ -70,7 +70,7 @@ export function SoundProvider({ children }) {
         audio.volume = getEffectiveVolume(baseVolume);
         audio.play().catch(() => {});
       } catch (e) {
-        // ?�운???�생 ?�패 무시
+        // 사운드 재생 실패 무시
       }
     },
     [isMuted, getEffectiveVolume]

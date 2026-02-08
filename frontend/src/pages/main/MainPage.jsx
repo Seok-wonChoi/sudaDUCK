@@ -21,39 +21,39 @@ export default function MainPage() {
   const [toastMessage, setToastMessage] = useState("");
 
 
-  // ?�스??메시지 ?�시
+  // 토스트 메시지 표시
   useEffect(() => {
     if (location.state?.toastMessage) {
       const message = location.state.toastMessage;
       setToastMessage(message);
       setToastVisible(true);
 
-      // 3�????�동?�로 ?�라�?
+      // 3초 후 자동으로 사라짐
       const timer = setTimeout(() => {
         setToastVisible(false);
       }, 3000);
 
-      // location state ?�리
+      // location state 정리
       navigate(location.pathname, {
         replace: true,
         state: { ...state, toastMessage: undefined },
       });
 
 
-      // ??cleanup?� location??바�??�마???�행?�는??
-      // navigate�??�출?�면 location??바뀌어???�?�머가 바로 취소?�는 버그가 ?�었??
-      // ?�라???�기?�는 ?�마?�트 ?�에�??�리?�도�??�거?? ?�?�머�??��??�야 ??
+      // 이 cleanup은 location이 바뀔 때마다 실행되는데,
+      // navigate를 호출하면 location이 바뀌어서 타이머가 바로 취소되는 버그가 있었음.
+      // 따라서 여기서는 언마운트 시에만 정리되도록 하거나, 타이머를 유지해야 함.
       return () => {
-        // 만약 ?�이지�??�예 ?�나??것이?�면 ?�리, 
-        // ?��?�?navigate(replace)??같�? 컴포?�트�??��??��?�?주의 ?�요.
-        // ?�기?�는 ?�순??clearTimeout???�거?�거?? 
-        // ?�존??배열?�서 location??빼고 location.state.toastMessage�?감시?�는 것이 ?�음.
+        // 만약 페이지를 아예 떠나는 것이라면 정리, 
+        // 하지만 navigate(replace)는 같은 컴포넌트를 유지하므로 주의 필요.
+        // 여기서는 단순히 clearTimeout을 제거하거나, 
+        // 의존성 배열에서 location을 빼고 location.state.toastMessage만 감시하는 것이 나음.
       };
     }
   }, [location.state?.toastMessage, navigate, location.pathname]);
 
 
-  // 로그?????�용???�로??로드 (?�네????
+  // 로그인 후 사용자 프로필 로드 (닉네임 등)
   useEffect(() => {
     const loadUserProfile = async () => {
       try {
@@ -71,11 +71,11 @@ export default function MainPage() {
           });
         }
       } catch (error) {
-        console.error("?�로??로드 ?�패:", error);
+        console.error("프로필 로드 실패:", error);
       }
     };
 
-    // accessToken???�으�??�로??로드
+    // accessToken이 있으면 프로필 로드
     const token = localStorage.getItem('accessToken');
     if (token) {
       loadUserProfile();
@@ -93,7 +93,7 @@ export default function MainPage() {
 
   return (
     <div className={styles.Page}>
-      {/* ?�스??메시지 (?�면 ?�단) */}
+      {/* 토스트 메시지 (화면 상단) */}
       {toastVisible && (
         <div className={styles.Toast}>
           {toastMessage}
@@ -112,12 +112,12 @@ export default function MainPage() {
         </div>
 
         <div className={styles.Bottom}>
-          <TipBanner text="Tip: 지�?바로 ?�께 ?�기 모드�??�어가 볼까?? ?��" />
+          <TipBanner text="Tip: 지금 바로 함께 하기 모드로 들어가 볼까요? 😊" />
           <StatsSection
             stats={[
-              { value: "?��", label: "?�늘???�심???�볼까요?" },
-              { value: `${summary.attendanceDays}??, label: "?�속 ?�습" },
-              { value: `${summary.sentenceCount}�?, label: "?�?�된 문장" },
+              { value: "🔥", label: "오늘도 열심히 해볼까요?" },
+              { value: `${summary.attendanceDays}일`, label: "연속 학습" },
+              { value: `${summary.sentenceCount}개`, label: "저장된 문장" },
             ]}
           />
         </div>

@@ -31,10 +31,10 @@ const COLOR_MAP = {
 };
 
 const ACCESSORY_MAP = {
-  hat: "?��",
-  sunglasses: "?���?,
-  ribbon: "??",
-  crown: "?��",
+  hat: "🎩",
+  sunglasses: "🕶️",
+  ribbon: "🎀",
+  crown: "👑",
 };
 
 
@@ -45,12 +45,12 @@ export default function AppHeader({
   initialMuted = false,
   initialVolume = 70,
   onChangeSound,
-  // 로고 ?�릭 ???��?�??�인 관??props
+  // 로고 클릭 시 나가기 확인 관련 props
   logoExitMessage,
-  logoExitConfirmText = "?��?�?,
+  logoExitConfirmText = "나가기",
   logoExitCancelText = "취소",
   onLogoExit,
-  // ?�로???�릭 차단 (?�소�??�결 �?
+  // 프로필 클릭 차단 (웹소켓 연결 중)
   disableProfileClick = false,
 }) {
   const navigate = useNavigate();
@@ -61,13 +61,13 @@ export default function AppHeader({
   const [logoExitProcessing, setLogoExitProcessing] = useState(false);
   const [profileBlockModalOpen, setProfileBlockModalOpen] = useState(false);
 
-  // ?�운??컨텍?�트 ?�용
+  // 사운드 컨텍스트 사용
   const { masterVolume, setMasterVolume, isMuted, setIsMuted } = useSoundContext();
 
-  // ?�소�???볼륨 ?�?�용 로컬 ?�태
+  // 음소거 전 볼륨 저장용 로컬 상태
   const [savedVolume, setSavedVolume] = useState(70);
 
-  // ?�로???�보 (localStorage?�서 ?�기)
+  // 프로필 정보 (localStorage에서 읽기)
   const [profileInfo, setProfileInfo] = useState(() => {
     try {
       const saved = localStorage.getItem('userProfile');
@@ -85,7 +85,7 @@ export default function AppHeader({
     }
   });
 
-  // localStorage 변�?감�?
+  // localStorage 변경 감지
   useEffect(() => {
     const handleStorageChange = () => {
       try {
@@ -94,12 +94,12 @@ export default function AppHeader({
           setProfileInfo(JSON.parse(saved));
         }
       } catch (error) {
-        console.error('?�로???�보 ?�기 ?�패:', error);
+        console.error('프로필 정보 읽기 실패:', error);
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    // 같�? ???�에??변경을 감�??�기 ?�한 커스?� ?�벤??
+    // 같은 탭 내에서 변경을 감지하기 위한 커스텀 이벤트
     window.addEventListener('profileUpdated', handleStorageChange);
 
     return () => {
@@ -138,12 +138,12 @@ export default function AppHeader({
   };
 
   const onLogoClick = useCallback(() => {
-    // 로고 ?�릭 ???��?�??�인???�요??경우 (logoExitMessage가 ?�으�?
+    // 로고 클릭 시 나가기 확인이 필요한 경우 (logoExitMessage가 있으면)
     if (logoExitMessage) {
       setLogoExitModalOpen(true);
       return;
     }
-    // ?�반?�인 경우 바로 메인?�로 ?�동
+    // 일반적인 경우 바로 메인으로 이동
     navigate("/main");
   }, [logoExitMessage, navigate]);
 
@@ -152,7 +152,7 @@ export default function AppHeader({
 
     setLogoExitProcessing(true);
     try {
-      // ?��?�?콜백 ?�행 (leaveRoom API ?�출 ??
+      // 나가기 콜백 실행 (leaveRoom API 호출 등)
       if (typeof onLogoExit === "function") {
         await onLogoExit();
       }
@@ -160,8 +160,8 @@ export default function AppHeader({
       setLogoExitModalOpen(false);
       navigate("/main");
     } catch (e) {
-      console.error("로고 ?�릭 ?��?�??�패:", e);
-      alert(e?.message || "?��?기에 ?�패?�습?�다.");
+      console.error("로고 클릭 나가기 실패:", e);
+      alert(e?.message || "나가기에 실패했습니다.");
     } finally {
       setLogoExitProcessing(false);
     }
@@ -173,7 +173,7 @@ export default function AppHeader({
   }, [logoExitProcessing]);
 
   const onProfileClick = () => {
-    // ?�소�??�결 중에???�로???�이지 ?�동 차단
+    // 웹소켓 연결 중에는 프로필 페이지 이동 차단
     if (disableProfileClick) {
       setProfileBlockModalOpen(true);
       return;
@@ -185,24 +185,24 @@ export default function AppHeader({
     const nextMuted = !isMuted;
 
     if (nextMuted) {
-      // ?�소�? ?�재 볼륨 ?�?�하�?볼륨??0?�로 (무음)
+      // 음소거: 현재 볼륨 저장하고 볼륨을 0으로 (무음)
       setSavedVolume(masterVolume);
       setMasterVolume(0);
       setIsMuted(true);
       emitSound({ muted: true, volume: 0 });
     } else {
-      // ?�소�??�제: ?�?�된 볼륨?�로 복원 (?�릭 ?�운???�생)
+      // 음소거 해제: 저장된 볼륨으로 복원 (클릭 사운드 재생)
       const restoreVolume = savedVolume > 0 ? savedVolume : 70;
       setMasterVolume(restoreVolume);
       setIsMuted(false);
 
-      // ?�소�??�제 ???�릭 ?�운???�생
+      // 음소거 해제 시 클릭 사운드 재생
       try {
         const audio = new Audio(clickMp3);
-        audio.volume = (restoreVolume / 100) * 0.1; // master volume ?�용 (10% 기본 볼륨)
+        audio.volume = (restoreVolume / 100) * 0.1; // master volume 적용 (10% 기본 볼륨)
         audio.play().catch(() => {});
       } catch (e) {
-        // ?�운???�생 ?�패 무시
+        // 사운드 재생 실패 무시
       }
 
       emitSound({ muted: false, volume: restoreVolume });
@@ -213,7 +213,7 @@ export default function AppHeader({
     const nextVolume = Number(e.target.value);
     setMasterVolume(nextVolume);
 
-    // ?�라?�더�??�직이�??�동?�로 ?�소�??�제
+    // 슬라이더를 움직이면 자동으로 음소거 해제
     if (isMuted && nextVolume > 0) {
       setIsMuted(false);
       emitSound({ muted: false, volume: nextVolume });
@@ -229,12 +229,12 @@ export default function AppHeader({
           type="button"
           className={styles.BrandButton}
           onClick={onLogoClick}
-          aria-label="메인?�로 ?�동"
+          aria-label="메인으로 이동"
         >
           <div className={styles.LogoMark} aria-hidden="true">
             <img src={duckLogo} alt="" className={styles.LogoImage} />
           </div>
-          <div className={styles.BrandText}>?�다DUCK</div>
+          <div className={styles.BrandText}>수다DUCK</div>
         </button>
 
       </div>
@@ -244,7 +244,7 @@ export default function AppHeader({
           type="button"
           className={styles.AvatarButton}
           onClick={onProfileClick}
-          aria-label="마이?�이지�??�동"
+          aria-label="마이페이지로 이동"
         >
           <div
             className={styles.Avatar}
@@ -253,7 +253,7 @@ export default function AppHeader({
           >
             <img
               src={DUCK_PROFILE_IMAGES[profileInfo.profileId]}
-              alt="?�로??
+              alt="프로필"
               className={styles.AvatarImage}
             />
             {profileInfo.accessory && (
@@ -269,7 +269,7 @@ export default function AppHeader({
             type="button"
             className={`${styles.IconButton} ${settingsOpen ? styles.Active : ""}`}
             onClick={toggleSettings}
-            aria-label={isMuted ? "?�소�??�태 - ?�운???�정" : "?�운???�정"}
+            aria-label={isMuted ? "음소거 상태 - 사운드 설정" : "사운드 설정"}
             aria-expanded={settingsOpen}
           >
             {isMuted ? (
@@ -280,8 +280,8 @@ export default function AppHeader({
           </button>
 
           {settingsOpen && (
-            <div className={styles.Popover} role="dialog" aria-label="?�운???�정">
-              <div className={styles.PopoverTitle}>게임 ?�운??/div>
+            <div className={styles.Popover} role="dialog" aria-label="사운드 설정">
+              <div className={styles.PopoverTitle}>게임 사운드</div>
 
               <div className={styles.SoundRow}>
                 <button
@@ -290,7 +290,7 @@ export default function AppHeader({
                   onClick={onMuteClick}
                   data-click-sound="false"
                 >
-                  {isMuted ? "?�소�??�제" : "?�소�?}
+                  {isMuted ? "음소거 해제" : "음소거"}
                 </button>
 
                 <div className={styles.VolumeText}>{masterVolume}%</div>
@@ -309,7 +309,7 @@ export default function AppHeader({
 
               <div className={styles.PopoverFooter}>
                 <button type="button" className={styles.FooterButton} onClick={closeAll}>
-                  ?�기
+                  닫기
                 </button>
               </div>
             </div>
@@ -317,21 +317,21 @@ export default function AppHeader({
         </div>
       </div>
 
-      {/* 로고 ?�릭 ???��?�??�인 모달 */}
+      {/* 로고 클릭 시 나가기 확인 모달 */}
       <ConfirmModal
         open={logoExitModalOpen}
-        message={logoExitMessage || "메인 ?�면?�로 ?��??�겠?�니�?"}
-        confirmText={logoExitProcessing ? "?��???�?.." : logoExitConfirmText}
+        message={logoExitMessage || "메인 화면으로 나가시겠습니까?"}
+        confirmText={logoExitProcessing ? "나가는 중..." : logoExitConfirmText}
         cancelText={logoExitCancelText}
         onConfirm={handleLogoExitConfirm}
         onClose={handleLogoExitCancel}
       />
 
-      {/* ?�로???�릭 차단 모달 */}
+      {/* 프로필 클릭 차단 모달 */}
       <ConfirmModal
         open={profileBlockModalOpen}
-        message="게임??진행 중일 ?�는 마이?�이지�??�동?????�습?�다."
-        confirmText="?�인"
+        message="게임이 진행 중일 때는 마이페이지로 이동할 수 없습니다."
+        confirmText="확인"
         cancelText={null}
         onConfirm={() => setProfileBlockModalOpen(false)}
         onClose={() => setProfileBlockModalOpen(false)}

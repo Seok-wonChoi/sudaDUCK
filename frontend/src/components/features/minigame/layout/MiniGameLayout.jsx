@@ -6,19 +6,19 @@ import ProgressBar from '../common/ProgressBar';
 export default function MiniGameLayout({
   children,
   showGameHeader = true,
-  title = '빈칸 채우�?,
+  title = '빈칸 채우기',
   timer = '0:00',
   progress = 0,
   totalProgress = 100,
   userName = 'user',
   onExit,
-  // 로고 ?�릭 ?��?�?관??props
+  // 로고 클릭 나가기 관련 props
   logoExitMessage,
   onLogoExit,
-  // 리뷰 모드 관??
+  // 리뷰 모드 관련
   isReviewMode = false,
   onComplete,
-  // ?�로???�릭 차단
+  // 프로필 클릭 차단
   disableProfileClick = false,
 }) {
   return (
@@ -44,10 +44,10 @@ export default function MiniGameLayout({
       </main>
 
       <footer className={styles.footer}>
-        {/* 리뷰 모드?????�료 버튼 ?�시 */}
+        {/* 리뷰 모드일 때 완료 버튼 표시 */}
         {isReviewMode && onComplete && (
           <button className={styles.completeButton} onClick={onComplete}>
-            ?�료
+            완료
           </button>
         )}
       </footer>

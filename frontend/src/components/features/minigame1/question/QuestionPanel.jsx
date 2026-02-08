@@ -13,7 +13,7 @@ export default function QuestionPanel({
   currentBlankIndex = 0,
   onBlankChange,
   onBlankSubmit,
-  onBlankClick  // 추�?
+  onBlankClick  // 추가
 }) {
   return (
     <div className={styles.panel}>
@@ -25,7 +25,7 @@ export default function QuestionPanel({
         currentBlankIndex={currentBlankIndex}
         onBlankChange={onBlankChange}
         onBlankSubmit={onBlankSubmit}
-        onBlankClick={onBlankClick}  // 추�?
+        onBlankClick={onBlankClick}  // 추가
       />
     </div>
   );

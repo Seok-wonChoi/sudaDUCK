@@ -26,7 +26,7 @@ export default function SentenceDetailModal({ sentence, onClose }) {
   } = sentence;
 
   const handlePlayAudio = () => {
-    // console.log("Playing audio for:", english);
+    console.log("Playing audio for:", english);
   };
 
   const footer = (
@@ -35,12 +35,12 @@ export default function SentenceDetailModal({ sentence, onClose }) {
       className={styles.CloseBtn}
       onClick={onClose}
     >
-      ?�기
+      닫기
     </button>
   );
 
   return (
-    <ModalWrapper title="문장 ?�세" onClose={onClose} footer={footer}>
+    <ModalWrapper title="문장 상세" onClose={onClose} footer={footer}>
       <div className={styles.Content}>
         <SentenceCard
           english={english}

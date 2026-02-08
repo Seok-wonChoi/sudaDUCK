@@ -29,11 +29,11 @@ function AppContent() {
 
   const { pathname } = useLocation();
 
-  // ???�릭 ?�과??"???�는" ?�이지??(prefix 기�?)
+  // ❌ 클릭 효과음 "안 되는" 페이지들 (prefix 기준)
   const clickSoundDisabledPrefixes = [
     "/together/waiting",
     "/together/talk",
-    "/minigame",   // /minigame1, /minigame2 ???�장 ?�??
+    "/minigame",   // /minigame1, /minigame2 등 확장 대응
   ];
 
   const clickSoundEnabled = !clickSoundDisabledPrefixes.some((p) =>
