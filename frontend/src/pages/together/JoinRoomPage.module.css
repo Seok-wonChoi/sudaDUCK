@@ -61,9 +61,10 @@
 /* Title: 페이지 메인 제목 */
 .Title {
   margin: clamp(50px, 6vw, 60px) 0 0;
+  font-family: 'Jalnan', sans-serif;
   font-size: clamp(24px, 3vw, 30px);
-  font-weight: 900;
-  letter-spacing: -0.4px;
+  font-weight: normal;
+  letter-spacing: -0.02em;
   text-align: center;
   color: #111827;
 }
@@ -71,10 +72,11 @@
 /* Subtitle: 제목 아래 설명 문구 */
 .Subtitle {
   margin: clamp(10px, 1.2vw, 12px) 0 0;
+  font-family: 'Jalnan', sans-serif;
   font-size: clamp(13px, 1.4vw, 14px);
   text-align: center;
   color: #6b7280;
-  font-weight: 700;
+  font-weight: normal;
 }
 
 /* FormCard: 코드 입력과 참여 버튼을 담는 중앙 카드 */
@@ -305,32 +307,32 @@
   }
 }
 
-/* Toast: 하단 중앙 토스트 메시지 */
+/* Toast: 상단 중앙 토스트 메시지 */
 .Toast {
   position: fixed;
-  bottom: 40px;
+  top: 40px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(17, 24, 39, 0.95);
+  background: rgba(17, 24, 39, 0.9);
+  backdrop-filter: blur(8px);
   color: #ffffff;
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 800;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  z-index: 9999;
-  animation: toastSlideUp 0.3s ease-out;
-  /* 가로 길이 수정 */
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  z-index: 99999;
+  animation: toastSlideUp 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
   width: max-content;
-  max-width: clamp(280px, 80%, 600px);
+  max-width: 90vw;
   text-align: center;
-  word-break: keep-all;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @keyframes toastSlideUp {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateX(-50%) translateY(-30px);
   }
   to {
     opacity: 1;

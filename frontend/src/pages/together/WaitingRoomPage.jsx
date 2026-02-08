@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ExitButton from "@/components/common/ExitButton/ExitButton";
 import NicknameBadge from "@/components/features/mypage/ProfileSection/NicknameBadge";
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal";
 
 import duckImg from "@/assets/images/duck.png";
 import duckProfile1 from "@/assets/images/duck_profile1.png";
@@ -247,7 +248,17 @@ export default function WaitingRoomPage() {
 
 
   const initialRoomInfo = useMemo(() => {
-    if (state) return state;
+    if (state) {
+      // 게임에서 돌아온 경우, 참여자들의 레디 상태를 로컬에서 즉시 강제 초기화
+      if (state.fromGame && state.participants) {
+        return {
+          ...state,
+          participants: state.participants.map(p => ({ ...p, isReady: false, readyStatus: 'NOT_READY' })),
+          readyCount: 0
+        };
+      }
+      return state;
+    }
     try {
       const stored = sessionStorage.getItem(ROOM_INFO_KEY);
       if (stored) return JSON.parse(stored);
@@ -279,7 +290,9 @@ export default function WaitingRoomPage() {
     return isNaN(num) ? 40 : num;
   });
 
-  const [participants, setParticipants] = useState([]);
+  const [participants, setParticipants] = useState(() => {
+    return initialRoomInfo?.participants || [];
+  });
   const participantsRef = useRef([]);
   useEffect(() => {
     participantsRef.current = participants;
@@ -342,6 +355,11 @@ export default function WaitingRoomPage() {
   const [editTimeLimit, setEditTimeLimit] = useState(timeLimit);
   const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
+  // 모달 상태
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+
   const hotTopics = useMemo(
     () => [
       "첫 아르바이트 추억",
@@ -358,6 +376,15 @@ export default function WaitingRoomPage() {
     setToastMessage(message);
     setTimeout(() => setToastMessage(""), 2000);
   }, []);
+
+  // location.state에 toastMessage가 있으면 표시
+  useEffect(() => {
+    if (state?.toastMessage) {
+      showToast(state.toastMessage);
+      // 표시 후 state에서 제거 (뒤로가기 시 다시 뜨지 않도록)
+      window.history.replaceState({ ...state, toastMessage: null }, '');
+    }
+  }, [state, showToast]);
 
   const getUserIdFromToken = useCallback(() => {
     try {
@@ -630,8 +657,16 @@ export default function WaitingRoomPage() {
   fetchLobbyRef.current = fetchLobby;
 
   useEffect(() => {
-    fetchLobby();
-  }, [fetchLobby]);
+    if (state?.fromGame) {
+      // 게임에서 돌아온 경우 서버 DB가 갱신될 시간을 충분히 벌어줌 (1초 지연)
+      const timer = setTimeout(() => {
+        fetchLobby();
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      fetchLobby();
+    }
+  }, [fetchLobby, state?.fromGame]);
 
   // 👇 오픈비두 연결 중복 방지용 Ref
   const isConnectingRef = useRef(false);
@@ -1015,56 +1050,31 @@ export default function WaitingRoomPage() {
   }, [myMicOn, publisher, startAudioAnalysis, stopAudioAnalysis, sendMic]);
 
   const toggleMyReady = useCallback(async () => {
-    console.log("[WaitingRoom] 🔘 toggleMyReady 호출:", {
-      myKey,
-      myReady,
-      isConnected,
-      inviteCode
-    });
-
     if (!isConnected) {
       console.warn("[WaitingRoom] ⚠️ WebSocket 미연결 상태 - 준비 불가");
       showToast("서버와 연결되지 않았습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
-    // 함수형 업데이트로 최신 상태 기반 토글
-    let nextReady = null;
-    setParticipants((prev) => {
-      const me = prev.find((p) => p.key === myKey);
-      nextReady = !(me?.isReady ?? false);
-      console.log("[WaitingRoom] ✨ Optimistic update:", {
-        myKey,
-        before: me?.isReady,
-        after: nextReady,
-        me: me ? { key: me.key, nickname: me.nickname } : null
-      });
-      return prev.map((p) => (p.key === myKey ? { ...p, isReady: nextReady } : p));
-    });
-
     try {
-      console.log("[WaitingRoom] 📡 API 호출 시작:", { inviteCode, nextReady });
-      const response = await toggleReady(inviteCode, nextReady);
-      console.log("[WaitingRoom] ✅ API 호출 성공:", response);
+      // 1. [레코딩 방식] 먼저 서버 DB를 고칩니다. (화면은 아직 안 바꿈)
+      const nextReady = !myReady;
+      console.log("[WaitingRoom] 📡 API 호출 (DB 저장):", { inviteCode, nextReady });
+      await toggleReady(inviteCode, nextReady);
+      
+      // 2. [레코딩 방식] DB 저장이 확실히 성공했을 때만 방송을 쏩니다.
+      if (sendReady) {
+        console.log("[WaitingRoom] 📤 방송 신호 발송 (성공 확정):", nextReady);
+        sendReady(nextReady);
+      }
+
+      // 3. 내 화면 업데이트는 여기서 직접 하지 않습니다. 
+      // 내가 보낸 방송 신호를 내가 다시 수신(handleReadyChanged)할 때 화면이 바뀝니다.
+      
     } catch (error) {
-
-      // Rollback
-      setParticipants((prev) =>
-        prev.map((p) => (p.key === myKey ? { ...p, isReady: !nextReady } : p)),
-      );
-      showToast("준비 상태 변경에 실패했습니다.");
-      return;
+      console.error("[WaitingRoom] ❌ 준비 상태 저장 실패:", error);
+      showToast("준비 상태 저장에 실패했습니다.");
     }
-
-    // WebSocket으로 다른 참여자들에게 전송
-    if (sendReady) {
-      console.log("[WaitingRoom] 📤 WebSocket 전송:", { nextReady, destination: `/app/rooms/${inviteCode}/ready` });
-      sendReady(nextReady);
-    } else {
-      console.warn("[WaitingRoom] ⚠️ sendReady가 없어서 WebSocket 전송 불가");
-    }
-
-    // 웹소켓 READY_CHANGED 메시지로 상태 동기화 (fetchLobby 제거로 깜빡임 방지)
   }, [myKey, myReady, inviteCode, sendReady, showToast, isConnected]);
 
   const handleCopy = useCallback(async () => {
@@ -1169,8 +1179,20 @@ export default function WaitingRoomPage() {
         turnCnt: editTurn,
         // timeLimit는 서버 미지원으로 제외 (api/rooms.js에서 필터링됨)
       });
-    } catch {
-      showToast("방 설정 변경에 실패했습니다.");
+    } catch (e) {
+      const errorMessage = e.response?.data?.message || e.message || "방 설정 변경에 실패했습니다.";
+      
+      if (errorMessage.includes("방 제목") && errorMessage.includes("부적절")) {
+        setModalTitle("⚠️ 주의");
+        setModalMessage("부적절한 방 제목 다시 생성해주세요");
+        setModalOpen(true);
+      } else if (errorMessage.includes("방 주제") || (errorMessage.includes("주제") && errorMessage.includes("부적절"))) {
+        setModalTitle("⚠️ 주의");
+        setModalMessage("부적절한 방 주제입니다.");
+        setModalOpen(true);
+      } else {
+        showToast(errorMessage);
+      }
       return;
     }
 
@@ -1201,7 +1223,7 @@ export default function WaitingRoomPage() {
     setEditPopupOpen(false);
     fetchLobbyRef.current?.();
     showToast("방 설정이 변경되었습니다.");
-  }, [editTitle, editTopic, editTurn, showToast, inviteCode]);
+  }, [editTitle, editTopic, editTurn, editTimeLimit, showToast, inviteCode]);
   
   const handleStart = useCallback(async () => {
     if (!canStart) return;
@@ -1269,6 +1291,7 @@ export default function WaitingRoomPage() {
           logoExitConfirmText="나가기"
           logoExitCancelText="취소"
           onLogoExit={handleExit}
+          disableProfileClick={isConnected}
         />
 
         <div className={styles.Top}>
@@ -1605,6 +1628,18 @@ export default function WaitingRoomPage() {
           image={duckHappy}
         />
       )}
+
+      {/* 부적절한 표현 모달 */}
+      <ConfirmModal
+        open={modalOpen}
+        title={modalTitle}
+        message={modalMessage}
+        confirmText="확인"
+        onConfirm={() => setModalOpen(false)}
+        onClose={() => setModalOpen(false)}
+        cancelText=""
+        small={true}
+      />
     </div>
   );
 }

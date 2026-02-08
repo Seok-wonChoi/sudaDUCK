@@ -241,6 +241,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               onUnexpectedQuestReceived,
               onQuestContinueReady,
               onMiniGameStart,
+              onRankingUpdated,
               onError,
             } = handlersRef.current;
 
@@ -414,6 +415,17 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                   type,
                 });
                 onMiniGameStart?.(payload, senderKey);
+                break;
+
+              case "MINIGAME_RANKING_UPDATED":
+              case "RANKING_UPDATED":
+              case "REVIEW_RANKING_UPDATED":
+                console.log("[WebSocket] 🏆 RANKING_UPDATED 수신:", {
+                  payload,
+                  senderKey,
+                  type,
+                });
+                onRankingUpdated?.(payload, senderKey);
                 break;
 
               case "ERROR":

@@ -1,11 +1,15 @@
 package com.example.DuckDuck.domain.room.entity;
+
+import com.example.DuckDuck.domain.user.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Room")
+@Table(name = "room")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,31 +19,45 @@ public class Room {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "room_id", nullable = false)
+    @Column(name = "room_id")
     private Long roomId;
 
-    @Column(name = "room_code", nullable = false, unique = true, length = 10)
-    private String roomCode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private Member creator; // 방 생성자
 
-    @Column(name = "title", nullable = false, length = 255)
+    @Column(name = "title", nullable = false, length = 30)
     private String title;
 
-    @Column(name = "topic", length = 100)
+    @Column(name = "topic", nullable = false, length = 40)
     private String topic;
 
-    @Column(name = "start_status")
-    private Boolean startStatus = true;
+    @Column(name = "is_open", nullable = false)
+    @Builder.Default
+    private Boolean isOpen = false;
 
-    @Column(name = "created_at")
+    @Column(name = "turn_cnt", nullable = false)
+    @Builder.Default
+    private Integer turnCnt = 3;
+
+    @Column(name = "start_time", nullable = false)
+    private LocalDateTime startTime;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "turn_cnt")
-    private Integer turnCnt = 3;
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (startStatus == null) startStatus = true;
-        if (turnCnt == null) turnCnt = 3;
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

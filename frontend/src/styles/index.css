@@ -1,41 +1,23 @@
+@font-face {
+  font-family: 'Jalnan';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.2/JalnanOTF00.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-html, body, #root {
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden;
-}
-
-/* Viewport optimization for responsive design */
-@media (max-width: 1440px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-@media (max-width: 1024px) {
-  html {
-    font-size: 15px;
-  }
-}
-
-@media (max-width: 768px) {
-  html {
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  html {
-    font-size: 13px;
-  }
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 body {
+  /* 🏁 가장 처음에 설정되어 있던 프리텐다드 및 시스템 폰트 리스트로 복구 */
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
     'Helvetica Neue', sans-serif;
@@ -43,6 +25,31 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: #111827;
   background: #f6f8ff;
+  line-height: 1.6;
+}
+
+.page-transition {
+  width: 100%;
+  min-height: 100vh;
+  animation: pageSlideUp 0.5s cubic-bezier(0.2, 0, 0.2, 1);
+  will-change: transform, opacity;
+}
+
+@keyframes pageSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 제목들은 기본적으로 상속받게 둠 (Jalnan이 필요한 곳은 개별 module.css에서 처리) */
+h1, h2, h3, h4, h5, h6 {
+  font-family: inherit;
+  font-weight: 900; /* 원래의 굵직한 느낌 복구 */
 }
 
 button {

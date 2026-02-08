@@ -2,7 +2,6 @@ import styles from "./PracticePage.module.css";
 import { useNavigate } from "react-router-dom";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
-import TipBanner from "@/components/common/TipBanner/TipBanner";
 import StatsSection from "@/components/features/main/StatsSection/StatsSection";
 
 import PracticeHero from "@/components/features/practice/PracticeHero/PracticeHero";
@@ -43,7 +42,6 @@ export default function PracticePage() {
         </div>
 
         <div className={styles.Bottom}>
-          <TipBanner text="Tip: 연습 모드로 워밍업 후 함께 하기 모드에 도전해보세요!" />
           <StatsSection
             stats={[
               { value: "0시간", label: "총 플레이 타임" },

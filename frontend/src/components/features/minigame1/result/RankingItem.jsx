@@ -39,7 +39,13 @@ function safeParseJson(str) {
 }
 
 function getDuckProfileInfo(duckCustomJson) {
-  const parsed = safeParseJson(duckCustomJson);
+  let parsed = null;
+  if (typeof duckCustomJson === 'object' && duckCustomJson !== null) {
+    parsed = duckCustomJson;
+  } else {
+    parsed = safeParseJson(duckCustomJson);
+  }
+
   if (!parsed) {
     return { image: duckProfile1, color: "#ffffff", accessory: null };
   }
@@ -67,7 +73,7 @@ export default function RankingItem({
 
   const profileInfo = useMemo(() => getDuckProfileInfo(duckCustomJson), [duckCustomJson]);
   const [imgError, setImgError] = useState(false); // 이미지 에러 상태
-  // 순위에 따른 메달 이모지
+  
   const getRankIcon = (rank) => {
     if (rank === 1) return '🥇';
     if (rank === 2) return '🥈';
@@ -100,14 +106,14 @@ export default function RankingItem({
       {/* 중앙: 오리 프로필 + 이름 */}
       <div className={styles.userInfo}>
         {/* 오리 아이콘 래퍼 */}
-        <div 
-          className={styles.duckWrapper} 
+        <div
+          className={styles.duckWrapper}
           style={{ backgroundColor: profileInfo.color }}
         >
-          <img 
-            src={profileInfo.image} 
-            alt="duck" 
-            className={styles.duckImage} 
+          <img
+            src={profileInfo.image}
+            alt="duck"
+            className={styles.duckImage}
           />
           {profileInfo.accessory && (
             <span className={styles.accessory}>{profileInfo.accessory}</span>

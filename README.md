@@ -123,6 +123,7 @@
 
 수다DUCK의 상세 기획 및 설계 내용은 아래 문서에서 확인하실 수 있습니다.
 
+- [🛠 포팅 매뉴얼](./exec/포팅메뉴얼.md)
 - [📑 요구사항 명세서](https://www.notion.so/2e8826715e6280ce8f26cea5c674f82a?pvs=21)
 - [📑 API 명세서](https://www.notion.so/API-2ea826715e628000bcfadb7d9bd88d41?pvs=21)
 

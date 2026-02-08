@@ -22,6 +22,32 @@ const LandingPage = () => {
   const featuresRef = useRef(null);
   const ctaRef = useRef(null);
 
+  // ⭐ 전역 스타일 간섭을 완전히 차단하는 격리 로직 (독립성 보장)
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    
+    // 현재 전역 스타일 백업
+    const originalHtmlOverflow = html.style.overflow;
+    const originalHtmlHeight = html.style.height;
+    const originalBodyOverflow = body.style.overflow;
+    const originalBodyHeight = body.style.height;
+
+    // 랜딩페이지 전용 클린 스크롤 환경 강제 설정
+    html.style.overflow = 'visible';
+    html.style.height = 'auto';
+    body.style.overflow = 'visible';
+    body.style.height = 'auto';
+
+    return () => {
+      // 페이지를 떠날 때 전역 스타일 복구 (2차 충돌 방지)
+      html.style.overflow = originalHtmlOverflow;
+      html.style.height = originalHtmlHeight;
+      body.style.overflow = originalBodyOverflow;
+      body.style.height = originalBodyHeight;
+    };
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowContent(true);
@@ -38,6 +64,7 @@ const LandingPage = () => {
 
       if (!showContent || !containerRef.current) return;
 
+      // ⭐ 검증된 오리지널 회전 로직
       const calculateRotate = (ref, maxRotate) => {
         if (!ref.current) return maxRotate;
         const rect = ref.current.getBoundingClientRect();
@@ -54,8 +81,7 @@ const LandingPage = () => {
       const featuresRotate = calculateRotate(featuresRef, 10);
       containerRef.current.style.setProperty('--features-rotate', `${featuresRotate}deg`);
 
-      // 4. CTA Logic (Card 4) - Same dynamic tilt
-      const ctaRotate = calculateRotate(ctaRef, -10); // Tilt left initially
+      const ctaRotate = calculateRotate(ctaRef, -10);
       containerRef.current.style.setProperty('--cta-rotate', `${ctaRotate}deg`);
     };
 
@@ -93,7 +119,7 @@ const LandingPage = () => {
     display: 'flex', 
     justifyContent: 'center', 
     alignItems: 'center', 
-    gap: '0px' // 수, 다 사이는 붙임
+    gap: '0px'
   }}
 >
   <span 
@@ -114,7 +140,7 @@ const LandingPage = () => {
     style={{ 
       animationDelay: '1.1s', 
       margin: '0', 
-      marginLeft: '10px' // ⭐ 8px ~ 12px 정도 추천!
+      marginLeft: '10px'
     }}
   >
     DUCK

@@ -259,7 +259,7 @@ export default function SentenceCard({
     <div className={`${styles.sentenceCard} ${isActive ? styles.active : ''} ${getScoreGradeClass()}`}>
       <div className={styles.header}>
         <div className={styles.speakerInfo}>
-          <span className={styles.speakerName}>{speaker}</span>
+          <span className={styles.speakerName}>🎙️ 발화자 : {speaker}</span>
         </div>
         <div className={styles.headerRight}>
           {score !== null && cardState === 'idle' && (

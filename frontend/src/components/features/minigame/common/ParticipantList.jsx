@@ -1,23 +1,74 @@
 import { useMemo } from 'react';
 import styles from './ParticipantList.module.css';
 
+// 이미지 import
+import duckProfile1 from "@/assets/images/duck_profile1.png";
+import duckProfile2 from "@/assets/images/duck_profile2.png";
+import duckProfile3 from "@/assets/images/duck_profile3.png";
+import duckProfile4 from "@/assets/images/duck_profile4.png";
+
+// 오리 설정 상수 (RankingItem과 동일)
+const DUCK_PROFILE_IMAGES = {
+  profile1: duckProfile1,
+  profile2: duckProfile2,
+  profile3: duckProfile3,
+  profile4: duckProfile4,
+};
+
+const COLOR_MAP = {
+  white: "#ffffff",
+  yellow: "#fef08a",
+  blue: "#93c5fd",
+  pink: "#f9a8d4",
+  green: "#86efac",
+  purple: "#c4b5fd",
+  orange: "#fdba74",
+};
+
+const ACCESSORY_MAP = {
+  hat: "🎩",
+  sunglasses: "🕶️",
+  ribbon: "🎀",
+  crown: "👑",
+  none: null,
+};
+
+function safeParseJson(str) {
+  try { return JSON.parse(str); } catch { return null; }
+}
+
+function getDuckProfileInfo(duckCustomJson) {
+  let parsed = null;
+  if (typeof duckCustomJson === 'object' && duckCustomJson !== null) {
+    parsed = duckCustomJson;
+  } else {
+    parsed = safeParseJson(duckCustomJson);
+  }
+
+  if (!parsed) {
+    return { image: duckProfile1, color: "#ffffff", accessory: null };
+  }
+  const style = parsed.style || "profile1";
+  const color = parsed.color || "white";
+  const accessory = parsed.accessory || "none";
+
+  return {
+    image: DUCK_PROFILE_IMAGES[style] || duckProfile1,
+    color: COLOR_MAP[color] || "#ffffff",
+    accessory: ACCESSORY_MAP[accessory] || null,
+  };
+}
+
 export default function ParticipantList({ 
-  participants = [],
-  voiceLevels = {}
+  participants = []
 }) {
-  // 참가자 데이터와 음성 레벨 매칭 - voiceLevel > 0인 경우만 업데이트
-  const participantsWithVoice = useMemo(() => {
-    return participants.map(p => {
-      const level = voiceLevels[p.id] || voiceLevels[p.userId] || 0;
-      const isSpeaking = level > 0.05;
-      
-      return {
-        ...p,
-        voiceLevel: level,
-        isSpeaking
-      };
-    });
-  }, [participants, voiceLevels]);
+  // 참가자 데이터 매핑
+  const processedParticipants = useMemo(() => {
+    return participants.map(p => ({
+      ...p,
+      profileInfo: getDuckProfileInfo(p.duckCustomJson)
+    }));
+  }, [participants]);
 
   if (!participants || participants.length === 0) {
     return null;
@@ -32,50 +83,29 @@ export default function ParticipantList({
         <span>참여자</span>
       </div>
       <div className={styles.list}>
-        {participantsWithVoice.map((p, idx) => {
-          // 프로필 이미지 URL (여러 fallback 시도)
-          const profileUrl = p.avatar || p.profileImageUrl;
+        {processedParticipants.map((p, idx) => {
+          const { profileInfo } = p;
           
           return (
-            <div key={p.id || p.userId || idx} className={styles.participant}>
-              <div className={styles.avatar}>
-                {/* 음성 레벨에 따른 빛 효과 */}
-                {p.isSpeaking && p.voiceLevel > 0 && (
-                  <div 
-                    className={styles.voiceGlow}
-                    style={{
-                      opacity: Math.min(p.voiceLevel * 1.5, 1),
-                    }}
-                  />
-                )}
-
-                {/* 아바타 이미지 또는 이니셜 */}
-                {profileUrl ? (
-                  <img 
-                    src={profileUrl} 
-                    alt={p.name || p.nickname} 
-                    className={styles.avatarImage}
-                    onError={(e) => {
-                      // 이미지 로드 실패 시 이니셜로 대체
-                      console.error('❌ 이미지 로드 실패:', profileUrl);
-                      e.target.style.display = 'none';
-                      // 이니셜 표시를 위해 부모 요소에 fallback 클래스 추가
-                      if (e.target.parentElement) {
-                        const placeholder = document.createElement('div');
-                        placeholder.className = styles.avatarPlaceholder;
-                        placeholder.textContent = (p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?';
-                        e.target.parentElement.appendChild(placeholder);
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className={styles.avatarPlaceholder}>
-                    {(p.name || p.nickname)?.charAt(0)?.toUpperCase() || '?'}
-                  </div>
+            <div key={p.key || p.id || p.userId || idx} className={styles.participant}>
+              <div 
+                className={styles.avatar}
+                style={{ backgroundColor: profileInfo.color }}
+              >
+                {/* 오리 이미지 */}
+                <img
+                  src={profileInfo.image}
+                  alt={p.name || p.nickname}
+                  className={styles.duckImage}
+                />
+                
+                {/* 액세서리 */}
+                {profileInfo.accessory && (
+                  <span className={styles.accessory}>{profileInfo.accessory}</span>
                 )}
               </div>
               <span className={styles.name}>
-                {p.name || p.nickname}
+                {p.nickname || p.name}
                 {p.isMe && <span className={styles.meBadge}>나</span>}
               </span>
             </div>
