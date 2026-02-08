@@ -153,22 +153,28 @@ export default function MiniGame1Page() {
   const mergeRankingData = useCallback((ranks) => {
     if (!ranks || !Array.isArray(ranks)) return [];
     
-    // 현재 로그인한 내 ID (여러 필드 대응)
     const myId = myProfile ? String(myProfile.userId || myProfile.memberId || myProfile.id) : null;
 
     return ranks.map(item => {
-      const itemId = String(item.userId || item.memberId || item.id);
+      const itemId = String(item.userId || item.memberId || item.id || '');
+      const itemNickname = item.nickname;
       
-      // participants 배열에서 해당 유저의 원본 프로필 정보를 찾음
-      const originalInfo = participants.find(p => String(p.key) === itemId);
+      // 1순위 ID 매칭, 2순위 닉네임 매칭으로 참여자 정보 찾기
+      const originalInfo = participants.find(p => 
+        (itemId && String(p.key) === itemId) || 
+        (itemNickname && p.nickname === itemNickname)
+      );
+
+      // 서버에서 온 데이터가 유효한지 확인 (빈 문자열이나 null이 아닌지)
+      const hasValidServerJson = item.duckCustomJson && 
+        (typeof item.duckCustomJson === 'object' || (typeof item.duckCustomJson === 'string' && item.duckCustomJson.trim().length > 0));
       
       return {
         ...item,
-        // 원본 정보가 있으면 duckCustomJson과 profileImageUrl을 보충
-        duckCustomJson: item.duckCustomJson || originalInfo?.duckCustomJson,
+        // 서버 데이터가 유효하면 그것을 쓰고, 아니면 참여자 목록에서 찾아온 것을 사용
+        duckCustomJson: hasValidServerJson ? item.duckCustomJson : (originalInfo?.duckCustomJson || item.duckCustomJson),
         profileImageUrl: item.profileImageUrl || originalInfo?.profileImageUrl,
-        // 내 정보인지 여부를 명확히 계산
-        isMe: item.isMe || item.me || (myId !== null && itemId === myId)
+        isMe: item.isMe || item.me || (myId !== null && itemId === myId) || (itemNickname && myProfile?.nickname === itemNickname)
       };
     });
   }, [participants, myProfile]);
@@ -443,7 +449,7 @@ export default function MiniGame1Page() {
       )}
 
       {phase === GAME_PHASE.RESULT && (
-        <ResultPanel rankings={rankings} myProfile={myProfile} totalQuestions={questions.length} onShowReview={() => setPhase(GAME_PHASE.REVIEW)} onReturnToRoom={handleReturnToRoom} onExit={handleExit} />
+        <ResultPanel rankings={rankings} totalQuestions={questions.length} onShowReview={() => setPhase(GAME_PHASE.REVIEW)} onReturnToRoom={handleReturnToRoom} onExit={handleExit} />
       )}
 
       {phase === GAME_PHASE.REVIEW && (
