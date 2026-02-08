@@ -1,31 +1,39 @@
 import RankingItem from './RankingItem';
 import styles from './RankingList.module.css';
 
-export default function RankingList({ rankings = [], myProfile = null, totalQuestions = 4 }) {
-  return (
-    <div className={styles.list}>
-      {rankings.map((player, idx) => {
-        const isMe = player.isMe || player.me;
+export default function RankingList({ rankings = [], totalQuestions = 4 }) {
 
-        // 내 정보면 myProfile, 남이면 mergedRankings에서 넣어준 player.duckCustomJson 사용
-        const customJsonToUse = isMe && myProfile 
-          ? myProfile.duckCustomJson 
-          : player.duckCustomJson;
+  return (
+
+    <div className={styles.list}>
+
+      {rankings.map((player, idx) => {
+
+        // 부모(MiniGame1Page)에서 이미 병합된 데이터를 그대로 사용
+
+        const customJsonToUse = player.duckCustomJson;
+
+
 
         return (
+
           <RankingItem
-            key={player.nickname || idx}
+            key={player.userId || player.nickname || idx}
             rank={idx + 1}
             nickname={player.nickname}
             profileImageUrl={player.profileImageUrl}
-            duckCustomJson={customJsonToUse} // 👈 여기가 핵심
+            duckCustomJson={customJsonToUse}
             score={player.score}
             total={totalQuestions}
-            isMe={isMe}
-            isSpeaking={player.isSpeaking || false}
+            isMe={player.isMe}
           />
+
         );
+
       })}
+
     </div>
+
   );
+
 }
