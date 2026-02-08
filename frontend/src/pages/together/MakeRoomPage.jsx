@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import styles from "./MakeRoomPage.module.css";
 import { createSession } from "@/api/openVidu";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
@@ -14,6 +15,30 @@ const ROOM_INFO_KEY = "together_room_info";
 export default function MakeRoomPage() {
   const navigate = useNavigate();
   const { getEffectiveVolume, isMuted } = useSoundContext();
+
+  // 방 만들기 권한 체크
+  useEffect(() => {
+    const ALLOWED_USER_IDS = [
+      4719057912,
+      4719307718,
+      4719309052,
+      4720876392
+    ];
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      navigate("/", { replace: true });
+      return;
+    }
+    try {
+      const decoded = jwtDecode(token);
+      if (!ALLOWED_USER_IDS.includes(Number(decoded.userId))) {
+        alert("방 만들기 권한이 없습니다.");
+        navigate("/together", { replace: true });
+      }
+    } catch (e) {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
 
   const hotTopics = useMemo(
     () => [

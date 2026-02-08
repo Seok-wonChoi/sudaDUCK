@@ -41,6 +41,14 @@ public class RoomService {
     private static final String ALPHANUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private final MiniGameService miniGameService;
 
+    // 시연을 위해 방 만들기 권한이 있는 특정 사용자 ID 리스트 (카카오 고유 ID)
+    private static final java.util.Set<Long> ALLOWED_USER_IDS = java.util.Set.of(
+            4719057912L,
+            4719307718L,
+            4719309052L,
+            4720876392L
+    );
+
     // ===== Redis Key =====
     private String keyRoomCodeToId(String roomCode) { // roomCode -> roomId
         return "room:code:" + roomCode;
@@ -78,6 +86,11 @@ public class RoomService {
         // 1. 방장(Member) 조회 (JWT에서 얻은 userId 기준)
         Member host = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        // [시연용] 특정 사용자만 방을 만들 수 있도록 제한
+        if (!ALLOWED_USER_IDS.contains(host.getId())) {
+            throw new IllegalArgumentException("현재 시연 준비 중으로, 방 만들기 권한이 제한되어 있습니다.");
+        }
 
         // 2. 턴 수 기본값 처리
         int turnCnt = (request.turnCnt() == null) ? 3 : request.turnCnt();
