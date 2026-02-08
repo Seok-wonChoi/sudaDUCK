@@ -183,10 +183,10 @@ Redis 설계 <br>
 
 <td>
   전반적인 백엔드 API 개발<br>
+  ERD 설계 및 Redis 캐싱 적용<br>
   대기방·게임방 상태 관리 로직 설계<br>
   OpenVidu 기반 WebRTC 연동 및 실시간 통신 처리<br>
   WebSocket(STOMP) 기반 방 상태·준비 상태 동기화<br>
-  Redis 캐싱 적용
 </td>
 
 
