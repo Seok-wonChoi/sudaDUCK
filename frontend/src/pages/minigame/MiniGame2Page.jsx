@@ -217,7 +217,6 @@ export default function MiniGame2Page() {
       timer={formatTime(timer)}
       progress={progress}
       totalProgress={100}
-      participants={MOCK_PARTICIPANTS}
       logoExitMessage="메인 화면으로 나가시겠습니까?"
       onLogoExit={handleLogoExit}
       disableProfileClick={true}

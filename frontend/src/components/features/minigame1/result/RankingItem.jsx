@@ -68,15 +68,12 @@ export default function RankingItem({
   duckCustomJson,
   score,
   total = 4,
-  isMe = false,
-  isSpeaking = false
+  isMe = false
 }) {
 
   const profileInfo = useMemo(() => getDuckProfileInfo(duckCustomJson), [duckCustomJson]);
   const [imgError, setImgError] = useState(false); // 이미지 에러 상태
   
-  // 내 정보인지 확인 (isMe 또는 me 속성 체크)
-  const isActualMe = isMe;
   const getRankIcon = (rank) => {
     if (rank === 1) return '🥇';
     if (rank === 2) return '🥈';
@@ -110,7 +107,7 @@ export default function RankingItem({
       <div className={styles.userInfo}>
         {/* 오리 아이콘 래퍼 */}
         <div
-          className={`${styles.duckWrapper} ${isSpeaking ? styles.speaking : ''}`}
+          className={styles.duckWrapper}
           style={{ backgroundColor: profileInfo.color }}
         >
           <img
@@ -120,9 +117,6 @@ export default function RankingItem({
           />
           {profileInfo.accessory && (
             <span className={styles.accessory}>{profileInfo.accessory}</span>
-          )}
-          {isSpeaking && (
-            <span className={styles.micIcon}>🎤</span>
           )}
         </div>
 

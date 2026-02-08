@@ -18,25 +18,14 @@ export default function RankingList({ rankings = [], totalQuestions = 4 }) {
         return (
 
           <RankingItem
-
             key={player.userId || player.nickname || idx}
-
             rank={idx + 1}
-
             nickname={player.nickname}
-
             profileImageUrl={player.profileImageUrl}
-
             duckCustomJson={customJsonToUse}
-
             score={player.score}
-
             total={totalQuestions}
-
             isMe={player.isMe}
-
-            isSpeaking={player.isSpeaking || false}
-
           />
 
         );

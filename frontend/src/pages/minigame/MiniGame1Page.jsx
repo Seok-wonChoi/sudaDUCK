@@ -71,7 +71,7 @@ export default function MiniGame1Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [rankings, setRankings] = useState([]);
   const [myProfile, setMyProfile] = useState(null);
-  const [participants, setParticipants] = useState([]);
+  const [participants, setParticipants] = useState(location.state?.participants || []);
   const [submittedCount, setSubmittedCount] = useState(0);
   const [totalParticipants, setTotalParticipants] = useState(initialParticipantsCount);
   const [showGuide, setShowGuide] = useState(false);
@@ -147,8 +147,6 @@ export default function MiniGame1Page() {
     }
   }, [phase, startMic, stopMic]);
 
-  const [voiceLevelsMap, setVoiceLevelsMap] = useState({});
-
   // 랭킹 데이터에 프로필 정보(duckCustomJson 등) 병합하는 헬퍼 함수
   const mergeRankingData = useCallback((ranks) => {
     if (!ranks || !Array.isArray(ranks)) return [];
@@ -159,20 +157,22 @@ export default function MiniGame1Page() {
       const itemId = String(item.userId || item.memberId || item.id || '');
       const itemNickname = item.nickname;
       
-      // 1순위 ID 매칭, 2순위 닉네임 매칭으로 참여자 정보 찾기
+      // 참여자 목록에서 해당 유저 찾기 (ID 우선, 닉네임 차선)
       const originalInfo = participants.find(p => 
-        (itemId && String(p.key) === itemId) || 
+        (itemId && itemId !== 'undefined' && String(p.key) === itemId) || 
         (itemNickname && p.nickname === itemNickname)
       );
 
-      // 서버에서 온 데이터가 유효한지 확인 (빈 문자열이나 null이 아닌지)
+      // 서버에서 직접 준 커스텀 정보가 있는지 확인
       const hasValidServerJson = item.duckCustomJson && 
         (typeof item.duckCustomJson === 'object' || (typeof item.duckCustomJson === 'string' && item.duckCustomJson.trim().length > 0));
       
+      // 최종적으로 사용할 duckCustomJson 결정 (서버 데이터 > 로컬 참여자 정보 > 서버 데이터)
+      const finalDuckJson = hasValidServerJson ? item.duckCustomJson : (originalInfo?.duckCustomJson || item.duckCustomJson);
+
       return {
         ...item,
-        // 서버 데이터가 유효하면 그것을 쓰고, 아니면 참여자 목록에서 찾아온 것을 사용
-        duckCustomJson: hasValidServerJson ? item.duckCustomJson : (originalInfo?.duckCustomJson || item.duckCustomJson),
+        duckCustomJson: finalDuckJson,
         profileImageUrl: item.profileImageUrl || originalInfo?.profileImageUrl,
         isMe: item.isMe || item.me || (myId !== null && itemId === myId) || (itemNickname && myProfile?.nickname === itemNickname)
       };
@@ -191,16 +191,6 @@ export default function MiniGame1Page() {
     }
   }, [totalParticipants, phase, mergeRankingData]);
 
-  const handleVoiceLevelChanged = useCallback((payload, senderKey) => {
-    const key = payload?.userId || senderKey;
-    const level = payload?.level;
-    if (!key) return;
-    setVoiceLevelsMap((prev) => ({ ...prev, [String(key)]: level || 0 }));
-    setTimeout(() => {
-      setVoiceLevelsMap((prev) => ({ ...prev, [String(key)]: 0 }));
-    }, 500);
-  }, []);
-
   // 방장 퇴장 시 메인 화면으로 강제 이동
   const handleRoomClosed = useCallback(() => {
     console.log("[MiniGame1Page] ROOM_CLOSED 수신 - 방장 퇴장");
@@ -212,7 +202,6 @@ export default function MiniGame1Page() {
   }, [navigate, leaveSession]);
 
   const { sendVoiceLevel, isConnected } = useRoomWebSocket(roomCode, {
-    onVoiceLevelChanged: handleVoiceLevelChanged,
     onRankingUpdated: handleRankingUpdated,
     onRoomClosed: handleRoomClosed,
   });
@@ -227,18 +216,23 @@ export default function MiniGame1Page() {
       if (!roomCode) return;
       try {
         const lobbyData = await getRoomLobby(roomCode);
-        if (lobbyData?.members) {
-          const list = lobbyData.members.map(m => ({
-            key: String(m.userId || m.memberId),
+        // WaitingRoomPage와 동일하게 participants 또는 members 필드를 모두 확인
+        const members = lobbyData?.participants || lobbyData?.members || [];
+        
+        if (members.length > 0) {
+          const list = members.map(m => ({
+            key: String(m.userId || m.memberId || m.id),
             nickname: m.nickname,
             isMe: m.isMe,
             profileImageUrl: m.profileImageUrl,
-            duckCustomJson: m.duckCustomJson
+            duckCustomJson: m.duckCustomJson,
+            avatarCustomJson: m.avatarCustomJson // 닉네임 스타일 등 혹시 모를 확장 대비
           }));
+          console.log("[MiniGame1] 참여자 프로필 로드 성공:", list.length, "명");
           setParticipants(list);
           setTotalParticipants(list.length);
         }
-      } catch (error) { console.error(error); }
+      } catch (error) { console.error("[MiniGame1] 참여자 로드 실패:", error); }
     };
     loadRoomParticipants();
   }, [roomCode]);
@@ -412,8 +406,6 @@ export default function MiniGame1Page() {
   return (
     <MiniGameLayout
       showGameHeader={phase !== GAME_PHASE.REVIEW && phase !== GAME_PHASE.RESULT}
-      participants={participants}
-      voiceLevels={voiceLevelsMap}
       onExit={handleExit}
       timer={phase === GAME_PHASE.PLAYING ? `${Math.floor(timer/60)}:${(timer%60).toString().padStart(2,'0')}` : null}
       progress={timer}
