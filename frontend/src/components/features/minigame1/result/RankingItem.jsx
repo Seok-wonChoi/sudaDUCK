@@ -39,7 +39,13 @@ function safeParseJson(str) {
 }
 
 function getDuckProfileInfo(duckCustomJson) {
-  const parsed = safeParseJson(duckCustomJson);
+  let parsed = null;
+  if (typeof duckCustomJson === 'object' && duckCustomJson !== null) {
+    parsed = duckCustomJson;
+  } else {
+    parsed = safeParseJson(duckCustomJson);
+  }
+
   if (!parsed) {
     return { image: duckProfile1, color: "#ffffff", accessory: null };
   }
@@ -68,7 +74,9 @@ export default function RankingItem({
 
   const profileInfo = useMemo(() => getDuckProfileInfo(duckCustomJson), [duckCustomJson]);
   const [imgError, setImgError] = useState(false); // 이미지 에러 상태
-  // 순위에 따른 메달 이모지
+  
+  // 내 정보인지 확인 (isMe 또는 me 속성 체크)
+  const isActualMe = isMe;
   const getRankIcon = (rank) => {
     if (rank === 1) return '🥇';
     if (rank === 2) return '🥈';

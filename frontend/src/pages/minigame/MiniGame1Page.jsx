@@ -149,16 +149,41 @@ export default function MiniGame1Page() {
 
   const [voiceLevelsMap, setVoiceLevelsMap] = useState({});
 
+  // 랭킹 데이터에 프로필 정보(duckCustomJson 등) 병합하는 헬퍼 함수
+  const mergeRankingData = useCallback((ranks) => {
+    if (!ranks || !Array.isArray(ranks)) return [];
+    
+    // 현재 로그인한 내 ID (여러 필드 대응)
+    const myId = myProfile ? String(myProfile.userId || myProfile.memberId || myProfile.id) : null;
+
+    return ranks.map(item => {
+      const itemId = String(item.userId || item.memberId || item.id);
+      
+      // participants 배열에서 해당 유저의 원본 프로필 정보를 찾음
+      const originalInfo = participants.find(p => String(p.key) === itemId);
+      
+      return {
+        ...item,
+        // 원본 정보가 있으면 duckCustomJson과 profileImageUrl을 보충
+        duckCustomJson: item.duckCustomJson || originalInfo?.duckCustomJson,
+        profileImageUrl: item.profileImageUrl || originalInfo?.profileImageUrl,
+        // 내 정보인지 여부를 명확히 계산
+        isMe: item.isMe || item.me || (myId !== null && itemId === myId)
+      };
+    });
+  }, [participants, myProfile]);
+
   const handleRankingUpdated = useCallback((payload) => {
     if (payload?.rankings && Array.isArray(payload.rankings)) {
-      setRankings(payload.rankings);
-      const submitted = payload.rankings.filter(r => r.hasSubmitted).length;
+      const enrichedRanks = mergeRankingData(payload.rankings);
+      setRankings(enrichedRanks);
+      const submitted = enrichedRanks.filter(r => r.hasSubmitted).length;
       setSubmittedCount(submitted);
       if (phase === GAME_PHASE.WAITING && submitted >= totalParticipants && totalParticipants > 0) {
         setPhase(GAME_PHASE.RESULT);
       }
     }
-  }, [totalParticipants, phase]);
+  }, [totalParticipants, phase, mergeRankingData]);
 
   const handleVoiceLevelChanged = useCallback((payload, senderKey) => {
     const key = payload?.userId || senderKey;
@@ -229,8 +254,9 @@ export default function MiniGame1Page() {
         const data = await getReviewRanking(roomId);
         const ranks = Array.isArray(data) ? data : data?.rankings;
         if (ranks) {
-          setRankings(ranks);
-          const submitted = ranks.filter(r => r.hasSubmitted).length;
+          const enrichedRanks = mergeRankingData(ranks);
+          setRankings(enrichedRanks);
+          const submitted = enrichedRanks.filter(r => r.hasSubmitted).length;
           setSubmittedCount(submitted);
           if (submitted >= totalParticipants && totalParticipants > 0) {
             setPhase(GAME_PHASE.RESULT);
@@ -239,7 +265,7 @@ export default function MiniGame1Page() {
       } catch (e) { console.warn(e); }
     }, 3000);
     return () => clearInterval(interval);
-  }, [phase, roomId, totalParticipants]);
+  }, [phase, roomId, totalParticipants, mergeRankingData]);
 
   useEffect(() => {
     const fetchData = async () => {
