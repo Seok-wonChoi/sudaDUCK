@@ -18,7 +18,7 @@ export default function ModalWrapper({
         audio.volume = getEffectiveVolume(0.1);
         audio.play().catch(() => {});
       } catch (e) {
-        // 사운드 재생 실패 무시
+        // ?�운???�생 ?�패 무시
       }
     }
   };
@@ -42,7 +42,7 @@ export default function ModalWrapper({
               playSound();
               onClose?.();
             }}
-            aria-label="닫기"
+            aria-label="?�기"
             data-click-sound="false"
           >
             <span aria-hidden="true">&times;</span>

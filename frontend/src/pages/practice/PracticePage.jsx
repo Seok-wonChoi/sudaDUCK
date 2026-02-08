@@ -32,7 +32,7 @@ export default function PracticePage() {
             className={styles.BackButton}
             type="button"
             onClick={handleBack}
-            aria-label="뒤로 가기"
+            aria-label="?�로 가�?
           >
             <span aria-hidden="true">&lt;</span>
           </button>
@@ -44,9 +44,9 @@ export default function PracticePage() {
         <div className={styles.Bottom}>
           <StatsSection
             stats={[
-              { value: "0시간", label: "총 플레이 타임" },
-              { value: "0일", label: "연속 학습" },
-              { value: "0개", label: "저장된 문장" },
+              { value: "0?�간", label: "�??�레???�?? },
+              { value: "0??, label: "?�속 ?�습" },
+              { value: "0�?, label: "?�?�된 문장" },
             ]}
           />
         </div>

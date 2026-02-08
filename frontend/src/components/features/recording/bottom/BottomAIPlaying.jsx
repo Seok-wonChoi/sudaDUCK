@@ -5,10 +5,10 @@ export default function BottomAIPlaying() {
     <div className={styles.container} aria-live="polite">
       <div className={styles.row}>
         <div className={styles.dot} />
-        <p className={styles.title}>AI 음성 재생 중...</p>
+        <p className={styles.title}>AI ?�성 ?�생 �?..</p>
       </div>
 
-      <p className={styles.sub}>다 들은 후 자동으로 녹음 단계로 넘어가요.</p>
+      <p className={styles.sub}>???��? ???�동?�로 ?�음 ?�계�??�어가??</p>
     </div>
   );
 }

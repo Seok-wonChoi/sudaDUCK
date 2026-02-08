@@ -7,7 +7,7 @@ export default function GameStats({ current = 0, total = 10, timeLeft = 0 }) {
         <span>{current} / {total}</span>
       </div>
       <div className={styles.badge}>
-        <span>{timeLeft}ì´ˆ</span>
+        <span>{timeLeft}ì´?/span>
       </div>
     </div>
   );

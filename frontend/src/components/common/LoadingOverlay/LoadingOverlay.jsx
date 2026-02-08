@@ -2,8 +2,8 @@ import styles from './LoadingOverlay.module.css';
 import duckProfile3 from '@/assets/images/duck_profile3.png';
 
 export default function LoadingOverlay({
-  title = '대화가 종료되었습니다!',
-  subtitle = '쉐도잉 연습을 위해 이동 중입니다...',
+  title = '?�?��? 종료?�었?�니??',
+  subtitle = '?�도???�습???�해 ?�동 중입?�다...',
   note = '',
   image = duckProfile3
 }) {

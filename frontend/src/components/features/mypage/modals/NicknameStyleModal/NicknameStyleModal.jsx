@@ -7,19 +7,19 @@ import coinImage from "@/assets/images/coin.png";
 
 const BACKGROUND_OPTIONS = [
   { id: "default", label: "기본", cost: 0 },
-  { id: "gradient", label: "그라데이션", cost: 10 },
+  { id: "gradient", label: "그라?�이??, cost: 10 },
   { id: "ocean", label: "바다", cost: 10 },
-  { id: "neon", label: "네온", cost: 10 },
+  { id: "neon", label: "?�온", cost: 10 },
   { id: "gold", label: "골드", cost: 10 },
-  { id: "rainbow", label: "레인보우", cost: 10 },
+  { id: "rainbow", label: "?�인보우", cost: 10 },
 ];
 
 const EFFECT_OPTIONS = [
-  { id: "none", icon: "❌", label: "없음", cost: 0 },
-  { id: "sparkle", icon: "✨", label: "반짝임", cost: 10 },
-  { id: "star", icon: "⭐", label: "별", cost: 10 },
-  { id: "fire", icon: "🔥", label: "불꽃", cost: 10 },
-  { id: "crown", icon: "👑", label: "왕관", cost: 10 },
+  { id: "none", icon: "??, label: "?�음", cost: 0 },
+  { id: "sparkle", icon: "??, label: "반짝??, cost: 10 },
+  { id: "star", icon: "�?, label: "�?, cost: 10 },
+  { id: "fire", icon: "?��", label: "불꽃", cost: 10 },
+  { id: "crown", icon: "?��", label: "?��?", cost: 10 },
 ];
 
 export default function NicknameStyleModal({
@@ -34,7 +34,7 @@ export default function NicknameStyleModal({
 }) {
   const [editedNickname, setEditedNickname] = useState(nickname);
 
-  // 저장 대상(해금된 것만 확정)
+  // ?�???�???�금??것만 ?�정)
   const [selectedBg, setSelectedBg] = useState(
     currentStyle.background || "default",
   );
@@ -42,7 +42,7 @@ export default function NicknameStyleModal({
     currentStyle.effect || "none",
   );
 
-  // 미리보기는 잠긴 것도 반영
+  // 미리보기???�긴 것도 반영
   const [previewBg, setPreviewBg] = useState(
     currentStyle.background || "default",
   );
@@ -50,11 +50,11 @@ export default function NicknameStyleModal({
     currentStyle.effect || "none",
   );
 
-  // 2단계 클릭을 위한 pending
+  // 2?�계 ?�릭???�한 pending
   const [pending, setPending] = useState({ type: null, id: null }); // type: "background" | "effect" | null
   const [purchaseModal, setPurchaseModal] = useState(null);
 
-  // 유령 클릭 방지(type+id)
+  // ?�령 ?�릭 방�?(type+id)
   const lastTapRef = useRef({ key: null, ts: 0 });
 
   useEffect(() => {
@@ -90,12 +90,12 @@ export default function NicknameStyleModal({
       setPurchaseModal({ type, id, name: bgName, cost });
       return;
     }
-    const effectName = EFFECT_OPTIONS.find((e) => e.id === id)?.label || "효과";
+    const effectName = EFFECT_OPTIONS.find((e) => e.id === id)?.label || "?�과";
     setPurchaseModal({ type, id, name: effectName, cost });
   };
 
   const handleOptionClick = (type, id, cost) => {
-    // 1) 미리보기는 항상 갱신
+    // 1) 미리보기????�� 갱신
     if (type === "background") setPreviewBg(id);
     if (type === "effect") setPreviewEffect(id);
 
@@ -104,25 +104,25 @@ export default function NicknameStyleModal({
       (type === "effect" && unlockedEffects.includes(id));
 
     if (isUnlocked) {
-      // 해금 아이템은 즉시 선택(저장 대상) 확정
+      // ?�금 ?�이?��? 즉시 ?�택(?�???�?? ?�정
       if (type === "background") setSelectedBg(id);
       if (type === "effect") setSelectedEffect(id);
       setPending({ type: null, id: null });
       return;
     }
 
-    // 잠금 아이템은 유령 클릭 방지
+    // ?�금 ?�이?��? ?�령 ?�릭 방�?
     const ghostKey = `${type}:${id}`;
     if (guardGhostTap(ghostKey)) return;
 
-    // 2) 두 번째 클릭이면 구매 모달
+    // 2) ??번째 ?�릭?�면 구매 모달
     if (pending.type === type && pending.id === id) {
       setPending({ type: null, id: null });
       openPurchaseModalFor(type, id, cost);
       return;
     }
 
-    // 1) 첫 클릭이면 pending만 설정(미리보기만 바뀜)
+    // 1) �??�릭?�면 pending�??�정(미리보기�?바�?
     setPending({ type, id });
   };
 
@@ -164,7 +164,7 @@ export default function NicknameStyleModal({
         취소
       </button>
       <button type="button" className={styles.SaveBtn} onClick={handleSave} data-click-sound="false">
-        저장
+        ?�??
       </button>
     </>
   );
@@ -188,7 +188,7 @@ export default function NicknameStyleModal({
         />
       )}
 
-      <ModalWrapper title="닉네임 스타일" onClose={onClose} footer={footer}>
+      <ModalWrapper title="?�네???��??? onClose={onClose} footer={footer}>
         <div className={styles.Content}>
           <div className={styles.Preview}>
             <NicknameBadge
@@ -198,24 +198,24 @@ export default function NicknameStyleModal({
           </div>
 
           <div className={styles.Section}>
-            <h3 className={styles.SectionTitle}>닉네임</h3>
+            <h3 className={styles.SectionTitle}>?�네??/h3>
             <input
               type="text"
               className={styles.NicknameInput}
               value={editedNickname}
               onChange={(e) => {
                 const val = e.target.value;
-                // 한글, 영문, 숫자만 허용하는 정규식
-                const filtered = val.replace(/[^ㄱ-ㅎ가-힣a-zA-Z0-9]/g, '');
+                // ?��?, ?�문, ?�자�??�용?�는 ?�규??
+                const filtered = val.replace(/[^???��?-?�a-zA-Z0-9]/g, '');
                 setEditedNickname(filtered);
               }}
-              placeholder="닉네임을 입력하세요"
+              placeholder="?�네?�을 ?�력?�세??
               maxLength={12}
             />
           </div>
 
           <div className={styles.Section}>
-            <h3 className={styles.SectionTitle}>배경 스타일</h3>
+            <h3 className={styles.SectionTitle}>배경 ?��???/h3>
             <div className={styles.OptionsGrid}>
               {BACKGROUND_OPTIONS.map((option) => {
                 const isUnlocked = unlockedBackgrounds.includes(option.id);
@@ -251,7 +251,7 @@ export default function NicknameStyleModal({
                     )}
                     {!isUnlocked && isPending && (
                       <span className={styles.PendingHint}>
-                        한 번 더 누르면 구매
+                        ??�????�르�?구매
                       </span>
                     )}
                   </button>
@@ -261,7 +261,7 @@ export default function NicknameStyleModal({
           </div>
 
           <div className={styles.Section}>
-            <h3 className={styles.SectionTitle}>효과</h3>
+            <h3 className={styles.SectionTitle}>?�과</h3>
             <div className={styles.EffectsRow}>
               {EFFECT_OPTIONS.map((option) => {
                 const isUnlocked = unlockedEffects.includes(option.id);
@@ -297,7 +297,7 @@ export default function NicknameStyleModal({
                       </div>
                     )}
                     {!isUnlocked && isPending && (
-                      <span className={styles.PendingHintTiny}>한 번 더</span>
+                      <span className={styles.PendingHintTiny}>??�???/span>
                     )}
                   </button>
                 );

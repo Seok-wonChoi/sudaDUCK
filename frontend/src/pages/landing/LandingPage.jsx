@@ -22,25 +22,25 @@ const LandingPage = () => {
   const featuresRef = useRef(null);
   const ctaRef = useRef(null);
 
-  // ⭐ 전역 스타일 간섭을 완전히 차단하는 격리 로직 (독립성 보장)
+  // �??�역 ?��???간섭???�전??차단?�는 격리 로직 (?�립??보장)
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
     
-    // 현재 전역 스타일 백업
+    // ?�재 ?�역 ?��???백업
     const originalHtmlOverflow = html.style.overflow;
     const originalHtmlHeight = html.style.height;
     const originalBodyOverflow = body.style.overflow;
     const originalBodyHeight = body.style.height;
 
-    // 랜딩페이지 전용 클린 스크롤 환경 강제 설정
+    // ?�딩?�이지 ?�용 ?�린 ?�크�??�경 강제 ?�정
     html.style.overflow = 'visible';
     html.style.height = 'auto';
     body.style.overflow = 'visible';
     body.style.height = 'auto';
 
     return () => {
-      // 페이지를 떠날 때 전역 스타일 복구 (2차 충돌 방지)
+      // ?�이지�??�날 ???�역 ?��???복구 (2�?충돌 방�?)
       html.style.overflow = originalHtmlOverflow;
       html.style.height = originalHtmlHeight;
       body.style.overflow = originalBodyOverflow;
@@ -64,7 +64,7 @@ const LandingPage = () => {
 
       if (!showContent || !containerRef.current) return;
 
-      // ⭐ 검증된 오리지널 회전 로직
+      // �?검증된 ?�리지???�전 로직
       const calculateRotate = (ref, maxRotate) => {
         if (!ref.current) return maxRotate;
         const rect = ref.current.getBoundingClientRect();
@@ -126,13 +126,13 @@ const LandingPage = () => {
     className={styles.char} 
     style={{ animationDelay: '0.1s', margin: '0' }}
   >
-    수
+    ??
   </span>
   <span 
     className={styles.char} 
     style={{ animationDelay: '0.6s', margin: '0' }}
   >
-    다
+    ??
   </span>
   
   <span 
@@ -149,10 +149,10 @@ const LandingPage = () => {
           
           <div className={`${styles.fadeWrapper} ${showContent ? styles.visible : ''}`}>
             <p className={styles.subTitle}>
-              실시간 스크립트 생성 & 회화 학습 음성 채팅
+              ?�시�??�크립트 ?�성 & ?�화 ?�습 ?�성 채팅
             </p>
             <p className={styles.catchyPhrase}>
-              "수다 떨었을 뿐인데, 영어 공부가 끝났다?"
+              "?�다 ?�었??뿐인?? ?�어 공�?가 ?�났??"
             </p>
             <div className={styles.heroImageContainer}>
               <img src={duckHappy} alt="SudaDuck Happy" className={styles.heroImage} />
@@ -174,17 +174,17 @@ const LandingPage = () => {
             style={{ transform: 'rotate(var(--overview-rotate))' }}
           >
             <div className={styles.cardContent}>
-              <h2 className={styles.sectionTitle}>서비스 개요</h2>
+              <h2 className={styles.sectionTitle}>?�비??개요</h2>
               <div className={styles.overviewFlex}>
                 <div className={styles.overviewTextContainer}>
                   <img src={duckTogether} alt="Duck Together" className={styles.overviewImageInside} />
                   <p className={styles.overviewText}>
-                    친구들과의 수다가 영어 스크립트가 됩니다.<br/>
-                    딱딱한 교재가 아닌, 내 이야기로 영어를 배우세요.
+                    친구?�과???�다가 ?�어 ?�크립트가 ?�니??<br/>
+                    ?�딱??교재가 ?�닌, ???�야기로 ?�어�?배우?�요.
                   </p>
                   <p className={styles.overviewText}>
-                    AI와의 1:1 대화부터 그룹 회화까지,<br/>
-                    즐거운 소통이 학습이 되는 경험을 드립니다.
+                    AI?�??1:1 ?�?��???그룹 ?�화까�?,<br/>
+                    즐거???�통???�습???�는 경험???�립?�다.
                   </p>
                 </div>
               </div>
@@ -202,23 +202,23 @@ const LandingPage = () => {
               <div className={styles.featureGrid}>
                 <div className={styles.featureCard}>
                   <img src={profile1} alt="Shadowing" className={styles.featureImage} />
-                  <h3 className={styles.featureTitle}>실시간 쉐도잉</h3>
-                  <p className={styles.featureDesc}>내 대화가 즉시<br/>스크립트가 됩니다.</p>
+                  <h3 className={styles.featureTitle}>?�시�??�도??/h3>
+                  <p className={styles.featureDesc}>???�?��? 즉시<br/>?�크립트가 ?�니??</p>
                 </div>
                 <div className={styles.featureCard}>
                   <img src={profile2} alt="AI Assistant" className={styles.featureImage} />
-                  <h3 className={styles.featureTitle}>AI 보조 진행자</h3>
-                  <p className={styles.featureDesc}>끊김 없는 대화를<br/>위한 AI 서포트.</p>
+                  <h3 className={styles.featureTitle}>AI 보조 진행??/h3>
+                  <p className={styles.featureDesc}>?��? ?�는 ?�?��?<br/>?�한 AI ?�포??</p>
                 </div>
                 <div className={styles.featureCard}>
                   <img src={profile3} alt="Minigame" className={styles.featureImage} />
-                  <h3 className={styles.featureTitle}>미니게임 & 퀴즈</h3>
-                  <p className={styles.featureDesc}>대화 중 터지는<br/>돌발 미션!</p>
+                  <h3 className={styles.featureTitle}>미니게임 & ?�즈</h3>
+                  <p className={styles.featureDesc}>?�??�??��???br/>?�발 미션!</p>
                 </div>
                 <div className={styles.featureCard}>
                   <img src={profile4} alt="Modes" className={styles.featureImage} />
-                  <h3 className={styles.featureTitle}>싱글 & 그룹</h3>
-                  <p className={styles.featureDesc}>혼자서도,<br/>친구와도 즐겁게.</p>
+                  <h3 className={styles.featureTitle}>?��? & 그룹</h3>
+                  <p className={styles.featureDesc}>?�자?�도,<br/>친구?�??즐겁�?</p>
                 </div>
               </div>
             </div>
@@ -231,14 +231,14 @@ const LandingPage = () => {
             style={{ transform: 'rotate(var(--cta-rotate))' }}
           >
             <div className={styles.cardContent}>
-              <h2 className={styles.sectionTitle} style={{color: 'white', borderColor: 'white'}}>지금 바로 시작하세요!</h2>
+              <h2 className={styles.sectionTitle} style={{color: 'white', borderColor: 'white'}}>지�?바로 ?�작?�세??</h2>
               <img src={duckBotCyan} alt="Duck Bot" className={styles.ctaImage} />
               <p className={styles.overviewText} style={{color: 'white'}}>
-                저장된 핵심 문장으로 언제든 복습하고,<br/>
-                나만의 영어 실력을 완성해보세요.
+                ?�?�된 ?�심 문장?�로 ?�제??복습?�고,<br/>
+                ?�만???�어 ?�력???�성?�보?�요.
               </p>
               <button onClick={handleStart} className={styles.ctaButton}>
-                카카오로 시작하기
+                카카?�로 ?�작?�기
               </button>
             </div>
           </section>

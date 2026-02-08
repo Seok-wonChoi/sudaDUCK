@@ -10,7 +10,7 @@ export default function RecordingLayout({
   activeCardState = "idle",
   countdown = 3,
   recordingTime = 0,
-  recordingCountdown = 10, // 녹음 카운트다운
+  recordingCountdown = 10, // ?�음 카운?�다??
   bottomContent,
   onBookmarkToggle = null,
   onStop = null,
@@ -21,10 +21,10 @@ export default function RecordingLayout({
   isAllDone = false,
   onTurnClick = null,
   selectedTurnForReport = null,
-  // 로고 클릭 나가기 관련 props
+  // 로고 ?�릭 ?��?�?관??props
   logoExitMessage,
   onLogoExit,
-  // 프로필 클릭 차단
+  // ?�로???�릭 차단
   disableProfileClick = false,
 }) {
   const isRecordingPhase = activeCardState === 'record_timer' || activeCardState === 'recording' || activeCardState === 'record_done';
@@ -80,7 +80,7 @@ export default function RecordingLayout({
               ))}
           </div>
 
-          {/* 녹음 조작 섹션 (카드 아래 배치) */}
+          {/* ?�음 조작 ?�션 (카드 ?�래 배치) */}
           {isRecordingPhase && (
             <div className={styles.recordingControlSection}>
               {activeCardState === 'record_timer' && (
@@ -88,8 +88,8 @@ export default function RecordingLayout({
                   <div className={styles.countdownCircleBig}>
                     <span className={styles.countdownNumberBig}>{Math.max(0, countdown)}</span>
                   </div>
-                  <span className={styles.statusTextLarge}>잠시 후 녹음이 시작됩니다</span>
-                  <span className={styles.recordingHintLarge}>영어로 읽을 준비!!! 🎙️</span>
+                  <span className={styles.statusTextLarge}>?�시 ???�음???�작?�니??/span>
+                  <span className={styles.recordingHintLarge}>?�어�??�을 준�?!! ?���?/span>
                 </div>
               )}
 
@@ -132,13 +132,13 @@ export default function RecordingLayout({
                             )}
                           </div>
                           <span className={styles.stopText}>
-                            {isSubmitting ? '평가 중' : '끝내기'}
+                            {isSubmitting ? '?��? �? : '?�내�?}
                           </span>
                         </button>
                       )}
                     </div>
                   </div>
-                  <p className={styles.recordingHintText}>문장을 천천히 또박또박 따라 말해보세요.</p>
+                  <p className={styles.recordingHintText}>문장??천천???�박?�박 ?�라 말해보세??</p>
                 </div>
               )}
 
@@ -147,14 +147,14 @@ export default function RecordingLayout({
                   {isSubmitting ? (
                     <div className={styles.submittingStatus}>
                       <div className={styles.spinnerBlue} />
-                      <span className={styles.statusText}>평가 전송 중...</span>
+                      <span className={styles.statusText}>?��? ?�송 �?..</span>
                     </div>
                   ) : (
                     <div className={styles.statusColumn}>
                       <span className={styles.statusSuccess}>
-                        ✅ 문장 녹음 완료!
+                        ??문장 ?�음 ?�료!
                       </span>
-                      <span className={styles.nextSentenceHint}>다음 문장으로..</span>
+                      <span className={styles.nextSentenceHint}>?�음 문장?�로..</span>
                     </div>
                   )}
                 </div>

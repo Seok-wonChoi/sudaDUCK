@@ -14,7 +14,7 @@ function normalizeParticipantsForMode({ mode, participants, maxCount, myName }) 
 
   const me =
     safe.find((p) => p?.id === "me") ??
-    { id: "me", name: myName ?? "나", isMe: true };
+    { id: "me", name: myName ?? "??, isMe: true };
 
   const ai = safe.find((p) => p?.id === "ai") ?? { id: "ai", name: "AI", isMe: false };
 
@@ -53,15 +53,15 @@ export default function RoomUI({
   mode = "together",
   participants,
   maxCount = 4,
-  myName = "나",
-  title = "한국어 수다 페이지",
-  topic = "좋아하는 음식",
-  rightTitle = "AI 설명",
-  rightBody = "편하게 말해보세요.",
+  myName = "??,
+  title = "?�국???�다 ?�이지",
+  topic = "좋아?�는 ?�식",
+  rightTitle = "AI ?�명",
+  rightBody = "?�하�?말해보세??",
   durationMs = 40000,
   onTimeDone,
   exitTo = "/",
-  exitMessage = "정말 나가시겠습니까?",
+  exitMessage = "?�말 ?��??�겠?�니�?",
 }) {
   const normalized = useMemo(
     () => normalizeParticipantsForMode({ mode, participants, maxCount, myName }),
@@ -101,7 +101,7 @@ export default function RoomUI({
         </div>
 
         <div className={styles.TopicRow}>
-          <div className={styles.TopicBubble}>대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다.</div>
+          <div className={styles.TopicBubble}>?�??주제??<span className={styles.TopicHighlight}>{topic}</span>?�니??</div>
         </div>
 
         <main className={styles.Main}>
@@ -109,13 +109,13 @@ export default function RoomUI({
             className={`${styles.Slots} ${
               mode === "solo" ? styles.SlotsSolo : mode === "ai" ? styles.SlotsAi : styles.SlotsTogether
             }`}
-            aria-label="참여자 영역"
+            aria-label="참여???�역"
           >
             {slots.map((slot) => {
               if (slot.kind === "empty") {
                 return (
                   <div key={slot.id} className={`${styles.Tile} ${styles.TileEmpty}`}>
-                    <div className={styles.EmptyText}>빈 자리</div>
+                    <div className={styles.EmptyText}>�??�리</div>
                   </div>
                 );
               }
@@ -139,12 +139,12 @@ export default function RoomUI({
                     className={styles.MicBtn}
                     onClick={isMe ? toggleMyMic : undefined}
                     disabled={!isMe}
-                    aria-label={micOn ? "마이크 끄기" : "마이크 켜기"}
+                    aria-label={micOn ? "마이???�기" : "마이??켜기"}
                   >
                     <img
                       className={styles.MicImg}
                       src={micOn ? micOnIcon : micOffIcon}
-                      alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
+                      alt={micOn ? "마이??켜짐" : "마이??꺼짐"}
                     />
                   </button>
                 </div>

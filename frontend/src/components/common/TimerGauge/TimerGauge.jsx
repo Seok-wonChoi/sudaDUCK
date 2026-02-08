@@ -13,13 +13,13 @@ export default function TimerGauge({
   durationMs = 40_000,
   isRunning = true,
   onDone,
-  startTimeMs = null, // 절대 시작 시간 (timestamp)
+  startTimeMs = null, // ?��? ?�작 ?�간 (timestamp)
 }) {
   const fillRef = useRef(null);
   const rafRef = useRef(0);
   const endAtRef = useRef(0);
   const lastShownSecRef = useRef(-1);
-  const remainingMsRef = useRef(durationMs); // 남은 시간 저장 (일시정지/재개용)
+  const remainingMsRef = useRef(durationMs); // ?��? ?�간 ?�??(?�시?��?/?�개??
 
   const [shownSec, setShownSec] = useState(() =>
     Math.ceil(durationMs / 1000)
@@ -29,17 +29,17 @@ export default function TimerGauge({
 
   useEffect(() => {
     if (!isRunning) {
-      // 일시정지: 현재 남은 시간 저장
+      // ?�시?��?: ?�재 ?��? ?�간 ?�??
       cancelAnimationFrame(rafRef.current);
 
       if (startTimeMs) {
-        // 절대 시간 모드: 현재 남은 시간 계산
+        // ?��? ?�간 모드: ?�재 ?��? ?�간 계산
         const now = Date.now();
         const elapsed = now - startTimeMs;
         const remain = Math.max(0, durationMs - elapsed);
         remainingMsRef.current = remain;
       } else {
-        // 상대 시간 모드
+        // ?��? ?�간 모드
         const now = performance.now();
         if (endAtRef.current > 0) {
           const remain = Math.max(0, endAtRef.current - now);
@@ -49,12 +49,12 @@ export default function TimerGauge({
       return;
     }
 
-    // 재개
+    // ?�개
     if (startTimeMs) {
-      // 절대 시간 모드: 시작 시간 기준으로 종료 시간 계산
+      // ?��? ?�간 모드: ?�작 ?�간 기�??�로 종료 ?�간 계산
       endAtRef.current = startTimeMs + durationMs;
     } else {
-      // 상대 시간 모드: 남은 시간부터 시작
+      // ?��? ?�간 모드: ?��? ?�간부???�작
       const start = performance.now();
       endAtRef.current = start + remainingMsRef.current;
     }
@@ -90,7 +90,7 @@ export default function TimerGauge({
   }, [durationMs, isRunning, onDone, startTimeMs]);
 
   return (
-    <div className={styles.Wrap} aria-label="남은 시간">
+    <div className={styles.Wrap} aria-label="?��? ?�간">
       <div className={styles.Track}>
         <div ref={fillRef} className={styles.Fill} />
       </div>

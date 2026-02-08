@@ -5,30 +5,30 @@ import ModeCard from "@/components/common/ModeCard/ModeCard";
 
 export default function ModeSelectSection({ onClickPractice, onClickTogether }) {
   const navigate = useNavigate();
-  const [activeIndex, setActiveIndex] = useState(1); // '함께하기'를 기본 중앙으로 설정
+  const [activeIndex, setActiveIndex] = useState(1); // '?�께?�기'�?기본 중앙?�로 ?�정
 
   const cards = [
     {
       id: "practice",
-      title: "연습 모드",
-      description: "편하게 연습하고 실력을 쌓아보세요",
+      title: "?�습 모드",
+      description: "?�하�??�습?�고 ?�력???�아보세??,
       variant: "practice",
       disabled: true,
-      disabledMessage: "아직 오픈 예정입니다 👀",
+      disabledMessage: "?�직 ?�픈 ?�정?�니????",
       action: onClickPractice
     },
     {
       id: "together",
-      title: "함께하기",
-      description: "친구들과 함께 수다 떨며 영어 공부하기",
+      title: "?�께?�기",
+      description: "친구?�과 ?�께 ?�다 ?�며 ?�어 공�??�기",
       variant: "together",
       disabled: false,
       action: onClickTogether
     },
     {
       id: "mypage",
-      title: "마이페이지",
-      description: "내가 학습한 문장들을 모아보고 복습하세요",
+      title: "마이?�이지",
+      description: "?��? ?�습??문장?�을 모아보고 복습?�세??,
       variant: "mypage",
       disabled: false,
       action: () => navigate("/mypage")
@@ -62,9 +62,9 @@ export default function ModeSelectSection({ onClickPractice, onClickTogether }) 
   };
 
   return (
-    <section className={styles.Section} aria-label="학습 모드 선택">
-      {/* 왼쪽 화살표 (SVG로 굵게) */}
-      <button className={`${styles.Arrow} ${styles.ArrowLeft}`} onClick={handlePrev} aria-label="이전 모드">
+    <section className={styles.Section} aria-label="?�습 모드 ?�택">
+      {/* ?�쪽 ?�살??(SVG�?굵게) */}
+      <button className={`${styles.Arrow} ${styles.ArrowLeft}`} onClick={handlePrev} aria-label="?�전 모드">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
@@ -90,8 +90,8 @@ export default function ModeSelectSection({ onClickPractice, onClickTogether }) 
         ))}
       </div>
 
-      {/* 오른쪽 화살표 (SVG로 굵게) */}
-      <button className={`${styles.Arrow} ${styles.ArrowRight}`} onClick={handleNext} aria-label="다음 모드">
+      {/* ?�른�??�살??(SVG�?굵게) */}
+      <button className={`${styles.Arrow} ${styles.ArrowRight}`} onClick={handleNext} aria-label="?�음 모드">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="9 18 15 12 9 6"></polyline>
         </svg>

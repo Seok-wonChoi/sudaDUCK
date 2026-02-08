@@ -1,43 +1,43 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { OpenVidu } from 'openvidu-browser';
-import { createSession, createToken } from '@/api/openVidu'; // 아까 만든 API 파일 경로 확인!
+import { createSession, createToken } from '@/api/openVidu'; // ?�까 만든 API ?�일 경로 ?�인!
 
 const VoiceRoom = () => {
-  // 상태 관리
-  const [session, setSession] = useState(undefined); // OpenVidu 세션 객체
-  const [publisher, setPublisher] = useState(undefined); // 내 오디오 (말하는 사람)
-  const [subscribers, setSubscribers] = useState([]); // 다른 사람들 (듣는 사람)
-  const [currentSessionId, setCurrentSessionId] = useState("room-1"); // 방 이름 (일단 고정)
+  // ?�태 관�?
+  const [session, setSession] = useState(undefined); // OpenVidu ?�션 객체
+  const [publisher, setPublisher] = useState(undefined); // ???�디??(말하???�람)
+  const [subscribers, setSubscribers] = useState([]); // ?�른 ?�람??(?�는 ?�람)
+  const [currentSessionId, setCurrentSessionId] = useState("room-1"); // �??�름 (?�단 고정)
 
-  // OpenVidu 객체는 렌더링과 상관없이 유지되어야 하므로 useRef 사용 (선택사항이나 권장)
+  // OpenVidu 객체???�더링과 ?��??�이 ?��??�어???��?�?useRef ?�용 (?�택?�항?�나 권장)
   const OV = useRef(null);
 
   /**
-   * 1. 방 입장하기 (Join Session)
+   * 1. �??�장?�기 (Join Session)
    */
   const joinSession = async () => {
-    // 1) OpenVidu 객체 생성
+    // 1) OpenVidu 객체 ?�성
     OV.current = new OpenVidu();
 
-    // 2) 세션(방) 초기화
+    // 2) ?�션(�? 초기??
     const newSession = OV.current.initSession();
 
-    // 3) 이벤트 리스너 설정 (중요!)
-    // 누군가 방에 들어오면(새로운 스트림이 생기면)
+    // 3) ?�벤??리스???�정 (중요!)
+    // ?�군가 방에 ?�어?�면(?�로???�트림이 ?�기�?
     newSession.on('streamCreated', (event) => {
-      // 그 사람의 소리를 듣기 위해 구독(Subscribe)
+      // �??�람???�리�??�기 ?�해 구독(Subscribe)
       const subscriber = newSession.subscribe(event.stream, undefined);
-      // 내 구독자 목록에 추가
+      // ??구독??목록??추�?
       setSubscribers((prev) => [...prev, subscriber]);
     });
 
-    // 누군가 나가면
+    // ?�군가 ?��?�?
     newSession.on('streamDestroyed', (event) => {
-      // 내 구독자 목록에서 제거
+      // ??구독??목록?�서 ?�거
       setSubscribers((prev) => prev.filter((sub) => sub !== event.stream.streamManager));
     });
 
-    // 예외 발생 시 로그 출력
+    // ?�외 발생 ??로그 출력
     newSession.on('exception', (exception) => {
       console.warn(exception);
     });
@@ -45,59 +45,59 @@ const VoiceRoom = () => {
     setSession(newSession);
 
     try {
-      // 4) 백엔드에서 토큰 받아오기 (우리가 만든 API 사용)
-      // 방이 없으면 만들고, 있으면 토큰만 받아옵니다.
-      // (순서: createSession -> createToken)
+      // 4) 백엔?�에???�큰 받아?�기 (?�리가 만든 API ?�용)
+      // 방이 ?�으�?만들�? ?�으�??�큰�?받아?�니??
+      // (?�서: createSession -> createToken)
       
-      // 주의: 이미 방이 존재할 수 있으므로, 방 생성 시도 후 에러나면 바로 토큰 발급으로 넘어가는 로직이 필요할 수 있습니다.
-      // 하지만 OpenVidu 특성상 "없는 방 ID로 토큰 달라고 하면" 에러가 나므로,
-      // 안전하게 항상 createSession을 먼저 호출하는 게 좋습니다. (이미 있으면 백엔드가 알아서 처리하거나 무시함)
+      // 주의: ?��? 방이 존재?????�으므�? �??�성 ?�도 ???�러?�면 바로 ?�큰 발급?�로 ?�어가??로직???�요?????�습?�다.
+      // ?��?�?OpenVidu ?�성??"?�는 �?ID�??�큰 ?�라�??�면" ?�러가 ?��?�?
+      // ?�전?�게 ??�� createSession??먼�? ?�출?�는 �?좋습?�다. (?��? ?�으�?백엔?��? ?�아??처리?�거??무시??
       await createSession(currentSessionId); 
       const token = await createToken(currentSessionId);
 
-      // 5) 토큰으로 실제 접속
-      // clientData에 닉네임을 넣어서 다른 사람에게 보여줄 수 있습니다.
-      await newSession.connect(token, { clientData: "내 닉네임" });
+      // 5) ?�큰?�로 ?�제 ?�속
+      // clientData???�네?�을 ?�어???�른 ?�람?�게 보여�????�습?�다.
+      await newSession.connect(token, { clientData: "???�네?? });
 
-      // 6) 내 마이크 켜기 (Publisher 설정)
-      // ★ 중요: videoSource: false로 설정해서 '음성 전용'으로 만듭니다.
+      // 6) ??마이??켜기 (Publisher ?�정)
+      // ??중요: videoSource: false�??�정?�서 '?�성 ?�용'?�로 만듭?�다.
       const newPublisher = await OV.current.initPublisherAsync(undefined, {
-        audioSource: true,  // 마이크 사용
-        videoSource: false, // 카메라는 끔 (음성 채팅방)
-        publishAudio: true, // 오디오 송출 시작
-        publishVideo: false,// 비디오 송출 안 함
+        audioSource: true,  // 마이???�용
+        videoSource: false, // 카메?�는 ??(?�성 채팅�?
+        publishAudio: true, // ?�디???�출 ?�작
+        publishVideo: false,// 비디???�출 ????
         resolution: '640x480',
         frameRate: 30,
         insertMode: 'APPEND',
         mirror: false,
       });
 
-      // 7) 세션에 내 오디오 송출
+      // 7) ?�션?????�디???�출
       newSession.publish(newPublisher);
       setPublisher(newPublisher);
 
     } catch (error) {
-      console.error('접속 실패:', error);
-      alert("방 입장에 실패했습니다: " + error.message);
+      console.error('?�속 ?�패:', error);
+      alert("�??�장???�패?�습?�다: " + error.message);
     }
   };
 
   /**
-   * 2. 방 나가기 (Leave Session)
+   * 2. �??��?�?(Leave Session)
    */
   const leaveSession = () => {
     if (session) {
       session.disconnect();
     }
 
-    // 상태 초기화
+    // ?�태 초기??
     OV.current = null;
     setSession(undefined);
     setSubscribers([]);
     setPublisher(undefined);
   };
 
-  // 컴포넌트가 사라질 때(언마운트) 자동으로 방 나가기
+  // 컴포?�트가 ?�라�????�마?�트) ?�동?�로 �??��?�?
   useEffect(() => {
     return () => {
         if(session) session.disconnect();
@@ -107,45 +107,45 @@ const VoiceRoom = () => {
 
   return (
     <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h1>🎤 음성 수다방 (최대 4명)</h1>
+      <h1>?�� ?�성 ?�다�?(최�? 4�?</h1>
 
-      {/* 접속하지 않았을 때 */}
+      {/* ?�속?��? ?�았????*/}
       {!session ? (
         <div id="join">
-          <p>방 이름: {currentSessionId}</p>
+          <p>�??�름: {currentSessionId}</p>
           <button onClick={joinSession} style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
-            입장하기
+            ?�장?�기
           </button>
         </div>
       ) : (
-        /* 접속했을 때 */
+        /* ?�속?�을 ??*/
         <div id="session">
           <div id="session-header">
-            <h2>방: {currentSessionId}</h2>
+            <h2>�? {currentSessionId}</h2>
             <button onClick={leaveSession} style={{ background: 'red', color: 'white', border: 'none', padding: '10px', cursor: 'pointer' }}>
-              나가기
+              ?��?�?
             </button>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '30px' }}>
             
-            {/* 내 마이크 상태 (Publisher) */}
+            {/* ??마이???�태 (Publisher) */}
             {publisher && (
               <div className="stream-container" style={{ border: '2px solid blue', padding: '10px', borderRadius: '10px' }}>
-                <h3>나 (Me)</h3>
-                <p>🔊 마이크 켜짐</p>
-                {/* 오디오 태그는 필요 없지만(내 목소리는 내가 안 들음), 스트림 관리를 위해 존재는 함 */}
+                <h3>??(Me)</h3>
+                <p>?�� 마이??켜짐</p>
+                {/* ?�디???�그???�요 ?��?�???목소리는 ?��? ???�음), ?�트�?관리�? ?�해 존재????*/}
               </div>
             )}
 
-            {/* 다른 사람들 상태 (Subscribers) */}
+            {/* ?�른 ?�람???�태 (Subscribers) */}
             {subscribers.map((sub, i) => (
               <div key={i} className="stream-container" style={{ border: '2px solid green', padding: '10px', borderRadius: '10px' }}>
-                <h3>참가자 {i + 1}</h3>
-                {/* ★ 중요: 상대방의 소리를 재생하는 Audio 컴포넌트 */}
+                <h3>참�???{i + 1}</h3>
+                {/* ??중요: ?��?방의 ?�리�??�생?�는 Audio 컴포?�트 */}
                 <AudioStream streamManager={sub} />
-                <p>데이터: {sub.stream.connection.data}</p> 
-                {/* 백엔드에서 보낸 username이 저 data 안에 들어있습니다 (형식에 따라 파싱 필요할 수 있음) */}
+                <p>?�이?? {sub.stream.connection.data}</p> 
+                {/* 백엔?�에??보낸 username???� data ?�에 ?�어?�습?�다 (?�식???�라 ?�싱 ?�요?????�음) */}
               </div>
             ))}
           </div>
@@ -155,13 +155,13 @@ const VoiceRoom = () => {
   );
 };
 
-// ★ 소리를 재생해주는 작은 컴포넌트
+// ???�리�??�생?�주???��? 컴포?�트
 const AudioStream = ({ streamManager }) => {
   const audioRef = useRef(null);
 
   useEffect(() => {
     if (streamManager && audioRef.current) {
-      streamManager.addVideoElement(audioRef.current); // 오디오 요소에 스트림 연결
+      streamManager.addVideoElement(audioRef.current); // ?�디???�소???�트�??�결
     }
   }, [streamManager]);
 

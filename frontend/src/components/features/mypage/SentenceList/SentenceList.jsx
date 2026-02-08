@@ -5,13 +5,13 @@ export default function SentenceList({ sentences = [], onItemClick, onDelete }) 
   return (
     <div className={styles.Container}>
       <div className={styles.Header}>
-        <span className={styles.Icon}>🔖</span>
-        <h2 className={styles.Title}>저장한 영어 문장</h2>
+        <span className={styles.Icon}>?��</span>
+        <h2 className={styles.Title}>?�?�한 ?�어 문장</h2>
       </div>
 
       <div className={styles.List}>
         {sentences.length === 0 ? (
-          <div className={styles.Empty}>저장된 문장이 없습니다.</div>
+          <div className={styles.Empty}>?�?�된 문장???�습?�다.</div>
         ) : (
           sentences.map((sentence) => (
             <SentenceItem

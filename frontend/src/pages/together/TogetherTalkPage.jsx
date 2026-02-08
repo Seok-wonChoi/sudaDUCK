@@ -15,12 +15,12 @@ import {
   getRoomLobby,
   endRoom,
 } from "@/api/rooms";
-import { createToken } from "@/api/openVidu"; // 👈 [추가] 재접속용 API
+import { createToken } from "@/api/openVidu"; // ?�� [추�?] ?�접?�용 API
 import { scheduleQuiz, submitQuizAnswer } from "@/api/quiz";
 import { translateToEnglish } from "@/api/translate";
 import { convertWebMToWav } from "@/utils/audioConverter";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
-import { useOpenVidu } from "@/context/OpenViduContext"; // 👈 OpenVidu Hook 추가
+import { useOpenVidu } from "@/context/OpenViduContext"; // ?�� OpenVidu Hook 추�?
 import { useSoundContext } from "@/context/SoundContext";
 
 import duckImg from "@/assets/images/duck.png";
@@ -50,13 +50,13 @@ import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
 const ROOM_INFO_KEY = "together_room_info";
 
 const AI_DUCKBOT_IMAGES = {
-  // 이름 기반
+  // ?�름 기반
   CYAN: duckBotCyanImg,
   DIGITAL: duckBotDigitalImg,
   MECHA: duckBotMechaImg,
   ORANGE: duckBotOrangeImg,
 
-  // 숫자 기반 (문서/백에서 MODEL_1~4 쓰는 경우 대비)
+  // ?�자 기반 (문서/백에??MODEL_1~4 ?�는 경우 ?��?
   MODEL_1: duckBotCyanImg,
   MODEL_2: duckBotDigitalImg,
   MODEL_3: duckBotMechaImg,
@@ -81,10 +81,10 @@ const COLOR_MAP = {
 };
 
 const ACCESSORY_MAP = {
-  hat: "🎩",
-  sunglasses: "🕶️",
-  ribbon: "🎀",
-  crown: "👑",
+  hat: "?��",
+  sunglasses: "?���?,
+  ribbon: "??",
+  crown: "?��",
   none: null,
 };
 
@@ -189,7 +189,7 @@ export default function TogetherTalkPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { publisher, subscribers, leaveSession, session, joinSession } =
-    useOpenVidu(); // 👈 session, joinSession 추가
+    useOpenVidu(); // ?�� session, joinSession 추�?
   const { getEffectiveVolume, isMuted } = useSoundContext();
 
   const [isRoomTimerRunning, setIsRoomTimerRunning] = useState(true);
@@ -203,15 +203,15 @@ export default function TogetherTalkPage() {
     return parsed ?? null;
   });
 
-  // 👇 [추가] 새로고침 시 세션 복구 로직 (구조대)
+  // ?�� [추�?] ?�로고침 ???�션 복구 로직 (구조?�)
   const isRecoveringRef = useRef(false);
 
   useEffect(() => {
     const restoreSession = async () => {
-      // 1. 이미 세션이 있거나, 복구 시도 중이면 패스
+      // 1. ?��? ?�션???�거?? 복구 ?�도 중이�??�스
       if (session || isRecoveringRef.current) return;
 
-      // 2. 방 정보가 없으면 복구 불가
+      // 2. �??�보가 ?�으�?복구 불�?
       const info =
         hydratedInfo || safeParseJson(sessionStorage.getItem(ROOM_INFO_KEY));
       const ovSessionId =
@@ -219,34 +219,34 @@ export default function TogetherTalkPage() {
 
       if (!ovSessionId) {
         console.warn(
-          "[TogetherTalkPage] ⚠️ 복구할 오픈비두 세션 ID가 없습니다.",
+          "[TogetherTalkPage] ?�️ 복구???�픈비두 ?�션 ID가 ?�습?�다.",
         );
         return;
       }
 
-      console.log(
-        "🚑 [TogetherTalkPage] 새로고침 감지! 세션 복구를 시도합니다...",
+      // console.log(
+        "?�� [TogetherTalkPage] ?�로고침 감�?! ?�션 복구�??�도?�니??..",
         ovSessionId,
       );
       isRecoveringRef.current = true;
 
       try {
-        // 3. 내 닉네임 찾기
+        // 3. ???�네??찾기
         const myId = info.myUserId ?? getUserIdFromToken();
         const myName = Array.isArray(info.participants)
           ? info.participants.find(
               (p) => String(p.id || p.userId) === String(myId),
             )?.nickname
-          : "복구된유저";
+          : "복구?�유?�";
 
-        // 4. 토큰 재발급 및 접속
+        // 4. ?�큰 ?�발�?�??�속
         const token = await createToken(ovSessionId);
         await joinSession(token, myName || "User");
 
-        console.log("✅ [TogetherTalkPage] 세션 복구 성공!");
+        // console.log("??[TogetherTalkPage] ?�션 복구 ?�공!");
       } catch (e) {
-        console.error("❌ [TogetherTalkPage] 세션 복구 실패:", e);
-        // 실패 시 메인으로 튕기게 할 수도 있지만, 일단 로그만 출력
+        console.error("??[TogetherTalkPage] ?�션 복구 ?�패:", e);
+        // ?�패 ??메인?�로 ?�기�????�도 ?��?�? ?�단 로그�?출력
       } finally {
         isRecoveringRef.current = false;
       }
@@ -277,7 +277,7 @@ export default function TogetherTalkPage() {
     const raw = roomInfo.timeLimit || roomInfo.roomInfo?.timeLimit;
     const num = parseInt(raw, 10);
     if (!isNaN(num) && num >= 15 && num <= 60) return num;
-    return 40; // 기본값
+    return 40; // 기본�?
   }, [roomInfo.timeLimit, roomInfo.roomInfo?.timeLimit]);
   const durationMs = timeLimit * 1000;
 
@@ -302,10 +302,10 @@ export default function TogetherTalkPage() {
     return AI_DUCKBOT_IMAGES[key] || duckBotCyanImg;
   }
 
-  // 타이머 시작 시간 (절대 timestamp) - 절대 시간 고정 로직
+  // ?�?�머 ?�작 ?�간 (?��? timestamp) - ?��? ?�간 고정 로직
   const [timerStartedAt, setTimerStartedAt] = useState(() => {
     try {
-      // 1. 방 코드 확보 (없으면 세션에서 비상 복구)
+      // 1. �?코드 ?�보 (?�으�??�션?�서 비상 복구)
       let code =
         roomInfo.roomCode ||
         roomInfo.inviteCode ||
@@ -316,53 +316,53 @@ export default function TogetherTalkPage() {
       if (!code) {
         code = sessionStorage.getItem("last_active_room_code");
       } else {
-        // 코드 있으면 무조건 백업
+        // 코드 ?�으�?무조�?백업
         sessionStorage.setItem("last_active_room_code", code);
       }
 
       if (!code) return Date.now();
 
-      // 2. 현재 턴에 대한 고유 키 생성
-      // 주의: currentTurn 상태 변수 대신 roomInfo 값을 직접 사용 (초기화 순서 문제 방지)
+      // 2. ?�재 ?�에 ?�??고유 ???�성
+      // 주의: currentTurn ?�태 변???�??roomInfo 값을 직접 ?�용 (초기???�서 문제 방�?)
       const turnVal =
         roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
       const storageKey = `timer_start_${code}_turn_${turnVal}`;
 
-      // 3. 박제된 시간 있나 확인
+      // 3. 박제???�간 ?�나 ?�인
       const saved = sessionStorage.getItem(storageKey);
       if (saved) {
-        console.log(`[Timer] 💾 복구된 시간: ${saved} (턴: ${turnVal})`);
+        // console.log(`[Timer] ?�� 복구???�간: ${saved} (?? ${turnVal})`);
         return parseInt(saved, 10);
       }
 
-      // 4. 없으면 지금 시간을 박제하고 시작
+      // 4. ?�으�?지�??�간??박제?�고 ?�작
       const now = Date.now();
       sessionStorage.setItem(storageKey, String(now));
-      console.log(`[Timer] 📌 시간 박제: ${now} (턴: ${turnVal})`);
+      // console.log(`[Timer] ?�� ?�간 박제: ${now} (?? ${turnVal})`);
       return now;
     } catch {
       return Date.now();
     }
   });
 
-  // 턴이 바뀔 때마다 새로운 시간 박제
+  // ?�이 바�??�마???�로???�간 박제
   useEffect(() => {
     if (!resolvedRoomCode) return;
 
-    // 여기서는 currentTurn 상태를 안전하게 사용 가능 (useEffect 내부이므로)
-    // 하지만 의존성 배열에 currentTurn이 없으므로 roomInfo나 내부 변수로 접근해야 함
-    // 편의상 별도의 상태 관리가 아닌 roomInfo나 timerStartedAt 업데이트 로직에서 처리 권장
-    // 여기서는 초기화 로직이 강력하므로 추가적인 useEffect는 최소화
+    // ?�기?�는 currentTurn ?�태�??�전?�게 ?�용 가??(useEffect ?��??��?�?
+    // ?��?�??�존??배열??currentTurn???�으므�?roomInfo???��? 변?�로 ?�근?�야 ??
+    // ?�의??별도???�태 관리�? ?�닌 roomInfo??timerStartedAt ?�데?�트 로직?�서 처리 권장
+    // ?�기?�는 초기??로직??강력?��?�?추�??�인 useEffect??최소??
   }, [resolvedRoomCode]);
 
-  // 타이머 시작 시간 sessionStorage 저장 (기존 코드 제거됨)
+  // ?�?�머 ?�작 ?�간 sessionStorage ?�??(기존 코드 ?�거??
 
-  const [topic, setTopic] = useState(roomInfo.topic ?? "좋아하는 음식");
+  const [topic, setTopic] = useState(roomInfo.topic ?? "좋아?�는 ?�식");
   const [maxCount, setMaxCount] = useState(roomInfo.maxCount ?? 4);
 
   const [roomId, setRoomId] = useState(() => {
     const id = roomInfo.roomId ?? roomInfo.roomInfo?.roomId ?? null;
-    console.log("[TogetherTalkPage] roomId 초기화:", {
+    // console.log("[TogetherTalkPage] roomId 초기??", {
       "roomInfo.roomId": roomInfo.roomId,
       "roomInfo.roomInfo?.roomId": roomInfo.roomInfo?.roomId,
       "최종 roomId": id,
@@ -371,12 +371,12 @@ export default function TogetherTalkPage() {
     return id;
   });
 
-  // ★ hydratedInfo 변경 시 roomId 업데이트 (RecordingPage에서 돌아올 때)
+  // ??hydratedInfo 변�???roomId ?�데?�트 (RecordingPage?�서 ?�아????
   useEffect(() => {
     const newRoomId = hydratedInfo?.roomInfo?.roomId ?? hydratedInfo?.roomId;
     if (newRoomId && newRoomId !== roomId) {
-      console.log(
-        "[TogetherTalkPage] roomId 업데이트:",
+      // console.log(
+        "[TogetherTalkPage] roomId ?�데?�트:",
         roomId,
         "->",
         newRoomId,
@@ -385,21 +385,21 @@ export default function TogetherTalkPage() {
     }
   }, [hydratedInfo, roomId]);
 
-  // RecordingPage에서 돌아올 때 증가된 턴 번호를 유지
+  // RecordingPage?�서 ?�아????증�?????번호�??��?
   const [currentTurn, setCurrentTurn] = useState(() => {
     const turn = roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
-    console.log("[TogetherTalkPage] currentTurn 초기화:", {
+    // console.log("[TogetherTalkPage] currentTurn 초기??", {
       roomInfo,
       turn,
     });
     return turn;
   });
 
-  // [수정 2] 데이터 동기화 추가: 페이지 이동으로 hydratedInfo가 바뀌면 턴 번호도 업데이트
+  // [?�정 2] ?�이???�기??추�?: ?�이지 ?�동?�로 hydratedInfo가 바뀌면 ??번호???�데?�트
   useEffect(() => {
     const nextTurn =
       hydratedInfo?.currentTurn ?? hydratedInfo?.roomInfo?.currentTurn;
-    console.log("[TogetherTalkPage] hydratedInfo 변경 감지:", {
+    // console.log("[TogetherTalkPage] hydratedInfo 변�?감�?:", {
       hydratedInfo,
       currentTurnFromState: hydratedInfo?.currentTurn,
       currentTurnFromRoomInfo: hydratedInfo?.roomInfo?.currentTurn,
@@ -412,32 +412,32 @@ export default function TogetherTalkPage() {
       nextTurn !== null &&
       nextTurn !== currentTurn
     ) {
-      console.log(
-        `[TogetherTalkPage] 턴 번호 업데이트: ${currentTurn} → ${nextTurn}`,
+      // console.log(
+        `[TogetherTalkPage] ??번호 ?�데?�트: ${currentTurn} ??${nextTurn}`,
       );
       setCurrentTurn(nextTurn);
     }
   }, [hydratedInfo, currentTurn]);
 
-  // [추가] 턴이 변경될 때마다(또는 방 코드가 확보될 때마다) 해당 턴의 시작 시간을 박제
+  // [추�?] ?�이 변경될 ?�마???�는 �?코드가 ?�보???�마?? ?�당 ?�의 ?�작 ?�간??박제
   useEffect(() => {
     if (!resolvedRoomCode) return;
 
     const storageKey = `timer_start_${resolvedRoomCode}_turn_${currentTurn}`;
     const saved = sessionStorage.getItem(storageKey);
 
-    // 이미 저장된 시간이 없으면(새 턴 시작) 현재 시간을 박제
+    // ?��? ?�?�된 ?�간???�으�??????�작) ?�재 ?�간??박제
     if (!saved) {
       const now = Date.now();
       sessionStorage.setItem(storageKey, String(now));
       setTimerStartedAt(now);
-      console.log(`[Timer] 🔄 새 턴(${currentTurn}) 시작, 시간 박제: ${now}`);
+      // console.log(`[Timer] ?�� ????${currentTurn}) ?�작, ?�간 박제: ${now}`);
     } else {
-      // 이미 있으면(새로고침 시) 그거 씀
+      // ?��? ?�으�??�로고침 ?? 그거 ?�
       const parsed = parseInt(saved, 10);
-      // 현재 state와 다르면 업데이트 (불필요한 렌더링 방지)
+      // ?�재 state?� ?�르�??�데?�트 (불필?�한 ?�더�?방�?)
       setTimerStartedAt((prev) => (prev !== parsed ? parsed : prev));
-      console.log(`[Timer] 💾 턴 ${currentTurn} 시간 유지: ${parsed}`);
+      // console.log(`[Timer] ?�� ??${currentTurn} ?�간 ?��?: ${parsed}`);
     }
   }, [currentTurn, resolvedRoomCode]);
 
@@ -451,7 +451,7 @@ export default function TogetherTalkPage() {
       : [];
     return raw.map((p) => ({
       id: p.id ?? p.email ?? "unknown",
-      name: p.name ?? p.nickname ?? "참여자",
+      name: p.name ?? p.nickname ?? "참여??,
       isMe: p.isMe === true,
       micOn: p.micOn ?? true,
       isHost: p.isHost ?? false,
@@ -460,16 +460,16 @@ export default function TogetherTalkPage() {
     }));
   });
 
-  //participants를 추적하는 ref 생성
+  //participants�?추적?�는 ref ?�성
   const participantsRef = useRef(participants);
-  const timerSyncedRef = useRef(false); // 타이머 동기화 여부 추적
+  const timerSyncedRef = useRef(false); // ?�?�머 ?�기???��? 추적
 
-  //participants가 변할 때마다 ref 업데이트
+  //participants가 변???�마??ref ?�데?�트
   useEffect(() => {
     participantsRef.current = participants;
   }, [participants]);
 
-  // 방장 여부 확인
+  // 방장 ?��? ?�인
   const isHost = useMemo(() => {
     const me = participants.find((p) => p.isMe === true);
     return me?.isHost ?? false;
@@ -484,12 +484,12 @@ export default function TogetherTalkPage() {
       if (data?.topic) setTopic(data.topic);
       if (data?.roomId) setRoomId(data.roomId);
 
-      // 타이머 시작 시간 설정 (서버 값으로 동기화) - 로컬 스토리지 우선 정책으로 제거
+      // ?�?�머 ?�작 ?�간 ?�정 (?�버 값으�??�기?? - 로컬 ?�토리�? ?�선 ?�책?�로 ?�거
       /* 
       if (data?.timerStartedAt != null) {
         const serverTime = Number(data.timerStartedAt);
         if (!timerSyncedRef.current || timerStartedAt !== serverTime) {
-           // 서버 시간 덮어쓰기 방지
+           // ?�버 ?�간 ??��?�기 방�?
         }
       } 
       */
@@ -504,7 +504,7 @@ export default function TogetherTalkPage() {
         const idStr = String(m.userId ?? "");
         return {
           id: idStr || "unknown",
-          name: m.nickname ?? "참여자",
+          name: m.nickname ?? "참여??,
           isMe: myIdStr ? idStr === myIdStr : false,
           micOn: m.micOn ?? true,
           isHost: m.isHost ?? false,
@@ -524,18 +524,18 @@ export default function TogetherTalkPage() {
         setMaxCount(data.maxCount);
       }
     } catch (e) {
-      console.error("[TogetherTalkPage] getRoomLobby 실패:", e);
+      console.error("[TogetherTalkPage] getRoomLobby ?�패:", e);
     }
   }, [resolvedRoomCode, myUserId]);
 
-  // 페이지 로드/새로고침 시 타이머 동기화를 위해 ref 초기화
+  // ?�이지 로드/?�로고침 ???�?�머 ?�기?��? ?�해 ref 초기??
   useEffect(() => {
-    // 타이머가 sessionStorage에 없으면 동기화 필요
+    // ?�?�머가 sessionStorage???�으�??�기???�요
     if (resolvedRoomCode) {
       const saved = sessionStorage.getItem(`timer_started_${resolvedRoomCode}`);
       if (!saved) {
         timerSyncedRef.current = false;
-        console.log("[TogetherTalkPage] 타이머 동기화 필요 - ref 초기화");
+        // console.log("[TogetherTalkPage] ?�?�머 ?�기???�요 - ref 초기??);
       }
     }
   }, [resolvedRoomCode]);
@@ -559,41 +559,41 @@ export default function TogetherTalkPage() {
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [aiSuggestion, setAiSuggestion] = useState("");
 
-  // 퀘스트 관련 상태 (WebSocket 핸들러에서 사용하므로 핸들러보다 먼저 선언)
+  // ?�스??관???�태 (WebSocket ?�들?�에???�용?��?�??�들?�보??먼�? ?�언)
   const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | null
   const [questStep, setQuestStep] = useState("idle");
   const [quizId, setQuizId] = useState(null);
   const [quizQuestion, setQuizQuestion] = useState(
-    "AI가 질문을 생성하고 있습니다...", // WebSocket으로 AI 생성 질문 수신 대기 중
+    "AI가 질문???�성?�고 ?�습?�다...", // WebSocket?�로 AI ?�성 질문 ?�신 ?��?�?
   );
   const [micStateBeforeQuest, setMicStateBeforeQuest] = useState(true);
   const [myQuizResult, setMyQuizResult] = useState(null);
 
   /* =========================
-     한국어→영어 번역 (Chrome STT) - 상단 이동
+     ?�국?�→?�어 번역 (Chrome STT) - ?�단 ?�동
   ========================= */
   const recognitionRef = useRef(null);
 
-  // [필수] 턴 번호 최신화 Ref
+  // [?�수] ??번호 최신??Ref
   const currentTurnRef = useRef(currentTurn);
   useEffect(() => {
     currentTurnRef.current = currentTurn;
   }, [currentTurn]);
 
-  // [추가] 의도적으로 STT를 껐는지 확인하는 플래그
+  // [추�?] ?�도?�으�?STT�?껐는지 ?�인?�는 ?�래�?
   const isSTTIntentionallyStopped = useRef(false);
 
-  // STT 시작
-  // STT 시작 함수 (완성본)
+  // STT ?�작
+  // STT ?�작 ?�수 (?�성�?
   const startSTT = useCallback(() => {
-    // 1. 이미 실행 중이거나 페이지 전환 중이면 중복 실행 방지
+    // 1. ?��? ?�행 중이거나 ?�이지 ?�환 중이�?중복 ?�행 방�?
     if (recognitionRef.current || isTransitioning) return;
 
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      console.warn("[STT] 미지원 브라우저");
+      console.warn("[STT] 미�???브라?��?");
       return;
     }
 
@@ -603,7 +603,7 @@ export default function TogetherTalkPage() {
       recognition.continuous = true;
       recognition.interimResults = false;
 
-      // 시작 시 "의도적 중지" 플래그 해제
+      // ?�작 ??"?�도??중�?" ?�래�??�제
       isSTTIntentionallyStopped.current = false;
 
       recognition.onresult = async (event) => {
@@ -611,16 +611,16 @@ export default function TogetherTalkPage() {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
 
-            // 공백이거나 너무 짧으면(1글자 미만) 무시 (로그 과다 방지)
+            // 공백?�거???�무 짧으�?1글??미만) 무시 (로그 과다 방�?)
             if (!transcript || transcript.trim().length < 2) continue;
 
-            // [로그] 인식된 내용만 심플하게 출력
-            console.log("🎤", transcript);
+            // [로그] ?�식???�용�??�플?�게 출력
+            // console.log("?��", transcript);
 
-            // Ref를 통해 최신 턴 번호 조회
+            // Ref�??�해 최신 ??번호 조회
             const currentTurnVal = currentTurnRef.current;
 
-            // 말했으니 정적 감지 리셋 신호 전송
+            // 말했?�니 ?�적 감�? 리셋 ?�호 ?�송
             if (roomId && myUserId && currentTurnVal) {
               recordVoiceActivity(roomId, myUserId, currentTurnVal).catch(
                 () => {},
@@ -628,7 +628,7 @@ export default function TogetherTalkPage() {
             }
 
             try {
-              // 번역 API 호출
+              // 번역 API ?�출
               await translateToEnglish(
                 roomId,
                 transcript,
@@ -636,35 +636,35 @@ export default function TogetherTalkPage() {
                 myUserId,
               );
             } catch (error) {
-              console.error("[STT] 번역 전송 실패");
+              console.error("[STT] 번역 ?�송 ?�패");
             }
           }
         }
       };
 
       recognition.onerror = (event) => {
-        // no-speech: 음성 감지 안됨 (정상, 무시)
+        // no-speech: ?�성 감�? ?�됨 (?�상, 무시)
         if (event.error === "no-speech") {
-          console.log("[STT] 💤 음성이 감지되지 않음 (정상, 계속 대기 중)");
+          // console.log("[STT] ?�� ?�성??감�??��? ?�음 (?�상, 계속 ?��?�?");
           return;
         }
 
-        // aborted: 의도적 중지 (정상)
+        // aborted: ?�도??중�? (?�상)
         if (event.error === "aborted") {
-          console.log("[STT] 🛑 음성 인식 중지됨");
+          // console.log("[STT] ?�� ?�성 ?�식 중�???);
           return;
         }
 
-        // not-allowed: 마이크 권한 거부
+        // not-allowed: 마이??권한 거�?
         if (
           event.error === "not-allowed" ||
           event.error === "service-not-allowed"
         ) {
-          console.error("[STT] ❌ 마이크 권한 거부!");
+          console.error("[STT] ??마이??권한 거�?!");
           alert(
-            "🎤 마이크 권한을 허용해주세요.\n\n브라우저 설정 > 개인정보 보호 > 마이크에서 권한을 허용하세요.",
+            "?�� 마이??권한???�용?�주?�요.\n\n브라?��? ?�정 > 개인?�보 보호 > 마이?�에??권한???�용?�세??",
           );
-          // 권한 거부 시 recognition 정리
+          // 권한 거�? ??recognition ?�리
           if (recognitionRef.current) {
             recognitionRef.current.stop();
             recognitionRef.current = null;
@@ -672,20 +672,20 @@ export default function TogetherTalkPage() {
           return;
         }
 
-        // 기타 에러: 로그만 출력
-        console.error("[STT] ⚠️ 에러:", event.error);
+        // 기�? ?�러: 로그�?출력
+        console.error("[STT] ?�️ ?�러:", event.error);
       };
 
       recognition.start();
       recognitionRef.current = recognition;
     } catch (error) {
-      console.error("[STT] 시작 오류");
+      console.error("[STT] ?�작 ?�류");
     }
-  }, [roomId, myUserId, isTransitioning]); // [중요] currentTurn 제거, isTransitioning 추가
+  }, [roomId, myUserId, isTransitioning]); // [중요] currentTurn ?�거, isTransitioning 추�?
 
-  // STT 중지
+  // STT 중�?
   const stopSTT = useCallback(() => {
-    isSTTIntentionallyStopped.current = true; // 재시작 방지 플래그 설정
+    isSTTIntentionallyStopped.current = true; // ?�시??방�? ?�래�??�정
 
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -693,16 +693,16 @@ export default function TogetherTalkPage() {
     }
   }, []);
 
-  // 한국어 대화 시작 시 STT 자동 시작 (마이크가 켜져 있을 때만)
+  // ?�국???�???�작 ??STT ?�동 ?�작 (마이?��? 켜져 ?�을 ?�만)
   useEffect(() => {
-    const isQuestRunning = questStep !== "idle"; // questRunning 변수 대신 직접 비교
+    const isQuestRunning = questStep !== "idle"; // questRunning 변???�??직접 비교
     if (!isQuestRunning && roomId && micOn && !isTransitioning) {
       startSTT();
     } else {
       stopSTT();
     }
 
-    // 컴포넌트 언마운트 시 중지
+    // 컴포?�트 ?�마?�트 ??중�?
     return () => {
       stopSTT();
     };
@@ -710,14 +710,14 @@ export default function TogetherTalkPage() {
 
   const handleConversationSuggestion = useCallback(
     (question) => {
-      // 돌발 퀘스트 진행 중에는 AI 추천 무시
+      // ?�발 ?�스??진행 중에??AI 추천 무시
       if (questStep !== "idle") {
-        console.log("[Quest] 퀘스트 진행 중 - AI 추천 무시:", question);
+        // console.log("[Quest] ?�스??진행 �?- AI 추천 무시:", question);
         return;
       }
 
-      // AI 추천 주제를 계속 표시 (타이머로 자동 삭제하지 않음)
-      // 새로운 주제가 오면 기존 주제를 대체
+      // AI 추천 주제�?계속 ?�시 (?�?�머�??�동 ??��?��? ?�음)
+      // ?�로??주제가 ?�면 기존 주제�??��?
       setAiSuggestion(question || "");
     },
     [questStep],
@@ -725,7 +725,7 @@ export default function TogetherTalkPage() {
 
   const handleSilenceDetected = useCallback(
     (payload, senderKey) => {
-      console.log(`🔇 [정적 감지] ${timeLimit}초 동안 대화가 없었습니다!`, {
+      // console.log(`?�� [?�적 감�?] ${timeLimit}�??�안 ?�?��? ?�었?�니??`, {
         payload,
         senderKey,
         roomId,
@@ -743,7 +743,7 @@ export default function TogetherTalkPage() {
       prev.map((p) => {
         if (p.id === k) {
           const level = payload?.level ?? 0;
-          // 마이크가 켜져있고 voiceLevel이 임계값 이상일 때만 발화 중으로 표시
+          // 마이?��? 켜져?�고 voiceLevel???�계�??�상???�만 발화 중으�??�시
           const isSpeaking = p.micOn && level > 0.03;
           return { ...p, voiceLevel: level, isSpeaking };
         }
@@ -756,7 +756,7 @@ export default function TogetherTalkPage() {
     if (!senderKey) return;
     const k = String(senderKey);
 
-    console.log("[TogetherTalkPage] MIC_CHANGED 수신:", {
+    // console.log("[TogetherTalkPage] MIC_CHANGED ?�신:", {
       senderKey: k,
       micOn: payload?.micOn,
     });
@@ -765,7 +765,7 @@ export default function TogetherTalkPage() {
       prev.map((p) => {
         if (p.id === k) {
           const newMicOn = payload?.micOn ?? true;
-          // 마이크가 꺼지면 isSpeaking도 false로 설정
+          // 마이?��? 꺼�?�?isSpeaking??false�??�정
           return {
             ...p,
             micOn: newMicOn,
@@ -782,17 +782,17 @@ export default function TogetherTalkPage() {
       if (payload?.startTimeMs != null) {
         const startTime = Number(payload.startTimeMs);
 
-        // 새로고침 시에도 WebSocket 타이머와 동기화
+        // ?�로고침 ?�에??WebSocket ?�?�머?� ?�기??
         if (!timerSyncedRef.current || timerStartedAt !== startTime) {
-          console.log(
-            "[TogetherTalkPage] 웹소켓으로 타이머 시작 시간 동기화:",
+          // console.log(
+            "[TogetherTalkPage] ?�소켓으�??�?�머 ?�작 ?�간 ?�기??",
             startTime,
-            "(새로고침 시에도 동기화)",
+            "(?�로고침 ?�에???�기??",
           );
           setTimerStartedAt(startTime);
           timerSyncedRef.current = true;
 
-          // sessionStorage에도 저장 (새로고침 시 참고용)
+          // sessionStorage?�도 ?�??(?�로고침 ??참고??
           if (resolvedRoomCode) {
             sessionStorage.setItem(
               `timer_started_${resolvedRoomCode}`,
@@ -805,11 +805,11 @@ export default function TogetherTalkPage() {
     [resolvedRoomCode],
   );
 
-  // 턴 종료 시 모든 참여자가 /recording으로 이동
+  // ??종료 ??모든 참여?��? /recording?�로 ?�동
   const handleRoomEnded = useCallback(
     (payload) => {
-      console.log(
-        "[TogetherTalkPage] ROOM_ENDED 수신 - /recording으로 이동",
+      // console.log(
+        "[TogetherTalkPage] ROOM_ENDED ?�신 - /recording?�로 ?�동",
         payload,
       );
 
@@ -831,19 +831,19 @@ export default function TogetherTalkPage() {
               roomId: payload?.roomInfo?.roomId ?? roomId,
               roomCode: resolvedRoomCode,
               turnCount: totalTurns,
-              currentTurn: currentTurn, // 현재 턴 번호 전달
-              isHost: isHost, // 방장 권한 명시적 전달
-              timeLimit: timeLimit, // 타이머 설정값 명시적 전달
+              currentTurn: currentTurn, // ?�재 ??번호 ?�달
+              isHost: isHost, // 방장 권한 명시???�달
+              timeLimit: timeLimit, // ?�?�머 ?�정�?명시???�달
             },
             participants,
-            myUserId, // 본인 userId 전달
+            myUserId, // 본인 userId ?�달
           },
         });
       };
 
-      // ✅ 마지막 턴 여부와 상관없이 항상 로딩 화면 표시
+      // ??마�?�????��??� ?��??�이 ??�� 로딩 ?�면 ?�시
       setIsTransitioning(true);
-      stopSTT(); // 로딩 시작 시 STT 즉시 중단
+      stopSTT(); // 로딩 ?�작 ??STT 즉시 중단
       setTimeout(() => {
         navigateToRecording();
       }, 5000);
@@ -860,12 +860,12 @@ export default function TogetherTalkPage() {
     ],
   );
 
-  // 방장 퇴장 시 메인 화면으로 강제 이동
+  // 방장 ?�장 ??메인 ?�면?�로 강제 ?�동
   const handleRoomClosed = useCallback(() => {
-    console.log("[TogetherTalkPage] ROOM_CLOSED 수신 - 방장 퇴장");
+    // console.log("[TogetherTalkPage] ROOM_CLOSED ?�신 - 방장 ?�장");
     navigate("/main", {
       replace: true,
-      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+      state: { toastMessage: "방장???�장?�여 ?�?��? 종료?�었?�니??" },
     });
   }, [navigate]);
 
@@ -876,57 +876,57 @@ export default function TogetherTalkPage() {
   }, [micOn]);
 
   const handleMemberJoined = useCallback((payload, senderKey) => {
-    console.log("[TogetherTalkPage] 새 멤버 입장:", { payload, senderKey });
-    // 새로운 멤버가 입장했을 때 내 마이크 상태를 전송하여 동기화
+    // console.log("[TogetherTalkPage] ??멤버 ?�장:", { payload, senderKey });
+    // ?�로??멤버가 ?�장?�을 ????마이???�태�??�송?�여 ?�기??
     if (sendMicRef.current) {
-      console.log(
-        "[TogetherTalkPage] 새 멤버 입장 - 내 마이크 상태 전송:",
+      // console.log(
+        "[TogetherTalkPage] ??멤버 ?�장 - ??마이???�태 ?�송:",
         micOnRef.current,
       );
       sendMicRef.current(micOnRef.current);
     }
   }, []);
 
-  // WebSocket 퀴즈 수신 핸들러 (AI 생성 질문 포함)
+  // WebSocket ?�즈 ?�신 ?�들??(AI ?�성 질문 ?�함)
   const handleQuizReceived = useCallback(
     (payload) => {
-      console.log("[Quiz] ✅ AI 생성 퀴즈 수신:", payload);
+      // console.log("[Quiz] ??AI ?�성 ?�즈 ?�신:", payload);
 
-      // API 스펙에 맞게 quiz 객체에서 데이터 추출
+      // API ?�펙??맞게 quiz 객체?�서 ?�이??추출
       const quiz = payload?.quiz || payload;
 
       if (quiz?.quizId) {
         setQuizId(quiz.quizId);
-        console.log("[Quiz] quizId 설정됨:", quiz.quizId);
+        // console.log("[Quiz] quizId ?�정??", quiz.quizId);
       } else {
-        console.warn("[Quiz] ⚠️ quizId 필드가 없습니다. payload:", payload);
+        console.warn("[Quiz] ?�️ quizId ?�드가 ?�습?�다. payload:", payload);
       }
 
       if (quiz?.question) {
         setQuizQuestion(quiz.question);
-        console.log("[Quiz] AI 생성 질문 설정됨:", quiz.question);
-        console.log("[Quiz] 힌트:", quiz.hint);
-        console.log("[Quiz] 예시 답변:", quiz.expectedAnswer);
+        // console.log("[Quiz] AI ?�성 질문 ?�정??", quiz.question);
+        // console.log("[Quiz] ?�트:", quiz.hint);
+        // console.log("[Quiz] ?�시 ?��?:", quiz.expectedAnswer);
       } else {
-        console.warn("[Quiz] ⚠️ question 필드가 없습니다. payload:", payload);
+        console.warn("[Quiz] ?�️ question ?�드가 ?�습?�다. payload:", payload);
       }
 
-      // 퀴즈 시작 (startQuest(1)과 동일한 로직)
+      // ?�즈 ?�작 (startQuest(1)�??�일??로직)
       setMicStateBeforeQuest(micOn);
       setAiSuggestion("");
 
-      // 정적 감지 중지
+      // ?�적 감�? 중�?
       if (roomId) {
         stopSilenceMonitoring(roomId)
-          .then(() => console.log("[Quest] 정적 감지 중지"))
-          .catch((e) => console.error("[Quest] 정적 감지 중지 실패:", e));
+          .then(() => // console.log("[Quest] ?�적 감�? 중�?"))
+          .catch((e) => console.error("[Quest] ?�적 감�? 중�? ?�패:", e));
       }
 
-      // 퀘스트 시작 전 현재 남은 시간 저장
+      // ?�스???�작 ???�재 ?��? ?�간 ?�??
       const elapsed = Date.now() - timerStartedAt;
       const remaining = Math.max(0, durationMs - elapsed);
       pausedTimeRemainingRef.current = remaining;
-      console.log("[Quest] 타이머 일시정지 - 남은 시간:", remaining, "ms");
+      // console.log("[Quest] ?�?�머 ?�시?��? - ?��? ?�간:", remaining, "ms");
 
       setActiveQuest(1);
       setIsRoomTimerRunning(false);
@@ -935,35 +935,35 @@ export default function TogetherTalkPage() {
     [micOn, roomId, timerStartedAt],
   );
 
-  // WebSocket 퀴즈 결과 수신 핸들러 (각자의 평가만 자신에게 표시)
+  // WebSocket ?�즈 결과 ?�신 ?�들??(각자???��?�??�신?�게 ?�시)
   const handleQuizResultReceived = useCallback((payload) => {
-    console.log("[Quiz] 퀴즈 결과 수신:", payload);
-    console.log("[Quiz] payload 상세 구조:", JSON.stringify(payload, null, 2));
+    // console.log("[Quiz] ?�즈 결과 ?�신:", payload);
+    // console.log("[Quiz] payload ?�세 구조:", JSON.stringify(payload, null, 2));
 
-    // ✅ 타임아웃 클리어 (결과 받았으므로)
+    // ???�?�아???�리??(결과 받았?��?�?
     if (quizResultTimeoutRef.current) {
       clearTimeout(quizResultTimeoutRef.current);
       quizResultTimeoutRef.current = null;
-      console.log("[Quiz] 평가 결과 타임아웃 클리어");
+      // console.log("[Quiz] ?��? 결과 ?�?�아???�리??);
     }
 
     setMyQuizResult(payload);
 
-    // ✅ 결과 구조 파싱: payload.result.evaluations 또는 payload 직접
+    // ??결과 구조 ?�싱: payload.result.evaluations ?�는 payload 직접
     const result = payload?.result || payload;
     const evaluations = result?.evaluations;
 
-    console.log("[Quiz] 파싱된 결과:", { result, evaluations });
+    // console.log("[Quiz] ?�싱??결과:", { result, evaluations });
 
-    // evaluations 배열에서 현재 사용자 평가 찾기
+    // evaluations 배열?�서 ?�재 ?�용???��? 찾기
     let isCorrect = false;
     if (Array.isArray(evaluations) && evaluations.length > 0) {
-      // 현재는 첫 번째 평가 사용 (나중에 userId로 필터링 가능)
+      // ?�재??�?번째 ?��? ?�용 (?�중??userId�??�터�?가??
       const evaluation = evaluations[0];
       isCorrect = evaluation?.isCorrect || evaluation?.correct || false;
-      console.log("[Quiz] 평가 결과:", { evaluation, isCorrect });
+      // console.log("[Quiz] ?��? 결과:", { evaluation, isCorrect });
     } else {
-      // 구버전 응답 형식 대응
+      // 구버???�답 ?�식 ?�??
       isCorrect =
         payload?.isCorrect ||
         payload?.correct ||
@@ -979,42 +979,42 @@ export default function TogetherTalkPage() {
     }
   }, []);
 
-  // WebSocket 돌발 퀘스트 수신 핸들러 (모든 참여자가 동시에 시작)
+  // WebSocket ?�발 ?�스???�신 ?�들??(모든 참여?��? ?�시???�작)
   const handleUnexpectedQuestReceived = useCallback(
     (payload) => {
-      console.log("[UnexpectedQuest] ✅ 돌발 퀘스트 수신:", payload);
+      // console.log("[UnexpectedQuest] ???�발 ?�스???�신:", payload);
 
       const questId = payload?.questId || payload?.id || 1;
       const questType = payload?.type;
 
-      console.log("[UnexpectedQuest] 퀘스트 시작:", { questId, questType });
+      // console.log("[UnexpectedQuest] ?�스???�작:", { questId, questType });
 
-      // 퀘스트가 이미 진행 중이면 무시
+      // ?�스?��? ?��? 진행 중이�?무시
       if (questStep !== "idle") {
-        console.log("[UnexpectedQuest] ⚠️ 이미 퀘스트 진행 중, 무시");
+        // console.log("[UnexpectedQuest] ?�️ ?��? ?�스??진행 �? 무시");
         return;
       }
 
-      // startQuest는 아래에서 정의되므로, 직접 로직을 여기에 구현하거나
-      // ref를 사용해야 합니다. 여기서는 payload로 받은 정보로 직접 시작
+      // startQuest???�래?�서 ?�의?��?�? 직접 로직???�기??구현?�거??
+      // ref�??�용?�야 ?�니?? ?�기?�는 payload�?받�? ?�보�?직접 ?�작
       setMicStateBeforeQuest(micOn);
       setAiSuggestion("");
 
-      // 정적 감지 중지
+      // ?�적 감�? 중�?
       if (roomId) {
         stopSilenceMonitoring(roomId)
-          .then(() => console.log("[UnexpectedQuest] 정적 감지 중지"))
+          .then(() => // console.log("[UnexpectedQuest] ?�적 감�? 중�?"))
           .catch((e) =>
-            console.error("[UnexpectedQuest] 정적 감지 중지 실패:", e),
+            console.error("[UnexpectedQuest] ?�적 감�? 중�? ?�패:", e),
           );
       }
 
-      // 퀘스트 시작 전 현재 남은 시간 저장
+      // ?�스???�작 ???�재 ?��? ?�간 ?�??
       const elapsed = Date.now() - timerStartedAt;
       const remaining = Math.max(0, durationMs - elapsed);
       pausedTimeRemainingRef.current = remaining;
-      console.log(
-        "[UnexpectedQuest] 타이머 일시정지 - 남은 시간:",
+      // console.log(
+        "[UnexpectedQuest] ?�?�머 ?�시?��? - ?��? ?�간:",
         remaining,
         "ms",
       );
@@ -1031,7 +1031,7 @@ export default function TogetherTalkPage() {
     [questStep, micOn, roomId, timerStartedAt],
   );
 
-  // ★ useRoomWebSocket에 roomId 전달 (정적감지 구독용)
+  // ??useRoomWebSocket??roomId ?�달 (?�적감�? 구독??
   const {
     sendEndRoom,
     sendVoiceLevel,
@@ -1048,31 +1048,31 @@ export default function TogetherTalkPage() {
       onVoiceLevelChanged: handleVoiceLevelChanged,
       onMicChanged: handleMicChanged,
       onMemberJoined: handleMemberJoined,
-      onTimerSync: handleTimerSync, // 웹소켓으로 타이머 동기화 (처음 1번만)
-      onQuizReceived: handleQuizReceived, // 퀴즈 수신
-      onQuizResultReceived: handleQuizResultReceived, // 퀴즈 결과 수신
-      onUnexpectedQuestReceived: handleUnexpectedQuestReceived, // 돌발 퀘스트 수신
-      onConnected: () => console.log("WebSocket 연결됨 (TogetherTalkPage)"),
+      onTimerSync: handleTimerSync, // ?�소켓으�??�?�머 ?�기??(처음 1번만)
+      onQuizReceived: handleQuizReceived, // ?�즈 ?�신
+      onQuizResultReceived: handleQuizResultReceived, // ?�즈 결과 ?�신
+      onUnexpectedQuestReceived: handleUnexpectedQuestReceived, // ?�발 ?�스???�신
+      onConnected: () => // console.log("WebSocket ?�결??(TogetherTalkPage)"),
       onDisconnected: () =>
-        console.log("WebSocket 연결 해제됨 (TogetherTalkPage)"),
+        // console.log("WebSocket ?�결 ?�제??(TogetherTalkPage)"),
     },
     roomId,
   );
 
-  // sendMic을 ref에 저장
+  // sendMic??ref???�??
   useEffect(() => {
     sendMicRef.current = sendMic;
   }, [sendMic]);
 
-  // WebSocket 연결 시 초기 마이크 상태 전송 (처음 1번만)
+  // WebSocket ?�결 ??초기 마이???�태 ?�송 (처음 1번만)
   const initialMicSentRef = useRef(false);
   useEffect(() => {
     if (isConnected && sendMic && !initialMicSentRef.current) {
-      console.log("[TogetherTalkPage] 초기 마이크 상태 전송:", micOn);
+      // console.log("[TogetherTalkPage] 초기 마이???�태 ?�송:", micOn);
       sendMic(micOn);
-      // 👇 페이지 진입 시 OpenVidu 마이크 상태 동기화
+      // ?�� ?�이지 진입 ??OpenVidu 마이???�태 ?�기??
       if (publisher) {
-        console.log("[TogetherTalkPage] OpenVidu 마이크 초기화:", micOn);
+        // console.log("[TogetherTalkPage] OpenVidu 마이??초기??", micOn);
         publisher.publishAudio(micOn);
       }
       initialMicSentRef.current = true;
@@ -1198,13 +1198,13 @@ export default function TogetherTalkPage() {
     }
   }, []);
 
-  // 마이크와 정적 감지 초기화 (컴포넌트 마운트 시에만)
+  // 마이?��? ?�적 감�? 초기??(컴포?�트 마운???�에�?
   useEffect(() => {
     startAudioAnalysis();
 
     if (roomId && currentTurn) {
       startSilenceMonitoring(roomId, currentTurn).catch((e) => {
-        console.error("정적 감지 시작 실패:", e);
+        console.error("?�적 감�? ?�작 ?�패:", e);
       });
     }
 
@@ -1213,17 +1213,17 @@ export default function TogetherTalkPage() {
 
       if (roomId) {
         stopSilenceMonitoring(roomId).catch((e) => {
-          console.error("정적 감지 중지 실패:", e);
+          console.error("?�적 감�? 중�? ?�패:", e);
         });
       }
     };
   }, [startAudioAnalysis, stopAudioAnalysis, roomId, currentTurn]);
 
-  // 음성 레벨로 정적 감지 초기화하지 않음 (STT에서만 초기화)
+  // ?�성 ?�벨�??�적 감�? 초기?�하지 ?�음 (STT?�서�?초기??
   // useEffect(() => {
   //   if (isSpeaking && roomId && myUserId && currentTurn) {
   //     recordVoiceActivity(roomId, myUserId, currentTurn).catch((e) => {
-  //       console.error("음성 활동 기록 실패:", e);
+  //       console.error("?�성 ?�동 기록 ?�패:", e);
   //     });
   //   }
   // }, [isSpeaking, roomId, myUserId, currentTurn]);
@@ -1247,24 +1247,24 @@ export default function TogetherTalkPage() {
     if (micOn) {
       setMicOn(false);
       sendMic(false);
-      if (publisher) publisher.publishAudio(false); // 👈 OpenVidu Mute
+      if (publisher) publisher.publishAudio(false); // ?�� OpenVidu Mute
       await stopAudioAnalysis();
       return;
     }
     setMicOn(true);
     sendMic(true);
-    if (publisher) publisher.publishAudio(true); // 👈 OpenVidu Unmute
+    if (publisher) publisher.publishAudio(true); // ?�� OpenVidu Unmute
     await startAudioAnalysis();
   }, [micOn, startAudioAnalysis, stopAudioAnalysis, sendMic, publisher]);
 
-  // [추가] API 호출 없이 오디오/정적감지만 멈추는 헬퍼 함수
+  // [추�?] API ?�출 ?�이 ?�디???�적감�?�?멈추???�퍼 ?�수
   const stopMediaProcessing = useCallback(async () => {
     await stopAudioAnalysis();
     if (roomId) {
       try {
         await stopSilenceMonitoring(roomId);
       } catch (e) {
-        console.error("정적 감지 중지 실패:", e);
+        console.error("?�적 감�? 중�? ?�패:", e);
       }
     }
   }, [stopAudioAnalysis, roomId]);
@@ -1272,47 +1272,47 @@ export default function TogetherTalkPage() {
   const doLeaveRoom = useCallback(async () => {
     await stopAudioAnalysis();
 
-    // 👇 진짜 방을 나갈 때는 세션 종료
+    // ?�� 진짜 방을 ?�갈 ?�는 ?�션 종료
     if (leaveSession) leaveSession();
 
     if (resolvedRoomCode) {
       try {
         await leaveRoom({ roomCode: resolvedRoomCode });
       } catch (e) {
-        console.error("방 퇴장 API 호출 실패:", e);
+        console.error("�??�장 API ?�출 ?�패:", e);
       }
     }
   }, [stopMediaProcessing, resolvedRoomCode, leaveSession]);
 
-  // ★ handleEnd: sendEndRoom(WS) 대신 endRoom REST API 호출
-  // 백엔드에 /app/rooms/{roomCode}/end WS 핸들러가 없음 → REST API만 존재
+  // ??handleEnd: sendEndRoom(WS) ?�??endRoom REST API ?�출
+  // 백엔?�에 /app/rooms/{roomCode}/end WS ?�들?��? ?�음 ??REST API�?존재
   const handleEnd = useCallback(async () => {
-    // 방장만 턴 종료 가능
+    // 방장�???종료 가??
     if (!isHost) return;
 
-    console.log("[TogetherTalkPage] 턴 종료 - 전달할 데이터:", {
+    // console.log("[TogetherTalkPage] ??종료 - ?�달???�이??", {
       roomId,
       roomCode: resolvedRoomCode,
       currentTurn,
       turnCount: roomInfo.turnCount || roomInfo.turnCnt || 3,
     });
 
-    // REST API로 방 종료 (이벤트는 백엔드에서 ROOM_ENDED WS로 브로드캐스트됨)
+    // REST API�?�?종료 (?�벤?�는 백엔?�에??ROOM_ENDED WS�?브로?�캐?�트??
     try {
       await endRoom(resolvedRoomCode);
-      console.log(
-        "[TogetherTalkPage] endRoom REST API 성공 - 웹소켓 메시지 대기 중",
+      // console.log(
+        "[TogetherTalkPage] endRoom REST API ?�공 - ?�소�?메시지 ?��?�?,
       );
     } catch (e) {
-      console.error("[TogetherTalkPage] endRoom REST API 실패:", e);
+      console.error("[TogetherTalkPage] endRoom REST API ?�패:", e);
     }
 
-    // 웹소켓 ROOM_ENDED 메시지를 기다림 (handleRoomEnded에서 모든 참여자가 동시에 /recording으로 이동)
+    // ?�소�?ROOM_ENDED 메시지�?기다�?(handleRoomEnded?�서 모든 참여?��? ?�시??/recording?�로 ?�동)
   }, [isHost, resolvedRoomCode]);
 
-  // ★ handleDone: 타이머 종료 시에도 REST API 호출
+  // ??handleDone: ?�?�머 종료 ?�에??REST API ?�출
   const handleDone = useCallback(async () => {
-    // 내부 로직에서 participants 대신 ref 사용
+    // ?��? 로직?�서 participants ?�??ref ?�용
     const currentParticipants = participantsRef.current;
     const totalTurns = roomInfo.turnCount || roomInfo.turnCnt || 3;
     const isLastTurn = currentTurn >= totalTurns;
@@ -1320,12 +1320,12 @@ export default function TogetherTalkPage() {
     if (isHost) {
       try {
         await endRoom(resolvedRoomCode);
-        console.log(
-          "[TogetherTalkPage] endRoom REST API 성공 (타이머 종료) - 웹소켓 메시지 대기 중",
+        // console.log(
+          "[TogetherTalkPage] endRoom REST API ?�공 (?�?�머 종료) - ?�소�?메시지 ?��?�?,
         );
       } catch (e) {
         console.error(
-          "[TogetherTalkPage] endRoom REST API 실패 (타이머 종료):",
+          "[TogetherTalkPage] endRoom REST API ?�패 (?�?�머 종료):",
           e,
         );
       }
@@ -1343,7 +1343,7 @@ export default function TogetherTalkPage() {
             roomId: roomId,
             roomCode: resolvedRoomCode,
             turnCount: totalTurns,
-            currentTurn: currentTurn, // 현재 턴 번호 전달
+            currentTurn: currentTurn, // ?�재 ??번호 ?�달
             isHost: isHost,
             timeLimit: timeLimit,
           },
@@ -1353,9 +1353,9 @@ export default function TogetherTalkPage() {
       });
     };
 
-    // ✅ 마지막 턴 여부와 상관없이 항상 로딩 화면 표시
+    // ??마�?�????��??� ?��??�이 ??�� 로딩 ?�면 ?�시
     setIsTransitioning(true);
-    stopSTT(); // 로딩 시작 시 STT 즉시 중단
+    stopSTT(); // 로딩 ?�작 ??STT 즉시 중단
     setTimeout(() => {
       navigateToRecording();
     }, 5000);
@@ -1372,7 +1372,7 @@ export default function TogetherTalkPage() {
     stopSTT,
   ]);
 
-  //타이머 컴포넌트를 기억하여 리렌더링 방지
+  //?�?�머 컴포?�트�?기억?�여 리렌?�링 방�?
   const memoizedTimer = useMemo(() => {
     return (
       <TimerGauge
@@ -1388,31 +1388,31 @@ export default function TogetherTalkPage() {
     else navigate("/together");
   }, [navigate]);
 
-  // 퀘스트 주요 상태는 위에서 이미 선언됨 (WebSocket 핸들러보다 먼저 필요)
+  // ?�스??주요 ?�태???�에???��? ?�언??(WebSocket ?�들?�보??먼�? ?�요)
   const [isCorrect, setIsCorrect] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedAudio, setRecordedAudio] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const answerSubmittedRef = useRef(false); // 답변 제출 여부 추적
-  const [currentSpeakerIndex, setCurrentSpeakerIndex] = useState(-1); // 현재 답변 중인 참여자 인덱스
-  const [speakerTimeLeft, setSpeakerTimeLeft] = useState(timeLimit); // 현재 참여자의 남은 시간
-  const pausedTimeRemainingRef = useRef(null); // 퀘스트 시작 시 남은 시간 저장
-  const recordingReadyRef = useRef(false); // 녹음 준비 완료 여부
-  const timerInitializedRef = useRef(false); // 타이머 초기화 여부 (중복 방지)
-  const quizScheduledRef = useRef(false); // 퀴즈 스케줄 호출 여부 (중복 방지)
-  const quizResultTimeoutRef = useRef(null); // WebSocket 결과 대기 타임아웃
+  const answerSubmittedRef = useRef(false); // ?��? ?�출 ?��? 추적
+  const [currentSpeakerIndex, setCurrentSpeakerIndex] = useState(-1); // ?�재 ?��? 중인 참여???�덱??
+  const [speakerTimeLeft, setSpeakerTimeLeft] = useState(timeLimit); // ?�재 참여?�의 ?��? ?�간
+  const pausedTimeRemainingRef = useRef(null); // ?�스???�작 ???��? ?�간 ?�??
+  const recordingReadyRef = useRef(false); // ?�음 준�??�료 ?��?
+  const timerInitializedRef = useRef(false); // ?�?�머 초기???��? (중복 방�?)
+  const quizScheduledRef = useRef(false); // ?�즈 ?��?�??�출 ?��? (중복 방�?)
+  const quizResultTimeoutRef = useRef(null); // WebSocket 결과 ?��??�?�아??
 
   const questRunning = questStep !== "idle";
 
   const endQuestAndResume = useCallback(async () => {
-    // 퀘스트 종료 시 남은 시간만큼 타이머 재개
+    // ?�스??종료 ???��? ?�간만큼 ?�?�머 ?�개
     if (pausedTimeRemainingRef.current !== null) {
       const remainingTime = pausedTimeRemainingRef.current;
       const newStartTime = Date.now() - (durationMs - remainingTime);
       setTimerStartedAt(newStartTime);
-      console.log("[Quest] 타이머 재개 - 남은 시간:", remainingTime, "ms");
+      // console.log("[Quest] ?�?�머 ?�개 - ?��? ?�간:", remainingTime, "ms");
       pausedTimeRemainingRef.current = null;
     }
 
@@ -1421,8 +1421,8 @@ export default function TogetherTalkPage() {
     setIsRoomTimerRunning(true);
     setCountdown(3);
     setQuizId(null);
-    setQuizQuestion("AI가 질문을 생성하고 있습니다...");
-    setMyQuizResult(null); // 퀴즈 결과 초기화
+    setQuizQuestion("AI가 질문???�성?�고 ?�습?�다...");
+    setMyQuizResult(null); // ?�즈 결과 초기??
     setIsRecording(false);
     setRecordedAudio(null);
     setCurrentSpeakerIndex(-1);
@@ -1434,7 +1434,7 @@ export default function TogetherTalkPage() {
       mediaRecorderRef.current.stop();
     }
 
-    // 퀘스트 종료 후 원래 마이크 상태로 복원
+    // ?�스??종료 ???�래 마이???�태�?복원
     if (micStateBeforeQuest && !micOn) {
       setMicOn(true);
       sendMic(true);
@@ -1445,18 +1445,18 @@ export default function TogetherTalkPage() {
       await stopAudioAnalysis();
     }
 
-    // 정적 감지 재시작
+    // ?�적 감�? ?�시??
     if (roomId && currentTurn) {
       try {
         await startSilenceMonitoring(roomId, currentTurn);
-        console.log("[Quest] 정적 감지 재시작");
+        // console.log("[Quest] ?�적 감�? ?�시??);
       } catch (e) {
-        console.error("[Quest] 정적 감지 재시작 실패:", e);
+        console.error("[Quest] ?�적 감�? ?�시???�패:", e);
       }
     }
 
-    // STT는 questStep이 "idle"이 되면 기존 useEffect에서 자동으로 재시작됨
-    console.log("[Quest] 퀘스트 종료 - STT는 자동으로 재시작됩니다");
+    // STT??questStep??"idle"???�면 기존 useEffect?�서 ?�동?�로 ?�시?�됨
+    // console.log("[Quest] ?�스??종료 - STT???�동?�로 ?�시?�됩?�다");
   }, [
     micStateBeforeQuest,
     micOn,
@@ -1489,18 +1489,18 @@ export default function TogetherTalkPage() {
     }
   }, [questStep, activeQuest, endQuestAndResume]);
 
-  // 퀘스트 1: 인트로 화면 자동 진행 (5초 후 다음 단계)
+  // ?�스??1: ?�트�??�면 ?�동 진행 (5�????�음 ?�계)
   useEffect(() => {
     if (questStep !== "q1intro" || activeQuest !== 1) return;
 
-    // 알림 사운드 재생
+    // ?�림 ?�운???�생
     if (!isMuted) {
       try {
         const audio = new Audio(alertSound);
         audio.volume = getEffectiveVolume(0.15);
         audio.play().catch(() => {});
       } catch (e) {
-        console.error("알림 사운드 재생 실패:", e);
+        console.error("?�림 ?�운???�생 ?�패:", e);
       }
     }
 
@@ -1512,7 +1512,7 @@ export default function TogetherTalkPage() {
     return () => clearTimeout(timer);
   }, [questStep, activeQuest, isMuted, getEffectiveVolume]);
 
-  // 퀘스트 1: 카운트다운 자동 진행
+  // ?�스??1: 카운?�다???�동 진행
   useEffect(() => {
     if (questStep !== "q1ready" || activeQuest !== 1) return;
 
@@ -1520,7 +1520,7 @@ export default function TogetherTalkPage() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // 준비 완료 후 바로 첫 번째 참여자 차례 시작
+          // 준�??�료 ??바로 �?번째 참여??차�? ?�작
           setCurrentSpeakerIndex(0);
           setQuestStep("q1speaking");
           return 3;
@@ -1532,7 +1532,7 @@ export default function TogetherTalkPage() {
     return () => clearInterval(timer);
   }, [questStep, activeQuest]);
 
-  // 퀘스트 1: 영어 문장 표시 후 3초 뒤 자동으로 answering 전환
+  // ?�스??1: ?�어 문장 ?�시 ??3�????�동?�로 answering ?�환
   useEffect(() => {
     if (questStep !== "q1showQuestion" || activeQuest !== 1) return;
 
@@ -1543,18 +1543,18 @@ export default function TogetherTalkPage() {
     return () => clearTimeout(timer);
   }, [questStep, activeQuest]);
 
-  // 퀘스트 2: 인트로 화면 자동 진행 (5초 후 게임 시작)
+  // ?�스??2: ?�트�??�면 ?�동 진행 (5�???게임 ?�작)
   useEffect(() => {
     if (questStep !== "intro" || activeQuest !== 2) return;
 
-    // 알림 사운드 재생
+    // ?�림 ?�운???�생
     if (!isMuted) {
       try {
         const audio = new Audio(alertSound);
         audio.volume = getEffectiveVolume(0.15);
         audio.play().catch(() => {});
       } catch (e) {
-        console.error("알림 사운드 재생 실패:", e);
+        console.error("?�림 ?�운???�생 ?�패:", e);
       }
     }
 
@@ -1565,64 +1565,64 @@ export default function TogetherTalkPage() {
     return () => clearTimeout(timer);
   }, [questStep, activeQuest, isMuted, getEffectiveVolume]);
 
-  // 돌발 퀘스트 결과: 5초 후 자동으로 퀘스트 종료
+  // ?�발 ?�스??결과: 5�????�동?�로 ?�스??종료
   useEffect(() => {
     if (questStep !== "resultFail" && questStep !== "resultSuccess") return;
 
-    // 실패 시 game_fail 사운드 재생
+    // ?�패 ??game_fail ?�운???�생
     if (questStep === "resultFail" && !isMuted) {
       try {
         const audio = new Audio(gameoverSound);
         audio.volume = getEffectiveVolume(0.15);
         audio.play().catch(() => {});
       } catch (e) {
-        console.error("Game fail 사운드 재생 실패:", e);
+        console.error("Game fail ?�운???�생 ?�패:", e);
       }
     }
 
-    // 성공 시 game_success 사운드 재생
+    // ?�공 ??game_success ?�운???�생
     if (questStep === "resultSuccess" && !isMuted) {
       try {
         const audio = new Audio(gameSuccessSound);
         audio.volume = getEffectiveVolume(0.15);
         audio.play().catch(() => {});
       } catch (e) {
-        console.error("Game success 사운드 재생 실패:", e);
+        console.error("Game success ?�운???�생 ?�패:", e);
       }
     }
 
-    console.log("[Quest] 결과 화면 표시 - 5초 후 자동으로 대화 재개");
+    // console.log("[Quest] 결과 ?�면 ?�시 - 5�????�동?�로 ?�???�개");
     const timer = setTimeout(() => {
-      console.log("[Quest] 5초 경과 - 퀘스트 종료하고 대화 재개");
+      // console.log("[Quest] 5�?경과 - ?�스??종료?�고 ?�???�개");
       endQuestAndResume();
     }, 5000);
 
     return () => clearTimeout(timer);
   }, [questStep, endQuestAndResume, isMuted, getEffectiveVolume]);
 
-  // 퀘스트 1: answering 화면 표시 후 즉시 첫 번째 참여자 차례 시작
+  // ?�스??1: answering ?�면 ?�시 ??즉시 �?번째 참여??차�? ?�작
   useEffect(() => {
     if (questStep !== "q1answering" || activeQuest !== 1) return;
 
-    // 답변 제출 여부 초기화
+    // ?��? ?�출 ?��? 초기??
     answerSubmittedRef.current = false;
 
-    // 즉시 첫 번째 참여자 차례 시작
+    // 즉시 �?번째 참여??차�? ?�작
     setCurrentSpeakerIndex(0);
     setQuestStep("q1speaking");
   }, [questStep, activeQuest]);
 
-  // 퀘스트 1: 각 참여자 차례에서 마이크 자동 제어 및 녹음 시작
+  // ?�스??1: �?참여??차�??�서 마이???�동 ?�어 �??�음 ?�작
   useEffect(() => {
-    console.log("[Quest] useEffect 실행:", { questStep, currentSpeakerIndex });
+    // console.log("[Quest] useEffect ?�행:", { questStep, currentSpeakerIndex });
 
     if (questStep !== "q1speaking" || currentSpeakerIndex < 0) {
-      // 퀘스트가 끝났거나 speaking 단계가 아니면 녹음 중지
+      // ?�스?��? ?�났거나 speaking ?�계가 ?�니�??�음 중�?
       if (
         mediaRecorderRef.current &&
         mediaRecorderRef.current.state !== "inactive"
       ) {
-        console.log("[Quest] 🛑 퀘스트 종료 - MediaRecorder 중지");
+        // console.log("[Quest] ?�� ?�스??종료 - MediaRecorder 중�?");
         mediaRecorderRef.current.stop();
         setIsRecording(false);
       }
@@ -1632,44 +1632,44 @@ export default function TogetherTalkPage() {
     const myIndex = participants.findIndex((p) => p.isMe === true);
     const isMyTurn = myIndex === currentSpeakerIndex;
 
-    console.log("[Quest] 차례 확인:", {
+    // console.log("[Quest] 차�? ?�인:", {
       myIndex,
       currentSpeakerIndex,
       isMyTurn,
     });
 
     const controlMic = async () => {
-      // 이미 녹음 중이면 아무것도 하지 않음 (중복 방지 - 최우선 체크)
+      // ?��? ?�음 중이�??�무것도 ?��? ?�음 (중복 방�? - 최우??체크)
       if (mediaRecorderRef.current?.state === "recording") {
-        console.log("[Quest] ⚠️ 이미 녹음 중 - 재시작하지 않음");
+        // console.log("[Quest] ?�️ ?��? ?�음 �?- ?�시?�하지 ?�음");
         return;
       }
 
       if (isMyTurn) {
-        console.log("[Quest] 내 차례 - 녹음 준비");
+        // console.log("[Quest] ??차�? - ?�음 준�?);
 
-        // 내 차례: 마이크 켜기
+        // ??차�?: 마이??켜기
         if (!micOn) {
           setMicOn(true);
           sendMic(true);
           await startAudioAnalysis();
         }
 
-        // 녹음 시작
-        console.log("[Quest] 녹음 시작 시도...");
+        // ?�음 ?�작
+        // console.log("[Quest] ?�음 ?�작 ?�도...");
         try {
           let stream;
 
-          // OpenVidu publisher의 기존 스트림 재사용 시도
+          // OpenVidu publisher??기존 ?�트�??�사???�도
           if (publisher && publisher.stream) {
             const openviduStream = publisher.stream.getMediaStream();
-            // 스트림이 활성화되어 있는지 확인
+            // ?�트림이 ?�성?�되???�는지 ?�인
             if (openviduStream && openviduStream.active) {
               stream = openviduStream;
-              console.log("[Quest] ✅ OpenVidu 스트림 재사용:", stream);
+              // console.log("[Quest] ??OpenVidu ?�트�??�사??", stream);
             } else {
               console.warn(
-                "[Quest] ⚠️ OpenVidu 스트림이 비활성화됨 (active: false). getUserMedia로 폴백",
+                "[Quest] ?�️ OpenVidu ?�트림이 비활?�화??(active: false). getUserMedia�??�백",
               );
               stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
@@ -1678,12 +1678,12 @@ export default function TogetherTalkPage() {
                   autoGainControl: true,
                 },
               });
-              console.log("[Quest] ✅ 새 마이크 스트림 획득:", stream);
+              // console.log("[Quest] ????마이???�트�??�득:", stream);
             }
           } else {
-            // OpenVidu 스트림이 없으면 새로 getUserMedia 호출
+            // OpenVidu ?�트림이 ?�으�??�로 getUserMedia ?�출
             console.warn(
-              "[Quest] ⚠️ OpenVidu publisher 스트림이 없습니다. getUserMedia로 폴백",
+              "[Quest] ?�️ OpenVidu publisher ?�트림이 ?�습?�다. getUserMedia�??�백",
             );
             stream = await navigator.mediaDevices.getUserMedia({
               audio: {
@@ -1692,12 +1692,12 @@ export default function TogetherTalkPage() {
                 autoGainControl: true,
               },
             });
-            console.log("[Quest] ✅ 새 마이크 스트림 획득:", stream);
+            // console.log("[Quest] ????마이???�트�??�득:", stream);
           }
 
-          // ✅ 오디오 트랙 상태 확인
+          // ???�디???�랙 ?�태 ?�인
           const audioTracks = stream.getAudioTracks();
-          console.log("[Quest] 🎤 오디오 트랙 상태:", {
+          // console.log("[Quest] ?�� ?�디???�랙 ?�태:", {
             tracksCount: audioTracks.length,
             trackInfo: audioTracks.map((t) => ({
               enabled: t.enabled,
@@ -1710,7 +1710,7 @@ export default function TogetherTalkPage() {
 
           const mediaRecorder = new MediaRecorder(stream, {
             mimeType: "audio/webm",
-            audioBitsPerSecond: 64000, // 64kbps - 음성 인식에 충분하면서 파일 크기 감소
+            audioBitsPerSecond: 64000, // 64kbps - ?�성 ?�식??충분?�면???�일 ?�기 감소
           });
           mediaRecorderRef.current = mediaRecorder;
           audioChunksRef.current = [];
@@ -1718,11 +1718,11 @@ export default function TogetherTalkPage() {
           mediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
               audioChunksRef.current.push(event.data);
-              console.log(
-                `[Quest] 📦 청크 수신: ${event.data.size} bytes (누적 청크: ${audioChunksRef.current.length})`,
+              // console.log(
+                `[Quest] ?�� �?�� ?�신: ${event.data.size} bytes (?�적 �?��: ${audioChunksRef.current.length})`,
               );
             } else {
-              console.warn("[Quest] ⚠️ 빈 청크 수신 (0 bytes)");
+              console.warn("[Quest] ?�️ �?�?�� ?�신 (0 bytes)");
             }
           };
 
@@ -1730,10 +1730,10 @@ export default function TogetherTalkPage() {
             const audioBlob = new Blob(audioChunksRef.current, {
               type: "audio/webm",
             });
-            console.log(
-              "[Quest] ⏹️ 녹음 중지 - 총 청크:",
+            // console.log(
+              "[Quest] ?�️ ?�음 중�? - �?�?��:",
               audioChunksRef.current.length,
-              "총 크기:",
+              "�??�기:",
               audioBlob.size,
               "bytes",
             );
@@ -1742,32 +1742,32 @@ export default function TogetherTalkPage() {
           };
 
           mediaRecorder.onerror = (error) => {
-            console.error("[Quest] ❌ MediaRecorder 오류:", error);
+            console.error("[Quest] ??MediaRecorder ?�류:", error);
           };
 
-          // 1초마다 데이터 수집 (timeslice) - 이게 없으면 stop할 때까지 데이터가 안 나올 수 있음
+          // 1초마???�이???�집 (timeslice) - ?�게 ?�으�?stop???�까지 ?�이?��? ???�올 ???�음
           mediaRecorder.start(1000);
           setIsRecording(true);
-          console.log(
-            "[Quest] 🎙️ 녹음 시작 완료 (state:",
+          // console.log(
+            "[Quest] ?���??�음 ?�작 ?�료 (state:",
             mediaRecorder.state,
-            ") - 1초마다 데이터 수집",
+            ") - 1초마???�이???�집",
           );
 
-          // 녹음 준비 완료 플래그 설정 - 이제 타이머 시작 가능
+          // ?�음 준�??�료 ?�래�??�정 - ?�제 ?�?�머 ?�작 가??
           recordingReadyRef.current = true;
 
-          // 타이머를 한 번만 리셋 (중복 리셋 방지)
+          // ?�?�머�???번만 리셋 (중복 리셋 방�?)
           if (!timerInitializedRef.current) {
-            setSpeakerTimeLeft(15); // 퀴즈 답변은 15초로 고정 (파일 크기 제한)
+            setSpeakerTimeLeft(15); // ?�즈 ?��??� 15초로 고정 (?�일 ?�기 ?�한)
             timerInitializedRef.current = true;
-            console.log("[Quest] ✅ 녹음 준비 완료 - 15초 타이머 시작");
+            // console.log("[Quest] ???�음 준�??�료 - 15�??�?�머 ?�작");
           }
         } catch (error) {
-          console.error("[Quest] 녹음 시작 실패:", error);
+          console.error("[Quest] ?�음 ?�작 ?�패:", error);
         }
       } else {
-        // 다른 사람 차례: 마이크 끄기
+        // ?�른 ?�람 차�?: 마이???�기
         if (micOn) {
           setMicOn(false);
           sendMic(false);
@@ -1778,13 +1778,13 @@ export default function TogetherTalkPage() {
 
     controlMic();
 
-    // Cleanup: 컴포넌트 언마운트 또는 questStep 변경 시 MediaRecorder 중지
+    // Cleanup: 컴포?�트 ?�마?�트 ?�는 questStep 변�???MediaRecorder 중�?
     return () => {
       if (
         mediaRecorderRef.current &&
         mediaRecorderRef.current.state !== "inactive"
       ) {
-        console.log("[Quest] 🧹 Cleanup - MediaRecorder 중지");
+        // console.log("[Quest] ?�� Cleanup - MediaRecorder 중�?");
         mediaRecorderRef.current.stop();
         setIsRecording(false);
       }
@@ -1792,31 +1792,31 @@ export default function TogetherTalkPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questStep, currentSpeakerIndex]);
 
-  // 3번째 턴 시작 시 퀴즈 스케줄 (백엔드에서 현재 주제 기반 AI 질문 생성 후 15-40초 후 WebSocket으로 전송)
+  // 3번째 ???�작 ???�즈 ?��?�?(백엔?�에???�재 주제 기반 AI 질문 ?�성 ??15-40�???WebSocket?�로 ?�송)
   useEffect(() => {
     if (currentTurn !== 3) return;
     if (questRunning || activeQuest !== null) return;
     if (!roomId) {
-      console.warn("[Quiz] ⚠️ roomId가 없어서 퀴즈 스케줄을 건너뜁니다.");
+      console.warn("[Quiz] ?�️ roomId가 ?�어???�즈 ?��?줄을 건너?�니??");
       return;
     }
 
-    // 이미 퀴즈가 스케줄되었으면 중복 호출 방지
+    // ?��? ?�즈가 ?��?줄되?�으�?중복 ?�출 방�?
     if (quizScheduledRef.current) {
-      console.log("[Quiz] ⚠️ 퀴즈가 이미 스케줄되었습니다. 중복 호출 방지");
+      // console.log("[Quiz] ?�️ ?�즈가 ?��? ?��?줄되?�습?�다. 중복 ?�출 방�?");
       return;
     }
 
     const scheduleRandomQuiz = async () => {
       try {
-        console.log("[Quiz] 🎯 3번째 턴 시작 - AI 퀴즈 스케줄 요청:", {
+        // console.log("[Quiz] ?�� 3번째 ???�작 - AI ?�즈 ?��?�??�청:", {
           roomId,
           currentTurn,
           participantCount: participants.length,
-          currentTopic: topic, // 현재 대화 주제
+          currentTopic: topic, // ?�재 ?�??주제
         });
 
-        // 플래그 설정 (중복 방지)
+        // ?�래�??�정 (중복 방�?)
         quizScheduledRef.current = true;
 
         const response = await scheduleQuiz(
@@ -1824,13 +1824,13 @@ export default function TogetherTalkPage() {
           currentTurn,
           participants.length,
         );
-        console.log(
-          "[Quiz] ✅ 퀴즈 스케줄 완료 - 백엔드에서 AI 질문 생성 중, 15-40초 후 WebSocket으로 수신 예정:",
+        // console.log(
+          "[Quiz] ???�즈 ?��?�??�료 - 백엔?�에??AI 질문 ?�성 �? 15-40�???WebSocket?�로 ?�신 ?�정:",
           response,
         );
       } catch (error) {
-        console.error("[Quiz] ❌ 퀴즈 스케줄 실패:", error);
-        // 실패 시 플래그 리셋 (재시도 가능하도록)
+        console.error("[Quiz] ???�즈 ?��?�??�패:", error);
+        // ?�패 ???�래�?리셋 (?�시??가?�하?�록)
         quizScheduledRef.current = false;
       }
     };
@@ -1854,13 +1854,13 @@ export default function TogetherTalkPage() {
     return getAiDuckbotImage(myAiDuckbotCustomJson);
   }, [myAiDuckbotCustomJson]);
 
-  // 퀘스트 1: 녹음 시작
+  // ?�스??1: ?�음 ?�작
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: "audio/webm",
-        audioBitsPerSecond: 64000, // 64kbps - 음성 인식에 충분하면서 파일 크기 감소
+        audioBitsPerSecond: 64000, // 64kbps - ?�성 ?�식??충분?�면???�일 ?�기 감소
       });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -1881,14 +1881,14 @@ export default function TogetherTalkPage() {
 
       mediaRecorder.start();
       setIsRecording(true);
-      console.log("[Quiz] 녹음 시작");
+      // console.log("[Quiz] ?�음 ?�작");
     } catch (error) {
-      console.error("[Quiz] 녹음 시작 실패:", error);
-      alert("마이크 접근 권한이 필요합니다.");
+      console.error("[Quiz] ?�음 ?�작 ?�패:", error);
+      alert("마이???�근 권한???�요?�니??");
     }
   }, []);
 
-  // 퀘스트 1: 녹음 중지
+  // ?�스??1: ?�음 중�?
   const stopRecording = useCallback(() => {
     if (
       mediaRecorderRef.current &&
@@ -1896,42 +1896,42 @@ export default function TogetherTalkPage() {
     ) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      console.log("[Quiz] 녹음 중지");
+      // console.log("[Quiz] ?�음 중�?");
     }
   }, []);
 
-  // 각 참여자 차례의 15초 타이머 (녹음 준비 완료 후 시작)
+  // �?참여??차�???15�??�?�머 (?�음 준�??�료 ???�작)
   useEffect(() => {
     if (questStep !== "q1speaking" || currentSpeakerIndex < 0) {
-      recordingReadyRef.current = false; // 퀘스트 종료 시 플래그 리셋
-      timerInitializedRef.current = false; // 타이머 초기화 플래그 리셋
+      recordingReadyRef.current = false; // ?�스??종료 ???�래�?리셋
+      timerInitializedRef.current = false; // ?�?�머 초기???�래�?리셋
       return;
     }
 
     const currentParticipants = participantsRef.current;
     if (currentSpeakerIndex >= currentParticipants.length) return;
 
-    // 새로운 참여자 차례 시작 시 타이머 초기화 플래그 리셋
+    // ?�로??참여??차�? ?�작 ???�?�머 초기???�래�?리셋
     timerInitializedRef.current = false;
 
     const myIndex = currentParticipants.findIndex((p) => p.isMe === true);
     const isMyTurn = myIndex === currentSpeakerIndex;
 
-    // 내 차례가 아니면 바로 타이머 시작
+    // ??차�?가 ?�니�?바로 ?�?�머 ?�작
     if (!isMyTurn) {
-      console.log(`[타이머] 다른 참여자 차례 - 즉시 타이머 시작`);
+      // console.log(`[?�?�머] ?�른 참여??차�? - 즉시 ?�?�머 ?�작`);
       setSpeakerTimeLeft(timeLimit);
-      recordingReadyRef.current = true; // 다른 사람 차례는 녹음 불필요
+      recordingReadyRef.current = true; // ?�른 ?�람 차�????�음 불필??
     } else {
-      console.log(`[타이머] 내 차례 - 녹음 준비 대기 중...`);
+      // console.log(`[?�?�머] ??차�? - ?�음 준�??��?�?..`);
     }
 
-    // 녹음 준비 완료 대기 후 타이머 시작
+    // ?�음 준�??�료 ?��????�?�머 ?�작
     const checkRecordingReady = setInterval(() => {
       if (recordingReadyRef.current) {
         clearInterval(checkRecordingReady);
-        console.log(
-          `[타이머] ${currentParticipants[currentSpeakerIndex]?.name}님 차례 - 녹음 준비 완료, 15초 카운트다운 시작`,
+        // console.log(
+          `[?�?�머] ${currentParticipants[currentSpeakerIndex]?.name}??차�? - ?�음 준�??�료, 15�?카운?�다???�작`,
         );
       }
     }, 100);
@@ -1941,44 +1941,44 @@ export default function TogetherTalkPage() {
         if (prev <= 1) {
           clearInterval(timer);
 
-          // 15초 종료 - 현재 참여자의 녹음 중지 및 제출
+          // 15�?종료 - ?�재 참여?�의 ?�음 중�? �??�출
           const latestParticipants = participantsRef.current;
           const myIndex = latestParticipants.findIndex((p) => p.isMe === true);
           const isMyTurn = myIndex === currentSpeakerIndex;
 
           if (isMyTurn) {
-            // 내 차례였으면 녹음 중지 및 제출
+            // ??차�??�?�면 ?�음 중�? �??�출
             if (
               mediaRecorderRef.current &&
               mediaRecorderRef.current.state !== "inactive"
             ) {
-              console.log(
-                "[Quest] 녹음 중지 시작 - 현재 상태:",
+              // console.log(
+                "[Quest] ?�음 중�? ?�작 - ?�재 ?�태:",
                 mediaRecorderRef.current.state,
               );
               mediaRecorderRef.current.stop();
               setIsRecording(false);
-              console.log("[Quest] 녹음 중지 완료");
+              // console.log("[Quest] ?�음 중�? ?�료");
 
-              // 녹음 데이터로 Blob 생성 및 제출
+              // ?�음 ?�이?�로 Blob ?�성 �??�출
               setTimeout(async () => {
                 const audioBlob = new Blob(audioChunksRef.current, {
                   type: "audio/webm",
                 });
 
-                console.log("[Quest] Blob 생성:", {
+                // console.log("[Quest] Blob ?�성:", {
                   size: audioBlob.size,
                   type: audioBlob.type,
                   chunksCount: audioChunksRef.current.length,
                   hasQuizId: !!quizId,
                 });
 
-                // quizId가 있으면 녹음된 오디오 제출 (크기 제한 없음)
+                // quizId가 ?�으�??�음???�디???�출 (?�기 ?�한 ?�음)
                 if (quizId) {
                   const currentUser = latestParticipants[currentSpeakerIndex];
                   const userId = currentUser?.userId || currentUser?.id;
 
-                  console.log("[Quest] 답변 제출 준비:", {
+                  // console.log("[Quest] ?��? ?�출 준�?", {
                     quizId,
                     userId,
                     currentUser,
@@ -1988,31 +1988,31 @@ export default function TogetherTalkPage() {
                   });
 
                   if (!userId) {
-                    console.error("[Quest] ❌ userId가 없습니다. 제출 불가");
+                    console.error("[Quest] ??userId가 ?�습?�다. ?�출 불�?");
                     answerSubmittedRef.current = false;
                     return;
                   }
 
                   try {
-                    // WebM → WAV 변환 (STT 정확도 향상)
-                    console.log("[Quest] 🔄 WebM → WAV 변환 시작...");
+                    // WebM ??WAV 변??(STT ?�확???�상)
+                    // console.log("[Quest] ?�� WebM ??WAV 변???�작...");
                     const wavBlob = await convertWebMToWav(audioBlob);
-                    console.log("[Quest] ✅ WAV 변환 완료:", {
+                    // console.log("[Quest] ??WAV 변???�료:", {
                       originalSize: audioBlob.size,
                       wavSize: wavBlob.size,
                       format: "16kHz, mono, 16-bit PCM",
                     });
 
-                    // ✅ 클라이언트 측 검증: 녹음이 너무 짧거나 침묵만 있으면 바로 실패 처리
-                    const MIN_AUDIO_SIZE = 100000; // 100KB (WAV 기준)
-                    const MIN_CHUNKS = 5; // 최소 청크 개수
+                    // ???�라?�언??�?검�? ?�음???�무 짧거??침묵�??�으�?바로 ?�패 처리
+                    const MIN_AUDIO_SIZE = 100000; // 100KB (WAV 기�?)
+                    const MIN_CHUNKS = 5; // 최소 �?�� 개수
 
                     if (
                       wavBlob.size < MIN_AUDIO_SIZE ||
                       audioChunksRef.current.length < MIN_CHUNKS
                     ) {
                       console.warn(
-                        "[Quest] ❌ 녹음 크기/청크 부족 - 답변 없음으로 판단:",
+                        "[Quest] ???�음 ?�기/�?�� 부�?- ?��? ?�음?�로 ?�단:",
                         {
                           wavSize: wavBlob.size,
                           minSize: MIN_AUDIO_SIZE,
@@ -2026,89 +2026,89 @@ export default function TogetherTalkPage() {
                       return;
                     }
 
-                    // 실제 녹음된 음성을 백엔드로 전송 (백엔드가 STT 처리)
-                    console.log("[Quest] API 호출 직전:", {
+                    // ?�제 ?�음???�성??백엔?�로 ?�송 (백엔?��? STT 처리)
+                    // console.log("[Quest] API ?�출 직전:", {
                       quizId,
                       userId,
                       audioBlobSize: wavBlob.size,
                       audioBlobType: wavBlob.type,
                     });
 
-                    // 제출 시작 시점에 플래그 설정 (timeout 체크보다 먼저)
+                    // ?�출 ?�작 ?�점???�래�??�정 (timeout 체크보다 먼�?)
                     answerSubmittedRef.current = true;
 
-                    // ✅ 대기 화면으로 즉시 전환 + 타임아웃 설정 (API 호출 전에!)
+                    // ???��??�면?�로 즉시 ?�환 + ?�?�아???�정 (API ?�출 ?�에!)
                     setQuestStep("waitingResult");
                     setCurrentSpeakerIndex(-1);
 
-                    // ✅ WebSocket 결과 대기 타임아웃 설정 (10초) - API 호출 전에 설정!
+                    // ??WebSocket 결과 ?��??�?�아???�정 (10�? - API ?�출 ?�에 ?�정!
                     quizResultTimeoutRef.current = setTimeout(() => {
                       console.warn(
-                        "[Quest] ⏱️ 평가 결과 타임아웃 (10초 초과) - 실패 처리",
+                        "[Quest] ?�️ ?��? 결과 ?�?�아??(10�?초과) - ?�패 처리",
                       );
                       setQuestStep("resultFail");
                     }, 10000);
 
                     await submitQuizAnswer(quizId, userId, wavBlob);
-                    console.log(
-                      "[Quest] ✅ 답변 제출 완료 - 백엔드가 음성 평가 중, WebSocket으로 결과 수신 대기",
+                    // console.log(
+                      "[Quest] ???��? ?�출 ?�료 - 백엔?��? ?�성 ?��? �? WebSocket?�로 결과 ?�신 ?��?,
                     );
                   } catch (error) {
-                    // 제출 실패 시 즉시 실패 화면 표시
-                    console.warn("[Quest] 답변 제출 실패:", error.message);
+                    // ?�출 ?�패 ??즉시 ?�패 ?�면 ?�시
+                    console.warn("[Quest] ?��? ?�출 ?�패:", error.message);
                     answerSubmittedRef.current = false;
                     setQuestStep("resultFail");
                     setCurrentSpeakerIndex(-1);
-                    return; // 더 이상 진행하지 않음
+                    return; // ???�상 진행?��? ?�음
                   }
                 } else {
-                  console.log("[Quest] quizId 없음 - 제출 불가");
+                  // console.log("[Quest] quizId ?�음 - ?�출 불�?");
                   answerSubmittedRef.current = false;
                 }
               }, 100);
             } else {
-              // 녹음이 시작되지 않았거나 이미 중지된 경우
-              console.log("[Quest] 녹음 없음 - 답변 미제출로 처리");
+              // ?�음???�작?��? ?�았거나 ?��? 중�???경우
+              // console.log("[Quest] ?�음 ?�음 - ?��? 미제출로 처리");
               answerSubmittedRef.current = false;
             }
           }
 
-          // 다음 참여자로 자동 전환
+          // ?�음 참여?�로 ?�동 ?�환
           const nextIndex = currentSpeakerIndex + 1;
           if (nextIndex < latestParticipants.length) {
-            console.log(
-              `[타이머] 시간 종료 - 다음 참여자: ${latestParticipants[nextIndex]?.name}`,
+            // console.log(
+              `[?�?�머] ?�간 종료 - ?�음 참여?? ${latestParticipants[nextIndex]?.name}`,
             );
             setCurrentSpeakerIndex(nextIndex);
           } else {
-            // 모든 참여자 완료 - 2초 후 결과 확인 (제출 실패 체크용)
-            console.log("[타이머] 모든 참여자 완료 - 답변 상태 확인 중...");
+            // 모든 참여???�료 - 2�???결과 ?�인 (?�출 ?�패 체크??
+            // console.log("[?�?�머] 모든 참여???�료 - ?��? ?�태 ?�인 �?..");
             setTimeout(() => {
-              // 이미 결과 대기 중이거나 결과 화면이면 체크 건너뛰기
+              // ?��? 결과 ?��?중이거나 결과 ?�면?�면 체크 건너?�기
               setQuestStep((currentStep) => {
                 if (
                   currentStep === "waitingResult" ||
                   currentStep === "resultSuccess" ||
                   currentStep === "resultFail"
                 ) {
-                  console.log("[타이머] 이미 결과 처리 중 - 체크 건너뛰기");
+                  // console.log("[?�?�머] ?��? 결과 처리 �?- 체크 건너?�기");
                   return currentStep;
                 }
 
                 const hasAnswer = answerSubmittedRef.current;
-                console.log("[타이머] 답변 제출 여부:", hasAnswer);
+                // console.log("[?�?�머] ?��? ?�출 ?��?:", hasAnswer);
 
                 if (!hasAnswer) {
-                  console.log("[타이머] ❌ 답변 미제출 - 실패 화면 표시");
+                  // console.log("[?�?�머] ???��? 미제�?- ?�패 ?�면 ?�시");
                   return "resultFail";
                 } else {
-                  console.log(
-                    "[타이머] ✅ 답변 제출됨 - WebSocket 결과 대기 중",
+                  // console.log(
+                    "[?�?�머] ???��? ?�출??- WebSocket 결과 ?��?�?,
                   );
                   return "waitingResult";
                 }
               });
-            }, 2000); // WAV 변환 + API 제출 시간 고려
+            }, 2000); // WAV 변??+ API ?�출 ?�간 고려
             setCurrentSpeakerIndex(-1);
           }
           return timeLimit;
@@ -2123,28 +2123,28 @@ export default function TogetherTalkPage() {
     };
   }, [questStep, currentSpeakerIndex, quizId]);
 
-  // 퀴즈 답변 제출 (각 참여자가 15초 차례 후 자동 제출)
+  // ?�즈 ?��? ?�출 (�?참여?��? 15�?차�? ???�동 ?�출)
   const submitParticipantAnswer = useCallback(
     async (audioBlob, participantUserId) => {
       if (!audioBlob || !quizId) {
-        console.warn("[Quiz] 답변 제출 불가 - 녹음 데이터 또는 quizId 없음");
+        console.warn("[Quiz] ?��? ?�출 불�? - ?�음 ?�이???�는 quizId ?�음");
         return;
       }
 
-      // 답변이 충분히 녹음되었을 때만 제출 (최소 1KB 이상)
+      // ?��???충분???�음?�었???�만 ?�출 (최소 1KB ?�상)
       if (audioBlob.size < 1000) {
-        console.log("[Quiz] 답변 없음 - 제출 건너뛰기");
+        // console.log("[Quiz] ?��? ?�음 - ?�출 건너?�기");
         return;
       }
 
       try {
-        console.log("[Quiz] 답변 제출 시도:", {
+        // console.log("[Quiz] ?��? ?�출 ?�도:", {
           quizId,
           userId: participantUserId,
         });
 
-        // TODO: 음성을 텍스트로 변환하는 영어 STT 구현 필요
-        // 임시로 테스트 답변 전송
+        // TODO: ?�성???�스?�로 변?�하???�어 STT 구현 ?�요
+        // ?�시�??�스???��? ?�송
         const answerText =
           "My favorite hobby is playing guitar because it helps me express my feelings.";
 
@@ -2153,14 +2153,14 @@ export default function TogetherTalkPage() {
           participantUserId,
           answerText,
         );
-        console.log(
-          "[Quiz] 답변 제출 완료 - WebSocket으로 결과 수신 대기 중:",
+        // console.log(
+          "[Quiz] ?��? ?�출 ?�료 - WebSocket?�로 결과 ?�신 ?��?�?",
           response,
         );
       } catch (error) {
-        // 제출 실패 시 즉시 실패 화면 표시
+        // ?�출 ?�패 ??즉시 ?�패 ?�면 ?�시
         console.warn(
-          "[Quiz] 답변 제출 실패 (401) - 즉시 실패 화면 표시:",
+          "[Quiz] ?��? ?�출 ?�패 (401) - 즉시 ?�패 ?�면 ?�시:",
           error.message,
         );
         answerSubmittedRef.current = false;
@@ -2171,9 +2171,9 @@ export default function TogetherTalkPage() {
     [quizId],
   );
 
-  // 퀘스트 1: 각 참여자 차례에서 15초 녹음 및 자동 제출
-  // (q1speaking 단계에서 speakerTimeLeft 타이머가 0이 되면 다음 참여자로 자동 전환)
-  // 실제 녹음/제출 로직은 speakerTimeLeft useEffect에서 처리됨
+  // ?�스??1: �?참여??차�??�서 15�??�음 �??�동 ?�출
+  // (q1speaking ?�계?�서 speakerTimeLeft ?�?�머가 0???�면 ?�음 참여?�로 ?�동 ?�환)
+  // ?�제 ?�음/?�출 로직?� speakerTimeLeft useEffect?�서 처리??
 
   const handleSubmitQuest2 = useCallback(() => {
     const correct = Math.random() > 0.5;
@@ -2181,26 +2181,26 @@ export default function TogetherTalkPage() {
     setQuestStep(correct ? "resultSuccess" : "resultFail");
   }, []);
 
-  /* STT 코드 상단 이동됨 */
+  /* STT 코드 ?�단 ?�동??*/
 
-  // 퀘스트 텍스트
-  const quest1IntroTitle = "돌발 퀘스트!!";
-  const quest1IntroBody = "영어로만 답해야 해!!\n모두 협동해서 점수를 얻어봐";
-  const quest1ReadyText = "다들 준비는 됐나?";
+  // ?�스???�스??
+  const quest1IntroTitle = "?�발 ?�스??!";
+  const quest1IntroBody = "?�어로만 ?�해????!\n모두 ?�동?�서 ?�수�??�어�?;
+  const quest1ReadyText = "?�들 준비는 ?�나?";
   const quest1English = quizQuestion;
 
-  const quest2IntroTitle = "돌발 퀘스트!!";
-  const quest2IntroBody = "빈칸을 채워봐.";
-  const quest2IntroSub = "가장 빠른 사람에게 점수를 줄 거야!";
+  const quest2IntroTitle = "?�발 ?�스??!";
+  const quest2IntroBody = "빈칸??채워�?";
+  const quest2IntroSub = "가??빠른 ?�람?�게 ?�수�?�?거야!";
 
   const isSuccess = questStep === "resultSuccess";
-  const failText = "아쉽게도 정답을 맞히지 못했군\n다음 번 기회를 노려봐!";
-  const successText = "대단해!! 내가 점수를 줄게!!";
+  const failText = "?�쉽게도 ?�답??맞히지 못했�?n?�음 �?기회�??�려�?";
+  const successText = "?�?�해!! ?��? ?�수�?줄게!!";
 
   const resultBubbleText = isSuccess ? successText : failText;
   const resultDuckSrc = isSuccess ? duckHappyImg : duckSadImg;
 
-  // 오버레이 표시 조건
+  // ?�버?�이 ?�시 조건
   const showQuest1Intro = questStep === "q1intro" && activeQuest === 1;
   const showQuest1Ready = questStep === "q1ready" && activeQuest === 1;
   const showQuest1ShowQuestion =
@@ -2218,7 +2218,7 @@ export default function TogetherTalkPage() {
   return (
     <div className={styles.Page}>
       <div className={styles.Shell}>
-        {/* 👇 소리 재생용 컴포넌트 추가 */}
+        {/* ?�� ?�리 ?�생??컴포?�트 추�? */}
         {subscribers.map((sub) => (
           <div
             key={sub.stream.connection.connectionId}
@@ -2232,7 +2232,7 @@ export default function TogetherTalkPage() {
         <AppHeader
           userName="user"
           notifications={[]}
-          logoExitMessage="메인 화면으로 나가시겠습니까?"
+          logoExitMessage="메인 ?�면?�로 ?��??�겠?�니�?"
           onLogoExit={doLeaveRoom}
           disableProfileClick={isConnected}
         />
@@ -2240,9 +2240,9 @@ export default function TogetherTalkPage() {
         <div className={styles.Content}>
           <div className={styles.HeaderRow}>
             <div className={styles.TopicRow}>
-              <img className={styles.SmallDuck} src={duckImg} alt="오리" />
+              <img className={styles.SmallDuck} src={duckImg} alt="?�리" />
               <div className={styles.TopicBubble}>
-                대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다!
+                ?�??주제??<span className={styles.TopicHighlight}>{topic}</span>?�니??
               </div>
             </div>
 
@@ -2261,7 +2261,7 @@ export default function TogetherTalkPage() {
 
           <div className={styles.Stage}>
             <div className={styles.LeftStage}>
-              {/* 각 참여자 답변 차례 */}
+              {/* �?참여???��? 차�? */}
               {questStep === "q1speaking" &&
                 activeQuest === 1 &&
                 currentSpeakerIndex >= 0 && (
@@ -2286,10 +2286,10 @@ export default function TogetherTalkPage() {
                         }}
                       >
                         {currentSpeakerIndex < participants.length
-                          ? `${participants[currentSpeakerIndex]?.name}님의 차례입니다`
-                          : "모든 참여자 답변 완료"}
+                          ? `${participants[currentSpeakerIndex]?.name}?�의 차�??�니??
+                          : "모든 참여???��? ?�료"}
                       </div>
-                      {/* 15초 미니 타이머 */}
+                      {/* 15�?미니 ?�?�머 */}
                       <div
                         style={{
                           fontSize: "24px",
@@ -2297,7 +2297,7 @@ export default function TogetherTalkPage() {
                           color: speakerTimeLeft <= 3 ? "#ef4444" : "#10b981",
                         }}
                       >
-                        {speakerTimeLeft}초
+                        {speakerTimeLeft}�?
                       </div>
                     </div>
                   </div>
@@ -2305,7 +2305,7 @@ export default function TogetherTalkPage() {
 
               <section
                 className={styles.CardsGrid}
-                aria-label="참여자 영상 영역"
+                aria-label="참여???�상 ?�역"
               >
                 {slots.map((slot) => {
                   if (slot.kind === "empty") {
@@ -2314,7 +2314,7 @@ export default function TogetherTalkPage() {
                         key={slot.id}
                         className={`${styles.VideoCard} ${styles.VideoCardEmpty}`}
                       >
-                        <div className={styles.EmptyText}>빈 자리</div>
+                        <div className={styles.EmptyText}>�??�리</div>
                       </div>
                     );
                   }
@@ -2325,12 +2325,12 @@ export default function TogetherTalkPage() {
                   const participantVoiceLevel = isMe
                     ? voiceLevel
                     : (p.voiceLevel ?? 0);
-                  // 마이크가 꺼져있으면 무조건 speaking 효과 제거
+                  // 마이?��? 꺼져?�으�?무조�?speaking ?�과 ?�거
                   const participantSpeaking =
                     participantMicOn &&
                     (isMe ? isSpeaking : (p.isSpeaking ?? false));
 
-                  // 프로필 커스터마이징 정보 파싱
+                  // ?�로??커스?�마?�징 ?�보 ?�싱
                   const profileInfo = getDuckProfileInfo(p.duckCustomJson);
                   const nicknameStyleInfo = getNicknameStyle(
                     p.avatarCustomJson,
@@ -2353,7 +2353,7 @@ export default function TogetherTalkPage() {
                           <img
                             className={styles.AvatarDuck}
                             src={profileInfo.image}
-                            alt={`${p.name} 아바타`}
+                            alt={`${p.name} ?�바?�`}
                           />
                           {profileInfo.accessory && (
                             <span className={styles.ProfileAccessory}>
@@ -2370,12 +2370,12 @@ export default function TogetherTalkPage() {
                             style={nicknameStyleInfo}
                             size="small"
                           />
-                          {isMe && <span className={styles.MeTag}>(나)</span>}
+                          {isMe && <span className={styles.MeTag}>(??</span>}
                           <img
                             className={styles.MicMini}
                             src={participantMicOn ? micOffIcon : micOnIcon}
                             alt={
-                              participantMicOn ? "마이크 켜짐" : "마이크 꺼짐"
+                              participantMicOn ? "마이??켜짐" : "마이??꺼짐"
                             }
                           />
                         </div>
@@ -2404,54 +2404,54 @@ export default function TogetherTalkPage() {
                     alt=""
                     aria-hidden="true"
                   />
-                  {micOn ? "마이크 끄기" : "마이크 켜기"}
+                  {micOn ? "마이???�기" : "마이??켜기"}
                 </button>
 
-                {/* 턴 종료 버튼은 방장에게만 표시 */}
+                {/* ??종료 버튼?� 방장?�게�??�시 */}
                 {isHost && (
                   <button
                     type="button"
                     className={styles.SecondaryButton}
                     onClick={handleEnd}
                   >
-                    턴 종료
+                    ??종료
                   </button>
                 )}
               </div>
             </div>
 
-            <aside className={styles.RightStage} aria-label="AI 도우미">
+            <aside className={styles.RightStage} aria-label="AI ?�우�?>
               <div className={styles.AiBubble}>
                 <div className={styles.AiHeader}>
                   <span className={styles.AiDot} aria-hidden="true" />
-                  <span className={styles.AiTitle}>AI 더기</span>
+                  <span className={styles.AiTitle}>AI ?�기</span>
                   <span className={styles.AiDot} aria-hidden="true" />
                 </div>
 
-                {/* 평가 대기 중일 때 로딩 표시 */}
+                {/* ?��? ?��?중일 ??로딩 ?�시 */}
                 {showWaitingResult ? (
                   <>
                     <div className={styles.AiLoadingContainer}>
                       <div className={styles.AiLoadingSpinner} />
-                      <span>답변을 평가하고 있어요</span>
+                      <span>?��????��??�고 ?�어??/span>
                     </div>
                   </>
                 ) : (
                   <>
                     {!aiSuggestion && (
                       <div className={styles.AiFace} aria-hidden="true">
-                        🙂
+                        ?��
                       </div>
                     )}
 
                     <div
                       className={`${styles.AiMainText} ${aiSuggestion ? styles.AiMainTextLarge : ""}`}
                     >
-                      {aiSuggestion || "한국어로 편하게 대화해보세요!"}
+                      {aiSuggestion || "?�국?�로 ?�하�??�?�해보세??"}
                     </div>
                     {!aiSuggestion && (
                       <div className={styles.AiSubText}>
-                        침묵이 지속되면 제가 도와드릴게요.
+                        침묵??지?�되�??��? ?��??�릴게요.
                       </div>
                     )}
                   </>
@@ -2463,13 +2463,13 @@ export default function TogetherTalkPage() {
               <img
                 className={styles.BigDuck}
                 src={aiDuckbotImgSrc}
-                alt="AI 오리"
+                alt="AI ?�리"
               />
             </aside>
           </div>
         </div>
 
-        {/* 퀘스트 1: 인트로 */}
+        {/* ?�스??1: ?�트�?*/}
         <UnexpectedQuestOverlay
           open={showQuest1Intro}
           onClose={handleOverlayClickNext}
@@ -2485,7 +2485,7 @@ export default function TogetherTalkPage() {
           escToClose={false}
         />
 
-        {/* 퀘스트 1: 준비 + 카운트다운 */}
+        {/* ?�스??1: 준�?+ 카운?�다??*/}
         <UnexpectedQuestOverlay
           open={showQuest1Ready}
           onClose={handleOverlayClickNext}
@@ -2501,13 +2501,13 @@ export default function TogetherTalkPage() {
           escToClose={false}
         />
 
-        {/* 퀘스트 1: 영어 문장 표시 */}
+        {/* ?�스??1: ?�어 문장 ?�시 */}
         <UnexpectedQuestOverlay
           open={showQuest1ShowQuestion}
           onClose={handleOverlayClickNext}
           duckSrc={duckBombImg}
           bubbleText={quest1English}
-          subText="영어로만 답해야 해!!!"
+          subText="?�어로만 ?�해????!!"
           subTone="danger"
           countdownNumber={undefined}
           speechBubbleType={2}
@@ -2516,7 +2516,7 @@ export default function TogetherTalkPage() {
           escToClose={false}
         />
 
-        {/* 퀘스트 2: 인트로 */}
+        {/* ?�스??2: ?�트�?*/}
         <UnexpectedQuestOverlay
           open={showQuest2Intro}
           onClose={handleOverlayClickNext}
@@ -2532,7 +2532,7 @@ export default function TogetherTalkPage() {
           escToClose={false}
         />
 
-        {/* 퀘스트 2: 게임 화면 */}
+        {/* ?�스??2: 게임 ?�면 */}
         <UnexpectedQuestFillBlankModal
           open={showQuest2Game}
           duckSrc={duckBombImg}
@@ -2540,22 +2540,22 @@ export default function TogetherTalkPage() {
           participants={participants}
         />
 
-        {/* 평가 대기 중 */}
+        {/* ?��? ?��?�?*/}
         {showWaitingResult && (
           <div className={styles.WaitingResultOverlay}>
             <div className={styles.WaitingResultContent}>
               <div className={styles.WaitingResultSpinner} />
               <div className={styles.WaitingResultText}>
-                답변을 평가하고 있어요
+                ?��????��??�고 ?�어??
               </div>
               <div className={styles.WaitingResultSubText}>
-                잠시만 기다려 주세요!
+                ?�시�?기다??주세??
               </div>
             </div>
           </div>
         )}
 
-        {/* 결과 - 5초 후 자동 복귀 */}
+        {/* 결과 - 5�????�동 복�? */}
         <UnexpectedQuestOverlay
           open={showResultOverlay}
           onClose={() => {}}
@@ -2574,9 +2574,9 @@ export default function TogetherTalkPage() {
 
         {isTransitioning && (
           <LoadingOverlay
-            title="학습 단계로 이동합니다!"
-            subtitle="쉐도잉 학습을 시작해볼까요?"
-            note="학습 집중을 위해 마이크가 일시적으로 음소거됩니다."
+            title="?�습 ?�계�??�동?�니??"
+            subtitle="?�도???�습???�작?�볼까요?"
+            note="?�습 집중???�해 마이?��? ?�시?�으�??�소거됩?�다."
             image={duckTogether}
           />
         )}
@@ -2585,7 +2585,7 @@ export default function TogetherTalkPage() {
   );
 }
 
-// 👇 소리 재생용 컴포넌트
+// ?�� ?�리 ?�생??컴포?�트
 const UserAudioComponent = ({ streamManager }) => {
   const audioRef = useRef(null);
 

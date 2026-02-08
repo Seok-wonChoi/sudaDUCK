@@ -15,7 +15,7 @@ export default function WaitingPanel({
           <img src={duckHappy} alt="loading" className={styles.duck} />
         </div>
         
-        <h2 className={styles.title}>다른 참가자를 기다리고 있어요</h2>
+        <h2 className={styles.title}>?�른 참�??��? 기다리고 ?�어??/h2>
 
         <div className={styles.participantGrid}>
           {rankings.map((user) => (
@@ -26,7 +26,7 @@ export default function WaitingPanel({
               <div className={styles.statusDot}></div>
               <span className={styles.nickname}>{user.nickname}</span>
               <span className={styles.statusText}>
-                {user.hasSubmitted ? '완료' : '풀고 있음...'}
+                {user.hasSubmitted ? '?�료' : '?��??�음...'}
               </span>
             </div>
           ))}

@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 import styles from './ParticipantList.module.css';
 
-// 이미지 import
+// ?��?지 import
 import duckProfile1 from "@/assets/images/duck_profile1.png";
 import duckProfile2 from "@/assets/images/duck_profile2.png";
 import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
 
-// 오리 설정 상수 (RankingItem과 동일)
+// ?�리 ?�정 ?�수 (RankingItem�??�일)
 const DUCK_PROFILE_IMAGES = {
   profile1: duckProfile1,
   profile2: duckProfile2,
@@ -26,10 +26,10 @@ const COLOR_MAP = {
 };
 
 const ACCESSORY_MAP = {
-  hat: "🎩",
-  sunglasses: "🕶️",
-  ribbon: "🎀",
-  crown: "👑",
+  hat: "?��",
+  sunglasses: "?���?,
+  ribbon: "??",
+  crown: "?��",
   none: null,
 };
 
@@ -62,7 +62,7 @@ function getDuckProfileInfo(duckCustomJson) {
 export default function ParticipantList({ 
   participants = []
 }) {
-  // 참가자 데이터 매핑
+  // 참�????�이??매핑
   const processedParticipants = useMemo(() => {
     return participants.map(p => ({
       ...p,
@@ -80,7 +80,7 @@ export default function ParticipantList({
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M7 1L9 5L13 5.5L10 8.5L11 13L7 11L3 13L4 8.5L1 5.5L5 5L7 1Z" fill="#facc15"/>
         </svg>
-        <span>참여자</span>
+        <span>참여??/span>
       </div>
       <div className={styles.list}>
         {processedParticipants.map((p, idx) => {
@@ -92,21 +92,21 @@ export default function ParticipantList({
                 className={styles.avatar}
                 style={{ backgroundColor: profileInfo.color }}
               >
-                {/* 오리 이미지 */}
+                {/* ?�리 ?��?지 */}
                 <img
                   src={profileInfo.image}
                   alt={p.name || p.nickname}
                   className={styles.duckImage}
                 />
                 
-                {/* 액세서리 */}
+                {/* ?�세?�리 */}
                 {profileInfo.accessory && (
                   <span className={styles.accessory}>{profileInfo.accessory}</span>
                 )}
               </div>
               <span className={styles.name}>
                 {p.nickname || p.name}
-                {p.isMe && <span className={styles.meBadge}>나</span>}
+                {p.isMe && <span className={styles.meBadge}>??/span>}
               </span>
             </div>
           );

@@ -10,10 +10,10 @@ const BACKGROUND_STYLES = {
 };
 
 const EFFECTS = {
-  sparkle: "âœ¨",
-  star: "â­",
-  fire: "ğŸ”¥",
-  crown: "ğŸ‘‘",
+  sparkle: "??,
+  star: "â­?,
+  fire: "?”¥",
+  crown: "?‘‘",
 };
 
 export default function NicknameBadge({ nickname, style = {}, size = "medium" }) {

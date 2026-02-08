@@ -13,7 +13,7 @@ export default function ActionCard({ title, description, iconSrc, iconAlt, onCli
       audio.volume = getEffectiveVolume(0.1);
       audio.play().catch(() => {});
     } catch (e) {
-      // 사운드 재생 실패 무시
+      // ?�운???�생 ?�패 무시
     }
   };
 

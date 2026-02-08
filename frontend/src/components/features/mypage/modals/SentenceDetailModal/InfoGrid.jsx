@@ -6,16 +6,16 @@ export default function InfoGrid({ topic, participants = [] }) {
     <div className={styles.Grid}>
       <div className={styles.Box}>
         <div className={styles.Header}>
-          <span className={styles.Icon}>💬</span>
-          <span className={styles.Label}>대화 주제</span>
+          <span className={styles.Icon}>?��</span>
+          <span className={styles.Label}>?�??주제</span>
         </div>
         <div className={styles.Value}>{topic || "-"}</div>
       </div>
 
       <div className={styles.Box}>
         <div className={styles.Header}>
-          <span className={styles.Icon}>👥</span>
-          <span className={styles.Label}>참여자</span>
+          <span className={styles.Icon}>?��</span>
+          <span className={styles.Label}>참여??/span>
         </div>
         <div className={styles.Participants}>
           {participants.length > 0 ? (

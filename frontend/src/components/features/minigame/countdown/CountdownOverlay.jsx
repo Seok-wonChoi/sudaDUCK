@@ -3,8 +3,8 @@ import duckImg from '@/assets/images/duck_minigame_go.png';
 
 export default function CountdownOverlay({
   count = 3,
-  title = '준비되셨나요?',
-  subtitle = '알맞은 단어로 빈칸을 채우세요!'
+  title = '준비되?�나??',
+  subtitle = '?�맞?� ?�어�?빈칸??채우?�요!'
 }) {
   return (
     <div className={styles.overlay}>

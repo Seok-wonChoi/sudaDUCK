@@ -25,10 +25,10 @@ const COLOR_MAP = {
 };
 
 const ACCESSORY_MAP = {
-  hat: "🎩",
-  sunglasses: "🕶️",
-  ribbon: "🎀",
-  crown: "👑",
+  hat: "?��",
+  sunglasses: "?���?,
+  ribbon: "??",
+  crown: "?��",
   none: null,
 };
 
@@ -91,9 +91,9 @@ export default function UnexpectedQuestFillBlankModal({ open, duckSrc, onSubmit,
 
   if (!open) return null;
 
-  // 디버깅: participants 확인
-  console.log("[UnexpectedQuestFillBlankModal] participants:", participants);
-  console.log("[UnexpectedQuestFillBlankModal] participants.length:", participants?.length);
+  // ?�버�? participants ?�인
+  // console.log("[UnexpectedQuestFillBlankModal] participants:", participants);
+  // console.log("[UnexpectedQuestFillBlankModal] participants.length:", participants?.length);
 
   const submit = () => {
     onSubmit?.({ a, b });
@@ -110,8 +110,8 @@ export default function UnexpectedQuestFillBlankModal({ open, duckSrc, onSubmit,
     <div className={styles.Backdrop} role="dialog" aria-modal="true">
       <div className={styles.Stage}>
         <div className={styles.Card}>
-          <div className={styles.CardTitle}>돌발 퀘스트!!</div>
-          <div className={styles.CardSub}>빈칸을 채워보세요.</div>
+          <div className={styles.CardTitle}>?�발 ?�스??!</div>
+          <div className={styles.CardSub}>빈칸??채워보세??</div>
 
           <div className={styles.FormRow}>
             <span className={styles.Word}>The</span>
@@ -135,15 +135,15 @@ export default function UnexpectedQuestFillBlankModal({ open, duckSrc, onSubmit,
           </div>
 
           <button type="button" className={styles.SubmitBtn} onClick={submit}>
-            입력
+            ?�력
           </button>
 
-          <div className={styles.Hint}>퍼블리싱 단계: 아무 단어나 입력하면 진행됩니다.</div>
+          <div className={styles.Hint}>?�블리싱 ?�계: ?�무 ?�어???�력?�면 진행?�니??</div>
         </div>
 
-        {duckSrc ? <img className={styles.Duck} src={duckSrc} alt="돌발 퀘스트 오리" /> : null}
+        {duckSrc ? <img className={styles.Duck} src={duckSrc} alt="?�발 ?�스???�리" /> : null}
 
-        {/* 참여자 목록 - 좌측 하단 */}
+        {/* 참여??목록 - 좌측 ?�단 */}
         <div className={styles.ParticipantsList}>
           {participants && participants.length > 0 ? (
             participants.map((p) => {
@@ -151,7 +151,7 @@ export default function UnexpectedQuestFillBlankModal({ open, duckSrc, onSubmit,
               const isSpeaking = p.isSpeaking ?? false;
               const micOn = p.micOn ?? false;
 
-              console.log("[Participant]", {
+              // console.log("[Participant]", {
                 id: p.id,
                 name: p.name,
                 micOn,
@@ -173,7 +173,7 @@ export default function UnexpectedQuestFillBlankModal({ open, duckSrc, onSubmit,
                     <img
                       className={styles.ParticipantAvatarImg}
                       src={profileInfo.image}
-                      alt={`${p.name} 프로필`}
+                      alt={`${p.name} ?�로??}
                     />
                     {profileInfo.accessory && (
                       <span className={styles.ParticipantAccessory}>
@@ -186,7 +186,7 @@ export default function UnexpectedQuestFillBlankModal({ open, duckSrc, onSubmit,
                     <img
                       className={styles.ParticipantMicIcon}
                       src={micOn ? micOffIcon : micOnIcon}
-                      alt={micOn ? "마이크 켜짐" : "마이크 꺼짐"}
+                      alt={micOn ? "마이??켜짐" : "마이??꺼짐"}
                     />
                   </div>
                 </div>
@@ -200,7 +200,7 @@ export default function UnexpectedQuestFillBlankModal({ open, duckSrc, onSubmit,
               fontSize: "12px",
               color: "#888"
             }}>
-              참여자 로딩 중... ({participants?.length ?? 0}명)
+              참여??로딩 �?.. ({participants?.length ?? 0}�?
             </div>
           )}
         </div>

@@ -2,17 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import styles from "./TipBanner.module.css";
 
 export default function TipBanner({ text }) {
-  const cleanInputText = (text || "지금 바로 함께 하기 모드로 들어가 볼까요?")
+  const cleanInputText = (text || "지�?바로 ?�께 ?�기 모드�??�어가 볼까??")
     .replace(/^Tip:\s*/i, "")
-    .replace(/[😊🐔❌🦆📝]$/u, "") 
+    .replace(/[?��?��?�🦆�?$/u, "") 
     .trim();
 
   const tips = [
-    { txt: cleanInputText, emo: "😊" },
-    { txt: "사실 마스코트인 더기는 닭이라는 소문이 있습니다", emo: "🐔" },
-    { txt: "비방이 들어간 제목이나 주제로는 방을 만들 수 없어요", emo: "❌" },
-    { txt: "매일매일 꾸준히 학습하면 오리가 더 행복해해요", emo: "🦆" },
-    { txt: "마이페이지에서 내가 저장한 문장들을 복습해보세요", emo: "📝" },
+    { txt: cleanInputText, emo: "?��" },
+    { txt: "?�실 마스코트???�기????��?�는 ?�문???�습?�다", emo: "?��" },
+    { txt: "비방???�어�??�목?�나 주제로는 방을 만들 ???�어??, emo: "?? },
+    { txt: "매일매일 꾸�????�습?�면 ?�리가 ???�복?�해??, emo: "?��" },
+    { txt: "마이?�이지?�서 ?��? ?�?�한 문장?�을 복습?�보?�요", emo: "?��" },
   ];
 
   const extendedTips = [...tips, tips[0]];
@@ -40,7 +40,7 @@ export default function TipBanner({ text }) {
   }, [currentIndex, extendedTips.length]);
 
   return (
-    <div className={styles.Banner} role="note" aria-label="팁">
+    <div className={styles.Banner} role="note" aria-label="??>
       <div className={styles.FixedLabel}>Tip</div>
       
       <div className={styles.SlotWindow}>
@@ -54,7 +54,7 @@ export default function TipBanner({ text }) {
           {extendedTips.map((tip, index) => (
             <div key={index} className={styles.TipItem}>
               <div className={styles.ContentGroup}>
-                {/* 왼쪽 이모지 제거, 문장과 오른쪽 이모지만 유지 */}
+                {/* ?�쪽 ?�모지 ?�거, 문장�??�른�??�모지�??��? */}
                 <span className={styles.Text}>{tip.txt}</span>
                 <span className={styles.Emoji}>{tip.emo}</span>
               </div>

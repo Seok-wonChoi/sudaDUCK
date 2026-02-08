@@ -15,10 +15,10 @@ const COLOR_MAP = {
 };
 
 const ACCESSORY_MAP = {
-  hat: "🎩",
-  sunglasses: "🕶️",
-  ribbon: "🎀",
-  crown: "👑",
+  hat: "?��",
+  sunglasses: "?���?,
+  ribbon: "??",
+  crown: "?��",
 };
 
 export default function ProfileSection({
@@ -44,7 +44,7 @@ export default function ProfileSection({
       audio.volume = getEffectiveVolume(0.1);
       audio.play().catch(() => {});
     } catch (e) {
-      // 사운드 재생 실패 무시
+      // ?�운???�생 ?�패 무시
     }
   };
 
@@ -56,14 +56,14 @@ export default function ProfileSection({
           className={styles.ProfileImageContainer}
           onClick={onEditProfile}
           onMouseEnter={playTapSound}
-          aria-label="프로필 바꾸기"
+          aria-label="?�로??바꾸�?
         >
           <div
             className={styles.ProfileImage}
             style={{ background: COLOR_MAP[profileColor] || "#f3f4f6" }}
           >
             {profileImage ? (
-              <img src={profileImage} alt="프로필" className={styles.Image} />
+              <img src={profileImage} alt="?�로?? className={styles.Image} />
             ) : (
               <div className={styles.DefaultAvatar} />
             )}
@@ -74,7 +74,7 @@ export default function ProfileSection({
             )}
           </div>
           <span className={styles.EditButton} aria-hidden="true">
-            <span className={styles.PencilIcon}>✏️</span>
+            <span className={styles.PencilIcon}>?�️</span>
           </span>
         </button>
 
@@ -83,15 +83,15 @@ export default function ProfileSection({
           className={styles.DuckImageContainer}
           onClick={onEditDuckBot}
           onMouseEnter={playTapSound}
-          aria-label="AI오리봇 바꾸기"
+          aria-label="AI?�리�?바꾸�?
         >
           <div className={styles.DuckImage}>
             {duckBotImage && (
-              <img src={duckBotImage} alt="AI 오리봇" className={styles.Image} />
+              <img src={duckBotImage} alt="AI ?�리�? className={styles.Image} />
             )}
           </div>
           <span className={styles.EditButton} aria-hidden="true">
-            <span className={styles.PencilIcon}>✏️</span>
+            <span className={styles.PencilIcon}>?�️</span>
           </span>
         </button>
       </div>
@@ -107,9 +107,9 @@ export default function ProfileSection({
               type="button"
               className={styles.NicknameEditButton}
               onClick={onEditNickname}
-              aria-label="닉네임 스타일 변경"
+              aria-label="?�네???��???변�?
             >
-              <span>✏️</span>
+              <span>?�️</span>
             </button>
           </div>
           {onLogout && (
@@ -117,9 +117,9 @@ export default function ProfileSection({
               type="button"
               className={styles.LogoutButton}
               onClick={onLogout}
-              aria-label="로그아웃"
+              aria-label="로그?�웃"
             >
-              로그아웃
+              로그?�웃
             </button>
           )}
         </div>

@@ -13,31 +13,31 @@ import ResultPanel from '@/components/features/minigame2/result/ResultPanel';
 import CoinRewardNotification from '@/components/features/minigame/CoinReward/CoinRewardNotification';
 
 const MOCK_PARTICIPANTS = [
-  { id: 1, name: '장가은', isActive: true },
-  { id: 2, name: '이승엽', isActive: true },
-  { id: 3, name: '최현웅', isActive: false },
-  { id: 4, name: '김가민', isActive: true },
+  { id: 1, name: '?��??�', isActive: true },
+  { id: 2, name: '?�승??, isActive: true },
+  { id: 3, name: '최현??, isActive: false },
+  { id: 4, name: '김가�?, isActive: true },
 ];
 
-// 참여자별 제거한 카드 수 순위 (나중에 백엔드에서 받아올 데이터)
+// 참여?�별 ?�거??카드 ???�위 (?�중??백엔?�에??받아???�이??
 const MOCK_RANKINGS = [
-  { id: 1, name: '장가은', cardsRemoved: 10 },
-  { id: 4, name: '김가민', cardsRemoved: 8 },
-  { id: 2, name: '이승엽', cardsRemoved: 6 },
-  { id: 3, name: '최현웅', cardsRemoved: 3 },
+  { id: 1, name: '?��??�', cardsRemoved: 10 },
+  { id: 4, name: '김가�?, cardsRemoved: 8 },
+  { id: 2, name: '?�승??, cardsRemoved: 6 },
+  { id: 3, name: '최현??, cardsRemoved: 3 },
 ];
 
 const MOCK_CARDS = [
-  { id: 1, text: '티에서 구 봤어요.' },
-  { id: 2, text: '저도요. 댓글 보니까 토요일 오후에 비가 온다던데요.' },
-  { id: 3, text: '장소를 바꾸는 건 어때요?' },
-  { id: 4, text: '글 올린 사람이 기상청 캡처도 같이 올렸더라고요.' },
-  { id: 5, text: '그러면 시간대를 바꿀 수 있어요? 오전으로 당길 수 있어요?' },
-  { id: 6, text: '축하를 해줘야겠다. 선물로 뭘 좋아할까.' },
-  { id: 7, text: '그럼 장소를 바꾸는 건' },
-  { id: 8, text: '실내 대안으로 전시회도 괜찮다고 댓글에 추천 있던데요.' },
-  { id: 9, text: '좋아요. 비 오면 전시회로 가고, 안 오면 원래대로 하죠.' },
-  { id: 10, text: '좋겠네요.' },
+  { id: 1, text: '?�에??�?봤어??' },
+  { id: 2, text: '?�?�요. ?��? 보니�??�요???�후??비�? ?�다?�데??' },
+  { id: 3, text: '?�소�?바꾸??�??�때??' },
+  { id: 4, text: '글 ?�린 ?�람??기상�?캡처??같이 ?�렸?�라고요.' },
+  { id: 5, text: '그러�??�간?��?바�? ???�어?? ?�전?�로 ?�길 ???�어??' },
+  { id: 6, text: '축하�??�줘?�겠?? ?�물�?�?좋아?�까.' },
+  { id: 7, text: '그럼 ?�소�?바꾸??�? },
+  { id: 8, text: '?�내 ?�?�으�??�시?�도 괜찮?�고 ?��???추천 ?�던?�요.' },
+  { id: 9, text: '좋아?? �??�면 ?�시?�로 가�? ???�면 ?�래?��??�죠.' },
+  { id: 10, text: '좋겠?�요.' },
 ];
 
 const GAME_PHASE = {
@@ -53,10 +53,10 @@ export default function MiniGame2Page() {
   const location = useLocation();
   const { leaveSession } = useOpenVidu();
 
-  const currentUserId = 1; // 현재 사용자 ID
+  const currentUserId = 1; // ?�재 ?�용??ID
   const roomId = location.state?.roomId;
 
-  // ✅ phase를 state로 두지 않고, 아래 상태들로 "계산"해서 사용
+  // ??phase�?state�??��? ?�고, ?�래 ?�태?�로 "계산"?�서 ?�용
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_TIME);
@@ -69,7 +69,7 @@ export default function MiniGame2Page() {
 
   const roomCode = location.state?.roomCode;
 
-  // ✅ 게임 시작 시 모든 참여자의 레디 상태를 해제 (대기방 복귀 시 초기화 목적)
+  // ??게임 ?�작 ??모든 참여?�의 ?�디 ?�태�??�제 (?�기방 복�? ??초기??목적)
   useEffect(() => {
     if (roomCode) {
       toggleReady(roomCode, false).catch(() => {});
@@ -83,7 +83,7 @@ export default function MiniGame2Page() {
         ? GAME_PHASE.RESULT
         : GAME_PHASE.PLAYING;
 
-  // 1) 카운트다운 진행 (setPhase 필요 없음)
+  // 1) 카운?�다??진행 (setPhase ?�요 ?�음)
   useEffect(() => {
     if (countdown <= 0) return;
 
@@ -94,7 +94,7 @@ export default function MiniGame2Page() {
     return () => clearTimeout(id);
   }, [countdown]);
 
-  // 2) 게임 타이머 진행 (timeLeft만 줄이면 RESULT는 phase 계산으로 자동 전환)
+  // 2) 게임 ?�?�머 진행 (timeLeft�?줄이�?RESULT??phase 계산?�로 ?�동 ?�환)
   useEffect(() => {
     if (phase !== GAME_PHASE.PLAYING) return;
 
@@ -106,7 +106,7 @@ export default function MiniGame2Page() {
     return () => clearInterval(id);
   }, [phase]);
 
-  // 3) 가이드 3초 후 숨김
+  // 3) 가?�드 3�????��?
   useEffect(() => {
     if (phase === GAME_PHASE.PLAYING && showGuide) {
       const id = setTimeout(() => setShowGuide(false), 3000);
@@ -114,10 +114,10 @@ export default function MiniGame2Page() {
     }
   }, [phase, showGuide]);
 
-  // 4) 결과 화면에서 1등이면 코인 지급
+  // 4) 결과 ?�면?�서 1?�이�?코인 지�?
   useEffect(() => {
     if (phase === GAME_PHASE.RESULT) {
-      // 1등 확인 (가장 많은 카드를 제거한 사람)
+      // 1???�인 (가??많�? 카드�??�거???�람)
       const firstPlace = MOCK_RANKINGS[0];
       if (firstPlace && firstPlace.id === currentUserId) {
         const timer = setTimeout(() => {
@@ -142,13 +142,13 @@ export default function MiniGame2Page() {
     setShowGuide(true);
   };
 
-  // 방장 퇴장 시 메인 화면으로 강제 이동
+  // 방장 ?�장 ??메인 ?�면?�로 강제 ?�동
   const handleRoomClosed = useCallback(() => {
-    console.log("[MiniGame2Page] ROOM_CLOSED 수신 - 방장 퇴장");
+    // console.log("[MiniGame2Page] ROOM_CLOSED ?�신 - 방장 ?�장");
     leaveSession();
     navigate("/main", {
       replace: true,
-      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+      state: { toastMessage: "방장???�장?�여 ?�?��? 종료?�었?�니??" },
     });
   }, [navigate, leaveSession]);
 
@@ -156,15 +156,15 @@ export default function MiniGame2Page() {
     onRoomClosed: handleRoomClosed,
   }, roomId);
 
-  // 로고 클릭 시 나가기 핸들러
+  // 로고 ?�릭 ???��?�??�들??
   const handleLogoExit = useCallback(async () => {
     if (roomId) {
       try {
         leaveSession();
         await leaveRoom({ roomCode: roomId });
-        console.log("[MiniGame2Page] 방 퇴장 성공");
+        // console.log("[MiniGame2Page] �??�장 ?�공");
       } catch (e) {
-        console.error("[MiniGame2Page] 방 퇴장 실패:", e);
+        console.error("[MiniGame2Page] �??�장 ?�패:", e);
       }
     }
   }, [roomId, leaveSession]);
@@ -181,14 +181,14 @@ export default function MiniGame2Page() {
         await toggleReady(roomCode, false);
       }
     } catch (e) {
-      console.error('[MiniGame2] 대기방 복귀 처리 중 오류(무시하고 이동):', e);
+      console.error('[MiniGame2] ?�기방 복�? 처리 �??�류(무시?�고 ?�동):', e);
     }
 
     navigate('/together/waiting', { 
       state: { 
         ...location.state,
         fromGame: true,
-        participants: [], // 👈 빈 배열로 넘겨서 서버 데이터 새로고침 유도
+        participants: [], // ?�� �?배열�??�겨???�버 ?�이???�로고침 ?�도
         readyCount: 0 
       },
       replace: true 
@@ -199,14 +199,14 @@ export default function MiniGame2Page() {
     return (
       <CountdownOverlay
         count={countdown}
-        title="준비되셨나요?"
-        subtitle="제시된 카드를 영어로 말해보세요!"
+        title="준비되?�나??"
+        subtitle="?�시??카드�??�어�?말해보세??"
       />
     );
   }
 
   const progress = (removedCards.length / MOCK_CARDS.length) * 100;
-  const title = phase === GAME_PHASE.RESULT ? '카드 제거하기 결과' : '카드 제거하기';
+  const title = phase === GAME_PHASE.RESULT ? '카드 ?�거?�기 결과' : '카드 ?�거?�기';
 
 
 
@@ -217,7 +217,7 @@ export default function MiniGame2Page() {
       timer={formatTime(timer)}
       progress={progress}
       totalProgress={100}
-      logoExitMessage="메인 화면으로 나가시겠습니까?"
+      logoExitMessage="메인 ?�면?�로 ?��??�겠?�니�?"
       onLogoExit={handleLogoExit}
       disableProfileClick={true}
     >
@@ -233,14 +233,14 @@ export default function MiniGame2Page() {
               cards={MOCK_CARDS}
               removedCards={removedCards}
               onCardClick={(cardId) => {
-                // TODO: 나중에 STT API로 교체 예정 (임시 테스트용)
+                // TODO: ?�중??STT API�?교체 ?�정 (?�시 ?�스?�용)
                 if (!removedCards.includes(cardId)) {
                   setRemovedCards([...removedCards, cardId]);
                 }
               }}
             />
             <DuckGuide
-              message="문장을 읽어서 카드를 없애봐요!!"
+              message="문장???�어??카드�??�애봐요!!"
               visible={showGuide}
             />
           </div>

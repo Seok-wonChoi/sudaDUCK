@@ -16,7 +16,7 @@ export default function MakeRoomPage() {
   const navigate = useNavigate();
   const { getEffectiveVolume, isMuted } = useSoundContext();
 
-  // 방 만들기 권한 체크
+  // �?만들�?권한 체크
   useEffect(() => {
     const ALLOWED_USER_IDS = [
       4719057912,
@@ -32,7 +32,7 @@ export default function MakeRoomPage() {
     try {
       const decoded = jwtDecode(token);
       if (!ALLOWED_USER_IDS.includes(Number(decoded.userId))) {
-        alert("방 만들기 권한이 없습니다.");
+        alert("�?만들�?권한???�습?�다.");
         navigate("/together", { replace: true });
       }
     } catch (e) {
@@ -42,12 +42,12 @@ export default function MakeRoomPage() {
 
   const hotTopics = useMemo(
     () => [
-      "첫 아르바이트 추억",
-      "최악의 데이트",
-      "나만의 취미생활",
-      "학창시절 이야기",
-      "여행 경험담",
-      "좋아하는 음식",
+      "�??�르바이??추억",
+      "최악???�이??,
+      "?�만??취�??�활",
+      "?�창?�절 ?�야�?,
+      "?�행 경험??,
+      "좋아?�는 ?�식",
     ],
     [],
   );
@@ -59,7 +59,7 @@ export default function MakeRoomPage() {
   const [loading, setLoading] = useState(false);
   const [isLoadingAiRecommend, setIsLoadingAiRecommend] = useState(false);
 
-  // 모달 상태
+  // 모달 ?�태
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
@@ -99,7 +99,7 @@ export default function MakeRoomPage() {
         setTopic(randomTopic);
       }
     } catch (e) {
-      console.error("AI 주제 추천 API 호출 실패:", e);
+      console.error("AI 주제 추천 API ?�출 ?�패:", e);
       if (hotTopics.length > 0) {
         const next = hotTopics[Math.floor(Math.random() * hotTopics.length)];
         setTopic(next);
@@ -113,11 +113,11 @@ export default function MakeRoomPage() {
     if (loading) return;
 
     if (!title.trim()) {
-      alert("방 제목을 입력해주세요.");
+      alert("�??�목???�력?�주?�요.");
       return;
     }
     if (!topic.trim()) {
-      alert("수다 주제를 입력하거나 선택해주세요.");
+      alert("?�다 주제�??�력?�거???�택?�주?�요.");
       return;
     }
 
@@ -134,7 +134,7 @@ export default function MakeRoomPage() {
       try {
         await joinRoom({ roomCode: res.roomCode });
       } catch (joinError) {
-        console.error("방 참가 실패:", joinError);
+        console.error("�?참�? ?�패:", joinError);
       }
 
       const roomInfo = {
@@ -155,14 +155,14 @@ export default function MakeRoomPage() {
       sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify(roomInfo));
       navigate("/together/waiting", { state: roomInfo });
     } catch (e) {
-      const errorMessage = e.response?.data?.message || e.message || "방 생성에 실패했습니다.";
-      if (errorMessage.includes("방 제목") && errorMessage.includes("부적절")) {
-        setModalTitle("⚠️ 주의");
-        setModalMessage("부적절한 방 제목 다시 생성해주세요");
+      const errorMessage = e.response?.data?.message || e.message || "�??�성???�패?�습?�다.";
+      if (errorMessage.includes("�??�목") && errorMessage.includes("부?�절")) {
+        setModalTitle("?�️ 주의");
+        setModalMessage("부?�절??�??�목 ?�시 ?�성?�주?�요");
         setModalOpen(true);
-      } else if (errorMessage.includes("주제") && errorMessage.includes("부적절")) {
-        setModalTitle("⚠️ 주의");
-        setModalMessage("부적절한 방 주제입니다.");
+      } else if (errorMessage.includes("주제") && errorMessage.includes("부?�절")) {
+        setModalTitle("?�️ 주의");
+        setModalMessage("부?�절??�?주제?�니??");
         setModalOpen(true);
       } else {
         alert(errorMessage);
@@ -182,30 +182,30 @@ export default function MakeRoomPage() {
             className={styles.BackButton}
             type="button"
             onClick={handleBack}
-            aria-label="뒤로 가기"
+            aria-label="?�로 가�?
             disabled={loading}
             data-click-sound="false"
           >
             &lt;
           </button>
 
-          <h1 className={styles.Title}>방 만들기</h1>
+          <h1 className={styles.Title}>�?만들�?/h1>
           <p className={styles.Subtitle}>
-            친구들과 함께할 수다방을 만들어보세요 🎮
+            친구?�과 ?�께???�다방을 만들?�보?�요 ?��
           </p>
 
           <div className={styles.Content}>
-            <section className={styles.FormCard} aria-label="방 만들기 폼">
+            <section className={styles.FormCard} aria-label="�?만들�???>
               <div className={styles.Field}>
                 <div className={styles.LabelRow}>
-                  <span className={styles.Label}>방 제목</span>
+                  <span className={styles.Label}>�??�목</span>
                   <span className={styles.Required}>*</span>
                 </div>
                 <input
                   className={styles.Input}
                   value={title}
                   onChange={handleTitleChange}
-                  placeholder="예: 친구들과 수다타임"
+                  placeholder="?? 친구?�과 ?�다?�??
                   disabled={loading}
                 />
                 <div className={styles.Counter}>{titleCount}/30</div>
@@ -213,7 +213,7 @@ export default function MakeRoomPage() {
 
               <div className={styles.Field}>
                 <div className={styles.LabelRow}>
-                  <span className={styles.Label}>수다 주제</span>
+                  <span className={styles.Label}>?�다 주제</span>
                   <span className={styles.Required}>*</span>
                 </div>
                 <div className={styles.TopicInputRow}>
@@ -221,7 +221,7 @@ export default function MakeRoomPage() {
                     className={styles.Input}
                     value={topic}
                     onChange={handleTopicChange}
-                    placeholder="직접 입력하거나 아래에서 선택하세요"
+                    placeholder="직접 ?�력?�거???�래?�서 ?�택?�세??
                     disabled={loading}
                   />
                   <button
@@ -233,7 +233,7 @@ export default function MakeRoomPage() {
                     {isLoadingAiRecommend ? (
                       <span className={styles.AiButtonContent}>
                         <span className={styles.AiSpinner} />
-                        추천 중...
+                        추천 �?..
                       </span>
                     ) : (
                       "AI 추천"
@@ -244,7 +244,7 @@ export default function MakeRoomPage() {
 
               <div className={styles.Field}>
                 <div className={styles.LabelRow}>
-                  <span className={styles.Label}>턴 수</span>
+                  <span className={styles.Label}>????/span>
                 </div>
                 <div className={styles.TurnRow}>
                   {[3, 4, 5].map((n) => {
@@ -257,8 +257,8 @@ export default function MakeRoomPage() {
                         onClick={() => setTurn(n)}
                         disabled={loading}
                       >
-                        <span className={styles.TurnIcon} aria-hidden="true">↻</span>
-                        <span className={styles.TurnText}>{n}턴</span>
+                        <span className={styles.TurnIcon} aria-hidden="true">??/span>
+                        <span className={styles.TurnText}>{n}??/span>
                       </button>
                     );
                   })}
@@ -267,7 +267,7 @@ export default function MakeRoomPage() {
 
               <div className={styles.Field}>
                 <div className={styles.LabelRow}>
-                  <span className={styles.Label}>턴당 제한시간 (초)</span>
+                  <span className={styles.Label}>?�당 ?�한?�간 (�?</span>
                 </div>
                 <div className={styles.Stepper}>
                   <button
@@ -278,7 +278,7 @@ export default function MakeRoomPage() {
                   >
                     -
                   </button>
-                  <span className={styles.StepValue}>{timeLimit}초</span>
+                  <span className={styles.StepValue}>{timeLimit}�?/span>
                   <button
                     className={styles.StepButton}
                     type="button"
@@ -296,7 +296,7 @@ export default function MakeRoomPage() {
                 onClick={handleSubmit}
                 disabled={loading}
               >
-                {loading ? "생성 중..." : "방 만들기"}
+                {loading ? "?�성 �?.." : "�?만들�?}
               </button>
             </section>
           </div>
@@ -307,7 +307,7 @@ export default function MakeRoomPage() {
         open={modalOpen}
         title={modalTitle}
         message={modalMessage}
-        confirmText="확인"
+        confirmText="?�인"
         onConfirm={() => setModalOpen(false)}
         onClose={() => setModalOpen(false)}
         cancelText=""

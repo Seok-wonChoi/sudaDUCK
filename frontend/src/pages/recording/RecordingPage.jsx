@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "@/api/api";
-import { useOpenVidu } from "@/context/OpenViduContext"; // 👈 OpenVidu Hook 추가
+import { useOpenVidu } from "@/context/OpenViduContext"; // ?�� OpenVidu Hook 추�?
 import Recordinglayout from "@/components/features/recording/layout/RecordingLayout";
 import styles from "./RecordingPage.module.css";
 import {
@@ -12,7 +12,7 @@ import {
 } from "@/api/shadowing";
 import { leaveRoom, getRoomLobby, toggleReady, startRoom } from "@/api/rooms";
 import useRoomWebSocket from "@/hooks/useRoomWebSocket";
-import useMicAnalyzer from "@/hooks/useMicAnalyzer"; // 👈 추가
+import useMicAnalyzer from "@/hooks/useMicAnalyzer"; // ?�� 추�?
 import LoadingOverlay from "@/components/common/LoadingOverlay/LoadingOverlay";
 import duckTogether from "@/assets/images/duck_together.png";
 
@@ -40,10 +40,10 @@ const COLOR_MAP = {
 };
 
 const ACCESSORY_MAP = {
-  hat: "🎩",
-  sunglasses: "🕶️",
-  ribbon: "🎀",
-  crown: "👑",
+  hat: "?��",
+  sunglasses: "?���?,
+  ribbon: "??",
+  crown: "?��",
   none: null,
 };
 
@@ -88,7 +88,7 @@ import BottomAllDone from "@/components/features/recording/bottom/BottomAllDone"
 // Libraries
 import RecordRTC, { StereoAudioRecorder } from "recordrtc";
 
-// 설정 상수
+// ?�정 ?�수
 const AI_PLAYING_MS = 2500;
 
 const STEP = {
@@ -102,14 +102,14 @@ const STEP = {
   ALL_DONE: "all_done",
 };
 
-// 더미 데이터
+// ?��? ?�이??
 const DUMMY_CONVERSATIONS = {
   1: [
     {
       id: 1,
       scriptId: "dummy_1",
-      speaker: "장가은",
-      korean: "나는 카페에서 아르바이트를 했는데, 정말 힘들었어요.",
+      speaker: "?��??�",
+      korean: "?�는 카페?�서 ?�르바이?��? ?�는?? ?�말 ?�들?�어??",
       english: "I worked at a coffee shop, and it was really tough.",
       blankWords: ["worked", "really"],
       score: null,
@@ -123,24 +123,24 @@ const DUMMY_CONVERSATIONS = {
 export default function RecordingPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  // 👇 OpenVidu Publisher, Subscribers, leaveSession 가져오기
+  // ?�� OpenVidu Publisher, Subscribers, leaveSession 가?�오�?
   const { publisher, subscribers, leaveSession } = useOpenVidu(); 
 
   const roomInfo = state?.roomInfo || {};
   const myUserId = state?.myUserId; // 본인 userId
-  const [participants, setParticipants] = useState(state?.participants || []); // 참여자 목록
+  const [participants, setParticipants] = useState(state?.participants || []); // 참여??목록
 
   useEffect(() => {
-    console.log("[RecordingPage] 페이지 로드 - 전체 state:", state);
-  }, []); // 마운트 시 1회만 실행
+    // console.log("[RecordingPage] ?�이지 로드 - ?�체 state:", state);
+  }, []); // 마운????1?�만 ?�행
 
   const TURNS = roomInfo.turnCount || 3;
 
   const [step, setStep] = useState(STEP.AI_TIMER);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // 👈 제출 중 상태 추가
-  const [isReady, setIsReady] = useState(false); // 👈 내 준비 상태 추가
-  // state로 전달받은 currentTurn 사용
+  const [isSubmitting, setIsSubmitting] = useState(false); // ?�� ?�출 �??�태 추�?
+  const [isReady, setIsReady] = useState(false); // ?�� ??준�??�태 추�?
+  // state�??�달받�? currentTurn ?�용
   const [currentTurn, setCurrentTurn] = useState(() => {
     return roomInfo.currentTurn ?? roomInfo.roomInfo?.currentTurn ?? 1;
   });
@@ -148,7 +148,7 @@ export default function RecordingPage() {
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [countdown, setCountdown] = useState(3);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [recordingCountdown, setRecordingCountdown] = useState(10); // 녹음 카운트다운 (10초)
+  const [recordingCountdown, setRecordingCountdown] = useState(10); // ?�음 카운?�다??(10�?
   const [sentenceScores, setSentenceScores] = useState({});
   const [bookmarkedSentences, setBookmarkedSentences] = useState([]);
   const [conversations, setConversations] = useState({});
@@ -156,26 +156,26 @@ export default function RecordingPage() {
   const [scriptError, setScriptError] = useState(null);
   const [isLoadingScript, setIsLoadingScript] = useState(false);
   const [turnResults, setTurnResults] = useState({});
-  const [showBlanks, setShowBlanks] = useState(true); // 👈 빈칸 모드 상태 추가
-  const [toastMessage, setToastMessage] = useState(""); // 👈 토스트 메시지 상태 추가
-  const [isSpeakerMuted, setIsSpeakerMuted] = useState(true); // 👈 상대방 소리 음소거 상태 추가
+  const [showBlanks, setShowBlanks] = useState(true); // ?�� 빈칸 모드 ?�태 추�?
+  const [toastMessage, setToastMessage] = useState(""); // ?�� ?�스??메시지 ?�태 추�?
+  const [isSpeakerMuted, setIsSpeakerMuted] = useState(true); // ?�� ?��?�??�리 ?�소�??�태 추�?
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
-  // MediaRecorder 대신 RecordRTC 사용을 위한 ref
+  // MediaRecorder ?�??RecordRTC ?�용???�한 ref
   const recorderRef = useRef(null);
   const audioRef = useRef(null);
-  const prevIsConversationStepRef = useRef(null); // 👈 이전 마이크 상태 저장용 Ref
-  const hasNavigatedRef = useRef(false); // 👈 중복 이동 방지용 Ref
+  const prevIsConversationStepRef = useRef(null); // ?�� ?�전 마이???�태 ?�?�용 Ref
+  const hasNavigatedRef = useRef(false); // ?�� 중복 ?�동 방�???Ref
 
-  // --- 🪄 [추가] 패널 드래그 및 최소화 상태 ---
+  // --- ?�� [추�?] ?�널 ?�래�?�?최소???�태 ---
   const [panelPos, setPanelPos] = useState({ top: 130, right: 40 });
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
 
   const handleMouseDown = (e) => {
-    // 버튼 클릭 시에는 드래그 방지
+    // 버튼 ?�릭 ?�에???�래�?방�?
     if (e.target.closest('button')) return;
     
     setIsDragging(true);
@@ -193,7 +193,7 @@ export default function RecordingPage() {
       const newLeft = e.clientX - dragOffset.current.x;
       const newTop = e.clientY - dragOffset.current.y;
       
-      // 오른쪽 기준 좌표로 변환 (화면 크기 변화 대응)
+      // ?�른�?기�? 좌표�?변??(?�면 ?�기 변???�??
       const panelWidth = 280; 
       const newRight = window.innerWidth - (newLeft + panelWidth);
       
@@ -250,21 +250,21 @@ export default function RecordingPage() {
     );
   }, [roomInfo]);
 
-  // [추가] 내가 방장인지 여부를 participants 리스트를 통해 더 확실하게 판별
+  // [추�?] ?��? 방장?��? ?��?�?participants 리스?��? ?�해 ???�실?�게 ?�별
   const amIHost = useMemo(() => {
     const me = participants.find((p) => String(p.id || p.userId) === String(myUserId));
     if (me) return me.isHost === true;
-    return roomInfo.isHost === true; // 리스트에서 못 찾을 경우 fallback
+    return roomInfo.isHost === true; // 리스?�에??�?찾을 경우 fallback
   }, [participants, myUserId, roomInfo.isHost]);
 
-  // 모든 참여자(방장 제외)가 준비되었는지 확인
+  // 모든 참여??방장 ?�외)가 준비되?�는지 ?�인
   const allReady = useMemo(() => {
     const nonHostParticipants = participants.filter((p) => !p.isHost);
     if (nonHostParticipants.length === 0) return true;
     return nonHostParticipants.every((p) => p.isReady);
   }, [participants]);
 
-  // 초기 로비 정보 가져오기 (준비 상태 동기화)
+  // 초기 로비 ?�보 가?�오�?(준�??�태 ?�기??
   const fetchLobby = useCallback(async () => {
     if (!roomCode) return;
     try {
@@ -272,7 +272,7 @@ export default function RecordingPage() {
       const members = data.participants || [];
       
       setParticipants((prev) => {
-        // 기존 참여자들의 마이크/발화 상태를 기억하기 위한 맵
+        // 기존 참여?�들??마이??발화 ?�태�?기억?�기 ?�한 �?
         const prevMap = new Map(prev.map(p => [String(p.id || p.userId), p]));
         
         return members.map((m) => {
@@ -287,7 +287,7 @@ export default function RecordingPage() {
             isReady: m.readyStatus === "READY",
             isHost: m.isHost,
             duckCustomJson: m.duckCustomJson,
-            // 👈 중요: 기존에 이미 완료(micOn: true)했다면 그 상태를 유지함
+            // ?�� 중요: 기존???��? ?�료(micOn: true)?�다�?�??�태�??��???
             micOn: prevInfo ? (prevInfo.micOn || (m.micOn ?? false)) : false,
             voiceLevel: prevInfo?.voiceLevel || 0,
             isSpeaking: prevInfo?.isSpeaking || false,
@@ -298,26 +298,26 @@ export default function RecordingPage() {
       const me = members.find(m => String(m.userId) === String(myUserId));
       if (me) setIsReady(me.readyStatus === "READY");
     } catch (e) {
-      console.error("[RecordingPage] 로비 정보 조회 실패:", e);
+      console.error("[RecordingPage] 로비 ?�보 조회 ?�패:", e);
     }
   }, [roomCode, myUserId]);
 
   const handleRoomClosed = useCallback(() => {
-    console.log("[RecordingPage] ROOM_CLOSED 수신 - 방장 퇴장");
-    // 👇 강제 퇴장 시에도 세션 종료
+    // console.log("[RecordingPage] ROOM_CLOSED ?�신 - 방장 ?�장");
+    // ?�� 강제 ?�장 ?�에???�션 종료
     if (leaveSession) leaveSession();
     
     navigate("/main", {
       replace: true,
-      state: { toastMessage: "방장이 퇴장하여 대화가 종료되었습니다." },
+      state: { toastMessage: "방장???�장?�여 ?�?��? 종료?�었?�니??" },
     });
   }, [navigate, leaveSession]);
 
   const handleMiniGameStart = useCallback(() => {
-    console.log('🎮 모든 참여자 미니게임으로 이동 시작');
+    // console.log('?�� 모든 참여??미니게임?�로 ?�동 ?�작');
     navigate("/minigame1", { 
       state: { 
-        ...state, // 기존 state(openviduSessionId 포함) 유지
+        ...state, // 기존 state(openviduSessionId ?�함) ?��?
         roomId: roomId,
         roomCode: roomCode,
         isHost: amIHost, 
@@ -371,24 +371,24 @@ export default function RecordingPage() {
           setParticipants((prev) =>
             prev.map((p) =>
               String(p.id || p.userId) === String(senderKey)
-                ? { ...p, isReady: newReady } // 기존 정보(duckCustomJson 등) 유지하며 상태만 변경
+                ? { ...p, isReady: newReady } // 기존 ?�보(duckCustomJson ?? ?��??�며 ?�태�?변�?
                 : p
             )
           );
         }
       },
       onRoomStarted: (payload) => {
-        console.log("[RecordingPage] 🎮 ROOM_STARTED 수신 - 단계 이동 시작");
+        // console.log("[RecordingPage] ?�� ROOM_STARTED ?�신 - ?�계 ?�동 ?�작");
         if (hasNavigatedRef.current) return;
 
-        // 마지막 턴인 경우: 더 이상 TogetherTalkPage로 이동하지 않고 
-        // handleStartNextTurn(sendMiniGameStart)에 의해 미니게임으로 이동하게 됨
+        // 마�?�??�인 경우: ???�상 TogetherTalkPage�??�동?��? ?�고 
+        // handleStartNextTurn(sendMiniGameStart)???�해 미니게임?�로 ?�동?�게 ??
         if (currentTurn >= TURNS) {
-          console.log("[RecordingPage] 마지막 턴 리포트 완료 대기 중...");
+          // console.log("[RecordingPage] 마�?�???리포???�료 ?��?�?..");
           return;
         }
 
-        // 중간 턴인 경우: 모든 참여자가 동시에 다음 대화방으로 이동
+        // 중간 ?�인 경우: 모든 참여?��? ?�시???�음 ?�?�방?�로 ?�동
         hasNavigatedRef.current = true;
         const nextTurn = currentTurn + 1;
         const navigationState = {
@@ -419,19 +419,19 @@ export default function RecordingPage() {
     roomId
   );
 
-  // 🎤 실시간 음성 분석기
+  // ?�� ?�시�??�성 분석�?
   const { voiceLevel: localVoiceLevel, isSpeaking: localIsSpeaking, start: startMicAnalytic, stop: stopMicAnalytic } = useMicAnalyzer({
     threshold: 0.03,
     holdMs: 220,
   });
 
-  // 🎤 내 목소리 크기를 다른 사람들에게 전송
+  // ?�� ??목소�??�기�??�른 ?�람?�에�??�송
   useEffect(() => {
     if (!isSpeakerMuted && sendVoiceLevel && localVoiceLevel > 0) {
       sendVoiceLevel(localVoiceLevel);
     }
     
-    // 내 화면의 내 아바타에도 표시하기 위해 participants 업데이트
+    // ???�면?????�바?�?�도 ?�시?�기 ?�해 participants ?�데?�트
     if (localIsSpeaking !== undefined) {
       setParticipants(prev => prev.map(p => 
         p.isMe ? { ...p, isSpeaking: localIsSpeaking, voiceLevel: localVoiceLevel } : p
@@ -439,42 +439,42 @@ export default function RecordingPage() {
     }
   }, [localVoiceLevel, localIsSpeaking, isSpeakerMuted, sendVoiceLevel]);
 
-  // 🎤 초기 마이크 상태 전송 (접속 즉시 모두 '평가 중'으로 설정)
+  // ?�� 초기 마이???�태 ?�송 (?�속 즉시 모두 '?��? �??�로 ?�정)
   useEffect(() => {
     if (isConnected && sendMic) {
-      console.log("🎤 [RecordingPage] 초기 마이크 상태 전송 (false)");
+      // console.log("?�� [RecordingPage] 초기 마이???�태 ?�송 (false)");
       sendMic(false);
     }
   }, [isConnected, sendMic]);
 
-  // 👇 [New] OpenVidu 제어 로직 (쉐도잉 중에는 입과 귀를 모두 닫음)
+  // ?�� [New] OpenVidu ?�어 로직 (?�도??중에???�과 귀�?모두 ?�음)
   useEffect(() => {
     if (!publisher) return;
 
-    // 대화가 허용되는 단계: 결과 리포트 화면 또는 완전히 종료된 화면
+    // ?�?��? ?�용?�는 ?�계: 결과 리포???�면 ?�는 ?�전??종료???�면
     const isConversationStep = (step === STEP.TURN_REPORT || step === STEP.ALL_DONE || step === STEP.IDLE);
 
     if (isConversationStep) {
-      // 결과 화면에서는 팀원들과 대화할 수 있도록 마이크 Unmute & 스피커 Unmute
-      console.log(`🎤 [OpenVidu] 결과 확인 단계(${step}) -> 마이크 & 스피커 Unmute`);
+      // 결과 ?�면?�서???�?�들�??�?�할 ???�도�?마이??Unmute & ?�피�?Unmute
+      // console.log(`?�� [OpenVidu] 결과 ?�인 ?�계(${step}) -> 마이??& ?�피�?Unmute`);
       publisher.publishAudio(true);
       setIsSpeakerMuted(false);
       
-      // 🎤 내 음성 분석 시작 및 서버에 마이크 켜짐 알림
+      // ?�� ???�성 분석 ?�작 �??�버??마이??켜짐 ?�림
       startMicAnalytic();
       if (sendMic) sendMic(true);
       
-      // 음소거가 풀릴 때만 알림 표시 (쉐도잉 -> 결과 화면 전환 시)
+      // ?�소거�? ?��??�만 ?�림 ?�시 (?�도??-> 결과 ?�면 ?�환 ??
       if (prevIsConversationStepRef.current === false) {
-        showToast("팀원들과 대화가 가능합니다. 🎙️");
+        showToast("?�?�들�??�?��? 가?�합?�다. ?���?);
       }
     } else {
-      // 쉐도잉 진행 중에는 집중을 위해 마이크 Mute & 스피커 Mute
-      console.log(`🎤 [OpenVidu] 쉐도잉 진행 단계(${step}) -> 마이크 & 스피커 Mute`);
+      // ?�도??진행 중에??집중???�해 마이??Mute & ?�피�?Mute
+      // console.log(`?�� [OpenVidu] ?�도??진행 ?�계(${step}) -> 마이??& ?�피�?Mute`);
       publisher.publishAudio(false);
       setIsSpeakerMuted(true);
 
-      // 🎤 내 음성 분석 중지 및 서버에 마이크 꺼짐 알림
+      // ?�� ???�성 분석 중�? �??�버??마이??꺼짐 ?�림
       stopMicAnalytic();
       if (sendMic) sendMic(false);
     }
@@ -504,7 +504,7 @@ export default function RecordingPage() {
     return false;
   }, [currentTurn, currentSentenceIndex, currentTurnSentences.length, TURNS]);
 
-  // --- 함수들 ---
+  // --- ?�수??---
 
   const clearAllTimers = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -517,26 +517,26 @@ export default function RecordingPage() {
     }
   }, []);
 
-  // [수정] RecordRTC로 녹음 시작 (WAV 포맷)
+  // [?�정] RecordRTC�??�음 ?�작 (WAV ?�맷)
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // RecordRTC 설정: Azure가 좋아하는 완벽한 WAV 포맷으로 설정
+      // RecordRTC ?�정: Azure가 좋아?�는 ?�벽??WAV ?�맷?�로 ?�정
       const recorder = new RecordRTC(stream, {
         type: "audio",
-        mimeType: "audio/wav", // WAV 포맷 강제
+        mimeType: "audio/wav", // WAV ?�맷 강제
         recorderType: StereoAudioRecorder,
         numberOfAudioChannels: 1, // 모노 (Azure 권장)
         desiredSampRate: 16000, // 16kHz (Azure 권장)
       });
 
       recorder.startRecording();
-      recorderRef.current = recorder; // ref에 저장
+      recorderRef.current = recorder; // ref???�??
 
-      console.log("녹음 시작 (WAV 포맷)");
+      // console.log("?�음 ?�작 (WAV ?�맷)");
     } catch (error) {
-      console.error("녹음 시작 실패:", error);
+      console.error("?�음 ?�작 ?�패:", error);
     }
   }, []);
 
@@ -549,13 +549,13 @@ export default function RecordingPage() {
     }
   }, [currentSentenceIndex, currentTurnSentences.length]);
 
-  // [수정] RecordRTC로 녹음 중지 및 전송
+  // [?�정] RecordRTC�??�음 중�? �??�송
   const stopRecording = useCallback(() => {
     if (!currentSentence || !currentSentence.scriptId) {
-  console.error("❌ 발음 평가 실패: scriptId가 유효하지 않습니다.");
+  console.error("??발음 ?��? ?�패: scriptId가 ?�효?��? ?�습?�다.");
   return;
 }
-console.log(`📤 발음 평가 전송 시작`, {
+// console.log(`?�� 발음 ?��? ?�송 ?�작`, {
   roomId,
   turnNo: currentTurn,
   scriptId: currentSentence.scriptId,
@@ -563,44 +563,44 @@ console.log(`📤 발음 평가 전송 시작`, {
 
     const recorder = recorderRef.current;
 
-    // 레코더가 없으면 함수 종료
+    // ?�코?��? ?�으�??�수 종료
     if (!recorder) return;
 
-    // RecordRTC의 stopRecording은 콜백 방식으로 동작합니다.
+    // RecordRTC??stopRecording?� 콜백 방식?�로 ?�작?�니??
     recorder.stopRecording(async () => {
-      // 1. WAV Blob 생성
+      // 1. WAV Blob ?�성
       const blob = recorder.getBlob();
 
-      // 2. 마이크 스트림 정지
+      // 2. 마이???�트�??��?
       try {
         const internalRecorder = recorder.getInternalRecorder();
         if (internalRecorder && internalRecorder.stream) {
           internalRecorder.stream.getTracks().forEach((track) => track.stop());
         }
       } catch (e) {
-        console.warn("마이크 스트림 정지 중 경미한 오류:", e);
+        console.warn("마이???�트�??��? �?경�????�류:", e);
       }
 
-      // 3. 방어 로직: 현재 문장 정보나 scriptId가 없으면 중단
+      // 3. 방어 로직: ?�재 문장 ?�보??scriptId가 ?�으�?중단
       if (!currentSentence || !currentSentence.scriptId) {
         console.error(
-          "❌ 발음 평가 실패: scriptId가 유효하지 않습니다.",
+          "??발음 ?��? ?�패: scriptId가 ?�효?��? ?�습?�다.",
           currentSentence
         );
         setStep(STEP.RECORD_DONE);
         return;
       }
 
-      // 4. API 전송 및 점수 업데이트
+      // 4. API ?�송 �??�수 ?�데?�트
       if (blob && blob.size > 0) {
         try {
-          console.log(`📤 발음 평가 전송 시작 (WAV, ${blob.size} bytes)`, {
+          // console.log(`?�� 발음 ?��? ?�송 ?�작 (WAV, ${blob.size} bytes)`, {
             roomId,
             turnNo: currentTurn,
             scriptId: currentSentence.scriptId,
           });
 
-          // UI 업데이트: 평가 중 상태(-1)
+          // UI ?�데?�트: ?��? �??�태(-1)
           setSentenceScores((prev) => ({
             ...prev,
             [currentSentence.id]: -1,
@@ -608,7 +608,7 @@ console.log(`📤 발음 평가 전송 시작`, {
 
           setIsSubmitting(true);
 
-          // API 호출 (shadowing.js의 saveAssessment)
+          // API ?�출 (shadowing.js??saveAssessment)
           const response = await saveAssessment(
             blob,
             roomId,
@@ -616,22 +616,22 @@ console.log(`📤 발음 평가 전송 시작`, {
             currentSentence.scriptId
           );
 
-          // [핵심] 백엔드에서 받은 점수(score)가 있으면 UI에 즉시 반영
+          // [?�심] 백엔?�에??받�? ?�수(score)가 ?�으�?UI??즉시 반영
           if (response && response.score) {
             const score = parseInt(response.score, 10);
-            console.log("💯 발음 점수 수신:", score);
+            // console.log("?�� 발음 ?�수 ?�신:", score);
 
             setSentenceScores((prev) => ({
               ...prev,
-              [currentSentence.id]: score, // 실제 점수로 업데이트
+              [currentSentence.id]: score, // ?�제 ?�수�??�데?�트
             }));
           } else {
-            console.warn("⚠️ 응답에 점수가 없습니다.", response);
+            console.warn("?�️ ?�답???�수가 ?�습?�다.", response);
           }
 
           setStep(STEP.RECORD_DONE);
         } catch (error) {
-          console.error("❌ 평가 저장 실패:", error);
+          console.error("???��? ?�???�패:", error);
           setSentenceScores((prev) => ({
             ...prev,
             [currentSentence.id]: -2,
@@ -641,7 +641,7 @@ console.log(`📤 발음 평가 전송 시작`, {
           setIsSubmitting(false);
         }
       } else {
-        console.warn("⚠️ 녹음된 데이터가 없습니다 (Blob size 0)");
+        console.warn("?�️ ?�음???�이?��? ?�습?�다 (Blob size 0)");
         setStep(STEP.RECORD_DONE);
       }
     });
@@ -649,12 +649,12 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   const goNextTurn = () => {
     if (currentTurn >= TURNS) {
-      console.log("[RecordingPage] 마지막 턴 완료 - ALL_DONE으로 전환");
+      // console.log("[RecordingPage] 마�?�????�료 - ALL_DONE?�로 ?�환");
       setStep(STEP.ALL_DONE);
       return;
     }
-    // 중간 턴 이동은 handleStartNextTurn -> onRoomStarted를 통해 다함께 진행됩니다.
-    console.log("[RecordingPage] 다음 턴 대기 중 (방장 시작 대기)");
+    // 중간 ???�동?� handleStartNextTurn -> onRoomStarted�??�해 ?�함�?진행?�니??
+    // console.log("[RecordingPage] ?�음 ???��?�?(방장 ?�작 ?��?");
   };
 
   const startFlow = () => setStep(STEP.AI_TIMER);
@@ -668,23 +668,23 @@ console.log(`📤 발음 평가 전송 시작`, {
     setSelectedTurnForReport(null);
   };
 
-  // [수정] 북마크 토글: scriptId 기준으로 동작하도록 수정
+  // [?�정] 북마???��?: scriptId 기�??�로 ?�작?�도�??�정
   const handleBookmarkToggle = useCallback(
     async (id, isBookmarked) => {
       try {
-        // id는 UI에서 넘어온 값 (보통 sentence.id = order_no일 가능성 높음)
-        // currentTurnSentences에서 해당 문장의 진짜 scriptId 찾기
+        // id??UI?�서 ?�어??�?(보통 sentence.id = order_no??가?�성 ?�음)
+        // currentTurnSentences?�서 ?�당 문장??진짜 scriptId 찾기
         const sentence = currentTurnSentences.find((s) => s.id === id);
         const realScriptId = sentence?.scriptId;
 
         if (!realScriptId) {
-          console.error("스크립트 ID를 찾을 수 없습니다.");
+          console.error("?�크립트 ID�?찾을 ???�습?�다.");
           return;
         }
 
         const targetTurn = selectedTurnForReport || currentTurn;
 
-        console.log("[RecordingPage] 북마크 토글:", {
+        // console.log("[RecordingPage] 북마???��?:", {
           id,
           realScriptId,
           roomId,
@@ -692,36 +692,36 @@ console.log(`📤 발음 평가 전송 시작`, {
           turnNo: targetTurn,
         });
 
-        // API 호출 - 응답에서 isLiked 상태를 받아옴
+        // API ?�출 - ?�답?�서 isLiked ?�태�?받아??
         const response = await toggleScriptLike(
           realScriptId,
           roomId,
           targetTurn
         );
 
-        console.log("[RecordingPage] 북마크 API 응답:", response);
+        // console.log("[RecordingPage] 북마??API ?�답:", response);
 
-        // scriptId는 고유하므로 scriptId를 북마크 키로 사용
+        // scriptId??고유?��?�?scriptId�?북마???�로 ?�용
         const bookmarkKey = realScriptId;
 
-        // API 응답의 isLiked 값을 기준으로 로컬 상태 업데이트
+        // API ?�답??isLiked 값을 기�??�로 로컬 ?�태 ?�데?�트
         setBookmarkedSentences((prev) => {
           const next = response.isLiked
-            ? [...new Set([...prev, bookmarkKey])]  // API가 저장됨(true)을 반환하면 추가
-            : prev.filter((key) => key !== bookmarkKey);  // API가 삭제됨(false)을 반환하면 제거
+            ? [...new Set([...prev, bookmarkKey])]  // API가 ?�?�됨(true)??반환?�면 추�?
+            : prev.filter((key) => key !== bookmarkKey);  // API가 ??��??false)??반환?�면 ?�거
           localStorage.setItem("bookmarkedSentences", JSON.stringify(next));
           return next;
         });
       } catch (error) {
-        console.error("북마크 실패:", error);
-        alert("북마크 저장에 실패했습니다.");
+        console.error("북마???�패:", error);
+        alert("북마???�?�에 ?�패?�습?�다.");
       }
     },
     [currentTurnSentences, roomId, selectedTurnForReport, currentTurn]
   );
 
   const handleReady = useCallback(async () => {
-    console.log("[RecordingPage] 🔘 handleReady 호출:", {
+    // console.log("[RecordingPage] ?�� handleReady ?�출:", {
       isConnected,
       isReady,
       roomCode,
@@ -730,14 +730,14 @@ console.log(`📤 발음 평가 전송 시작`, {
     });
 
     if (!isConnected) {
-      showToast("서버와 연결되지 않았습니다.");
+      showToast("?�버?� ?�결?��? ?�았?�니??");
       return;
     }
     const nextReady = !isReady;
     try {
-      console.log("[RecordingPage] 📡 toggleReady API 호출 시작:", { roomCode, nextReady });
+      // console.log("[RecordingPage] ?�� toggleReady API ?�출 ?�작:", { roomCode, nextReady });
       await toggleReady(roomCode, nextReady);
-      console.log("[RecordingPage] ✅ toggleReady API 호출 성공");
+      // console.log("[RecordingPage] ??toggleReady API ?�출 ?�공");
 
       setIsReady(nextReady);
       if (sendReady) sendReady(nextReady);
@@ -745,21 +745,21 @@ console.log(`📤 발음 평가 전송 시작`, {
         prev.map((p) => (String(p.id || p.userId) === String(myUserId) ? { ...p, isReady: nextReady } : p))
       );
     } catch (e) {
-      console.error("[RecordingPage] ❌ toggleReady API 호출 실패:", e);
-      console.error("[RecordingPage] 에러 상세:", {
+      console.error("[RecordingPage] ??toggleReady API ?�출 ?�패:", e);
+      console.error("[RecordingPage] ?�러 ?�세:", {
         status: e.response?.status,
         statusText: e.response?.statusText,
         data: e.response?.data,
         headers: e.response?.headers
       });
-      showToast("준비 상태 변경에 실패했습니다.");
+      showToast("준�??�태 변경에 ?�패?�습?�다.");
     }
   }, [isConnected, isReady, roomCode, sendReady, myUserId, showToast]);
 
   const handleStartNextTurn = useCallback(async () => {
     if (!amIHost) return;
     if (!allReady && participants.length > 1) {
-      showToast("모든 참여자가 준비되어야 합니다.");
+      showToast("모든 참여?��? 준비되?�야 ?�니??");
       return;
     }
 
@@ -767,31 +767,31 @@ console.log(`📤 발음 평가 전송 시작`, {
 
     try {
       if (isLastTurn) {
-        console.log("🎮 [방장] 마지막 턴 완료 - 미니게임 시작 신호 전송");
+        // console.log("?�� [방장] 마�?�????�료 - 미니게임 ?�작 ?�호 ?�송");
         if (sendMiniGameStart) {
           sendMiniGameStart();
         } else {
-          console.error("❌ sendMiniGameStart 함수가 없습니다.");
+          console.error("??sendMiniGameStart ?�수가 ?�습?�다.");
         }
       } else {
-        console.log("↻ [방장] 다음 턴 시작 API 호출");
+        // console.log("??[방장] ?�음 ???�작 API ?�출");
         await startRoom(roomCode);
       }
     } catch (e) {
-      showToast(isLastTurn ? "미니게임 시작에 실패했습니다." : "다음 턴 시작에 실패했습니다.");
+      showToast(isLastTurn ? "미니게임 ?�작???�패?�습?�다." : "?�음 ???�작???�패?�습?�다.");
     }
   }, [allReady, roomCode, showToast, participants.length, amIHost, currentTurn, TURNS, sendMiniGameStart]);
 
   const handleLogoExit = useCallback(async () => {
-    // 👇 진짜 방을 나갈 때는 세션 종료
+    // ?�� 진짜 방을 ?�갈 ?�는 ?�션 종료
     if (leaveSession) leaveSession();
 
     if (roomCode) {
       try {
         await leaveRoom({ roomCode });
-        console.log("[RecordingPage] 방 퇴장 성공");
+        // console.log("[RecordingPage] �??�장 ?�공");
       } catch (e) {
-        console.error("[RecordingPage] 방 퇴장 실패:", e);
+        console.error("[RecordingPage] �??�장 ?�패:", e);
       }
     }
   }, [roomCode, leaveSession]);
@@ -800,19 +800,19 @@ console.log(`📤 발음 평가 전송 시작`, {
     async (turnNo = currentTurn) => {
       if (!roomId || !turnNo) {
         console.warn(
-          "[RecordingPage] roomId 또는 turnNo가 없어 점수 조회 불가",
+          "[RecordingPage] roomId ?�는 turnNo가 ?�어 ?�수 조회 불�?",
         );
         return;
       }
 
       try {
-        console.log(`🔍 [RecordingPage] 턴 ${turnNo} 점수 조회 시작`);
+        // console.log(`?�� [RecordingPage] ??${turnNo} ?�수 조회 ?�작`);
         const results = await getTurnResults(roomId, turnNo);
 
-        console.log("📊 [RecordingPage] 점수 조회 결과:", results);
+        // console.log("?�� [RecordingPage] ?�수 조회 결과:", results);
 
         if (!Array.isArray(results) || results.length === 0) {
-          console.warn("⚠️ [RecordingPage] 점수 데이터가 비어있음");
+          console.warn("?�️ [RecordingPage] ?�수 ?�이?��? 비어?�음");
           return;
         }
 
@@ -834,10 +834,10 @@ console.log(`📤 발음 평가 전송 시작`, {
           }
         });
 
-        console.log("✅ [RecordingPage] 점수 업데이트:", scores);
+        // console.log("??[RecordingPage] ?�수 ?�데?�트:", scores);
         setSentenceScores((prev) => ({ ...prev, ...scores }));
       } catch (error) {
-        console.error("❌ [RecordingPage] 점수 조회 실패:", error);
+        console.error("??[RecordingPage] ?�수 조회 ?�패:", error);
       }
     },
     [roomId, currentTurn, conversations, currentTurnSentences],
@@ -850,12 +850,12 @@ console.log(`📤 발음 평가 전송 시작`, {
     if (saved) setBookmarkedSentences(JSON.parse(saved));
   }, []);
 
-  // 턴 스크립트 로드
+  // ???�크립트 로드
   useEffect(() => {
     const fetchTurnScripts = async () => {
       if (conversations[currentTurn]) {
-        console.log(
-          `[RecordingPage] turn ${currentTurn} 스크립트 이미 로드됨`
+        // console.log(
+          `[RecordingPage] turn ${currentTurn} ?�크립트 ?��? 로드??
         );
         return;
       }
@@ -864,7 +864,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       setScriptError(null);
 
       if (!roomId) {
-        console.warn(`[RecordingPage] roomId 없음 - 더미 데이터 사용`);
+        console.warn(`[RecordingPage] roomId ?�음 - ?��? ?�이???�용`);
         setConversations((prev) => ({
           ...prev,
           [currentTurn]: DUMMY_CONVERSATIONS[currentTurn] || [],
@@ -874,9 +874,9 @@ console.log(`📤 발음 평가 전송 시작`, {
       }
 
       try {
-        console.log(`[RecordingPage] turn ${currentTurn} 스크립트 로드 시작`);
+        // console.log(`[RecordingPage] turn ${currentTurn} ?�크립트 로드 ?�작`);
         const response = await getTurnScripts(roomId, currentTurn);
-        console.log(`[RecordingPage] 응답:`, response);
+        // console.log(`[RecordingPage] ?�답:`, response);
 
         const scripts = Array.isArray(response) ? response : [response];
 
@@ -884,8 +884,8 @@ console.log(`📤 발음 평가 전송 시작`, {
           scripts.length === 0 ||
           (scripts.length === 1 && !scripts[0]?.scriptId)
         ) {
-          const errorMsg = `턴 ${currentTurn}에 대화 내용이 없습니다.`;
-          console.log(`[RecordingPage] ${errorMsg}`);
+          const errorMsg = `??${currentTurn}???�???�용???�습?�다.`;
+          // console.log(`[RecordingPage] ${errorMsg}`);
           setScriptError(errorMsg);
           setConversations((prev) => ({ ...prev, [currentTurn]: [] }));
           setIsLoadingScript(false);
@@ -913,11 +913,11 @@ console.log(`📤 발음 평가 전송 시작`, {
               speakerName =
                 firstParticipant?.name ||
                 firstParticipant?.nickname ||
-                "참여자";
+                "참여??;
             }
 
             if (!speakerName || speakerName === "Unknown") {
-              speakerName = "참여자";
+              speakerName = "참여??;
             }
 
             let isMe = false;
@@ -932,7 +932,7 @@ console.log(`📤 발음 평가 전송 시작`, {
             }
 
             const displayName = isMe
-              ? `${speakerName}(나)`
+              ? `${speakerName}(??`
               : speakerName;
 
             return {
@@ -951,8 +951,8 @@ console.log(`📤 발음 평가 전송 시작`, {
             };
           });
 
-        console.log(
-          `[RecordingPage] 포맷팅 완료 (${formatted.length}개):`,
+        // console.log(
+          `[RecordingPage] ?�맷???�료 (${formatted.length}�?:`,
           formatted
         );
         setConversations((prev) => ({
@@ -961,8 +961,8 @@ console.log(`📤 발음 평가 전송 시작`, {
         }));
         setIsLoadingScript(false);
       } catch (e) {
-        console.error(`[RecordingPage] 로드 실패:`, e);
-        const errorMsg = `오류 발생: ${e.message || "네트워크 오류"}`;
+        console.error(`[RecordingPage] 로드 ?�패:`, e);
+        const errorMsg = `?�류 발생: ${e.message || "?�트?�크 ?�류"}`;
         setScriptError(errorMsg);
         setConversations((prev) => ({ ...prev, [currentTurn]: [] }));
         setIsLoadingScript(false);
@@ -971,7 +971,7 @@ console.log(`📤 발음 평가 전송 시작`, {
     fetchTurnScripts();
   }, [currentTurn, roomId, conversations, participants]);
 
-  // 메인 타이머 및 자동 흐름 제어
+  // 메인 ?�?�머 �??�동 ?�름 ?�어
   useEffect(() => {
     clearAllTimers();
 
@@ -979,18 +979,18 @@ console.log(`📤 발음 평가 전송 시작`, {
       if (conversations[currentTurn] === undefined) return;
       if (conversations[currentTurn].length === 0) return;
 
-      // ★ 스크립트가 아직 로드되지 않은 경우 대기
+      // ???�크립트가 ?�직 로드?��? ?��? 경우 ?��?
       if (conversations[currentTurn] === undefined) {
-        console.log(
-          `⏳ [RecordingPage] turn ${currentTurn} 스크립트 로드 대기 중...`,
+        // console.log(
+          `??[RecordingPage] turn ${currentTurn} ?�크립트 로드 ?��?�?..`,
         );
         return;
       }
 
-      // ★ 해당 턴의 스크립트가 빈 배열인 경우 (스크립트 없음)
+      // ???�당 ?�의 ?�크립트가 �?배열??경우 (?�크립트 ?�음)
       if (conversations[currentTurn].length === 0) {
-        console.log(
-          `⚠️ [RecordingPage] turn ${currentTurn} 스크립트가 없음 - 동기화 단계로 이동`,
+        // console.log(
+          `?�️ [RecordingPage] turn ${currentTurn} ?�크립트가 ?�음 - ?�기???�계�??�동`,
         );
         setTimeout(() => {
           setStep(STEP.TURN_REPORT);
@@ -998,8 +998,8 @@ console.log(`📤 발음 평가 전송 시작`, {
         return;
       }
 
-      // 정상: 3초 카운트다운 시작
-      console.log("✅ [STEP] AI_TIMER 카운트다운 시작 (3초)");
+      // ?�상: 3�?카운?�다???�작
+      // console.log("??[STEP] AI_TIMER 카운?�다???�작 (3�?");
       setCountdown(3);
       intervalRef.current = setInterval(() => {
         setCountdown((c) => {
@@ -1025,7 +1025,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       }, 1000);
     } else if (step === STEP.AI_PLAYING) {
       if (currentSentence?.tts_url) {
-        // TTS URL 보정 (프록시용)
+        // TTS URL 보정 (?�록?�용)
         let ttsUrl = currentSentence.tts_url;
         if (ttsUrl && ttsUrl.startsWith("/audio")) {
           ttsUrl = ttsUrl.replace("/audio", "/api/v1/audio");
@@ -1073,11 +1073,11 @@ console.log(`📤 발음 평가 전송 시작`, {
     } else if (step === STEP.RECORDING) {
       setRecordingTime(0);
       
-      // 문장 길이에 따른 동적 시간 계산 (단어 수 기준)
+      // 문장 길이???�른 ?�적 ?�간 계산 (?�어 ??기�?)
       const words = currentSentence?.english?.split(' ')?.length || 0;
       const dynamicDuration = Math.max(8, Math.min(30, Math.ceil(words * 1.5) + 5));
       
-      console.log(`🎙️ [RecordingPage] 문장 길이(${words}단어)에 따른 제한시간 설정: ${dynamicDuration}초`);
+      // console.log(`?���?[RecordingPage] 문장 길이(${words}?�어)???�른 ?�한?�간 ?�정: ${dynamicDuration}�?);
       setRecordingCountdown(dynamicDuration);
       startRecording();
 
@@ -1110,15 +1110,15 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   useEffect(() => {
     if (step === STEP.TURN_REPORT && roomId && currentTurn) {
-      console.log("[RecordingPage] TURN_REPORT 진입 → 점수 조회");
+      // console.log("[RecordingPage] TURN_REPORT 진입 ???�수 조회");
       fetchTurnResults(currentTurn);
     }
   }, [step, currentTurn, roomId, fetchTurnResults]);
 
-  // 스크립트 에러 발생 시 동기화 단계로 진입
+  // ?�크립트 ?�러 발생 ???�기???�계�?진입
   useEffect(() => {
     if (scriptError) {
-      console.log("[RecordingPage] 스크립트 오류 발생 - 동기화 단계로 이동");
+      // console.log("[RecordingPage] ?�크립트 ?�류 발생 - ?�기???�계�??�동");
       const timer = setTimeout(() => {
         setStep(STEP.TURN_REPORT);
       }, 1000);
@@ -1126,7 +1126,7 @@ console.log(`📤 발음 평가 전송 시작`, {
     }
   }, [scriptError]);
 
-  // UI 데이터 가공
+  // UI ?�이??가�?
   const sentenceCardsData = useMemo(() => {
     const isReportMode = step === STEP.TURN_REPORT || step === STEP.ALL_DONE;
     const targetTurn = selectedTurnForReport || currentTurn;
@@ -1139,14 +1139,14 @@ console.log(`📤 발음 평가 전송 시작`, {
           averageScore: result.averageScore,
         };
       });
-      console.log("🔍 [RecordingPage] resultsMap:", resultsMap);
+      // console.log("?�� [RecordingPage] resultsMap:", resultsMap);
     }
 
     return currentTurnSentences.map((s, i) => {
       const resultData = resultsMap[s.scriptId];
       const finalScore = resultData?.score ?? sentenceScores[s.id];
 
-      // scriptId는 고유하므로 scriptId만 사용 (턴 번호 불필요)
+      // scriptId??고유?��?�?scriptId�??�용 (??번호 불필??
       const bookmarkKey = s.scriptId;
       return {
         ...s,
@@ -1171,7 +1171,7 @@ console.log(`📤 발음 평가 전송 시작`, {
   ]);
 
   const handleManualStop = useCallback(() => {
-    console.log("⏹️ [RecordingPage] 사용자가 녹음을 수동으로 종료했습니다.");
+    // console.log("?�️ [RecordingPage] ?�용?��? ?�음???�동?�로 종료?�습?�다.");
     clearAllTimers();
     stopRecording();
   }, [clearAllTimers, stopRecording]);
@@ -1188,7 +1188,7 @@ console.log(`📤 발음 평가 전송 시작`, {
           }}
         >
           <p style={{ fontSize: "16px", color: "#666" }}>
-            스크립트를 불러오는 중입니다...
+            ?�크립트�?불러?�는 중입?�다...
           </p>
         </div>
       );
@@ -1241,7 +1241,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       case STEP.RECORD_DONE:
         return <BottomRecordDone isLast={isLastSentence} />;
       case STEP.TURN_REPORT:
-        // 모든 턴(중간 및 마지막)에 대해 동기화 로직(준비/시작) 적용
+        // 모든 ??중간 �?마�?�????�???�기??로직(준�??�작) ?�용
         const readyCount = participants.filter(p => !p.isHost && p.isReady).length;
         const totalToReady = participants.length - 1;
 
@@ -1258,18 +1258,18 @@ console.log(`📤 발음 평가 전송 시작`, {
               gap: "12px",
             }}
           >
-            {/* 스크립트 에러/내용없음 메시지가 있으면 버튼 위에 표시 */}
+            {/* ?�크립트 ?�러/?�용?�음 메시지가 ?�으�?버튼 ?�에 ?�시 */}
             {scriptError && (
               <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px", whiteSpace: "pre-line" }}>
                 {scriptError}
               </p>
             )}
 
-            {/* 준비 현황을 모든 유저에게 표시 */}
+            {/* 준�??�황??모든 ?��??�게 ?�시 */}
             <div style={{ fontSize: "14px", color: "#666", fontWeight: "500" }}>
               {participants.length > 1 
-                ? `팀원 준비 현황: ${readyCount} / ${totalToReady}`
-                : "참여자를 기다리고 있습니다."}
+                ? `?�??준�??�황: ${readyCount} / ${totalToReady}`
+                : "참여?��? 기다리고 ?�습?�다."}
             </div>
 
             {amIHost ? (
@@ -1287,7 +1287,7 @@ console.log(`📤 발음 평가 전송 시작`, {
                   cursor: (!allReady && participants.length > 1) ? "not-allowed" : "pointer",
                 }}
               >
-                {currentTurn >= TURNS ? "복습 게임 시작" : "다음 단계로"}
+                {currentTurn >= TURNS ? "복습 게임 ?�작" : "?�음 ?�계�?}
               </button>
             ) : (
               <button
@@ -1303,7 +1303,7 @@ console.log(`📤 발음 평가 전송 시작`, {
                   cursor: "pointer",
                 }}
               >
-                {isReady ? "준비 완료!" : "준비하기"}
+                {isReady ? "준�??�료!" : "준비하�?}
               </button>
             )}
           </div>
@@ -1319,7 +1319,7 @@ console.log(`📤 발음 평가 전송 시작`, {
 
   return (
     <>
-      {/* 📊 실시간 학습 현황 패널 추가 (드래그/최소화 기능) */}
+      {/* ?�� ?�시�??�습 ?�황 ?�널 추�? (?�래�?최소??기능) */}
       <div 
         className={`${styles.StatusPanel} ${isDragging ? styles.Dragging : ''} ${isMinimized ? styles.Minimized : ''}`}
         style={{ 
@@ -1331,7 +1331,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       >
         <div className={styles.StatusTitle}>
           <div className={styles.TitleLeft}>
-            <span>학습 현황</span>
+            <span>?�습 ?�황</span>
             {!isMinimized && <span className={styles.LiveBadge}>LIVE</span>}
           </div>
           <button 
@@ -1340,16 +1340,16 @@ console.log(`📤 발음 평가 전송 시작`, {
               e.stopPropagation();
               setIsMinimized(!isMinimized);
             }}
-            title={isMinimized ? "펼치기" : "최소화"}
+            title={isMinimized ? "?�치�? : "최소??}
           >
-            {isMinimized ? "∨" : "∧"}
+            {isMinimized ? "?? : "??}
           </button>
         </div>
         
         {!isMinimized && participants.map((p) => {
           const profile = getDuckProfileDetail(p.duckCustomJson);
-          // 🔴/🟢 점은 오직 '평가(쉐도잉) 완료' 여부만 나타냄 (준비 상태와 분리)
-          // 내가 리포트 단계거나, 상대방의 마이크가 켜졌다면(쉐도잉 완료) '평가 완료'
+          // ?��/?�� ?��? ?�직 '?��?(?�도?? ?�료' ?��?�??��???(준�??�태?� 분리)
+          // ?��? 리포???�계거나, ?��?방의 마이?��? 켜졌?�면(?�도???�료) '?��? ?�료'
           const isEvalFinished = p.isMe 
             ? (step === STEP.TURN_REPORT || step === STEP.ALL_DONE) 
             : p.micOn;
@@ -1373,14 +1373,14 @@ console.log(`📤 발음 평가 전송 시작`, {
                 <div className={styles.NameRow}>
                   <span className={styles.StatusName}>
                     {p.isMe 
-                      ? `${p.name.length > 5 ? p.name.slice(0, 5) + '..' : p.name}(나)` 
+                      ? `${p.name.length > 5 ? p.name.slice(0, 5) + '..' : p.name}(??` 
                       : (p.name.length > 5 ? p.name.slice(0, 5) + '..' : p.name)}
                   </span>
                 </div>
                 <div className={styles.StatusLabel}>
                   <span className={`${styles.StatusDot} ${isEvalFinished ? styles.DotGreen : styles.DotRed}`} />
                   <span className={isEvalFinished ? styles.TextGreen : styles.TextRed}>
-                    {isEvalFinished ? '평가 완료' : '평가 중'}
+                    {isEvalFinished ? '?��? ?�료' : '?��? �?}
                   </span>
                 </div>
               </div>
@@ -1389,7 +1389,7 @@ console.log(`📤 발음 평가 전송 시작`, {
         })}
       </div>
 
-      {/* 👇 소리 재생용 컴포넌트 추가 (음소거 상태 전달) */}
+      {/* ?�� ?�리 ?�생??컴포?�트 추�? (?�소�??�태 ?�달) */}
       {subscribers.map((sub, i) => (
         <div key={i} style={{ display: 'none' }}>
           <UserAudioComponent streamManager={sub} muted={isSpeakerMuted} />
@@ -1418,7 +1418,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       showBlanks={showBlanks}
       isSubmitting={isSubmitting}
       onToggleBlanks={() => {
-        console.log("🔄 [RecordingPage] 빈칸 모드 토글:", !showBlanks);
+        // console.log("?�� [RecordingPage] 빈칸 모드 ?��?:", !showBlanks);
         setShowBlanks(!showBlanks);
       }}
       totalTurns={TURNS}
@@ -1432,14 +1432,14 @@ console.log(`📤 발음 평가 전송 시작`, {
         }
       }}
       selectedTurnForReport={selectedTurnForReport}
-      logoExitMessage="메인 화면으로 나가시겠습니까?"
+      logoExitMessage="메인 ?�면?�로 ?��??�겠?�니�?"
       onLogoExit={handleLogoExit}
       disableProfileClick={true}
       />
       {isTransitioning && (
         <LoadingOverlay
-          title="대화 단계로 이동합니다!"
-          subtitle="팀원들과 즐거운 대화를 나눠보세요."
+          title="?�???�계�??�동?�니??"
+          subtitle="?�?�들�?즐거???�?��? ?�눠보세??"
           image={duckTogether}
         />
       )}
@@ -1448,7 +1448,7 @@ console.log(`📤 발음 평가 전송 시작`, {
   );
 }
 
-// 👇 소리 재생용 컴포넌트
+// ?�� ?�리 ?�생??컴포?�트
 const UserAudioComponent = ({ streamManager, muted }) => {
   const audioRef = useRef(null);
 
@@ -1458,7 +1458,7 @@ const UserAudioComponent = ({ streamManager, muted }) => {
     }
   }, [streamManager]);
 
-  // muted 프로퍼티가 변경될 때 실제 엘리먼트에 적용
+  // muted ?�로?�티가 변경될 ???�제 ?�리먼트???�용
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.muted = muted;

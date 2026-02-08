@@ -19,7 +19,7 @@ export default function TogetherPage() {
   const location = useLocation();
   const { getEffectiveVolume, isMuted } = useSoundContext();
 
-  // 방 만들기 권한이 있는 특정 사용자 ID 리스트
+  // �?만들�?권한???�는 ?�정 ?�용??ID 리스??
   const ALLOWED_USER_IDS = useMemo(() => [
     4719057912,
     4719307718,
@@ -27,7 +27,7 @@ export default function TogetherPage() {
     4720876392
   ], []);
 
-  // 현재 유저가 방 만들기 권한이 있는지 확인
+  // ?�재 ?��?가 �?만들�?권한???�는지 ?�인
   const canMakeRoom = useMemo(() => {
     const token = localStorage.getItem("accessToken");
     if (!token) return false;
@@ -39,7 +39,7 @@ export default function TogetherPage() {
     }
   }, [ALLOWED_USER_IDS]);
 
-  // ✅ MainPage에서 넘겨준 summary 있으면 그걸 초기값으로 사용
+  // ??MainPage?�서 ?�겨준 summary ?�으�?그걸 초기값으�??�용
   const state = location.state ?? {};
   const initialSummary = state.summary;
 
@@ -53,7 +53,7 @@ export default function TogetherPage() {
     setTimeout(() => setToastMessage(""), 3000);
   }, []);
 
-  // 통계 데이터 로드 (최신화)
+  // ?�계 ?�이??로드 (최신??
   useEffect(() => {
     let alive = true;
 
@@ -72,7 +72,7 @@ export default function TogetherPage() {
           });
         }
       } catch (error) {
-        console.error("통계 데이터 로드 실패:", error);
+        console.error("?�계 ?�이??로드 ?�패:", error);
       }
     };
 
@@ -83,7 +83,7 @@ export default function TogetherPage() {
     };
   }, []);
 
-  // location state에서 토스트 메시지 확인
+  // location state?�서 ?�스??메시지 ?�인
   useEffect(() => {
     if (state.toastMessage) {
       showToast(state.toastMessage);
@@ -102,7 +102,7 @@ export default function TogetherPage() {
         audio.volume = getEffectiveVolume(0.1);
         audio.play().catch(() => {});
       } catch (e) {
-        // 사운드 재생 실패 무시
+        // ?�운???�생 ?�패 무시
       }
     }
     navigate("/main", { state: { summary } });
@@ -120,45 +120,45 @@ export default function TogetherPage() {
             className={styles.BackButton}
             type="button"
             onClick={handleBack}
-            aria-label="뒤로 가기"
+            aria-label="?�로 가�?
             data-click-sound="false"
           >
             &lt;
           </button>
 
-          <h1 className={styles.Title}>함께 하기</h1>
+          <h1 className={styles.Title}>?�께 ?�기</h1>
           <p className={styles.Subtitle}>
-            새로운 방을 만들거나 친구의 방에 참여해보세요 🎮
+            ?�로??방을 만들거나 친구??방에 참여?�보?�요 ?��
           </p>
 
-          <section className={styles.CardRow} aria-label="함께하기 메뉴">
+          <section className={styles.CardRow} aria-label="?�께?�기 메뉴">
             {canMakeRoom && (
               <ActionCard
-                title="방 만들기"
-                description="새로운 방을 만들고 친구들을 초대하세요."
+                title="�?만들�?
+                description="?�로??방을 만들�?친구?�을 초�??�세??"
                 iconSrc={makeRoomIcon}
-                iconAlt="방 만들기"
+                iconAlt="�?만들�?
                 onClick={handleMakeRoom}
                 variant="make"
               />
             )}
             <ActionCard
-              title="참여하기"
-              description="친구가 공유한 참여 코드로 방에 입장하세요."
+              title="참여?�기"
+              description="친구가 공유??참여 코드�?방에 ?�장?�세??"
               iconSrc={joinRoomIcon}
-              iconAlt="참여하기"
+              iconAlt="참여?�기"
               onClick={handleJoinRoom}
             />
           </section>
         </main>
 
-        <section className={styles.Bottom} aria-label="통계">
-          <TipBanner text="Tip: 방을 만들거나 참여해서 함께 하기 모드를 시작해보세요!" />
+        <section className={styles.Bottom} aria-label="?�계">
+          <TipBanner text="Tip: 방을 만들거나 참여?�서 ?�께 ?�기 모드�??�작?�보?�요!" />
           <StatsSection
             stats={[
-              { value: "🔥", label: "오늘도 열심히 해볼까요?" },
-              { value: `${summary.attendanceDays}일`, label: "연속 학습" },
-              { value: `${summary.sentenceCount}개`, label: "저장된 문장" },
+              { value: "?��", label: "?�늘???�심???�볼까요?" },
+              { value: `${summary.attendanceDays}??, label: "?�속 ?�습" },
+              { value: `${summary.sentenceCount}�?, label: "?�?�된 문장" },
             ]}
           />
         </section>

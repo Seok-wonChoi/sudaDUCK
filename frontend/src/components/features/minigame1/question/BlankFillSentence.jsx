@@ -39,7 +39,7 @@ export default function BlankFillSentence({
     <div className={styles.wrapper}>
       <div className={styles.label}>
         <span className={styles.labelBlue}>English</span>
-        <span className={styles.labelGray}> - 빈칸 채우기</span>
+        <span className={styles.labelGray}> - 빈칸 채우�?/span>
       </div>
       <div className={styles.card}>
         <div className={styles.sentence}>
@@ -51,7 +51,7 @@ export default function BlankFillSentence({
                   ref={(el) => (inputRefs.current[idx] = el)}
                   type="text"
                   className={`${styles.blank} ${idx === currentBlankIndex ? styles.active : styles.filled}`}
-                  style={{ width: '100px' }} // 👈 6글자 정도의 고정 너비로 변경
+                  style={{ width: '100px' }} // ?�� 6글???�도??고정 ?�비�?변�?
                   value={blanks[idx].value || ''}
                   onChange={(e) => onBlankChange?.(idx, e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && onBlankSubmit?.(idx)}

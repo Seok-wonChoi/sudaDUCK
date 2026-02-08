@@ -1,13 +1,13 @@
 import styles from './RankingItem.module.css';
 import { useState, useMemo } from 'react';
 
-// 이미지 import (경로 확인 필요)
+// ?��?지 import (경로 ?�인 ?�요)
 import duckProfile1 from "@/assets/images/duck_profile1.png";
 import duckProfile2 from "@/assets/images/duck_profile2.png";
 import duckProfile3 from "@/assets/images/duck_profile3.png";
 import duckProfile4 from "@/assets/images/duck_profile4.png";
 
-// 오리 설정 상수
+// ?�리 ?�정 ?�수
 const DUCK_PROFILE_IMAGES = {
   profile1: duckProfile1,
   profile2: duckProfile2,
@@ -26,14 +26,14 @@ const COLOR_MAP = {
 };
 
 const ACCESSORY_MAP = {
-  hat: "🎩",
-  sunglasses: "🕶️",
-  ribbon: "🎀",
-  crown: "👑",
+  hat: "?��",
+  sunglasses: "?���?,
+  ribbon: "??",
+  crown: "?��",
   none: null,
 };
 
-// JSON 파싱 및 정보 추출 함수
+// JSON ?�싱 �??�보 추출 ?�수
 function safeParseJson(str) {
   try { return JSON.parse(str); } catch { return null; }
 }
@@ -72,18 +72,18 @@ export default function RankingItem({
 }) {
 
   const profileInfo = useMemo(() => getDuckProfileInfo(duckCustomJson), [duckCustomJson]);
-  const [imgError, setImgError] = useState(false); // 이미지 에러 상태
+  const [imgError, setImgError] = useState(false); // ?��?지 ?�러 ?�태
   
   const getRankIcon = (rank) => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
+    if (rank === 1) return '?��';
+    if (rank === 2) return '?��';
+    if (rank === 3) return '?��';
     return null;
   };
 
   const rankIcon = getRankIcon(rank);
 
-  // 프로필 이미지가 null이면 기본 회색 원
+  // ?�로???��?지가 null?�면 기본 ?�색 ??
   const getProfileImage = () => {
     if (profileImageUrl && !imgError) {
       return <img src={profileImageUrl} alt={nickname} className={styles.avatarImage} onError={() => setImgError(true)} />;
@@ -93,7 +93,7 @@ export default function RankingItem({
 
   return (
     <div className={`${styles.item} ${isMe ? styles.isMe : ''}`}>
-      {/* 왼쪽: 메달 */}
+      {/* ?�쪽: 메달 */}
       <div className={styles.rankIcon}>
         {rankIcon ? (
           <span className={styles.medal}>{rankIcon}</span>
@@ -102,10 +102,10 @@ export default function RankingItem({
         )}
       </div>
 
-      {/* 중앙: 프로필 + 이름 */}
-      {/* 중앙: 오리 프로필 + 이름 */}
+      {/* 중앙: ?�로??+ ?�름 */}
+      {/* 중앙: ?�리 ?�로??+ ?�름 */}
       <div className={styles.userInfo}>
-        {/* 오리 아이콘 래퍼 */}
+        {/* ?�리 ?�이�??�퍼 */}
         <div
           className={styles.duckWrapper}
           style={{ backgroundColor: profileInfo.color }}
@@ -136,7 +136,7 @@ export default function RankingItem({
         </div>
       </div> */}
 
-      {/* 오른쪽: 점수 */}
+      {/* ?�른�? ?�수 */}
       <div className={styles.score}>
         <span className={styles.scoreNumber}>{score}</span>
         <span className={styles.scoreTotal}>/ {total}</span>

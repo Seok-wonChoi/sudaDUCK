@@ -4,7 +4,7 @@ import duckHeadsetImg from "@/assets/images/duck_headset.png";
 import duckTogetherImg from "@/assets/images/duck_together2.png";
 import duckSoloImg from "@/assets/images/duck_solo.png";
 import duckBotCyanImg from "@/assets/images/duck_bot_cyan.png";
-import duckExcellentImg from "@/assets/images/duck_excellent.png"; // 👈 추가
+import duckExcellentImg from "@/assets/images/duck_excellent.png"; // ?�� 추�?
 import tapSound from "@/assets/sounds/tap.wav";
 import { useSoundContext } from "@/context/SoundContext";
 
@@ -14,25 +14,25 @@ export default function ModeCard({
   onClick,
   variant = "practice",
   disabled = false,
-  disabledMessage = "오픈 예정입니다",
+  disabledMessage = "?�픈 ?�정?�니??,
   className = "",
-  isActive = true, // 👈 추가: 활성화된 카드(중앙)인지 여부
+  isActive = true, // ?�� 추�?: ?�성?�된 카드(중앙)?��? ?��?
 }) {
   const [hovered, setHovered] = useState(false);
   const { getEffectiveVolume, isMuted } = useSoundContext();
 
   const playTapSound = () => {
-    if (isMuted || !isActive) return; // 👈 비활성화된 카드는 소리 재생 안 함
+    if (isMuted || !isActive) return; // ?�� 비활?�화??카드???�리 ?�생 ????
     try {
       const audio = new Audio(tapSound);
       audio.volume = getEffectiveVolume(0.1);
       audio.play().catch(() => {});
     } catch (e) {
-      // 사운드 재생 실패 무시
+      // ?�운???�생 ?�패 무시
     }
   };
 
-  // 이미지 선택
+  // ?��?지 ?�택
   let duckSrc;
   switch (variant) {
     case "practice":
@@ -48,13 +48,13 @@ export default function ModeCard({
       duckSrc = duckBotCyanImg;
       break;
     case "mypage":
-      duckSrc = duckExcellentImg; // 👈 교체
+      duckSrc = duckExcellentImg; // ?�� 교체
       break;
     default:
       duckSrc = duckHeadsetImg;
   }
 
-  // 이미지 및 특수 효과 적용 여부 판단 (중앙에 있을 때만 적용)
+  // ?��?지 �??�수 ?�과 ?�용 ?��? ?�단 (중앙???�을 ?�만 ?�용)
   const isSpecialVariant = (variant === "together" || variant === "mypage") && isActive;
 
   const duckClassName = isSpecialVariant
@@ -73,7 +73,7 @@ export default function ModeCard({
       className={styles.CardWrap}
       onMouseEnter={() => {
         setHovered(true);
-        // 연습 모드는 tap 사운드 재생 안 함
+        // ?�습 모드??tap ?�운???�생 ????
         if (variant !== "practice") {
           playTapSound();
         }
@@ -92,11 +92,11 @@ export default function ModeCard({
             <img className={duckClassName} src={duckSrc} alt="" draggable="false" />
           </div>
 
-          {/* 회색 오버레이 + 배지 */}
+          {/* ?�색 ?�버?�이 + 배�? */}
           {disabled && (
             <>
               <div className={styles.Overlay} aria-hidden="true" />
-              <div className={styles.Badge}>오픈 예정</div>
+              <div className={styles.Badge}>?�픈 ?�정</div>
             </>
           )}
         </div>
@@ -105,7 +105,7 @@ export default function ModeCard({
         <div className={styles.Description}>{description}</div>
       </button>
 
-      {/* hover 툴팁 */}
+      {/* hover ?�팁 */}
       {disabled && hovered && (
         <div className={styles.Tooltip} role="status" aria-live="polite">
           {disabledMessage}

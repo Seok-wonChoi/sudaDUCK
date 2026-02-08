@@ -1,3 +1,3 @@
 export default function BottomRecordDone() {
-  return null; // 모든 내용을 SentenceCard로 옮겼으므로 아무것도 렌더링하지 않습니다.
+  return null; // 모든 ?�용??SentenceCard�???��?��?�??�무것도 ?�더링하지 ?�습?�다.
 }

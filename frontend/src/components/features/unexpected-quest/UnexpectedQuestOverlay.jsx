@@ -10,17 +10,17 @@ export default function UnexpectedQuestOverlay({
 
   duckSrc,
   bubbleText,
-  bubbleTitle,  // 강조할 제목 (선택사항)
+  bubbleTitle,  // 강조???�목 (?�택?�항)
   subText,
   subTone = "normal",
   countdownNumber,
-  speechBubbleType = 1, // 1, 2, 3 중 선택
+  speechBubbleType = 1, // 1, 2, 3 �??�택
   textSize = "normal", // "normal", "large", "small"
 
-  // 추가: 버튼 없는 화면을 클릭으로 넘기기
-  clickAnywhere = false,     // true면 화면 아무 곳이나 클릭 시 onClose 호출
-  showCloseButton = false,   // X 버튼 필요할 때만 true
-  escToClose = false,        // 필요할 때만 true
+  // 추�?: 버튼 ?�는 ?�면???�릭?�로 ?�기�?
+  clickAnywhere = false,     // true�??�면 ?�무 곳이???�릭 ??onClose ?�출
+  showCloseButton = false,   // X 버튼 ?�요???�만 true
+  escToClose = false,        // ?�요???�만 true
 }) {
   useEffect(() => {
     if (!open) return;
@@ -53,11 +53,11 @@ export default function UnexpectedQuestOverlay({
   };
 
   const stop = (e) => {
-    // clickAnywhere가 false인 화면에서는 내부 클릭으로 닫히지 않게
+    // clickAnywhere가 false???�면?�서???��? ?�릭?�로 ?�히지 ?�게
     if (!clickAnywhere) e.stopPropagation();
   };
 
-  // speech bubble 이미지 선택
+  // speech bubble ?��?지 ?�택
   const bubbleImgSrc =
     speechBubbleType === 2
       ? speechBubble2Img
@@ -78,7 +78,7 @@ export default function UnexpectedQuestOverlay({
             type="button"
             className={styles.CloseBtn}
             onClick={onClose}
-            aria-label="닫기"
+            aria-label="?�기"
           >
             ×
           </button>
@@ -108,12 +108,12 @@ export default function UnexpectedQuestOverlay({
         </div>
 
         {typeof countdownNumber === "number" ? (
-          <div className={styles.CountdownCircle} aria-label={`카운트다운 ${countdownNumber}`}>
+          <div className={styles.CountdownCircle} aria-label={`카운?�다??${countdownNumber}`}>
             {countdownNumber}
           </div>
         ) : null}
 
-        {duckSrc ? <img className={styles.Duck} src={duckSrc} alt="돌발 퀘스트 오리" /> : null}
+        {duckSrc ? <img className={styles.Duck} src={duckSrc} alt="?�발 ?�스???�리" /> : null}
       </div>
     </div>
   );

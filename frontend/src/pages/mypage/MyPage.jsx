@@ -12,7 +12,7 @@ import SentenceDetailModal from "@/components/features/mypage/modals/SentenceDet
 import NicknameStyleModal from "@/components/features/mypage/modals/NicknameStyleModal/NicknameStyleModal";
 import DuckStyleModal from "@/components/features/mypage/modals/DuckStyleModal/DuckStyleModal";
 import DuckBotModal from "@/components/features/mypage/modals/DuckBotModal/DuckBotModal";
-import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal"; // 👈 ConfirmModal 추가
+import ConfirmModal from "@/components/common/ConfirmModal/ConfirmModal"; // ?�� ConfirmModal 추�?
 
 import duckBotCyan from "@/assets/images/duck_bot_cyan.png";
 import duckBotOrange from "@/assets/images/duck_bot_orange.png";
@@ -50,7 +50,7 @@ export default function MyPage() {
   const [showDuckBotModal, setShowDuckBotModal] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
-  // 👈 토스트 및 삭제 모달 상태 추가
+  // ?�� ?�스??�???�� 모달 ?�태 추�?
   const [toastMessage, setToastMessage] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [sentenceToDelete, setSentenceToDelete] = useState(null);
@@ -61,7 +61,7 @@ export default function MyPage() {
   };
 
 
-  // localStorage에서 프로필 정보 읽어오기 (초기 렌더링 플래시 방지)
+  // localStorage?�서 ?�로???�보 ?�어?�기 (초기 ?�더�??�래??방�?)
   const getInitialProfile = () => {
     try {
       const savedProfile = localStorage.getItem('userProfile');
@@ -74,21 +74,21 @@ export default function MyPage() {
         };
       }
     } catch (e) {
-      console.error("localStorage 프로필 읽기 실패:", e);
+      console.error("localStorage ?�로???�기 ?�패:", e);
     }
     return { profileId: "profile1", color: "white", accessory: "none" };
   };
 
   const initialProfile = getInitialProfile();
 
-  // localStorage에서 닉네임 읽어오기 (초기 렌더링 플래시 방지)
+  // localStorage?�서 ?�네???�어?�기 (초기 ?�더�??�래??방�?)
   const getInitialNickname = () => {
     try {
       const savedNickname = localStorage.getItem('userNickname');
-      return savedNickname || "영어 마스터";
+      return savedNickname || "?�어 마스??;
     } catch (e) {
-      console.error("localStorage 닉네임 읽기 실패:", e);
-      return "영어 마스터";
+      console.error("localStorage ?�네???�기 ?�패:", e);
+      return "?�어 마스??;
     }
   };
 
@@ -104,25 +104,25 @@ export default function MyPage() {
   });
   const [duckBotId, setDuckBotId] = useState("cyan");
 
-  // 통계 데이터
-  const [totalPlaytime, setTotalPlaytime] = useState(0); // 총 플레이 타임 (초)
+  // ?�계 ?�이??
+  const [totalPlaytime, setTotalPlaytime] = useState(0); // �??�레???�??(�?
   const [consecutiveDays, setConsecutiveDays] = useState(null);
   const [sentenceCount, setSentenceCount] = useState(null);
 
 
-  // 코인 시스템
-  const [coins, setCoins] = useState(200); // 초기 코인 (테스트용 200코인)
-  const [unlockedProfiles, setUnlockedProfiles] = useState(["profile1"]); // 기본 프로필 (profile1)
-  const [unlockedColors, setUnlockedColors] = useState(["white"]); // 기본 색상 (흰색)
-  const [unlockedAccessories, setUnlockedAccessories] = useState(["none"]); // 기본 악세사리 없음
-  const [unlockedDuckBots, setUnlockedDuckBots] = useState(["cyan"]); // 기본 오리봇
+  // 코인 ?�스??
+  const [coins, setCoins] = useState(200); // 초기 코인 (?�스?�용 200코인)
+  const [unlockedProfiles, setUnlockedProfiles] = useState(["profile1"]); // 기본 ?�로??(profile1)
+  const [unlockedColors, setUnlockedColors] = useState(["white"]); // 기본 ?�상 (?�색)
+  const [unlockedAccessories, setUnlockedAccessories] = useState(["none"]); // 기본 ?�세?�리 ?�음
+  const [unlockedDuckBots, setUnlockedDuckBots] = useState(["cyan"]); // 기본 ?�리�?
   const [unlockedBackgrounds, setUnlockedBackgrounds] = useState(["default"]); // 기본 배경 (기본)
-  const [unlockedEffects, setUnlockedEffects] = useState(["none"]); // 기본 효과 (없음)
+  const [unlockedEffects, setUnlockedEffects] = useState(["none"]); // 기본 ?�과 (?�음)
 
-  // itemKey -> itemId 매핑 (아이템 구매용)
+  // itemKey -> itemId 매핑 (?�이??구매??
   const [itemKeyToIdMap, setItemKeyToIdMap] = useState({});
 
-  // 아이템 목록 로드 및 itemKey -> itemId 매핑 생성
+  // ?�이??목록 로드 �?itemKey -> itemId 매핑 ?�성
   useEffect(() => {
     const fetchItemsAndProfile = async () => {
       const token = localStorage.getItem("accessToken");
@@ -131,12 +131,12 @@ export default function MyPage() {
         return;
       }
       try {
-        // 1. 모든 카테고리의 아이템 목록 조회
+        // 1. 모든 카테고리???�이??목록 조회
         const categories = ["DUCK_STYLE", "DUCK_COLOR", "DUCK_ACCESSORY", "AVATAR_BG", "AVATAR_EFFECT", "AI_DUCKBOT_MODEL"];
         const itemsPromises = categories.map(category => getCustomItems(category));
         const itemsResults = await Promise.all(itemsPromises);
 
-        // 2. itemKey -> itemId 매핑 생성 및 unlocked 아이템 추출
+        // 2. itemKey -> itemId 매핑 ?�성 �?unlocked ?�이??추출
         const keyToIdMap = {};
         const ownedProfiles = [];
         const ownedColors = [];
@@ -152,7 +152,7 @@ export default function MyPage() {
               // itemKey -> itemId 매핑
               keyToIdMap[uniqueKey] = item.itemId;
 
-              // owned 아이템 분류
+              // owned ?�이??분류
               if (item.owned) {
                 switch (result.category) {
                   case "DUCK_STYLE":
@@ -187,12 +187,12 @@ export default function MyPage() {
         setUnlockedEffects(ownedEffects.length > 0 ? ownedEffects : ["none"]);
         setUnlockedDuckBots(ownedDuckBots.length > 0 ? ownedDuckBots : ["cyan"]);
 
-        // 3. 프로필 정보 조회
+        // 3. ?�로???�보 조회
         const profileData = await getMyProfileCustom();
 
         if (profileData.nickname) {
           setNickname(profileData.nickname);
-          // localStorage에 닉네임 저장 (다른 페이지에서 사용)
+          // localStorage???�네???�??(?�른 ?�이지?�서 ?�용)
           localStorage.setItem('userNickname', profileData.nickname);
           window.dispatchEvent(new Event('nicknameUpdated'));
         }
@@ -200,7 +200,7 @@ export default function MyPage() {
         if (profileData.totalTime !== undefined) setTotalPlaytime(profileData.totalTime);
         if (profileData.attendanceDays !== undefined) setConsecutiveDays(profileData.attendanceDays);
 
-        // JSON 문자열 파싱
+        // JSON 문자???�싱
         if (profileData.duckCustomJson) {
           try {
             const duckCustom = JSON.parse(profileData.duckCustomJson);
@@ -210,7 +210,7 @@ export default function MyPage() {
               accessory: duckCustom.accessory || "none",
             });
           } catch (e) {
-            console.error("duckCustomJson 파싱 실패:", e);
+            console.error("duckCustomJson ?�싱 ?�패:", e);
           }
         }
 
@@ -222,7 +222,7 @@ export default function MyPage() {
               effect: avatarCustom.effect || "none",
             });
           } catch (e) {
-            console.error("avatarCustomJson 파싱 실패:", e);
+            console.error("avatarCustomJson ?�싱 ?�패:", e);
           }
         }
 
@@ -231,11 +231,11 @@ export default function MyPage() {
             const aiDuckbotCustom = JSON.parse(profileData.aiDuckbotCustomJson);
             if (aiDuckbotCustom.model) setDuckBotId(aiDuckbotCustom.model);
           } catch (e) {
-            console.error("aiDuckbotCustomJson 파싱 실패:", e);
+            console.error("aiDuckbotCustomJson ?�싱 ?�패:", e);
           }
         }
         
-        //4. 요약 정보 조회
+        //4. ?�약 ?�보 조회
         const summaryData = await getMypageSummary();
         if (summaryData.attendanceDays !== undefined) setConsecutiveDays(summaryData.attendanceDays);
         if (summaryData.sentenceCount !== undefined) setSentenceCount(summaryData.sentenceCount);
@@ -243,7 +243,7 @@ export default function MyPage() {
         setIsReady(true);
 
       } catch (error) {
-        console.error("데이터 로드 실패:", error);
+        console.error("?�이??로드 ?�패:", error);
       } finally {
         setIsReady(true);
       }
@@ -251,25 +251,25 @@ export default function MyPage() {
     fetchItemsAndProfile();
   }, []);
 
-  // 저장된 스크립트 조회
+  // ?�?�된 ?�크립트 조회
   useEffect(() => {
     const fetchMyScripts = async () => {
       try {
         const data = await getMyScripts();
-        console.log("[MyPage] API 응답 전체 데이터:", data);
-        console.log("[MyPage] API 응답 타입:", typeof data, Array.isArray(data));
+        // console.log("[MyPage] API ?�답 ?�체 ?�이??", data);
+        // console.log("[MyPage] API ?�답 ?�??", typeof data, Array.isArray(data));
 
-        // 백엔드 응답을 컴포넌트 형식으로 변환
+        // 백엔???�답??컴포?�트 ?�식?�로 변??
         const formattedSentences = Array.isArray(data) ? data.map((item, index) => {
-          console.log(`[MyPage] 문장 ${index} 원본 데이터:`, item);
-          console.log(`[MyPage] topic 필드:`, item.topic, item.scriptTopic, item.script?.topic);
-          console.log(`[MyPage] participants 필드:`, item.participants, item.participantNames, item.script?.participants);
-          console.log(`[MyPage] blank_script 필드:`, item.blank_script, item.blankScript);
+          // console.log(`[MyPage] 문장 ${index} ?�본 ?�이??`, item);
+          // console.log(`[MyPage] topic ?�드:`, item.topic, item.scriptTopic, item.script?.topic);
+          // console.log(`[MyPage] participants ?�드:`, item.participants, item.participantNames, item.script?.participants);
+          // console.log(`[MyPage] blank_script ?�드:`, item.blank_script, item.blankScript);
 
-          // topic 필드 확인 (여러 가능성 고려)
+          // topic ?�드 ?�인 (?�러 가?�성 고려)
           const topic = item.topic || item.scriptTopic || item.script?.topic || '';
 
-          // participants 필드 확인 (여러 가능성 고려)
+          // participants ?�드 ?�인 (?�러 가?�성 고려)
           let participants = [];
           if (Array.isArray(item.participants)) {
             participants = item.participants;
@@ -279,11 +279,11 @@ export default function MyPage() {
             participants = item.script.participants;
           }
 
-          // blank_script 필드 확인 및 파싱
+          // blank_script ?�드 ?�인 �??�싱
           const blankScript = item.blank_script || item.blankScript || '';
           let blankWords = [];
           if (blankScript) {
-            // [단어] 형식의 빈칸 추출
+            // [?�어] ?�식??빈칸 추출
             const matches = blankScript.match(/\[([^\]]+)\]/g);
             if (matches) {
               blankWords = matches.map(match => match.slice(1, -1));
@@ -306,15 +306,15 @@ export default function MyPage() {
             similarityPhrases: item.similarityPhrases || []
           };
 
-          console.log(`[MyPage] 문장 ${index} 포맷 결과:`, formatted);
+          // console.log(`[MyPage] 문장 ${index} ?�맷 결과:`, formatted);
           return formatted;
         }) : [];
 
-        console.log("[MyPage] 최종 포맷된 문장 목록:", formattedSentences);
+        // console.log("[MyPage] 최종 ?�맷??문장 목록:", formattedSentences);
         setSentences(formattedSentences);
       } catch (error) {
-        console.error("스크립트 조회 실패:", error);
-        // 실패 시 빈 배열로 설정
+        console.error("?�크립트 조회 ?�패:", error);
+        // ?�패 ??�?배열�??�정
         setSentences([]);
       }
     };
@@ -323,15 +323,15 @@ export default function MyPage() {
 
 
   const stats = [
-    { value: "✨", label: "수다DUCK과 함께 한 문장 연습!" },
-    { value: consecutiveDays ?? "—", label: "연속 학습", unit: "일" },
-    { value: sentenceCount ?? "—", label: "저장된 문장", unit: "개" },
+    { value: "??, label: "?�다DUCK�??�께 ??문장 ?�습!" },
+    { value: consecutiveDays ?? "??, label: "?�속 ?�습", unit: "?? },
+    { value: sentenceCount ?? "??, label: "?�?�된 문장", unit: "�? },
   ];
 
   const handleSentenceClick = (sentence) => {
-    console.log("[MyPage] 선택된 문장:", sentence);
-    console.log("[MyPage] 주제:", sentence.topic);
-    console.log("[MyPage] 참여자:", sentence.participants);
+    // console.log("[MyPage] ?�택??문장:", sentence);
+    // console.log("[MyPage] 주제:", sentence.topic);
+    // console.log("[MyPage] 참여??", sentence.participants);
     setSelectedSentence(sentence);
   };
 
@@ -347,10 +347,10 @@ export default function MyPage() {
       await toggleScriptLike(sentenceToDelete, null, null);
       setSentences((prev) => prev.filter((s) => s.id !== sentenceToDelete));
       setSentenceCount((prev) => Math.max(0, prev - 1));
-      showToast("문장이 삭제되었습니다.");
+      showToast("문장????��?�었?�니??");
     } catch (error) {
-      console.error("삭제 실패:", error);
-      showToast("삭제 중 오류가 발생했습니다.");
+      console.error("??�� ?�패:", error);
+      showToast("??�� �??�류가 발생?�습?�다.");
     } finally {
       setShowDeleteModal(false);
       setSentenceToDelete(null);
@@ -359,25 +359,25 @@ export default function MyPage() {
 
   const handleSaveNicknameStyle = async ({ nickname: newNickname, background, effect }) => {
     try {
-      // 닉네임 변경
+      // ?�네??변�?
       if (newNickname && newNickname !== nickname) {
-        console.log('닉네임 변경 시도:', newNickname);
+        // console.log('?�네??변�??�도:', newNickname);
         const response = await updateNickname({ nickname: newNickname });
-        console.log('닉네임 변경 응답:', response);
+        // console.log('?�네??변�??�답:', response);
         if (response?.nickname) {
           setNickname(response.nickname);
-          // localStorage에 닉네임 저장 (다른 페이지에서 사용)
+          // localStorage???�네???�??(?�른 ?�이지?�서 ?�용)
           localStorage.setItem('userNickname', response.nickname);
           window.dispatchEvent(new Event('nicknameUpdated'));
         }
       }
 
-      // 스타일 변경
-      console.log('스타일 변경 시도:', { bgStyle: background, effect });
+      // ?��???변�?
+      // console.log('?��???변�??�도:', { bgStyle: background, effect });
       const styleResponse = await updateAvatarCustom({ bgStyle: background, effect });
-      console.log('스타일 변경 응답:', styleResponse);
+      // console.log('?��???변�??�답:', styleResponse);
 
-      // 응답 파싱 및 state 업데이트
+      // ?�답 ?�싱 �?state ?�데?�트
       if (styleResponse?.avatarCustomJson) {
         const avatarCustom = JSON.parse(styleResponse.avatarCustomJson);
         setNicknameStyle({
@@ -388,11 +388,11 @@ export default function MyPage() {
         setNicknameStyle({ background, effect });
       }
 
-      console.log('저장 완료');
+      // console.log('?�???�료');
     } catch (error) {
-      console.error("저장 실패:", error);
-      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
-      alert(`저장 실패: ${errorMsg}`);
+      console.error("?�???�패:", error);
+      const errorMsg = error.response?.data?.message || error.message || '?????�는 ?�류';
+      alert(`?�???�패: ${errorMsg}`);
     }
   };
 
@@ -400,20 +400,20 @@ export default function MyPage() {
     try {
       await updateDuckCustom({ style: profileId, color, accessory });
 
-      // State 업데이트
+      // State ?�데?�트
       if (profileId) setDuckProfileId(profileId);
       setDuckStyle({ color, accessory });
 
-      // localStorage 저장 (AppHeader 연동)
+      // localStorage ?�??(AppHeader ?�동)
       localStorage.setItem('userProfile', JSON.stringify({
         profileId: profileId || duckProfileId,
         color, accessory
       }));
       window.dispatchEvent(new Event('profileUpdated'));
     } catch (error) {
-      console.error("저장 실패:", error);
-      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
-      alert(`오리 커스터마이징 저장 실패: ${errorMsg}`);
+      console.error("?�???�패:", error);
+      const errorMsg = error.response?.data?.message || error.message || '?????�는 ?�류';
+      alert(`?�리 커스?�마?�징 ?�???�패: ${errorMsg}`);
     }
   };
 
@@ -422,9 +422,9 @@ export default function MyPage() {
       await updateAiDuckBot({ model: id });
       setDuckBotId(id);
     } catch (error) {
-      console.error('저장 실패:', error);
-      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
-      alert(`AI 오리봇 변경 실패: ${errorMsg}`);
+      console.error('?�???�패:', error);
+      const errorMsg = error.response?.data?.message || error.message || '?????�는 ?�류';
+      alert(`AI ?�리�?변�??�패: ${errorMsg}`);
     }
   };
 
@@ -433,14 +433,14 @@ export default function MyPage() {
       logout(); 
       navigate("/", { replace: true }); 
     } catch (error) {
-      console.error("로그아웃 실패:", error);
-      alert("로그아웃에 실패했습니다.");
+      console.error("로그?�웃 ?�패:", error);
+      alert("로그?�웃???�패?�습?�다.");
     }
   };
 
   const handlePurchase = async (itemType, itemKey, cost) => {
     if (coins < cost) {
-      alert('코인이 부족합니다!');
+      alert('코인??부족합?�다!');
       return false;
     }
 
@@ -450,15 +450,15 @@ export default function MyPage() {
     case "color": categoryPrefix = "DUCK_COLOR"; break;
     case "accessory": categoryPrefix = "DUCK_ACCESSORY"; break;
     case "duckBot": categoryPrefix = "AI_DUCKBOT_MODEL"; break;
-    case "background": categoryPrefix = "AVATAR_BG"; break; // 닉네임 모달용
-    case "effect": categoryPrefix = "AVATAR_EFFECT"; break; // 닉네임 모달용
-    default: console.error("알 수 없는 아이템 타입:", itemType); return false;
+    case "background": categoryPrefix = "AVATAR_BG"; break; // ?�네??모달??
+    case "effect": categoryPrefix = "AVATAR_EFFECT"; break; // ?�네??모달??
+    default: console.error("?????�는 ?�이???�??", itemType); return false;
     }
     const uniqueKey = `${categoryPrefix}:${itemKey}`;
 
     const numericItemId = itemKeyToIdMap[uniqueKey];
     if (!numericItemId) {
-      alert('아이템 정보를 찾을 수 없습니다.');
+      alert('?�이???�보�?찾을 ???�습?�다.');
       return false;
     }
 
@@ -466,7 +466,7 @@ export default function MyPage() {
       const response = await purchaseItem(numericItemId);
       if (response.remainingCoins !== undefined) setCoins(response.remainingCoins);
 
-      // itemType별 unlock 처리
+      // itemType�?unlock 처리
       const unlockMap = {
         profile: setUnlockedProfiles,
         color: setUnlockedColors,
@@ -479,9 +479,9 @@ export default function MyPage() {
 
       return true;
     } catch (error) {
-      console.error('구매 실패:', error);
-      const errorMsg = error.response?.data?.message || error.message || '알 수 없는 오류';
-      alert(`아이템 구매 실패: ${errorMsg}`);
+      console.error('구매 ?�패:', error);
+      const errorMsg = error.response?.data?.message || error.message || '?????�는 ?�류';
+      alert(`?�이??구매 ?�패: ${errorMsg}`);
       return false;
     }
   };
@@ -490,18 +490,18 @@ export default function MyPage() {
     return (
       <div className={styles.Page}>
         <div className={styles.Shell}>
-          <main className={styles.LoadingWrap} aria-label="로딩 중">
+          <main className={styles.LoadingWrap} aria-label="로딩 �?>
             <div className={styles.LoadingCard}>
-              {/* 이미 쓰고 있는 프로필 오리 이미지 재사용 */}
+              {/* ?��? ?�고 ?�는 ?�로???�리 ?��?지 ?�사??*/}
               <img
                 className={styles.LoadingDuck}
                 src={DUCK_PROFILE_IMAGES[duckProfileId] ?? DUCK_PROFILE_IMAGES.profile1}
-                alt="로딩 오리"
+                alt="로딩 ?�리"
               />
 
-              <p className={styles.LoadingTitle}>오리들이 준비 중이에요…</p>
+              <p className={styles.LoadingTitle}>?�리?�이 준�?중이?�요??/p>
               <p className={styles.LoadingSub}>
-                커스터마이징과 통계를 불러오는 중 <span className={styles.Dots} />
+                커스?�마?�징�??�계�?불러?�는 �?<span className={styles.Dots} />
               </p>
 
               <div className={styles.Spinner} aria-hidden="true" />
@@ -547,9 +547,9 @@ export default function MyPage() {
       {showDeleteModal && (
         <ConfirmModal
           open={showDeleteModal}
-          title="문장 삭제"
-          message="이 문장을 저장 목록에서 삭제하시겠습니까?"
-          confirmText="🗑️ 삭제"
+          title="문장 ??��"
+          message="??문장???�??목록?�서 ??��?�시겠습?�까?"
+          confirmText="?���???��"
           cancelText="취소"
           onConfirm={confirmDelete}
           onClose={() => setShowDeleteModal(false)}

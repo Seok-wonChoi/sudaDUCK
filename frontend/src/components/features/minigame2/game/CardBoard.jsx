@@ -1,7 +1,7 @@
 import SentenceCard from './SentenceCard';
 import styles from './CardBoard.module.css';
 
-// 카드 위치 및 회전 각도 사전 정의
+// 카드 ?�치 �??�전 각도 ?�전 ?�의
 const CARD_POSITIONS = [
   { top: '35%', left: '65%', rotation: 5 },
   { top: '50%', left: '55%', rotation: -3 },
