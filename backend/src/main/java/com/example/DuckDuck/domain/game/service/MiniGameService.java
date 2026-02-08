@@ -296,7 +296,11 @@ public class MiniGameService {
         String submittedKey = "room:" + roomId + ":review:submitted";
         redisTemplate.delete(submittedKey);
 
-        // 4. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
+        // 4. 코인 지급 완료 기록 삭제 (추가: 방 재사용 시 보상 가능하도록)
+        String rewardKey = "room:" + roomId + ":reward:completed";
+        redisTemplate.delete(rewardKey);
+
+        // 5. 게임이 완전히 끝났다면 스크립트 데이터도 삭제
         List<String> patterns = Arrays.asList(
                 "room:" + roomId + ":turn:*",
                 "room:" + roomId + ":scripts"
@@ -324,17 +328,7 @@ public class MiniGameService {
                 .filter(r -> r.getScore() == maxScore)
                 .forEach(r -> profileRepository.updateCoins(r.getUserId(), 10));
 
-        // [조건 3] 2등 점수 확인 (1등보다 낮으면서 0보다 큰 점수)
-        ranking.stream()
-                .map(ReviewRankingResponse::getScore)
-                .filter(score -> score < maxScore && score > 0)
-                .findFirst()
-                .ifPresent(secondScore -> {
-                    // 공동 2등에게 1코인 지급
-                    ranking.stream()
-                            .filter(r -> r.getScore() == secondScore)
-                            .forEach(r -> profileRepository.updateCoins(r.getUserId(), 1));
-                });
+        // 2등 보상 로직 삭제됨 (사용자 요청)
     }
 
     // 기존 랭킹 리스트 생성 로직 (조회만 수행)

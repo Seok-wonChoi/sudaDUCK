@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Profile p SET p.coins = COALESCE(p.coins, 0) + :amount WHERE p.userId = :userId")
     void updateCoins(@Param("userId") Long userId, @Param("amount") int amount);
 }
