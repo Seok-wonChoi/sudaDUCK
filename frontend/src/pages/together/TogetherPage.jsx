@@ -1,6 +1,7 @@
 import styles from "./TogetherPage.module.css";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { jwtDecode } from "jwt-decode";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ActionCard from "@/components/common/ActionCard/ActionCard";

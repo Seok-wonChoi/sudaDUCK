@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import styles from "./MakeRoomPage.module.css";
 import { createSession } from "@/api/openVidu";
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
