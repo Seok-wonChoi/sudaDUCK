@@ -319,10 +319,10 @@ public class MiniGameService {
         int maxScore = ranking.get(0).getScore();
         if (maxScore <= 0) return;
 
-        // 공동 1등에게 2코인 지급
+        // 공동 1등에게 10코인 지급
         ranking.stream()
                 .filter(r -> r.getScore() == maxScore)
-                .forEach(r -> profileRepository.updateCoins(r.getUserId(), 2));
+                .forEach(r -> profileRepository.updateCoins(r.getUserId(), 10));
 
         // [조건 3] 2등 점수 확인 (1등보다 낮으면서 0보다 큰 점수)
         ranking.stream()
