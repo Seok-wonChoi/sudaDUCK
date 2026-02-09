@@ -168,8 +168,10 @@
 
 <tr>
 
-<td>프로젝트 총괄
+<td>프로젝트 총괄<br>
 전반적인 백엔드 API 개발<br>
+SpringSecurity & OAuth <br>
+Redis 설계 <br>
 DB 최적화</td>
 
 <td>
