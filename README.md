@@ -200,14 +200,14 @@ DB 최적화</td>
 
 </tr>
 
+<td>UI/UX 디자인
+
+React 상태 관리</td>
+
 <td>UI/UX 설계 및 React 기반 화면 구현<br>
 WebSocket 연동을 통한 실시간 UI 처리<br>
 음성 녹음 기능 구현 및 사용자 흐름 제어<br>
 API 연동 및 프론트엔드 상태 관리</td>
-
-<td>WebSocket 연동
-
-실시간 UI 반응형 구현</td>
 
 <td>프롬프트 엔지니어링
 
