@@ -192,7 +192,7 @@ Blue-Green 무중단 배포 구현
 
 Mattermost Webhook 기반 실시간 배포 알림 자동화
 
-API 연동 이슈 해결 및 서비스 UI/UX 보완
+API 연동 통합 디버깅 지원 및 UI/UX 개선 협력
 </td>
 
 <tr>
