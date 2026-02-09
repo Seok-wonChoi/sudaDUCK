@@ -184,10 +184,15 @@ DB 최적화</td>
 
 
 <td>
-  Docker 기반 Dev/Prod 환경 격리 및 가상 네트워크 설계<br>
-  Jenkins Pipeline을 활용한 CI/CD<br>
-  Blue-Green 무중단 배포 구현<br>
-  Mattermost Webhook 기반 실시간 배포 알림 자동화
+  Docker 기반 Dev/Prod 환경 격리 및 가상 네트워크 설계
+
+Jenkins Pipeline을 활용한 CI/CD
+
+Blue-Green 무중단 배포 구현
+
+Mattermost Webhook 기반 실시간 배포 알림 자동화
+
+API 연동 이슈 해결 및 서비스 UI/UX 보완
 </td>
 
 <tr>
