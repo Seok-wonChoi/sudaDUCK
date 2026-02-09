@@ -164,29 +164,20 @@
 
 <td align="center">이승엽 - <b>Infra</b></td>
 
-<td align="center">전연수 - <b>FE</b></td>
-
-<td align="center">최석원 - <b>FE</b></td>
-
-<td align="center">최현웅 - <b>AI</b></td>
-
 </tr>
 
 <tr>
 
-<td>프로젝트 총괄 <br>
+<td>프로젝트 총괄
 전반적인 백엔드 API 개발<br>
-DB 최적화 <br> 
-SpringSecurity & OAuth 적용 <br>
-Redis 설계 <br>
-</td>
+DB 최적화</td>
 
 <td>
   전반적인 백엔드 API 개발<br>
-  ERD 설계 및 Redis 캐싱 적용<br>
   대기방·게임방 상태 관리 로직 설계<br>
   OpenVidu 기반 WebRTC 연동 및 실시간 통신 처리<br>
   WebSocket(STOMP) 기반 방 상태·준비 상태 동기화<br>
+  Redis 캐싱 적용
 </td>
 
 
@@ -196,6 +187,16 @@ Redis 설계 <br>
   Blue-Green 무중단 배포 구현<br>
   Mattermost Webhook 기반 실시간 배포 알림 자동화
 </td>
+
+<tr>
+
+<td align="center">전연수 - <b>FE</b></td>
+
+<td align="center">최석원 - <b>FE</b></td>
+
+<td align="center">최현웅 - <b>AI</b></td>
+
+</tr>
 
 <td>UI/UX 디자인
 
