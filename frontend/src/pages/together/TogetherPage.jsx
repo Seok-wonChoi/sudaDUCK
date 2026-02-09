@@ -1,7 +1,6 @@
 import styles from "./TogetherPage.module.css";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { jwtDecode } from "jwt-decode";
 
 import AppHeader from "@/components/layout/AppHeader/AppHeader";
 import ActionCard from "@/components/common/ActionCard/ActionCard";
@@ -18,26 +17,6 @@ export default function TogetherPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { getEffectiveVolume, isMuted } = useSoundContext();
-
-  // 방 만들기 권한이 있는 특정 사용자 ID 리스트
-  const ALLOWED_USER_IDS = useMemo(() => [
-    4719057912,
-    4719307718,
-    4719309052,
-    4720876392
-  ], []);
-
-  // 현재 유저가 방 만들기 권한이 있는지 확인
-  const canMakeRoom = useMemo(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) return false;
-    try {
-      const decoded = jwtDecode(token);
-      return ALLOWED_USER_IDS.includes(Number(decoded.userId));
-    } catch (e) {
-      return false;
-    }
-  }, [ALLOWED_USER_IDS]);
 
   // ✅ MainPage에서 넘겨준 summary 있으면 그걸 초기값으로 사용
   const state = location.state ?? {};
@@ -132,16 +111,14 @@ export default function TogetherPage() {
           </p>
 
           <section className={styles.CardRow} aria-label="함께하기 메뉴">
-            {canMakeRoom && (
-              <ActionCard
-                title="방 만들기"
-                description="새로운 방을 만들고 친구들을 초대하세요."
-                iconSrc={makeRoomIcon}
-                iconAlt="방 만들기"
-                onClick={handleMakeRoom}
-                variant="make"
-              />
-            )}
+            <ActionCard
+              title="방 만들기"
+              description="새로운 방을 만들고 친구들을 초대하세요."
+              iconSrc={makeRoomIcon}
+              iconAlt="방 만들기"
+              onClick={handleMakeRoom}
+              variant="make"
+            />
             <ActionCard
               title="참여하기"
               description="친구가 공유한 참여 코드로 방에 입장하세요."
