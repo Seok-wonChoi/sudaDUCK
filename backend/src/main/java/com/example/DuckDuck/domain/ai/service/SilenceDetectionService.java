@@ -31,6 +31,8 @@ public class SilenceDetectionService {
     private final TaskScheduler taskScheduler;
     private final StringRedisTemplate redisTemplate;
 
+    private final Set<String> suggestedTurns = ConcurrentHashMap.newKeySet();
+
     // 방별 마지막 음성 활동 시간
     private final Map<Long, Long> lastVoiceActivityTime = new ConcurrentHashMap<>();
 
@@ -159,6 +161,14 @@ public class SilenceDetectionService {
             // 현재 턴 조회 (Redis나 DB에서 - 여기서는 예시로 1)
             Integer currentTurn = getCurrentTurn(roomId);
 
+            // 턴별 주제 추천 중복 체크
+            String turnKey = roomId + "_turn_" + currentTurn;
+
+            if (suggestedTurns.contains(turnKey)) {
+                log.info("🔇 [정적 감지] 턴 {}에 이미 주제 추천함 - 스킵", currentTurn);
+                return;
+            }
+
             // 컨텍스트 수집
             AiContextService.ConversationContext context =
                     contextService.buildContext(roomId, currentTurn);
@@ -184,6 +194,8 @@ public class SilenceDetectionService {
                     "/topic/room/" + roomId + "/suggestion",
                     message
             );
+
+            suggestedTurns.add(turnKey);
 
             log.info("📤 [WebSocket 전송] roomId={}, 전체 참가자에게 전송 완료", roomId);
 
@@ -312,4 +324,5 @@ public class SilenceDetectionService {
             );
         }
     }
+
 }
