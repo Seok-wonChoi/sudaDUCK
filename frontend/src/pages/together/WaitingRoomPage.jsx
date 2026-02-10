@@ -281,11 +281,11 @@ export default function WaitingRoomPage() {
   const [topic, setTopic] = useState(
     roomInfo.topic ?? roomInfo.roomTopic ?? "좋아하는 음식",
   );
-  const [turnCount, setTurnCount] = useState(
-    roomInfo.turnCount ?? roomInfo.turnCnt ?? 3,
-  );
+  const [turnCount, setTurnCount] = useState(() => {
+    return initialRoomInfo?.turnCount ?? initialRoomInfo?.turnCnt ?? 3;
+  });
   const [timeLimit, setTimeLimit] = useState(() => {
-    const raw = roomInfo.timeLimit ?? 40;
+    const raw = initialRoomInfo?.timeLimit ?? 40;
     const num = parseInt(raw, 10);
     return isNaN(num) ? 40 : num;
   });
@@ -1596,6 +1596,31 @@ export default function WaitingRoomPage() {
                     ) : (
                       "AI 추천"
                     )}
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.PopupField}>
+                <div className={styles.PopupLabelRow}>
+                  <span className={styles.PopupLabel}>턴 수</span>
+                </div>
+                <div className={styles.PopupStepper}>
+                  <button
+                    className={styles.PopupStepButton}
+                    type="button"
+                    onClick={() => setEditTurn(Math.max(1, editTurn - 1))}
+                    disabled={editTurn <= 1}
+                  >
+                    -
+                  </button>
+                  <span className={styles.PopupStepValue}>{editTurn}턴</span>
+                  <button
+                    className={styles.PopupStepButton}
+                    type="button"
+                    onClick={() => setEditTurn(Math.min(5, editTurn + 1))}
+                    disabled={editTurn >= 5}
+                  >
+                    +
                   </button>
                 </div>
               </div>
