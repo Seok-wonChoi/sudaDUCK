@@ -267,22 +267,23 @@ public class SilenceDetectionService {
     private String buildPrompt(AiContextService.ConversationContext context) {
         if (context.isHasConversation()) {
             return String.format("""
-                    현재까지의 대화:
-                    %s
-                    
-                    대화가 잠시 멈췄습니다. 현재까지의 대화를 참고하여 대화를 자연스럽게 이어갈 수 있는 질문을 추천해주세요.
-                    
-                    요구사항:
-                    - 현재까지의 대화 맥락과 맞는 적절한 질문
-                    - 친구에게 물어보듯 자연스럽고 구체적인 질문
-                    - 추상적이거나 딱딱한 질문 금지
-                    - 대답하기 쉽고 재미있게
-                    - 1-2 문장으로 간결하게
-                    
-                    JSON 형식으로만 응답:
-                    {
-                      "koreanQuestion": "한국어 질문"
-                    }
+                            현재까지의 대화:
+                            %s
+        
+                            대화가 잠시 멈췄습니다. 현재까지의 대화를 참고하여 대화를 자연스럽게 이어갈 수 있는 말을 해주세요.
+        
+                            요구사항:
+                            - 현재까지의 대화 맥락과 맞는 적절한 말
+                            - 친구에게 물어보듯 자연스럽고 구체적인 말
+                            - 추상적이거나 딱딱한 말 금지
+                            - 1-2 문장으로 간결하게
+        
+                            JSON 형식으로만 응답:
+                            {
+                              "koreanQuestion": "한국어 질문"
+                            }
+                            ""\",
+
                     """,
                     context.getFormattedConversation()
             );
