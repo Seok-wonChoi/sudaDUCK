@@ -42,6 +42,7 @@ import micOffIcon from "@/assets/icons/mic_off.png";
 import alertSound from "@/assets/sounds/alert.wav";
 import gameoverSound from "@/assets/sounds/game_fail.wav";
 import gameSuccessSound from "@/assets/sounds/game_success.wav";
+import silenceAlertSound from "@/assets/sounds/silence-alert.mp3";
 
 import UnexpectedQuestOverlay from "@/components/features/unexpected-quest/UnexpectedQuestOverlay";
 import UnexpectedQuestFillBlankModal from "@/components/features/unexpected-quest/UnexpectedQuestFillBlankModal";
@@ -559,6 +560,9 @@ export default function TogetherTalkPage() {
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [aiSuggestion, setAiSuggestion] = useState("");
 
+  // 침묵 감지 팝업 관련 상태
+  const [showSilencePopup, setShowSilencePopup] = useState(false);
+
   // 퀘스트 관련 상태 (WebSocket 핸들러에서 사용하므로 핸들러보다 먼저 선언)
   const [activeQuest, setActiveQuest] = useState(null); // 1 | 2 | null
   const [questStep, setQuestStep] = useState("idle");
@@ -716,8 +720,13 @@ export default function TogetherTalkPage() {
         return;
       }
 
-      // AI 추천 주제를 계속 표시 (타이머로 자동 삭제하지 않음)
-      // 새로운 주제가 오면 기존 주제를 대체
+      // 효과음 재생
+      const audio = new Audio(silenceAlertSound);
+      audio.volume = 0.5;
+      audio.play().catch((e) => console.error("효과음 재생 실패:", e));
+
+      // 중앙 팝업 표시
+      setShowSilencePopup(true);
       setAiSuggestion(question || "");
     },
     [questStep],
@@ -2242,7 +2251,8 @@ export default function TogetherTalkPage() {
             <div className={styles.TopicRow}>
               <img className={styles.SmallDuck} src={duckImg} alt="오리" />
               <div className={styles.TopicBubble}>
-                대화 주제는 <span className={styles.TopicHighlight}>{topic}</span>입니다!
+                대화 주제는{" "}
+                <span className={styles.TopicHighlight}>{topic}</span>입니다!
               </div>
             </div>
 
@@ -2419,7 +2429,22 @@ export default function TogetherTalkPage() {
                 )}
               </div>
             </div>
-
+            {/* ✅ 침묵 감지 중앙 팝업 */}
+            {showSilencePopup && (
+              <div className={styles.SilencePopupOverlay}>
+                <div className={styles.SilencePopupBox}>
+                  <div className={styles.SilenceIcon}>💬</div>
+                  <h3 className={styles.SilenceTitle}>대화가 조용해요!</h3>
+                  <p className={styles.SilenceQuestion}>{aiSuggestion}</p>
+                  <button
+                    className={styles.SilenceConfirmButton}
+                    onClick={() => setShowSilencePopup(false)}
+                  >
+                    확인
+                  </button>
+                </div>
+              </div>
+            )}
             <aside className={styles.RightStage} aria-label="AI 도우미">
               <div className={styles.AiBubble}>
                 <div className={styles.AiHeader}>
