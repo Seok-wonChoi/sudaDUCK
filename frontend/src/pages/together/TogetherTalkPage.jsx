@@ -433,6 +433,15 @@ export default function TogetherTalkPage() {
       sessionStorage.setItem(storageKey, String(now));
       setTimerStartedAt(now);
       console.log(`[Timer] 🔄 새 턴(${currentTurn}) 시작, 시간 박제: ${now}`);
+
+      // 턴 변경 시 정적 감지 재시작
+      if (roomId) {
+        startSilenceMonitoring(roomId, currentTurn)
+          .then(() =>
+            console.log(`[정적 감지] 턴 ${currentTurn} 모니터링 시작`),
+          )
+          .catch((e) => console.error("[정적 감지] 시작 실패:", e));
+      }
     } else {
       // 이미 있으면(새로고침 시) 그거 씀
       const parsed = parseInt(saved, 10);
