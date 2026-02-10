@@ -42,7 +42,7 @@ public class SilenceDetectionService {
     // 방별 정적 체크 스케줄
     private final Map<Long, ScheduledFuture<?>> silenceCheckSchedules = new ConcurrentHashMap<>();
 
-    private static final long SILENCE_THRESHOLD_MS = 10000;
+    private static final long SILENCE_THRESHOLD_MS = 7000;
 
     /**
      * 음성 활동 알림 (프론트에서 호출)

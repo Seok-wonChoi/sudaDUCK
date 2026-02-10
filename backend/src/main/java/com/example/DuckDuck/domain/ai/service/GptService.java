@@ -145,15 +145,36 @@ public class GptService {
 
                         "2. **blank_script** (빈칸 학습지)\n" +
                         "   - 'en'에서 핵심 단어 2-3개를 [ ]로 치환\n" +
-                        "   - 선택 기준: 동사 > 형용사 > 부사 순\n" +
-                        "   - ⚠️ **절대 금지**: 고유명사(인명, 지명, 브랜드명 등)\n" +
-                        "   - ⚠️ **일반 명사**: 가능한 피할 것 (동사/형용사/부사 우선)\n" +
-                        "   - 학습 난이도를 고려하여 선택\n\n" +
+                        "   \n" +
+                        "   **빈칸 선택 절대 규칙:**\n" +
+                        "   1순위: **동사** (be동사, 일반동사, 조동사, 동명사, 현재분사, 과거분사)\n" +
+                        "   2순위: **형용사** (상태, 감정, 성질 표현)\n" +
+                        "   3순위: **부사** (빈도, 정도, 방법 표현)\n" +
+                        "   \n" +
+                        "   ❌ **절대 빈칸 금지 항목:**\n" +
+                        "   - 고유명사 (인명, 지명, 브랜드명, 국가명 등)\n" +
+                        "   - 일반 명사 (사물, 사람, 장소를 가리키는 단어)\n" +
+                        "   - 음식 명사 (chicken, pork, beef, pizza, rice 등)\n" +
+                        "   - 관사 (a, an, the)\n" +
+                        "   - 대명사 (I, you, he, she, it 등)\n" +
+                        "   \n" +
+                        "   💡 **좋은 빈칸 예시:**\n" +
+                        "   - 동사: went, eating, is, can, should, like, want\n" +
+                        "   - 동명사/분사: running, Swimming, cooked, broken\n" +
+                        "   - 형용사: happy, difficult, interesting, delicious, spicy\n" +
+                        "   - 부사: carefully, always, very, really, often\n" +
+                        "   \n" +
+                        "   ⛔ **나쁜 빈칸 예시:**\n" +
+                        "   - 명사: book, teacher, school, apple\n" +
+                        "   - 고유명사: Tom, Seoul, iPhone, Korea\n" +
+                        "   - 음식명사: chicken, pork, beef, pasta, salad\n" +
+                        "   \n" +
                         "   **빈칸 개수 규칙:**\n" +
                         "   - 단어 1-2개: 최소 1개 빈칸 (필수)\n" +
                         "   - 단어 3-5개: 2개 빈칸\n" +
                         "   - 단어 6개 이상: 2-3개 빈칸\n" +
-                        "   - ⚠️ 빈칸이 없는 문장은 절대 불가\n\n" +
+                        "   - ⚠️ 빈칸이 없는 문장은 절대 불가\n" +
+                        "   - ⚠️ 명사만 빈칸인 문장은 절대 불가\n\n" +
 
                         "3. **similarity_phrases** (유사 표현 2개)\n" +
                         "   - 'en'과 완전히 같은 의미의 다른 영어 문장\n" +
