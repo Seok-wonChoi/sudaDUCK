@@ -63,7 +63,7 @@ public class SilenceDetectionService {
     }
 
     /**
-     * 방 입장 시 정적 감지 시작
+     * 방 입장 시 또는 턴 변경 시 정적 감지 시작
      */
     public void startMonitoring(Long roomId, Integer turn) {
         log.info("👀 [모니터링 시작] roomId={}, turn={}", roomId, turn);
@@ -71,6 +71,13 @@ public class SilenceDetectionService {
         // 현재 시간 & 턴으로 초기화
         lastVoiceActivityTime.put(roomId, System.currentTimeMillis());
         currentTurns.put(roomId, turn);
+
+        // 기존 스케줄 취소
+        ScheduledFuture<?> oldFuture = silenceCheckSchedules.remove(roomId);
+        if (oldFuture != null && !oldFuture.isDone()) {
+            oldFuture.cancel(false);
+            log.info("🔄 [모니터링] 기존 스케줄 취소 - 새 턴 시작");
+        }
 
         // 정적 체크 시작
         startSilenceCheck(roomId);
@@ -135,9 +142,9 @@ public class SilenceDetectionService {
             log.info("🔇 [정적 감지!] roomId={}, 추천 생성 시작", roomId);
             generateAndBroadcastSuggestion(roomId);
 
-            // 추천 후 다시 모니터링 시작 (계속 추천 가능)
-            lastVoiceActivityTime.put(roomId, System.currentTimeMillis());
-            startSilenceCheck(roomId);
+            // 추천 후에는 모니터링을 다시 시작하지 않음
+            // 다음 음성 활동이 있을 때 reportVoiceActivity에서 자동으로 재시작됨
+            log.info("✅ [정적 감지] 추천 완료 - 다음 음성 활동 대기 중");
 
         } else {
             // 아직 10초 안 됨 (누군가 중간에 말함)
