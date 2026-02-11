@@ -168,6 +168,20 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     });
   }, [roomCode]);
 
+  const sendTimerSync = useCallback((data) => {
+    const client = clientRef.current;
+    if (!client?.connected) return;
+    
+    // 백엔드 핸들러를 거치지 않고 직접 토픽으로 발행하여 참가자들에게 전달
+    client.publish({
+      destination: `/topic/rooms/${roomCode}`,
+      body: JSON.stringify({
+        type: "TIMER_SYNC_EXTERNAL",
+        payload: data, // { timeLimit, turnCount }
+      }),
+    });
+  }, [roomCode]);
+
   useEffect(() => {
     if (!roomCode) return;
 
@@ -374,10 +388,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               case "TIMER_SYNC":
               case "TIMER_STARTED":
               case "TIMER_START":
-                console.log("[WebSocket] TIMER_SYNC 수신:", {
-                  payload,
-                  type,
-                });
+              case "TIMER_SYNC_EXTERNAL":
                 onTimerSync?.(payload);
                 break;
 
@@ -579,6 +590,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     sendUnexpectedQuest,
     sendQuestContinueReady,
     sendMiniGameStart,
+    sendTimerSync,
     isConnected,
     participants,
     voiceLevels,

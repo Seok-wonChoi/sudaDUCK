@@ -275,10 +275,14 @@ export default function TogetherTalkPage() {
 
   const roomInfo = hydratedInfo ?? {};
   const timeLimit = useMemo(() => {
-    const raw = roomInfo.timeLimit || roomInfo.roomInfo?.timeLimit;
+    // 1. location.state 우선
+    // 2. 세션 스토리지에 박제된 값 차선 (대기실 동기화 결과)
+    const stored = safeParseJson(sessionStorage.getItem(ROOM_INFO_KEY));
+    const raw = roomInfo.timeLimit ?? roomInfo.roomInfo?.timeLimit ?? stored?.timeLimit ?? 40;
     const num = parseInt(raw, 10);
-    if (!isNaN(num) && num >= 15 && num <= 60) return num;
-    return 40; // 기본값
+    
+    if (!isNaN(num) && num >= 10 && num <= 120) return num;
+    return 40;
   }, [roomInfo.timeLimit, roomInfo.roomInfo?.timeLimit]);
   const durationMs = timeLimit * 1000;
 
