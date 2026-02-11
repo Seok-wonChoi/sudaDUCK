@@ -468,12 +468,12 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                     roomId,
                   });
                   // 하드코딩 ✅✅✅✅✅
-                  const hardcodedQuestion =
-                    "이번주 고생 많았구나. 그러면 회식 메뉴로 치킨은 어때?";
-                  handlersRef.current.onConversationSuggestion?.(
-                    hardcodedQuestion,
-                  );
-                  // handlersRef.current.onConversationSuggestion?.(question);
+                  // const hardcodedQuestion =
+                  //   "이번주 고생 많았구나. 그러면 회식 메뉴로 치킨은 어때?";
+                  // handlersRef.current.onConversationSuggestion?.(
+                  //   hardcodedQuestion,
+                  // );
+                  handlersRef.current.onConversationSuggestion?.(question);
                 }
               } catch (e) {
                 console.error("Suggestion Msg Parsing Error", e);
