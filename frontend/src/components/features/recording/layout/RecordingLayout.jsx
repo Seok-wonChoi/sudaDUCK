@@ -15,6 +15,7 @@ export default function RecordingLayout({
   onBookmarkToggle = null,
   onStop = null,
   onSkip = null,
+  onSkipAll = null,
   showBlanks = true,
   isSubmitting = false,
   onToggleBlanks = null,
@@ -29,6 +30,7 @@ export default function RecordingLayout({
   disableProfileClick = false,
 }) {
   const isRecordingPhase = activeCardState === 'record_timer' || activeCardState === 'recording' || activeCardState === 'record_done';
+  const canSkipAll = onSkipAll && (activeCardState === 'ai_timer' || activeCardState === 'ai_playing' || activeCardState === 'record_timer' || activeCardState === 'recording');
 
   const formatCountdown = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -50,6 +52,21 @@ export default function RecordingLayout({
             onTurnClick={onTurnClick}
             selectedTurnForReport={selectedTurnForReport}
           />
+
+          {canSkipAll && (
+            <div className={styles.cardsListHeader}>
+              <button 
+                className={styles.allSkipButton} 
+                onClick={onSkipAll}
+                title="남은 모든 문장 건너뛰기"
+              >
+                <span>남은 문장 전체 건너뛰기</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13 19l7-7-7-7M5 19l7-7-7-7" />
+                </svg>
+              </button>
+            </div>
+          )}
 
           <div className={styles.cardsList}>
             {sentenceCards

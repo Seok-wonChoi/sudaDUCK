@@ -1214,6 +1214,47 @@ console.log(`📤 발음 평가 전송 시작`, {
     setStep(STEP.RECORD_DONE);
   }, [clearAllTimers, currentSentence]);
 
+  const handleSkipAll = useCallback(() => {
+    console.log("⏭️⏭️ [RecordingPage] 사용자가 모든 남은 문장을 건너뛰었습니다.");
+    
+    // 1. 모든 타이머 및 녹음기 즉시 중단
+    clearAllTimers();
+    
+    if (recorderRef.current) {
+      const recorder = recorderRef.current;
+      recorder.stopRecording(() => {
+        try {
+          const internalRecorder = recorder.getInternalRecorder();
+          if (internalRecorder && internalRecorder.stream) {
+            internalRecorder.stream.getTracks().forEach((track) => track.stop());
+          }
+        } catch (e) {
+          console.warn("마이크 스트림 정지 중 경미한 오류:", e);
+        }
+      });
+    }
+
+    // 2. 현재 문장부터 마지막 문장까지 모두 스킵 처리
+    const remainingSentences = currentTurnSentences.slice(currentSentenceIndex);
+    
+    setSkippedIds(prev => {
+      const next = new Set(prev);
+      remainingSentences.forEach(s => next.add(s.id));
+      return next;
+    });
+    
+    setSentenceScores(prev => {
+      const next = { ...prev };
+      remainingSentences.forEach(s => {
+        next[s.id] = -3;
+      });
+      return next;
+    });
+
+    // 3. 즉시 리포트 단계로 이동
+    setStep(STEP.TURN_REPORT);
+  }, [clearAllTimers, currentTurnSentences, currentSentenceIndex]);
+
   const bottomContent = () => {
     if (isLoadingScript) {
       return (
@@ -1456,6 +1497,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       onBookmarkToggle={handleBookmarkToggle}
       onStop={handleManualStop}
       onSkip={handleSkip}
+      onSkipAll={handleSkipAll}
       showBlanks={showBlanks}
       isSubmitting={isSubmitting}
       onToggleBlanks={() => {
