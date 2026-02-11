@@ -42,7 +42,7 @@ public class SilenceDetectionService {
     // 방별 정적 체크 스케줄
     private final Map<Long, ScheduledFuture<?>> silenceCheckSchedules = new ConcurrentHashMap<>();
 
-    private static final long SILENCE_THRESHOLD_MS = 7000;
+    private static final long SILENCE_THRESHOLD_MS = 8000;
 
     /**
      * 음성 활동 알림 (프론트에서 호출)
@@ -267,24 +267,34 @@ public class SilenceDetectionService {
     private String buildPrompt(AiContextService.ConversationContext context) {
         if (context.isHasConversation()) {
             return String.format("""
-                            현재까지의 대화:
-                            %s
-        
-                            대화가 잠시 멈췄습니다. 현재까지의 대화를 참고하여 대화를 자연스럽게 이어갈 수 있는 말을 해주세요.
-        
-                            요구사항:
-                            - 현재까지의 대화 맥락과 맞는 적절한 말
-                            - 친구에게 물어보듯 자연스럽고 구체적인 말
-                            - 추상적이거나 딱딱한 말 금지
-                            - 1-2 문장으로 간결하게
-                            - 두개 중에서 무엇을 고를지 고민하고 있을때는 하나를 무조건 골라주기
-        
-                            JSON 형식으로만 응답:
-                            {
-                              "koreanQuestion": "한국어 질문"
-                            }
-                            ""\",
-
+                    당신은 영어 회화 학습을 돕는 친근한 코치입니다.
+                    
+                    현재까지의 대화:
+                    %s
+                    
+                    대화가 잠시 멈췄습니다. 현재까지의 대화를 참고하여 대화를 자연스럽게 이어갈 수 있는 질문을 추천해주세요.
+                    
+                    요구사항:
+                    - 현재까지의 대화 내용을 언급하며 이어가는 질문
+                    - 추상적이거나 뻔한 질문 금지 (예: "경험이 어땠나요?", "어떻게 생각하나요?" 등)
+                    - 대답하기 쉽고 재미있는 개방형 질문
+                    - 친구와 대화하듯 자연스럽고 구체적으로
+                    - 1-2 문장으로 간결하게
+                    
+                    나쁜 예시:
+                    - "가장 최근에 어떤 테스트를 받았나요?"
+                    - "그 경험은 어땠나요?"
+                    - "어떻게 생각하나요?"
+                    
+                    좋은 예시:
+                    - "아까 여행 얘기 나왔는데, 다음에 가고 싶은 나라가 있어?"
+                    - "좋아하는 음식 중에 직접 만들어본 건 뭐야?"
+                    - "주말에 보통 뭐 하면서 시간 보내?"
+                    
+                    JSON 형식으로만 응답:
+                    {
+                      "koreanQuestion": "한국어 질문"
+                    }
                     """,
                     context.getFormattedConversation()
             );
@@ -299,6 +309,7 @@ public class SilenceDetectionService {
                     요구사항:
                     - 친구에게 물어보듯 자연스럽고 구체적인 질문
                     - 추상적이거나 딱딱한 질문 금지
+                    - 개인적인 경험이나 취향을 물어보는 질문
                     - 대답하기 쉽고 재미있게
                     - 1-2 문장으로 간결하게
                     
