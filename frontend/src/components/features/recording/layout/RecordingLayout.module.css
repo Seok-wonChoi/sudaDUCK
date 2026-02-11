@@ -27,6 +27,42 @@
 }
 
 /* Cards List */
+.cardsListHeader {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  margin-bottom: -8px; /* cardsList의 margin-top과 조절 */
+}
+
+.allSkipButton {
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #64748b;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.allSkipButton:hover {
+  background: #e2e8f0;
+  color: #475569;
+  border-color: #94a3b8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(148, 163, 184, 0.2);
+}
+
+.allSkipButton:active {
+  transform: translateY(0);
+}
+
 .cardsList {
   display: flex;
   flex-direction: column;
