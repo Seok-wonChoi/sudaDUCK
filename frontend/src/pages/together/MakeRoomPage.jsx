@@ -259,8 +259,8 @@ export default function MakeRoomPage() {
                   <button
                     className={styles.StepButton}
                     type="button"
-                    onClick={() => setTimeLimit(Math.min(60, timeLimit + 5))}
-                    disabled={loading || timeLimit >= 60}
+                    onClick={() => setTimeLimit(Math.min(180, timeLimit + 5))}
+                    disabled={loading || timeLimit >= 180}
                   >
                     +
                   </button>
