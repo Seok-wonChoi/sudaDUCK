@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./MakeRoomPage.module.css";
 import { createSession } from "@/api/openVidu";
@@ -14,14 +14,6 @@ const ROOM_INFO_KEY = "together_room_info";
 export default function MakeRoomPage() {
   const navigate = useNavigate();
   const { getEffectiveVolume, isMuted } = useSoundContext();
-
-  // 로그인 체크
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      navigate("/", { replace: true });
-    }
-  }, [navigate]);
 
   const hotTopics = useMemo(
     () => [
@@ -229,22 +221,24 @@ export default function MakeRoomPage() {
                 <div className={styles.LabelRow}>
                   <span className={styles.Label}>턴 수</span>
                 </div>
-                <div className={styles.TurnRow}>
-                  {[3, 4, 5].map((n) => {
-                    const active = turn === n;
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        className={`${styles.TurnCard} ${active ? styles.TurnCardActive : ""}`}
-                        onClick={() => setTurn(n)}
-                        disabled={loading}
-                      >
-                        <span className={styles.TurnIcon} aria-hidden="true">↻</span>
-                        <span className={styles.TurnText}>{n}턴</span>
-                      </button>
-                    );
-                  })}
+                <div className={styles.Stepper}>
+                  <button
+                    className={styles.StepButton}
+                    type="button"
+                    onClick={() => setTurn(Math.max(1, turn - 1))}
+                    disabled={loading || turn <= 1}
+                  >
+                    -
+                  </button>
+                  <span className={styles.StepValue}>{turn}턴</span>
+                  <button
+                    className={styles.StepButton}
+                    type="button"
+                    onClick={() => setTurn(Math.min(5, turn + 1))}
+                    disabled={loading || turn >= 5}
+                  >
+                    +
+                  </button>
                 </div>
               </div>
 

@@ -168,6 +168,20 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     });
   }, [roomCode]);
 
+  const sendTimerSync = useCallback((data) => {
+    const client = clientRef.current;
+    if (!client?.connected) return;
+    
+    // 백엔드 핸들러를 거치지 않고 직접 토픽으로 발행하여 참가자들에게 전달
+    client.publish({
+      destination: `/topic/rooms/${roomCode}`,
+      body: JSON.stringify({
+        type: "TIMER_SYNC_EXTERNAL",
+        payload: data, // { timeLimit, turnCount }
+      }),
+    });
+  }, [roomCode]);
+
   useEffect(() => {
     if (!roomCode) return;
 
@@ -211,8 +225,10 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
       console.log("[WebSocket] ✅ 연결 성공:", {
         roomCode,
         topic: `/topic/rooms/${roomCode}`,
-        suggestionTopic: roomId ? `/topic/room/${roomId}/suggestion` : "N/A (roomId 없음)",
-        socketUrl
+        suggestionTopic: roomId
+          ? `/topic/room/${roomId}/suggestion`
+          : "N/A (roomId 없음)",
+        socketUrl,
       });
       setIsConnected(true);
 
@@ -256,7 +272,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                   payload,
                   senderKey,
                   type,
-                  fullData: data
+                  fullData: data,
                 });
                 onReadyChanged?.(payload, senderKey);
                 break;
@@ -274,8 +290,10 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                 });
                 // 참가자 추가
                 if (payload) {
-                  setParticipants(prev => {
-                    const exists = prev.find(p => p.id === payload.id || p.userId === payload.userId);
+                  setParticipants((prev) => {
+                    const exists = prev.find(
+                      (p) => p.id === payload.id || p.userId === payload.userId,
+                    );
                     if (exists) return prev;
                     return [...prev, payload];
                   });
@@ -292,8 +310,13 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                 });
                 // 참가자 제거
                 if (payload?.userId || payload?.id) {
-                  setParticipants(prev => 
-                    prev.filter(p => p.id !== payload.userId && p.id !== payload.id && p.userId !== payload.userId)
+                  setParticipants((prev) =>
+                    prev.filter(
+                      (p) =>
+                        p.id !== payload.userId &&
+                        p.id !== payload.id &&
+                        p.userId !== payload.userId,
+                    ),
                   );
                 }
                 onMemberLeft?.(payload, senderKey);
@@ -301,10 +324,10 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
 
               case "VOICE_LEVEL_CHANGED":
                 // 음성 레벨 업데이트
-                if (payload?.userId && typeof payload?.level === 'number') {
-                  setVoiceLevels(prev => ({
+                if (payload?.userId && typeof payload?.level === "number") {
+                  setVoiceLevels((prev) => ({
                     ...prev,
-                    [payload.userId]: payload.level
+                    [payload.userId]: payload.level,
                   }));
                 }
                 onVoiceLevelChanged?.(payload, senderKey);
@@ -365,10 +388,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
               case "TIMER_SYNC":
               case "TIMER_STARTED":
               case "TIMER_START":
-                console.log("[WebSocket] TIMER_SYNC 수신:", {
-                  payload,
-                  type,
-                });
+              case "TIMER_SYNC_EXTERNAL":
                 onTimerSync?.(payload);
                 break;
 
@@ -458,12 +478,18 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
                     question,
                     roomId,
                   });
+                  // 하드코딩 ✅✅✅✅✅
+                  // const hardcodedQuestion =
+                  //   "이번주 고생 많았구나. 그러면 회식 메뉴로 치킨은 어때?";
+                  // handlersRef.current.onConversationSuggestion?.(
+                  //   hardcodedQuestion,
+                  // );
                   handlersRef.current.onConversationSuggestion?.(question);
                 }
               } catch (e) {
                 console.error("Suggestion Msg Parsing Error", e);
               }
-            }
+            },
           );
         } else {
           // 핸들러는 있는데 roomId가 없는 경우에만 경고 출력
@@ -473,7 +499,9 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
 
       // ★ 퀴즈 구독 추가
       if (roomId) {
-        console.log(`[WebSocket] 🎯 퀴즈 구독 시작: /topic/room/${roomId}/quiz`);
+        console.log(
+          `[WebSocket] 🎯 퀴즈 구독 시작: /topic/room/${roomId}/quiz`,
+        );
 
         // 퀴즈 문제 수신
         const quizSubRef = client.subscribe(
@@ -486,7 +514,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
             } catch (e) {
               console.error("Quiz Msg Parsing Error", e);
             }
-          }
+          },
         );
         console.log("[WebSocket] ✅ 퀴즈 구독 완료");
 
@@ -501,7 +529,7 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
             } catch (e) {
               console.error("Quiz Result Msg Parsing Error", e);
             }
-          }
+          },
         );
       }
 
@@ -516,7 +544,9 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
         message: frame.headers?.message || "에러 메시지 없음",
       });
       setIsConnected(false);
-      handlersRef.current.onError?.(frame.headers?.message || "STOMP 연결 에러");
+      handlersRef.current.onError?.(
+        frame.headers?.message || "STOMP 연결 에러",
+      );
     };
 
     client.onWebSocketError = (event) => {
@@ -552,16 +582,17 @@ export default function useRoomWebSocket(roomCode, handlers = {}, roomId) {
     };
   }, [isConnected]);
 
-  return { 
-    sendReady, 
-    sendMic, 
-    sendVoiceLevel, 
-    sendEndRoom, 
-    sendUnexpectedQuest, 
-    sendQuestContinueReady, 
+  return {
+    sendReady,
+    sendMic,
+    sendVoiceLevel,
+    sendEndRoom,
+    sendUnexpectedQuest,
+    sendQuestContinueReady,
     sendMiniGameStart,
+    sendTimerSync,
     isConnected,
     participants,
-    voiceLevels
+    voiceLevels,
   };
 }

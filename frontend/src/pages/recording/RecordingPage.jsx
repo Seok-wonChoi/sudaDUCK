@@ -150,6 +150,7 @@ export default function RecordingPage() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordingCountdown, setRecordingCountdown] = useState(10); // 녹음 카운트다운 (10초)
   const [sentenceScores, setSentenceScores] = useState({});
+  const [skippedIds, setSkippedIds] = useState(new Set()); // 👈 건너뛴 문장 ID 추적용 추가
   const [bookmarkedSentences, setBookmarkedSentences] = useState([]);
   const [conversations, setConversations] = useState({});
   const [selectedTurnForReport, setSelectedTurnForReport] = useState(null);
@@ -1144,7 +1145,9 @@ console.log(`📤 발음 평가 전송 시작`, {
 
     return currentTurnSentences.map((s, i) => {
       const resultData = resultsMap[s.scriptId];
-      const finalScore = resultData?.score ?? sentenceScores[s.id];
+      // 1. 내가 이번 세션에 스킵했거나, 2. 점수가 이미 -3(SKIP)인 경우 확인
+      const isSkipped = skippedIds.has(s.id) || sentenceScores[s.id] === -3;
+      const finalScore = isSkipped ? -3 : (resultData?.score ?? sentenceScores[s.id]);
 
       // scriptId는 고유하므로 scriptId만 사용 (턴 번호 불필요)
       const bookmarkKey = s.scriptId;
@@ -1163,6 +1166,7 @@ console.log(`📤 발음 평가 전송 시작`, {
     currentTurnSentences,
     currentSentenceIndex,
     sentenceScores,
+    skippedIds, // 👈 의존성 추가
     bookmarkedSentences,
     step,
     turnResults,
@@ -1175,6 +1179,81 @@ console.log(`📤 발음 평가 전송 시작`, {
     clearAllTimers();
     stopRecording();
   }, [clearAllTimers, stopRecording]);
+
+  const handleSkip = useCallback(() => {
+    console.log("⏭️ [RecordingPage] 사용자가 이 문장을 건너뛰었습니다.");
+    
+    // 1. 모든 타이머 및 녹음기 즉시 중단
+    clearAllTimers();
+    
+    if (recorderRef.current) {
+      const recorder = recorderRef.current;
+      recorder.stopRecording(() => {
+        try {
+          const internalRecorder = recorder.getInternalRecorder();
+          if (internalRecorder && internalRecorder.stream) {
+            internalRecorder.stream.getTracks().forEach((track) => track.stop());
+          }
+        } catch (e) {
+          console.warn("마이크 스트림 정지 중 경미한 오류:", e);
+        }
+      });
+    }
+
+    // 2. 스킵 상태를 상태값과 전용 Set에 모두 저장 (중복 보장)
+    if (currentSentence) {
+      const sid = currentSentence.id;
+      setSkippedIds(prev => new Set(prev).add(sid));
+      setSentenceScores((prev) => ({
+        ...prev,
+        [sid]: -3,
+      }));
+    }
+
+    // 3. API 호출 없이 즉시 다음 상태로 전이
+    setStep(STEP.RECORD_DONE);
+  }, [clearAllTimers, currentSentence]);
+
+  const handleSkipAll = useCallback(() => {
+    console.log("⏭️⏭️ [RecordingPage] 사용자가 모든 남은 문장을 건너뛰었습니다.");
+    
+    // 1. 모든 타이머 및 녹음기 즉시 중단
+    clearAllTimers();
+    
+    if (recorderRef.current) {
+      const recorder = recorderRef.current;
+      recorder.stopRecording(() => {
+        try {
+          const internalRecorder = recorder.getInternalRecorder();
+          if (internalRecorder && internalRecorder.stream) {
+            internalRecorder.stream.getTracks().forEach((track) => track.stop());
+          }
+        } catch (e) {
+          console.warn("마이크 스트림 정지 중 경미한 오류:", e);
+        }
+      });
+    }
+
+    // 2. 현재 문장부터 마지막 문장까지 모두 스킵 처리
+    const remainingSentences = currentTurnSentences.slice(currentSentenceIndex);
+    
+    setSkippedIds(prev => {
+      const next = new Set(prev);
+      remainingSentences.forEach(s => next.add(s.id));
+      return next;
+    });
+    
+    setSentenceScores(prev => {
+      const next = { ...prev };
+      remainingSentences.forEach(s => {
+        next[s.id] = -3;
+      });
+      return next;
+    });
+
+    // 3. 즉시 리포트 단계로 이동
+    setStep(STEP.TURN_REPORT);
+  }, [clearAllTimers, currentTurnSentences, currentSentenceIndex]);
 
   const bottomContent = () => {
     if (isLoadingScript) {
@@ -1399,7 +1478,9 @@ console.log(`📤 발음 평가 전송 시작`, {
         currentTurn={selectedTurnForReport || currentTurn}
       sentenceCards={sentenceCardsData}
       activeCardState={
-        step === STEP.AI_PLAYING
+        step === STEP.AI_TIMER
+          ? "ai_timer"
+          : step === STEP.AI_PLAYING
           ? "ai_playing"
           : step === STEP.RECORD_TIMER
           ? "record_timer"
@@ -1415,6 +1496,8 @@ console.log(`📤 발음 평가 전송 시작`, {
       bottomContent={bottomContent()}
       onBookmarkToggle={handleBookmarkToggle}
       onStop={handleManualStop}
+      onSkip={handleSkip}
+      onSkipAll={handleSkipAll}
       showBlanks={showBlanks}
       isSubmitting={isSubmitting}
       onToggleBlanks={() => {

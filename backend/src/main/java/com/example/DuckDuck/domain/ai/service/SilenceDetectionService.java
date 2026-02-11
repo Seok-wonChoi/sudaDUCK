@@ -31,6 +31,8 @@ public class SilenceDetectionService {
     private final TaskScheduler taskScheduler;
     private final StringRedisTemplate redisTemplate;
 
+    private final Set<String> suggestedTurns = ConcurrentHashMap.newKeySet();
+
     // 방별 마지막 음성 활동 시간
     private final Map<Long, Long> lastVoiceActivityTime = new ConcurrentHashMap<>();
 
@@ -40,7 +42,7 @@ public class SilenceDetectionService {
     // 방별 정적 체크 스케줄
     private final Map<Long, ScheduledFuture<?>> silenceCheckSchedules = new ConcurrentHashMap<>();
 
-    private static final long SILENCE_THRESHOLD_MS = 10000;
+    private static final long SILENCE_THRESHOLD_MS = 8000;
 
     /**
      * 음성 활동 알림 (프론트에서 호출)
@@ -61,7 +63,7 @@ public class SilenceDetectionService {
     }
 
     /**
-     * 방 입장 시 정적 감지 시작
+     * 방 입장 시 또는 턴 변경 시 정적 감지 시작
      */
     public void startMonitoring(Long roomId, Integer turn) {
         log.info("👀 [모니터링 시작] roomId={}, turn={}", roomId, turn);
@@ -69,6 +71,13 @@ public class SilenceDetectionService {
         // 현재 시간 & 턴으로 초기화
         lastVoiceActivityTime.put(roomId, System.currentTimeMillis());
         currentTurns.put(roomId, turn);
+
+        // 기존 스케줄 취소
+        ScheduledFuture<?> oldFuture = silenceCheckSchedules.remove(roomId);
+        if (oldFuture != null && !oldFuture.isDone()) {
+            oldFuture.cancel(false);
+            log.info("🔄 [모니터링] 기존 스케줄 취소 - 새 턴 시작");
+        }
 
         // 정적 체크 시작
         startSilenceCheck(roomId);
@@ -133,9 +142,9 @@ public class SilenceDetectionService {
             log.info("🔇 [정적 감지!] roomId={}, 추천 생성 시작", roomId);
             generateAndBroadcastSuggestion(roomId);
 
-            // 추천 후 다시 모니터링 시작 (계속 추천 가능)
-            lastVoiceActivityTime.put(roomId, System.currentTimeMillis());
-            startSilenceCheck(roomId);
+            // 추천 후에는 모니터링을 다시 시작하지 않음
+            // 다음 음성 활동이 있을 때 reportVoiceActivity에서 자동으로 재시작됨
+            log.info("✅ [정적 감지] 추천 완료 - 다음 음성 활동 대기 중");
 
         } else {
             // 아직 10초 안 됨 (누군가 중간에 말함)
@@ -158,6 +167,14 @@ public class SilenceDetectionService {
         try {
             // 현재 턴 조회 (Redis나 DB에서 - 여기서는 예시로 1)
             Integer currentTurn = getCurrentTurn(roomId);
+
+            // 턴별 주제 추천 중복 체크
+            String turnKey = roomId + "_turn_" + currentTurn;
+
+            if (suggestedTurns.contains(turnKey)) {
+                log.info("🔇 [정적 감지] 턴 {}에 이미 주제 추천함 - 스킵", currentTurn);
+                return;
+            }
 
             // 컨텍스트 수집
             AiContextService.ConversationContext context =
@@ -184,6 +201,8 @@ public class SilenceDetectionService {
                     "/topic/room/" + roomId + "/suggestion",
                     message
             );
+
+            suggestedTurns.add(turnKey);
 
             log.info("📤 [WebSocket 전송] roomId={}, 전체 참가자에게 전송 완료", roomId);
 
@@ -312,4 +331,5 @@ public class SilenceDetectionService {
             );
         }
     }
+
 }
