@@ -24,6 +24,7 @@ export default function SentenceCard({
   showBlanks = true,
   isSubmitting = false,
   onToggleBlanks = null,
+  onSkip = null,
 }) {
   const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
 
@@ -40,6 +41,11 @@ export default function SentenceCard({
     }
 
     console.log('북마크 토글:', sentenceId, newBookmarkedState);
+  };
+
+  const handleSkipClick = (e) => {
+    e.stopPropagation();
+    if (onSkip) onSkip();
   };
 
   // 점수에 따른 색상 클래스 반환
@@ -243,6 +249,7 @@ export default function SentenceCard({
   // 점수에 따른 등급 클래스 결정
   const getScoreGradeClass = () => {
     if (score === null || cardState !== 'idle') return '';
+    if (score === -3) return styles.skipped;  // Skip 상태 추가
     if (score >= 90) return styles.excellent; // Green
     if (score >= 70) return styles.good;      // Yellow
     return styles.poor;                       // Red
@@ -250,6 +257,7 @@ export default function SentenceCard({
 
   const getScoreGradeText = () => {
     if (score === null) return '';
+    if (score === -3) return 'Skipped';
     if (score >= 90) return 'Great!';
     if (score >= 70) return 'Good';
     return 'Keep it up!';
@@ -262,14 +270,28 @@ export default function SentenceCard({
           <span className={styles.speakerName}>🎙️ 발화자 : {speaker}</span>
         </div>
         <div className={styles.headerRight}>
-          {score !== null && cardState === 'idle' && (
+          {isActive && (cardState === 'ai_timer' || cardState === 'ai_playing' || cardState === 'record_timer' || cardState === 'recording') && (
+            <button 
+              className={styles.inlineSkipButton} 
+              onClick={handleSkipClick}
+              title="이 문장 건너뛰기"
+            >
+              <span>건너뛰기</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 19l7-7-7-7M5 19l7-7-7-7" />
+              </svg>
+            </button>
+          )}
+          {score !== null && score !== -1 && score !== -2 && (cardState === 'idle' || cardState === 'record_done') && (
             <div className={styles.scoreContainer}>
               <span className={styles.gradeBadge}>{getScoreGradeText()}</span>
               <div className={styles.scoreWrapper}>
-                <strong className={styles.scoreValueBig}>{score}</strong>
-                <span className={styles.scoreUnit}>pt</span>
+                <strong className={styles.scoreValueBig}>
+                  {score === -3 ? 'SKIP' : score}
+                </strong>
+                {score !== -3 && <span className={styles.scoreUnit}>pt</span>}
               </div>
-              {averageScore !== null && averageScore !== undefined && (
+              {averageScore !== null && averageScore !== undefined && score !== -3 && (
                 <span className={styles.averageScore}>
                   Avg. {averageScore}pt
                 </span>

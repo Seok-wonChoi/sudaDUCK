@@ -14,6 +14,7 @@ export default function RecordingLayout({
   bottomContent,
   onBookmarkToggle = null,
   onStop = null,
+  onSkip = null,
   showBlanks = true,
   isSubmitting = false,
   onToggleBlanks = null,
@@ -73,6 +74,7 @@ export default function RecordingLayout({
                   initialBookmarked={card.isBookmarked}
                   onBookmarkToggle={onBookmarkToggle}
                   onStop={onStop}
+                  onSkip={onSkip}
                   showBlanks={showBlanks}
                   isSubmitting={isSubmitting}
                   onToggleBlanks={onToggleBlanks}
