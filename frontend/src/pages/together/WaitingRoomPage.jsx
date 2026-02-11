@@ -305,7 +305,7 @@ export default function WaitingRoomPage() {
   const [isStarting, setIsStarting] = useState(false);
   const startDataRef = useRef(null);
 
-  const { remainingSec, start: startTimer } = useSmoothCountdown(5, {
+  const { remainingSec, start: startTimer } = useSmoothCountdown(2.5, {
     onDone: () => {
       if (hasNavigatedRef.current) return;
       hasNavigatedRef.current = true;
