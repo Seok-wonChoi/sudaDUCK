@@ -728,10 +728,37 @@ export default function WaitingRoomPage() {
   const hasNavigatedRef = useRef(false);
 
   const sendMicRef = useRef(null);
+  const sendTimerSyncRef = useRef(null); // 👈 타이머 동기화 전용 Ref
   const myMicOnRef = useRef(myMicOn);
   useEffect(() => {
     myMicOnRef.current = myMicOn;
   }, [myMicOn]);
+
+  // 📡 타이머 동기화 수신 핸들러 (Talk 페이지 기법)
+  const handleTimerSync = useCallback((payload) => {
+    const newLimit = payload?.timeLimit ?? (typeof payload === 'number' ? payload : null);
+    const newTurn = payload?.turnCount;
+
+    if (newLimit != null) {
+      const limitNum = Number(newLimit);
+      console.log("[WaitingRoom] ⏱️ 동기화 신호 수신:", limitNum);
+      setTimeLimit(limitNum);
+
+      // 💾 세션 스토리지 즉시 업데이트 (페이지 이동 시 유실 방지)
+      try {
+        const stored = sessionStorage.getItem(ROOM_INFO_KEY);
+        const base = stored ? JSON.parse(stored) : {};
+        sessionStorage.setItem(ROOM_INFO_KEY, JSON.stringify({ 
+          ...base, 
+          timeLimit: limitNum,
+          turnCount: newTurn ?? base.turnCount 
+        }));
+        if (newTurn) setTurnCount(Number(newTurn));
+      } catch (e) {
+        console.error("저장소 갱신 실패:", e);
+      }
+    }
+  }, []);
 
   const handleMemberJoined = useCallback((payload, senderKey) => {
     console.log("[WaitingRoom] 🟢 MEMBER_JOINED 수신:", {
@@ -774,7 +801,12 @@ export default function WaitingRoomPage() {
       console.log("[WaitingRoom] 새 멤버 입장 - 내 마이크 상태 전송:", myMicOnRef.current);
       sendMicRef.current(myMicOnRef.current);
     }
-  }, []);
+
+    // 👑 방장인 경우, 새 멤버에게 현재 설정된 타임리밋을 소켓으로 전송
+    if (isHost && sendTimerSyncRef.current) {
+      sendTimerSyncRef.current({ timeLimit, turnCount });
+    }
+  }, [isHost, timeLimit, turnCount]);
 
   const handleMemberLeft = useCallback((payload, senderKey) => {
     console.log("[WaitingRoom] 🔴 MEMBER_LEFT 수신:", {
@@ -969,7 +1001,7 @@ export default function WaitingRoomPage() {
     [isStarting, startTimer],
   );
 
-  const { sendReady, sendMic, sendVoiceLevel, isConnected } = useRoomWebSocket(inviteCode, {
+  const { sendReady, sendMic, sendVoiceLevel, sendTimerSync, isConnected } = useRoomWebSocket(inviteCode, {
     onReadyChanged: handleReadyChanged,
     onMicChanged: handleMicChanged,
     onMemberJoined: handleMemberJoined,
@@ -978,20 +1010,38 @@ export default function WaitingRoomPage() {
     onSettingsChanged: handleSettingsChanged,
     onRoomStarted,
     onRoomClosed: handleRoomClosed,
+    onTimerSync: handleTimerSync, // 👈 수신 핸들러 등록
     onError: handleWebSocketError,
     onConnected: () => {
       console.log("[WaitingRoom] ✅ WebSocket 연결 성공! roomCode:", inviteCode);
       fetchLobbyRef.current?.();
+      
+      // 방장 초기 방송
+      if (roomInfo.isHost && sendTimerSync) {
+        sendTimerSync({ timeLimit, turnCount });
+      }
     },
     onDisconnected: () => {
       console.log("[WaitingRoom] ❌ WebSocket 연결 해제됨");
     },
   });
 
-  // sendMic을 ref에 저장
+  // sendMic, sendTimerSync을 ref에 저장 (초기화 순서 에러 방어)
   useEffect(() => {
     sendMicRef.current = sendMic;
-  }, [sendMic]);
+    sendTimerSyncRef.current = sendTimerSync;
+  }, [sendMic, sendTimerSync]);
+
+  // 📡 방장 하트비트 동기화 (3초 주기)
+  useEffect(() => {
+    if (!isHost || !isConnected || !sendTimerSync) return;
+    const interval = setInterval(() => {
+      if (sendTimerSyncRef.current) {
+        sendTimerSyncRef.current({ timeLimit, turnCount });
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isHost, isConnected, timeLimit, turnCount]);
 
   // WebSocket 연결 상태 로그 및 초기 마이크 상태 전송 (처음 1번만)
   const initialMicSentRef = useRef(false);
@@ -1200,6 +1250,11 @@ export default function WaitingRoomPage() {
     setTopic(editTopic.trim());
     setTurnCount(editTurn);
     setTimeLimit(editTimeLimit);
+
+    // 📡 변경 즉시 참가자들에게 방송
+    if (sendTimerSyncRef.current) {
+      sendTimerSyncRef.current({ timeLimit: editTimeLimit, turnCount: editTurn });
+    }
 
     try {
       const stored = sessionStorage.getItem(ROOM_INFO_KEY);
