@@ -408,7 +408,7 @@ export default function RecordingPage() {
             replace: true,
             state: navigationState,
           });
-        }, 2000);
+        }, 2500);
       },
       onMemberJoined: (payload) => fetchLobby(),
       onMemberLeft: (payload, senderKey) => {

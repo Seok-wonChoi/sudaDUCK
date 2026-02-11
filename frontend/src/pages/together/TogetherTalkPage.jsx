@@ -277,7 +277,7 @@ export default function TogetherTalkPage() {
   const timeLimit = useMemo(() => {
     const raw = roomInfo.timeLimit || roomInfo.roomInfo?.timeLimit;
     const num = parseInt(raw, 10);
-    if (!isNaN(num) && num >= 15 && num <= 60) return num;
+    if (!isNaN(num) && num >= 15 && num <= 180) return num;
     return 40; // 기본값
   }, [roomInfo.timeLimit, roomInfo.roomInfo?.timeLimit]);
   const durationMs = timeLimit * 1000;
@@ -806,6 +806,15 @@ export default function TogetherTalkPage() {
         return;
       }
 
+      // 턴 진행 시간이 20초 넘었는지 확인
+      const elapsedSeconds = (Date.now() - timerStartedAt) / 1000;
+      let suggestion = question || "";
+
+      if (elapsedSeconds > 20) {
+        suggestion =
+          "그럼 대만은 어때? 일본보다 물가도 착하고, 맛있는 것도 진짜 많다구!";
+      }
+
       // 효과음 재생
       const audio = new Audio(silenceAlertSound);
       audio.volume = 0.5;
@@ -813,9 +822,9 @@ export default function TogetherTalkPage() {
 
       // 중앙 팝업 표시
       setShowSilencePopup(true);
-      setAiSuggestion(question || "");
+      setAiSuggestion(suggestion);
     },
-    [questStep],
+    [questStep, timerStartedAt],
   );
 
   const handleSilenceDetected = useCallback(
@@ -941,7 +950,7 @@ export default function TogetherTalkPage() {
       stopSTT(); // 로딩 시작 시 STT 즉시 중단
       setTimeout(() => {
         navigateToRecording();
-      }, 5000);
+      }, 2500);
     },
     [
       navigate,
@@ -1453,7 +1462,7 @@ export default function TogetherTalkPage() {
     stopSTT(); // 로딩 시작 시 STT 즉시 중단
     setTimeout(() => {
       navigateToRecording();
-    }, 5000);
+    }, 2500);
   }, [
     doLeaveRoom,
     navigate,
