@@ -275,14 +275,10 @@ export default function TogetherTalkPage() {
 
   const roomInfo = hydratedInfo ?? {};
   const timeLimit = useMemo(() => {
-    // 1. location.state 우선
-    // 2. 세션 스토리지에 박제된 값 차선 (대기실 동기화 결과)
-    const stored = safeParseJson(sessionStorage.getItem(ROOM_INFO_KEY));
-    const raw = roomInfo.timeLimit ?? roomInfo.roomInfo?.timeLimit ?? stored?.timeLimit ?? 40;
+    const raw = roomInfo.timeLimit || roomInfo.roomInfo?.timeLimit;
     const num = parseInt(raw, 10);
-    
-    if (!isNaN(num) && num >= 10 && num <= 120) return num;
-    return 40;
+    if (!isNaN(num) && num >= 15 && num <= 60) return num;
+    return 40; // 기본값
   }, [roomInfo.timeLimit, roomInfo.roomInfo?.timeLimit]);
   const durationMs = timeLimit * 1000;
 
@@ -600,6 +596,10 @@ export default function TogetherTalkPage() {
   // [추가] 의도적으로 STT를 껐는지 확인하는 플래그
   const isSTTIntentionallyStopped = useRef(false);
 
+  // ✅ 디버깅용 Ref 추가
+  const processedTranscripts = useRef(new Set());
+  const sttEventLog = useRef([]);
+
   // STT 시작
   // STT 시작 함수 (완성본)
   const startSTT = useCallback(() => {
@@ -623,16 +623,71 @@ export default function TogetherTalkPage() {
       // 시작 시 "의도적 중지" 플래그 해제
       isSTTIntentionallyStopped.current = false;
 
+      // ✅ STT 시작 로그
+      recognition.onstart = () => {
+        console.log(`
+╔════════════════════════════════════════════════════════════
+║ [STT 시작]
+║ 사용자 ID: ${myUserId}
+║ 닉네임: ${participants.find((p) => p.isMe)?.name || "Unknown"}
+║ 시작 시간: ${new Date().toLocaleTimeString()}.${Date.now() % 1000}
+╚════════════════════════════════════════════════════════════
+        `);
+      };
+
       recognition.onresult = async (event) => {
+        // ✅ Event 정보 로그
+        console.log(`
+┌────────────────────────────────────────────────────────────
+│ [STT Event 수신]
+│ 사용자: ${myUserId}
+│ resultIndex: ${event.resultIndex}
+│ results.length: ${event.results.length}
+│ voiceLevel: ${voiceLevel.toFixed(3)}
+│ 시간: ${new Date().toLocaleTimeString()}.${Date.now() % 1000}
+└────────────────────────────────────────────────────────────
+        `);
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript;
+            const confidence = event.results[i][0].confidence;
 
             // 공백이거나 너무 짧으면(1글자 미만) 무시 (로그 과다 방지)
             if (!transcript || transcript.trim().length < 2) continue;
 
+            // ✅ 중복 체크
+            const trimmedTranscript = transcript.trim();
+
+            if (processedTranscripts.current.has(trimmedTranscript)) {
+              console.log(`
+╔════════════════════════════════════════════════════════════
+║ 🚫 [중복 감지!]
+║ 사용자: ${myUserId}
+║ 텍스트: "${trimmedTranscript}"
+║ 상태: 이미 처리됨 - 전송 차단
+║ 시간: ${new Date().toLocaleTimeString()}.${Date.now() % 1000}
+╚════════════════════════════════════════════════════════════
+              `);
+              continue;
+            }
+
+            processedTranscripts.current.add(trimmedTranscript);
+
+            // ✅ 새 인식 로그
+            console.log(`
+╔════════════════════════════════════════════════════════════
+║ ✅ [새 음성 인식]
+║ 사용자: ${myUserId}
+║ 텍스트: "${trimmedTranscript}"
+║ 신뢰도: ${(confidence * 100).toFixed(1)}%
+║ voiceLevel: ${voiceLevel.toFixed(3)}
+║ 시간: ${new Date().toLocaleTimeString()}.${Date.now() % 1000}
+╚════════════════════════════════════════════════════════════
+            `);
+
             // [로그] 인식된 내용만 심플하게 출력
-            console.log("🎤", transcript);
+            console.log("🎤", trimmedTranscript);
 
             // Ref를 통해 최신 턴 번호 조회
             const currentTurnVal = currentTurnRef.current;
@@ -645,16 +700,34 @@ export default function TogetherTalkPage() {
             }
 
             try {
+              // ✅ 서버 전송 로그
+              console.log(`
+┌────────────────────────────────────────────────────────────
+│ 📤 [서버 전송 시작]
+│ 텍스트: "${trimmedTranscript}"
+│ roomId: ${roomId}
+│ turnNo: ${currentTurnVal}
+│ speakerId: ${myUserId}
+└────────────────────────────────────────────────────────────
+              `);
+
               // 번역 API 호출
               await translateToEnglish(
                 roomId,
-                transcript,
+                trimmedTranscript,
                 currentTurnVal,
                 myUserId,
               );
+
+              console.log(`✅ [서버 전송 완료] "${trimmedTranscript}"`);
             } catch (error) {
-              console.error("[STT] 번역 전송 실패");
+              console.error(`❌ [서버 전송 실패] "${trimmedTranscript}"`);
             }
+
+            // 5초 후 Set에서 제거
+            setTimeout(() => {
+              processedTranscripts.current.delete(trimmedTranscript);
+            }, 5000);
           }
         }
       };
@@ -2630,6 +2703,27 @@ const UserAudioComponent = ({ streamManager }) => {
   useEffect(() => {
     if (streamManager && audioRef.current) {
       streamManager.addVideoElement(audioRef.current);
+
+      // ✅ Subscriber Audio 로그
+      const connectionId = streamManager.stream.connection.connectionId;
+
+      console.log(`
+╔════════════════════════════════════════════════════════════
+║ 🔊 [Subscriber Audio 연결]
+║ Connection ID: ${connectionId}
+║ 연결 시간: ${new Date().toLocaleTimeString()}.${Date.now() % 1000}
+╚════════════════════════════════════════════════════════════
+      `);
+
+      audioRef.current.onplay = () => {
+        console.log(`
+╔════════════════════════════════════════════════════════════
+║ ▶️ [Subscriber Audio 재생 시작]
+║ Connection ID: ${connectionId}
+║ 재생 시간: ${new Date().toLocaleTimeString()}.${Date.now() % 1000}
+╚════════════════════════════════════════════════════════════
+        `);
+      };
     }
   }, [streamManager]);
 
