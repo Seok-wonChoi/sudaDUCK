@@ -33,11 +33,22 @@
   padding: 14px 16px;
 }
 
+.ExpressionRow {
+  display: flex;
+  flex-direction: column;
+}
+
+.Divider {
+  height: 1px;
+  background-color: #f3f4f6;
+  margin: 12px 0;
+}
+
 .English {
   font-size: 14px;
   font-weight: 600;
   color: #111827;
-  margin-bottom: 4px;
+  line-height: 1.5;
 }
 
 .Korean {

@@ -3,6 +3,18 @@ import styles from "./SimilarExpressions.module.css";
 export default function SimilarExpressions({ expressions = [] }) {
   if (expressions.length === 0) return null;
 
+  // 조각들을 문장 단위로 그룹화하는 로직
+  const groupedExpressions = expressions.reduce((acc, curr) => {
+    // 이전 조각이 존재하고, 그 조각이 문장 부호(. ! ?)로 끝나지 않는다면 이어 붙임
+    if (acc.length > 0 && !/[.!?]$/.test(acc[acc.length - 1])) {
+      acc[acc.length - 1] = `${acc[acc.length - 1]} ${curr}`;
+    } else {
+      // 새로운 문장 시작
+      acc.push(curr);
+    }
+    return acc;
+  }, []);
+
   return (
     <div className={styles.Container}>
       <div className={styles.Header}>
@@ -11,15 +23,9 @@ export default function SimilarExpressions({ expressions = [] }) {
       </div>
 
       <div className={styles.List}>
-        {expressions.map((expr, index) => (
+        {groupedExpressions.map((expr, index) => (
           <div key={index} className={styles.Item}>
-            {/* 기존: expr.english 
-               변경: expr (백엔드에서 문자열 그대로 줌) 
-            */}
             <div className={styles.English}>{expr}</div>
-            
-            {/* 한국어 데이터가 있다면 보여주고, 없으면 숨김 처리 */}
-            {expr.korean && <div className={styles.Korean}>{expr.korean}</div>}
           </div>
         ))}
       </div>
