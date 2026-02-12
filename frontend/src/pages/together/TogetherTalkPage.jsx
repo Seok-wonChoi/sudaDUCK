@@ -434,6 +434,10 @@ export default function TogetherTalkPage() {
       setTimerStartedAt(now);
       console.log(`[Timer] 🔄 새 턴(${currentTurn}) 시작, 시간 박제: ${now}`);
 
+      // [추가] 새 턴 시작 시 STT 상태를 무조건 '켜짐'으로 초기화
+      setSttOn(true);
+      console.log(`[STT] 턴 ${currentTurn} 시작 - STT 상태를 켬(ON)으로 초기화합니다.`);
+
       // 턴 변경 시 정적 감지 재시작
       if (roomId) {
         startSilenceMonitoring(roomId, currentTurn)
@@ -565,6 +569,14 @@ export default function TogetherTalkPage() {
   }, [maxCount, participants]);
 
   const [micOn, setMicOn] = useState(true);
+  const [sttOn, setSttOn] = useState(true); // [추가] STT 전용 상태
+  const sttOnRef = useRef(true); // [추가] STT 상태 실시간 참조용 Ref
+  const sttOffTimestampRef = useRef(0); // [추가] STT를 끈 시점 기록용
+
+  useEffect(() => {
+    sttOnRef.current = sttOn;
+  }, [sttOn]);
+
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [aiSuggestion, setAiSuggestion] = useState("");
@@ -636,6 +648,11 @@ export default function TogetherTalkPage() {
       };
 
       recognition.onresult = async (event) => {
+        // ✅ STT 버튼이 꺼져있으면 즉시 무시 (Grace Period 제거)
+        if (!sttOnRef.current) {
+          return;
+        }
+
         // ✅ Event 정보 로그
         console.log(`
 ┌────────────────────────────────────────────────────────────
@@ -766,6 +783,11 @@ export default function TogetherTalkPage() {
         console.error("[STT] ⚠️ 에러:", event.error);
       };
 
+      recognition.onend = () => {
+        console.log("[STT] 🏁 SpeechRecognition 엔진 완전히 종료됨");
+        recognitionRef.current = null;
+      };
+
       recognition.start();
       recognitionRef.current = recognition;
     } catch (error) {
@@ -778,15 +800,20 @@ export default function TogetherTalkPage() {
     isSTTIntentionallyStopped.current = true; // 재시작 방지 플래그 설정
 
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      console.log("[STT] 🛑 엔진 즉시 파괴 (abort)");
+      try {
+        recognitionRef.current.abort(); // stop() 대신 abort() 사용
+      } catch (e) {
+        console.error("[STT] abort 중 오류:", e);
+      }
       recognitionRef.current = null;
     }
   }, []);
 
-  // 한국어 대화 시작 시 STT 자동 시작 (마이크가 켜져 있을 때만)
+  // 한국어 대화 시작 시 STT 자동 시작 (마이크와 STT 버튼이 둘 다 켜져 있을 때만)
   useEffect(() => {
     const isQuestRunning = questStep !== "idle"; // questRunning 변수 대신 직접 비교
-    if (!isQuestRunning && roomId && micOn && !isTransitioning) {
+    if (!isQuestRunning && roomId && micOn && sttOn && !isTransitioning) {
       startSTT();
     } else {
       stopSTT();
@@ -796,7 +823,7 @@ export default function TogetherTalkPage() {
     return () => {
       stopSTT();
     };
-  }, [questStep, roomId, micOn, startSTT, stopSTT, isTransitioning]);
+  }, [questStep, roomId, micOn, sttOn, startSTT, stopSTT, isTransitioning]);
 
   const handleConversationSuggestion = useCallback(
     (question) => {
@@ -1360,6 +1387,36 @@ export default function TogetherTalkPage() {
     if (publisher) publisher.publishAudio(true); // 👈 OpenVidu Unmute
     await startAudioAnalysis();
   }, [micOn, startAudioAnalysis, stopAudioAnalysis, sendMic, publisher]);
+
+  const toggleStt = useCallback(() => {
+    setSttOn((prev) => {
+      const next = !prev;
+      if (next) {
+        // STT를 다시 켤 때
+        processedTranscripts.current.clear();
+        console.log("[STT] 🔄 중복 체크 기록이 초기화되었습니다.");
+      } else {
+        // STT를 끌 때 시점 박제
+        sttOffTimestampRef.current = Date.now();
+        console.log("[STT] 🛑 STT 중지 시점이 기록되었습니다.");
+      }
+      return next;
+    });
+  }, []);
+
+  // [추가] 방장 전용 단축키 (`) 처리
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // 방장이고 백틱(`) 키를 눌렀을 때만 작동
+      if (isHost && e.key === "`") {
+        console.log("[STT] ⌨️ 단축키(`) 감지 - STT 상태를 토글합니다.");
+        toggleStt();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isHost, toggleStt]);
 
   // [추가] API 호출 없이 오디오/정적감지만 멈추는 헬퍼 함수
   const stopMediaProcessing = useCallback(async () => {
@@ -2512,6 +2569,18 @@ export default function TogetherTalkPage() {
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
+                {/* 참여자에게만 STT 버튼 표시 (방장은 단축키 ` 사용) */}
+                {!isHost && (
+                  <button
+                    type="button"
+                    className={`${styles.PrimaryButton} ${!sttOn ? styles.SttOffButton : ""}`}
+                    onClick={toggleStt}
+                  >
+                    <span className={styles.SttTextIcon}>T</span>
+                    {sttOn ? "STT 끄기" : "STT 켜기"}
+                  </button>
+                )}
+
                 {/* 턴 종료 버튼은 방장에게만 표시 */}
                 {isHost && (
                   <button
@@ -2524,12 +2593,12 @@ export default function TogetherTalkPage() {
                 )}
               </div>
             </div>
-            {/* ✅ 침묵 감지 중앙 팝업 */}
+            {/* ✅ AI 더기 대화 제안 팝업 */}
             {showSilencePopup && (
               <div className={styles.SilencePopupOverlay}>
                 <div className={styles.SilencePopupBox}>
-                  <div className={styles.SilenceIcon}>💬</div>
-                  <h3 className={styles.SilenceTitle}>대화가 조용해요!</h3>
+                  <div className={styles.SilenceIcon}>🤖</div>
+                  <h3 className={styles.SilenceTitle}>AI 더기</h3>
                   <p className={styles.SilenceQuestion}>{aiSuggestion}</p>
                   <button
                     className={styles.SilenceConfirmButton}

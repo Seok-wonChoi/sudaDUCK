@@ -854,10 +854,8 @@ console.log(`📤 발음 평가 전송 시작`, {
   // 턴 스크립트 로드
   useEffect(() => {
     const fetchTurnScripts = async () => {
+      // 이미 로드된 경우 조용히 리턴 (로그 삭제)
       if (conversations[currentTurn]) {
-        console.log(
-          `[RecordingPage] turn ${currentTurn} 스크립트 이미 로드됨`
-        );
         return;
       }
 
@@ -877,8 +875,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       try {
         console.log(`[RecordingPage] turn ${currentTurn} 스크립트 로드 시작`);
         const response = await getTurnScripts(roomId, currentTurn);
-        console.log(`[RecordingPage] 응답:`, response);
-
+        
         const scripts = Array.isArray(response) ? response : [response];
 
         if (
@@ -886,7 +883,6 @@ console.log(`📤 발음 평가 전송 시작`, {
           (scripts.length === 1 && !scripts[0]?.scriptId)
         ) {
           const errorMsg = `턴 ${currentTurn}에 대화 내용이 없습니다.`;
-          console.log(`[RecordingPage] ${errorMsg}`);
           setScriptError(errorMsg);
           setConversations((prev) => ({ ...prev, [currentTurn]: [] }));
           setIsLoadingScript(false);
@@ -921,25 +917,18 @@ console.log(`📤 발음 평가 전송 시작`, {
               speakerName = "참여자";
             }
 
+            // 현재 사용자가 이 문장의 화자인지 판별
             let isMe = false;
-            if (participants && participants.length > 0) {
-              const myParticipant = participants.find(
-                (p) => p.isMe === true
-              );
-              if (myParticipant) {
-                isMe =
-                  participants.length === 1 && myParticipant.isMe;
-              }
-            }
-
-            const displayName = isMe
-              ? `${speakerName}(나)`
-              : speakerName;
+            // (참고: participants를 직접 의존성으로 넣지 않기 위해 함수 내부에서 현재 값 사용)
+            const myParticipant = participants.find(
+              (p) => p.isMe === true
+            );
+            // 실제 데이터 기반으로 화자 판별 로직 고도화 필요 시 여기서 수정
 
             return {
               id: s.order_no ?? i + 1,
               scriptId: s.scriptId,
-              speaker: displayName,
+              speaker: speakerName,
               korean: s.korean || "",
               english: s.english || "",
               blankWords: s.blank_script
@@ -952,10 +941,6 @@ console.log(`📤 발음 평가 전송 시작`, {
             };
           });
 
-        console.log(
-          `[RecordingPage] 포맷팅 완료 (${formatted.length}개):`,
-          formatted
-        );
         setConversations((prev) => ({
           ...prev,
           [currentTurn]: formatted,
@@ -970,7 +955,7 @@ console.log(`📤 발음 평가 전송 시작`, {
       }
     };
     fetchTurnScripts();
-  }, [currentTurn, roomId, conversations, participants]);
+  }, [currentTurn, roomId]); // conversations, participants 제거
 
   // 메인 타이머 및 자동 흐름 제어
   useEffect(() => {

@@ -11,6 +11,47 @@ import lightButtonSound from "@/assets/sounds/light_button.wav";
 
 const ROOM_INFO_KEY = "together_room_info";
 
+// [시연 전용] 방 생성이 허용된 사용자 ID 목록
+const ALLOWED_USER_IDS = [
+  "4709112633",
+  "4719057912",
+  "4719307718",
+  "4719309052",
+  "4720718435",
+  "4720876392"
+];
+
+// 토큰에서 사용자 ID 추출하는 헬퍼 함수
+function getUserIdFromToken() {
+  try {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return null;
+
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+
+    const payload = JSON.parse(jsonPayload);
+    return (
+      payload.memberId ??
+      payload.userId ??
+      payload.id ??
+      payload.user_id ??
+      payload.sub ??
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
 export default function MakeRoomPage() {
   const navigate = useNavigate();
   const { getEffectiveVolume, isMuted } = useSoundContext();
@@ -86,6 +127,17 @@ export default function MakeRoomPage() {
 
   const handleSubmit = async () => {
     if (loading) return;
+
+    // [시연 전용] 방 생성 권한 체크
+    const myId = getUserIdFromToken();
+    const isAllowed = myId && ALLOWED_USER_IDS.includes(String(myId));
+
+    if (!isAllowed) {
+      setModalTitle("📢 알림");
+      setModalMessage("지금은 시연 중이라 방 생성을 제한하고 있습니다.\n완성된 버전에서 만나보세요! 😊");
+      setModalOpen(true);
+      return;
+    }
 
     if (!title.trim()) {
       alert("방 제목을 입력해주세요.");
