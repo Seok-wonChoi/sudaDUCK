@@ -32,36 +32,30 @@
 <br><br>
 한국어 음성을 STT를 통해 실시간으로 인식하여
 
-자연스러운 영어로 변환해 줍니다. </td> <td align="center"> <img src="assets/images/assessment1.png" width="90%" style="border-radius:10px; border:1px solid #eee;" alt="스크립트 생성"/>
+자연스러운 영어로 변환해 줍니다.</td>
 
-▼
-
-<img src="assets/images/assessment2.png" width="90%" style="border-radius:10px; border:1px solid #eee;" alt="발화 평가 결과"/>
+<td align="center"> <img src="assets/gifs/assessment.gif" width="90%" style="border-radius:10px; border:1px solid #eee;" alt="스크립트 생성"/>
 <br><br>
 대화 맥락을 분석해 최적의 스크립트를 제공하고
 
 사용자의 발음을 정밀하게 평가합니다. </td> </tr> </table>
 
-<table width="100%"> <tr> <td width="50%" align="center"><b>3. 복습 게임</b></td> <td width="50%" align="center"><b>4. 마이페이지</b></td> </tr> <tr> <td align="center"> <img src="assets/images/review1.png" width="90%" style="border-radius:10px; border:1px solid #eee;" alt="복습 게임 시작"/>
+<table width="100%"> <tr> <td width="50%" align="center"><b>3. 복습 게임</b></td> <td width="50%" align="center"><b>4. 마이페이지</b></td> </tr> <tr> <td align="center"> <img src="assets/gifs/review.gif" width="90%" style="border-radius:10px; border:1px solid #eee;" alt="복습 게임 시작"/>
 
-▼
-
-<img src="assets/images/review2.png" width="90%" style="border-radius:10px; border:1px solid #eee;" alt="게임 플레이 화면"/>
-<br><br>
+<br>
 세션 종료 후 나눈 대화 내용을 바탕으로
 
-빈칸 맞추기 등 복습 게임을 즐깁수 있습니다. </td> <td align="center"> <img src="assets/images/mypage1.png" width="90%" style="border-radius:10px; border:1px solid #eee;" alt="프로필 관리"/>
+빈칸 맞추기 등 복습 게임을 즐깁수 있습니다.</td>
 
-▼
+<td align="center">
+<img src="assets/gifs/myPage.gif" width="90%" style="border-radius:10px; border:1px solid #eee;" alt="프로필 관리"/>
 
-<img src="assets/images/mypage2.png" width="90%" style="border-radius:10px; border:1px solid #eee;" alt="저장된 스크립트 조회"/>
-<br><br>
+<br>
 캐릭터를 꾸미고 플레이 중 저장한
 
 나만의 스크립트를 언제든 다시 열람 가능합니다. </td> </tr> </table>
 
 ---
-
 
 ## 🛠 기술 스택 (Tech Stack)
 
@@ -182,7 +176,6 @@ DB 최적화</td>
   Redis 캐싱 적용
 </td>
 
-
 <td>
 Docker 기반 Dev/Prod 환경 격리 및 가상 네트워크 설계<br>
 
@@ -193,6 +186,7 @@ Blue-Green 무중단 배포 구현
 Mattermost Webhook 기반 실시간 배포 알림 자동화
 
 API 연동 통합 디버깅 지원 및 UI/UX 개선 협력
+
 </td>
 
 <tr>
