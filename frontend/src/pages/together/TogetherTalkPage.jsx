@@ -572,6 +572,7 @@ export default function TogetherTalkPage() {
   const [sttOn, setSttOn] = useState(true); // [추가] STT 전용 상태
   const sttOnRef = useRef(true); // [추가] STT 상태 실시간 참조용 Ref
   const sttOffTimestampRef = useRef(0); // [추가] STT를 끈 시점 기록용
+  const allowLastSentenceRef = useRef(false); // [추가] 마지막 문장 전송 허용 여부
 
   useEffect(() => {
     sttOnRef.current = sttOn;
@@ -648,9 +649,21 @@ export default function TogetherTalkPage() {
       };
 
       recognition.onresult = async (event) => {
-        // ✅ STT 버튼이 꺼져있으면 즉시 무시 (Grace Period 제거)
+        // ✅ STT 버튼이 꺼져있을 때의 처리
         if (!sttOnRef.current) {
-          return;
+          // 마지막 문장 전송 허용 상태가 아니면 즉시 무시
+          if (!allowLastSentenceRef.current) {
+            return;
+          }
+
+          // 끈 지 너무 오래(3초) 지났으면 문장이 길어져서 큐에 쌓인 것이므로 무시
+          const elapsedSinceOff = Date.now() - sttOffTimestampRef.current;
+          if (elapsedSinceOff > 3000) {
+            allowLastSentenceRef.current = false;
+            return;
+          }
+          
+          console.log("[STT] ⏳ STT가 꺼졌지만 마지막 문장을 처리 중입니다...");
         }
 
         // ✅ Event 정보 로그
@@ -690,6 +703,12 @@ export default function TogetherTalkPage() {
             }
 
             processedTranscripts.current.add(trimmedTranscript);
+
+            // [추가] 마지막 문장 처리가 완료되었으므로 플래그 닫기
+            if (!sttOnRef.current) {
+              allowLastSentenceRef.current = false;
+              console.log("[STT] ✅ 마지막 문장 전송 완료. 이제 완전히 멈춥니다.");
+            }
 
             // ✅ 새 인식 로그
             console.log(`
@@ -800,13 +819,13 @@ export default function TogetherTalkPage() {
     isSTTIntentionallyStopped.current = true; // 재시작 방지 플래그 설정
 
     if (recognitionRef.current) {
-      console.log("[STT] 🛑 엔진 즉시 파괴 (abort)");
+      console.log("[STT] 🛑 엔진 정지 요청 (stop)");
       try {
-        recognitionRef.current.abort(); // stop() 대신 abort() 사용
+        recognitionRef.current.stop(); // abort() 대신 stop()으로 복구
       } catch (e) {
-        console.error("[STT] abort 중 오류:", e);
+        console.error("[STT] stop 중 오류:", e);
       }
-      recognitionRef.current = null;
+      // recognitionRef.current = null; // onend에서 null 처리되도록 대기
     }
   }, []);
 
@@ -1394,11 +1413,13 @@ export default function TogetherTalkPage() {
       if (next) {
         // STT를 다시 켤 때
         processedTranscripts.current.clear();
+        allowLastSentenceRef.current = false;
         console.log("[STT] 🔄 중복 체크 기록이 초기화되었습니다.");
       } else {
         // STT를 끌 때 시점 박제
         sttOffTimestampRef.current = Date.now();
-        console.log("[STT] 🛑 STT 중지 시점이 기록되었습니다.");
+        allowLastSentenceRef.current = true; // 마지막 한 문장은 허용
+        console.log("[STT] 🛑 STT 중지 시점이 기록되었습니다. (마지막 문장 전송 허용)");
       }
       return next;
     });
