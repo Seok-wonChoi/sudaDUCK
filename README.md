@@ -118,8 +118,6 @@ API 연동 및 프론트엔드 상태 관리</td>
   <tr> 
     <td align="center" style="vertical-align: top;"> 
       <img src="assets/images/talk1.png" width="90%" alt="실시간 음성 입력"/>
-      <div style="margin: 10px 0;">▼</div>
-      <img src="assets/images/talk2.png" width="90%" alt="영어 변환 화면"/>
     </td>
     <td align="center" style="vertical-align: top;">
       <img src="assets/gifs/assessment.gif" width="90%" alt="스크립트 생성"/>
