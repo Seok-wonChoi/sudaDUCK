@@ -112,30 +112,30 @@ API 연동 및 프론트엔드 상태 관리</td>
 
 <table width="100%"> 
   <tr> 
-    <td width="50%" align="center"><b>1. 한국어로 함께 대화하기</b></td> 
-    <td width="50%" align="center"><b>2. AI 영어 스크립트 & 발화 평가</b></td> 
+    <td width="50%" align="center"><b>한국어로 함께 대화하기</b></td> 
+    <td width="50%" align="center"><b>AI 영어 스크립트 & 발화 평가</b></td> 
   </tr> 
   <tr> 
     <td align="center" style="vertical-align: top;"> 
-      <img src="assets/images/talk1.png" width="90%" alt="실시간 음성 입력"/>
+      <img src="assets/images/talk1.png" width="100%" alt="실시간 음성 입력"/>
     </td>
     <td align="center" style="vertical-align: top;">
-      <img src="assets/gifs/assessment.gif" width="90%" alt="스크립트 생성"/>
+      <img src="assets/gifs/assessment.gif" width="100%" alt="스크립트 생성"/>
     </td> 
   </tr> 
 </table>
 
 <table width="100%"> 
   <tr> 
-    <td width="50%" align="center"><b>3. 복습 게임</b></td> 
-    <td width="50%" align="center"><b>4. 마이페이지</b></td> 
+    <td width="50%" align="center"><b>복습 게임</b></td> 
+    <td width="50%" align="center"><b>마이페이지</b></td> 
   </tr> 
   <tr> 
     <td align="center" style="vertical-align: top;"> 
-      <img src="assets/gifs/review.gif" width="90%" alt="복습 게임 시작"/>
+      <img src="assets/gifs/review.gif" width="100%" alt="복습 게임 시작"/>
     </td>
     <td align="center" style="vertical-align: top;">
-      <img src="assets/gifs/myPage.gif" width="90%" alt="프로필 관리"/>
+      <img src="assets/gifs/myPage.gif" width="100%" alt="프로필 관리"/>
     </td> 
   </tr> 
 </table>>
