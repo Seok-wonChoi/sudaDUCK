@@ -179,15 +179,11 @@ API 연동 및 프론트엔드 상태 관리</td>
 
 ## Data Modeling
 
-<div align="center">
-<img src="assets/images/ERD.png" width="500"/>
-</div>
+<img src="assets/images/ERD.png" width="100%"/>
 
 <br><br>
 
 ## 시스템 아키텍처
 
-<div align="center">
-<img src="assets/images/architecture.png" width="500"/>
-</div>
+<img src="assets/images/architecture.png" width="100%"/>
 
