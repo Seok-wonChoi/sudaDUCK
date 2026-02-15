@@ -138,7 +138,7 @@ API 연동 및 프론트엔드 상태 관리</td>
       <img src="assets/gifs/myPage.gif" width="100%" alt="프로필 관리"/>
     </td> 
   </tr> 
-</table>>
+</table>
 
 <br><br>
 
