@@ -181,7 +181,7 @@ API 연동 및 프론트엔드 상태 관리</td>
 
 ## Data Modeling
 
-<img src="assets/images/ERD.png" width="100%"/>
+<img src="assets/images/erd.png" width="100%"/>
 
 <br><br>
 
