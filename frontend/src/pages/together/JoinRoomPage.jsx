@@ -14,47 +14,6 @@ const CODE_LEN = 6;
 const ROOM_INFO_KEY = "together_room_info";
 const MAX_PARTICIPANTS = 4;
 
-// [시연 전용] 방 입장이 허용된 사용자 ID 목록
-const ALLOWED_USER_IDS = [
-  "4709112633",
-  "4719057912",
-  "4719307718",
-  "4719309052",
-  "4720718435",
-  "4720876392"
-];
-
-// 토큰에서 사용자 ID 추출하는 헬퍼 함수
-function getUserIdFromToken() {
-  try {
-    const token = localStorage.getItem("accessToken");
-    if (!token) return null;
-
-    const base64Url = token.split(".")[1];
-    if (!base64Url) return null;
-
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join(""),
-    );
-
-    const payload = JSON.parse(jsonPayload);
-    return (
-      payload.memberId ??
-      payload.userId ??
-      payload.id ??
-      payload.user_id ??
-      payload.sub ??
-      null
-    );
-  } catch {
-    return null;
-  }
-}
-
 function normalizeCode(raw) {
   return (raw || "")
     .toUpperCase()
@@ -179,15 +138,6 @@ export default function JoinRoomPage() {
 
   const handleSubmit = async () => {
     if (!isComplete || loading) return;
-
-    // [시연 전용] 방 입장 권한 체크
-    const myId = getUserIdFromToken();
-    const isAllowed = myId && ALLOWED_USER_IDS.includes(String(myId));
-
-    if (!isAllowed) {
-      showToast("지금은 시연 중이라 방 참가를 제한하고 있습니다.");
-      return;
-    }
 
     const roomCode = code.trim().toUpperCase();
     if (roomCode.length !== CODE_LEN) return;

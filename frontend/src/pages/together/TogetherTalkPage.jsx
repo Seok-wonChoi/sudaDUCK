@@ -1425,20 +1425,6 @@ export default function TogetherTalkPage() {
     });
   }, []);
 
-  // [추가] 방장 전용 단축키 (`) 처리
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // 방장이고 백틱(`) 키를 눌렀을 때만 작동
-      if (isHost && e.key === "`") {
-        console.log("[STT] ⌨️ 단축키(`) 감지 - STT 상태를 토글합니다.");
-        toggleStt();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isHost, toggleStt]);
-
   // [추가] API 호출 없이 오디오/정적감지만 멈추는 헬퍼 함수
   const stopMediaProcessing = useCallback(async () => {
     await stopAudioAnalysis();
@@ -2590,17 +2576,15 @@ export default function TogetherTalkPage() {
                   {micOn ? "마이크 끄기" : "마이크 켜기"}
                 </button>
 
-                {/* 참여자에게만 STT 버튼 표시 (방장은 단축키 ` 사용) */}
-                {!isHost && (
-                  <button
-                    type="button"
-                    className={`${styles.PrimaryButton} ${!sttOn ? styles.SttOffButton : ""}`}
-                    onClick={toggleStt}
-                  >
-                    <span className={styles.SttTextIcon}>T</span>
-                    {sttOn ? "STT 끄기" : "STT 켜기"}
-                  </button>
-                )}
+                {/* STT 버튼 표시 */}
+                <button
+                  type="button"
+                  className={`${styles.PrimaryButton} ${!sttOn ? styles.SttOffButton : ""}`}
+                  onClick={toggleStt}
+                >
+                  <span className={styles.SttTextIcon}>T</span>
+                  {sttOn ? "STT 끄기" : "STT 켜기"}
+                </button>
 
                 {/* 턴 종료 버튼은 방장에게만 표시 */}
                 {isHost && (
