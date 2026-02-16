@@ -42,11 +42,15 @@
 
 <tr>
 
-<td>프로젝트 총괄<br>
+<td>프로젝트 총괄 및 프로젝트 일정 관리<br>
 전반적인 백엔드 API 개발<br>
-SpringSecurity & OAuth <br>
-Redis 설계 <br>
-DB 최적화</td>
+Spring Security & JWT 기반 Stateless 인증/인가 시스템 구축 <br>
+OAuth 2.0 (Kakao) 소셜 로그인 연동 및 회원 관리 로직 구현 <br>
+Redis 자료구조(Hash, Set)를 활용한 실시간 데이터 캐싱 설계 <br>
+Redis(In-Memory) ↔ MySQL(Disk) 간 데이터 이관 파이프라인 및 정합성 보장 로직 구현 <br>
+MySQL DB 스키마 설계 및 JPA 연관관계 매핑 최적화 <br>
+프로젝트 최종, 본선 발표 전담 <br>
+</td>
 
 <td>
   전반적인 백엔드 API 개발<br>
