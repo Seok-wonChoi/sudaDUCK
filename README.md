@@ -28,87 +28,66 @@
 
 ## 팀원 소개
 
-<table>
+| **김가민 (팀장 / BE)** |
+| :--- |
+| • 프로젝트 총괄 및 프로젝트 일정 관리 |
+| • 전반적인 백엔드 API 개발 |
+| • Spring Security & JWT 기반 Stateless 인증/인가 시스템 구축 |
+| • OAuth 2.0 (Kakao) 소셜 로그인 연동 및 회원 관리 로직 구현 |
+| • Redis 자료구조(Hash, Set)를 활용한 실시간 데이터 캐싱 설계 |
+| • Redis(In-Memory) ↔ MySQL(Disk) 간 데이터 이관 파이프라인 및 정합성 보장 로직 구현 |
+| • MySQL DB 스키마 설계 및 JPA 연관관계 매핑 최적화 |
+| • **프로젝트 최종, 본선 발표 전담** |
 
-<tr>
+<br>
 
-<td align="center">김가민 - <b>팀장 / BE</b></td>
+| **장가은 (BE)** |
+| :--- |
+| • 전반적인 백엔드 API 개발 |
+| • 대기방·게임방 상태 관리 로직 설계 |
+| • OpenVidu 기반 WebRTC 연동 및 실시간 통신 처리 |
+| • WebSocket(STOMP) 기반 방 상태·준비 상태 동기화 |
+| • Redis 캐싱 적용 |
 
-<td align="center">장가은 - <b>BE</b></td>
+<br>
 
-<td align="center">이승엽 - <b>Infra</b></td>
+| **이승엽 (Infra)** |
+| :--- |
+| • Docker 기반 Dev/Prod 환경 격리 및 가상 네트워크 설계 |
+| • Jenkins Pipeline을 활용한 CI/CD |
+| • Blue-Green 무중단 배포 구현 |
+| • Mattermost Webhook 기반 실시간 배포 알림 자동화 |
+| • API 연동 통합 디버깅 지원 및 UI/UX 개선 협력 |
 
-</tr>
+<br>
 
-<tr>
+| **전연수 (FE)** |
+| :--- |
+| • UI/UX 디자인 시안 기반 프론트엔드 퍼블리싱 (React/Vite) |
+| • 공통 레이아웃/컴포넌트 구현 및 페이지 UI 구성 |
+| • 백엔드 API 연동(Axios) 및 응답 데이터 기반 화면 처리 |
+| • 기획 발표 자료 구성 및 발표 |
+| • 프로젝트 소개 영상 포트폴리오(UCC) 기획·촬영·편집 |
 
-<td>프로젝트 총괄 및 프로젝트 일정 관리<br>
-전반적인 백엔드 API 개발<br>
-Spring Security & JWT 기반 Stateless 인증/인가 시스템 구축 <br>
-OAuth 2.0 (Kakao) 소셜 로그인 연동 및 회원 관리 로직 구현 <br>
-Redis 자료구조(Hash, Set)를 활용한 실시간 데이터 캐싱 설계 <br>
-Redis(In-Memory) ↔ MySQL(Disk) 간 데이터 이관 파이프라인 및 정합성 보장 로직 구현 <br>
-MySQL DB 스키마 설계 및 JPA 연관관계 매핑 최적화 <br>
-프로젝트 최종, 본선 발표 전담 <br>
-</td>
+<br>
 
-<td>
-  전반적인 백엔드 API 개발<br>
-  대기방·게임방 상태 관리 로직 설계<br>
-  OpenVidu 기반 WebRTC 연동 및 실시간 통신 처리<br>
-  WebSocket(STOMP) 기반 방 상태·준비 상태 동기화<br>
-  Redis 캐싱 적용
-</td>
+| **최석원 (FE)** |
+| :--- |
+| • UI/UX 설계 및 React 기반 화면 구현 |
+| • WebSocket 연동을 통한 실시간 UI 처리 |
+| • 음성 녹음 기능 구현 및 사용자 흐름 제어 |
+| • 공통 컴포넌트 및 프론트엔드 구조 정리 |
+| • API 연동 및 프론트엔드 상태 관리 |
 
-<td>
-Docker 기반 Dev/Prod 환경 격리 및 가상 네트워크 설계<br>
+<br>
 
-Jenkins Pipeline을 활용한 CI/CD
-
-Blue-Green 무중단 배포 구현
-
-Mattermost Webhook 기반 실시간 배포 알림 자동화
-
-API 연동 통합 디버깅 지원 및 UI/UX 개선 협력
-
-</td>
-
-<tr>
-
-<td align="center">전연수 - <b>FE</b></td>
-
-<td align="center">최석원 - <b>FE</b></td>
-
-<td align="center">최현웅 - <b>AI</b></td>
-
-</tr>
-
-<td>
-  UI/UX 디자인 시안 기반 프론트엔드 퍼블리싱(React/Vite)<br>
-  공통 레이아웃/컴포넌트 구현 및 페이지 UI 구성<br>
-  백엔드 API 연동(Axios) 및 응답 데이터 기반 화면 처리<br>
-  기획 발표 자료 구성 및 발표<br>
-  프로젝트 소개 영상 포트폴리오(UCC) 기획·촬영·편집
-</td>
-
-<td>UI/UX 설계 및 React 기반 화면 구현<br>
-WebSocket 연동을 통한 실시간 UI 처리<br>
-음성 녹음 기능 구현 및 사용자 흐름 제어<br>
-공통 컴포넌트 및 프론트엔드 구조 정리<br>
-API 연동 및 프론트엔드 상태 관리</td>
-
-<td>
-  AI 기능 전반 설계 및 개발<br>
-  비동기 음성 처리 파이프라인 구축
-  (STT → 전처리 → GPT 번역 → TTS)<br>
-  Redis 기반 동시 입력 순서 보장 시스템 구현<br>
-  GPT-4 활용 주제 추천·번역·퀴즈 생성<br>
-  실시간 돌발 퀴즈 이벤트 및 발음 평가 시스템
-</td>
-
-</tr>
-
-</table>
+| **최현웅 (AI)** |
+| :--- |
+| • AI 기능 전반 설계 및 개발 |
+| • 비동기 음성 처리 파이프라인 구축 (STT → 전처리 → GPT 번역 → TTS) |
+| • Redis 기반 동시 입력 순서 보장 시스템 구현 |
+| • GPT-4o-mini 활용 주제 추천·번역·퀴즈 생성 |
+| • 실시간 돌발 퀴즈 이벤트 및 발음 평가 시스템 |
 
 <br><br>
 
