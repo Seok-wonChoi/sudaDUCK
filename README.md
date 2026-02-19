@@ -53,12 +53,11 @@
 
 | **이승엽 (Infra)** |
 | :--- |
-| • Docker 기반 Dev/Prod 환경 격리 및 가상 네트워크 설계 |
-| • Jenkins Pipeline을 활용한 CI/CD |
-| • Blue-Green 무중단 배포 구현 |
-| • Mattermost Webhook 기반 실시간 배포 알림 자동화 |
-| • API 연동 통합 디버깅 지원 및 UI/UX 개선 협력 |
-
+| • 개발 및 운영 환경 격리 (Docker): 독립적인 가상 네트워크 구성을 통해, 실제 서비스 운영과 개발 및 테스트가 동시에 원활하게 이루어지는 환경 구축 |
+| • 무중단 배포 파이프라인 구축: Jenkins Pipeline과 Blue-Green 배포 방식을 적용하여 안정적인 무중단 CI/CD 환경 구축 |
+| • Redis-OpenVidu 연동 API 리팩토링: 기존 방 생성 및 OpenVidu 세션 초기화 프로세스를 통합하여 API 호출 최적화 및 데이터 정합성 확보 |
+| • UX 고도화: STOMP 소켓 API를 활용해 참여자 진행 상태를 모달로 시각화하고, 전원 완료 시 다음 페이즈 전환 동기화를 보장하는 클라이언트 로직 구현 등|
+| • 배포 알림 자동화: Mattermost Webhook 연동을 통한 실시간 배포 알림 파이프라인 구축 및 신속한 디버깅 환경 지원 |
 <br>
 
 | **전연수 (FE)** |
