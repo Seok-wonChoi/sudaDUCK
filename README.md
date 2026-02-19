@@ -125,7 +125,110 @@
 
 <br><br>
 
-## 기술 스택
+## 🛠️ 기술 스택
+
+<a name="stack"></a>
+
+### 🎨 Frontend
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black">
+<img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
+<img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white">
+<img src="https://img.shields.io/badge/TailwindCSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white">
+<img src="https://img.shields.io/badge/OpenVidu-000000?style=for-the-badge&logo=webrtc&logoColor=white">
+
+<br><br>
+
+| Category | Stack |
+| :---: | :--- |
+| **Language** | TypeScript |
+| **Runtime Environment** | Node.js 24.12.0 |
+| **Framework** | React 19.2.0, React Router 7.12.0 |
+| **Library** | OpenVidu Browser 2.25.0, STOMP.js 7.2.1, SockJS Client 1.6.1,<br> Axios 1.13.4, TailwindCSS 4.1.18 |
+| **Build Tool** | Vite 7.2.4 |
+| **IDE** | Visual Studio Code |
+
+</div>
+
+### 💻 Backend
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white">
+<img src="https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=openjdk&logoColor=white">
+<img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white">
+<img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white">
+<img src="https://img.shields.io/badge/SpringSecurity-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white">
+<img src="https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens">
+<img src="https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black">
+
+<br><br>
+
+| Category | Stack |
+| :---: | :--- |
+| **Language** | Java 17 (Eclipse Temurin JDK) |
+| **Framework** | Spring Boot 3.5.9 |
+| **Library** | Spring Security, Spring Data JPA, Spring Data Redis,<br> Spring Security OAuth2 Client, Spring WebSocket,<br> OpenVidu Java Client 2.25.0, JJWT 0.12.3, Springdoc OpenAPI 2.3.0 |
+| **Database** | MySQL 8.0.43, Redis (Alpine) |
+| **IDE** | IntelliJ IDEA (Ultimate Edition) |
+| **Build Tool** | Gradle 8.14.3 |
+
+</div>
+
+### 🤖 AI Integration
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white">
+<img src="https://img.shields.io/badge/Azure_Speech-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white">
+
+<br><br>
+
+| Category | Stack |
+| :---: | :--- |
+| **LLM Model** | GPT-4o mini |
+| **API Service** | MS Cognitive Services Speech 1.47.0 (Azure TTS/STT),<br> OpenAI Whisper API |
+| **Feature** | 실시간 발음 평가, 비동기 음성 처리, 문법 교정 |
+
+</div>
+
+### ⚙️ DevOps
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/AWS%20EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white">
+<img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white">
+<img src="https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white">
+<img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white">
+
+<br><br>
+
+| Category | Spec |
+| :---: | :--- |
+| **Instance Type** | AWS EC2 (Ubuntu 20.04 LTS) |
+| **Container** | Docker Engine, Docker Compose v3.8 |
+| **CI/CD** | Jenkins LTS (Docker-in-Docker) |
+| **Web Server** | Nginx Latest |
+| **Media Server** | OpenVidu Server 2.25.0 (Pro Edition / Host Network) |
+| **Notification** | Mattermost Webhook |
+
+</div>
+
+### 🤝 Collaboration
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/GitLab-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white">
+<img src="https://img.shields.io/badge/Jira-0052CC?style=for-the-badge&logo=jira&logoColor=white">
+<img src="https://img.shields.io/badge/Notion-000000?style=for-the-badge&logo=notion&logoColor=white">
+<img src="https://img.shields.io/badge/Mattermost-0072C6?style=for-the-badge&logo=mattermost&logoColor=white">
+<img src="https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=figma&logoColor=white">
+<img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white">
+
+</div>
+<br>
 
 ### 🎨 Frontend
 
