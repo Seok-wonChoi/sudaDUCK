@@ -159,6 +159,8 @@
 <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white">
 <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white">
 <img src="https://img.shields.io/badge/SpringSecurity-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white">
+<img src="https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens">
+<img src="https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black">
 
 <br><br>
 
@@ -167,8 +169,9 @@
 | **Language** | Java 17 (Eclipse Temurin JDK) |
 | **Framework** | Spring Boot 3.5.9 |
 | **Database** | MySQL 8.0.43, Redis (Alpine) |
-| **Security** | Spring Security, JJWT 0.12.3, OAuth2 Client |
-| **Library** | Spring Data JPA, OpenVidu Java Client 2.25.0, Springdoc OpenAPI 2.3.0 |
+| **Security** | Spring Security, **JWT (JJWT 0.12.3)**, OAuth2 Client |
+| **Library** | Spring Data JPA, OpenVidu Java Client 2.25.0 |
+| **Docs** | **Springdoc OpenAPI 2.3.0 (Swagger)** |
 | **Build Tool** | Gradle 8.14.3 |
 
 </div>
