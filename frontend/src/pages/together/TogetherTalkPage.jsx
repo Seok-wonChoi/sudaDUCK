@@ -852,14 +852,7 @@ export default function TogetherTalkPage() {
         return;
       }
 
-      // 턴 진행 시간이 20초 넘었는지 확인
-      const elapsedSeconds = (Date.now() - timerStartedAt) / 1000;
-      let suggestion = question || "";
-
-      if (elapsedSeconds > 20) {
-        suggestion =
-          "그럼 대만은 어때? 일본보다 물가도 착하고, 맛있는 것도 진짜 많다구!";
-      }
+      const suggestion = question || "";
 
       // 효과음 재생
       const audio = new Audio(silenceAlertSound);
@@ -870,7 +863,7 @@ export default function TogetherTalkPage() {
       setShowSilencePopup(true);
       setAiSuggestion(suggestion);
     },
-    [questStep, timerStartedAt],
+    [questStep],
   );
 
   const handleSilenceDetected = useCallback(
