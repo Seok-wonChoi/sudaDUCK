@@ -127,22 +127,89 @@
 
 ## 기술 스택
 
-### Development
-| 분류 | 기술 스택 | 상세 역할 |
-| :--- | :--- | :--- |
-| **Frontend** | `React` | 컴포넌트 기반 아키텍처를 통한 UI 재사용성 확보 |
-| **Backend** | `Java`, `Spring Boot` | 비즈니스 로직 및 서비스 안정성 구축 |
-| **Security** | `Spring Security`, `JPA` | 보안 체계 및 데이터 영속성 관리 |
-| **Database** | `MySQL 8.0` | 사용자 정보 및 대화 로그 등 영구 데이터 관리 |
-| **Caching** | `Redis` | 세션 관리, 실시간 턴 관리 및 타이머 데이터 캐싱 |
-| **Real-time** | `OpenVidu (SFU)`, `WebSocket` | WebRTC 기반 안정적인 미디어 스트리밍 및 실시간 통신 |
+### 🎨 Frontend
 
-### AI Integration
-| 분류 | 기술 스택 | 상세 역할 |
-| :--- | :--- | :--- |
-| **LLM** | `GPT-4o mini` | 문법 교정, 학습 스크립트/퀴즈 생성 및 비속어 필터링 |
-| **STT** | `Whisper API` | 고성능 음성 인식 및 데이터 전처리 |
-| **Voice** | `Azure Speech` | 자연스러운 가이드 음성 합성(TTS) 및 발음 평가 피드백 |
+<div align="center">
+
+<img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black">
+<img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
+<img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white">
+<img src="https://img.shields.io/badge/TailwindCSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white">
+<img src="https://img.shields.io/badge/OpenVidu-000000?style=for-the-badge&logo=webrtc&logoColor=white">
+
+<br><br>
+
+| Category | Stack |
+| :---: | :--- |
+| **Language** | TypeScript |
+| **Framework** | React 19.2.0 |
+| **Build Tool** | Vite 7.2.4 |
+| **Styling** | Tailwind CSS 4.1.18 |
+| **Library** | OpenVidu Browser 2.25.0, Axios 1.13.4, STOMP.js 7.2.1, React Router 7.12.0 |
+| **Runtime** | Node.js v24.12.0 |
+
+</div>
+
+### 💻 Backend
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white">
+<img src="https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=openjdk&logoColor=white">
+<img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white">
+<img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white">
+<img src="https://img.shields.io/badge/SpringSecurity-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white">
+
+<br><br>
+
+| Category | Stack |
+| :---: | :--- |
+| **Language** | Java 17 (Eclipse Temurin JDK) |
+| **Framework** | Spring Boot 3.5.9 |
+| **Database** | MySQL 8.0.43, Redis (Alpine) |
+| **Security** | Spring Security, JJWT 0.12.3, OAuth2 Client |
+| **Library** | Spring Data JPA, OpenVidu Java Client 2.25.0, Springdoc OpenAPI 2.3.0 |
+| **Build Tool** | Gradle 8.14.3 |
+
+</div>
+
+### 🤖 AI Integration
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white">
+<img src="https://img.shields.io/badge/Azure_Speech-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white">
+
+<br><br>
+
+| Category | Stack |
+| :---: | :--- |
+| **LLM** | GPT-4o mini (문법 교정, 퀴즈 생성, 비속어 필터링) |
+| **STT / TTS** | MS Cognitive Services Speech 1.47.0 (Azure), Whisper API |
+| **Feature** | 실시간 발음 평가, 비동기 음성 처리 파이프라인 |
+
+</div>
+
+### ⚙️ Infrastructure & DevOps
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/AWS%20EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white">
+<img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white">
+<img src="https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white">
+<img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white">
+
+<br><br>
+
+| Category | Stack |
+| :---: | :--- |
+| **OS / Server** | Ubuntu 20.04 LTS (AWS EC2) |
+| **CI/CD** | Jenkins LTS (Docker-in-Docker), Mattermost Webhook |
+| **Container** | Docker Engine, Docker Compose v3.8 (App) / v3.1 (OpenVidu) |
+| **Media Server** | OpenVidu Server 2.25.0 (Pro Edition / Host Network) |
+| **Web Server** | Nginx Latest |
+
+</div>
 
 <br><br>
 
@@ -167,4 +234,3 @@
 ## 시스템 아키텍처
 
 <img src="assets/images/architecture.png" width="100%"/>
-
