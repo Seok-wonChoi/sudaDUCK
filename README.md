@@ -134,19 +134,19 @@
 <div align="center">
 
 <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black">
-<img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
+<img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black">
 <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white">
-<img src="https://img.shields.io/badge/TailwindCSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white">
+<img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white">
 <img src="https://img.shields.io/badge/OpenVidu-000000?style=for-the-badge&logo=webrtc&logoColor=white">
 
 <br><br>
 
 | Category | Stack |
 | :---: | :--- |
-| **Language** | TypeScript |
+| **Language** | JavaScript |
 | **Runtime Environment** | Node.js 24.12.0 |
 | **Framework** | React 19.2.0, React Router 7.12.0 |
-| **Library** | OpenVidu Browser 2.25.0, STOMP.js 7.2.1, SockJS Client 1.6.1,<br> Axios 1.13.4, TailwindCSS 4.1.18 |
+| **Library** | OpenVidu Browser 2.25.0, STOMP.js 7.2.1, SockJS Client 1.6.1,<br> Axios 1.13.4 |
 | **Build Tool** | Vite 7.2.4 |
 | **IDE** | Visual Studio Code |
 
