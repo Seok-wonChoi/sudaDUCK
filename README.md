@@ -1,4 +1,4 @@
-# 🦆 수다DUCK (SudaDUCK)
+# 🦆 수다DUCK (sudaDUCK)
 
 <div align="center">
 
