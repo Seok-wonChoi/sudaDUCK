@@ -3,36 +3,40 @@
   <span style="color:#FFC83D;">수다</span>DUCK
 </h1>
 
-<p align="center">
-  <b>🏆 SSAFY 공통 프로젝트 우수상 수상</b>
-</p>
-</p>
+<br/>
+
+<h3 align="center">
+  <b>🏆 SSAFY 14기 공통 프로젝트 우수상 수상</b>
+</h3>
 
 <br/>
 
+<div align="center">
+  <table width="80%">
+    <tr>
+      <td align="center">
+        <br>
+        <span style="font-size: 130%; font-weight: bold;">
+          💬 "한국어로 수다를 떨었을 뿐인데, 영어 공부가 끝났다?!"
+        </span>
+        <br><br>
+      </td>
+    </tr>
+  </table>
+</div>
 
-💬 "한국어로 수다를 떨었을 뿐인데, 영어 공부가 끝났다?!"
+<br/>
+
 <p align="center">
   <b>한국어로 편하게 떠든 즐거운 수다가</b><br/>
   <b>가장 강력한 영어 학습 스크립트가 되는 곳</b>
 </p>
-
-<br/>
-<br/>
+<br>
 
 <p align="center">
-  <b>친구들과 떠드는 즐거운 수다가</b><br/>
-  <b>가장 강력한 영어 학습 스크립트가 되는 곳</b>
+  한국어 대화를 AI가 실시간으로 분석해주는<br/>
+  <b>Real-time Voice 기반 맞춤형 영어 회화 서비스</b>
 </p>
-
-<br/>
-
-<p align="center">
-  일상 대화를 기반으로 AI가 분석하고 정리해주는<br/>
-  <b>Real-time Voice 기반 영어 회화 서비스</b>
-</p>
-
-<br/>
 
 <p align="center">
   <img src="https://img.shields.io/badge/REAL--TIME-VOICE-4A90E2?style=for-the-badge"/>
@@ -45,6 +49,26 @@
 <p align="center">
   <img src="assets/images/loadingpage.png" width="800"/>
 </p>
+
+<br/>
+
+
+## 💡 기획 배경
+
+<br/>
+
+<div align="center">
+
+> 💬 남이 만든 예문을 외우는 지루한 공부는 이제 그만.  
+> **"한국어로 편하게 떠든 수다가 곧 내 맞춤형 영어 대본이 된다면?"**
+
+</div>
+
+<p align="center">
+  <b>수다DUCK</b>은 이 단순한 질문에서 시작되었습니다.
+</p>
+
+<br/>
 
 ## 🚀 프로젝트 정보
 
@@ -433,3 +457,16 @@ GPT-4o-mini 기반 주제 추천·번역·퀴즈 생성
 </p>
 
 <br/><br/>
+
+---
+
+## 🎬 Demo Video
+
+<p align="center">
+  <a href="https://drive.google.com/file/d/1LhXUQjYhWRiO9RD3UE5-PkJPe_wnNMQA/view?usp=sharing">
+    <img src="https://img.shields.io/badge/UCC%20Video-보기-FF6B6B?style=for-the-badge"/>
+  </a>
+  <a href="https://drive.google.com/file/d/1fwX5hMVc6YDnm0SuKtSplk6A4MAJEqWJ/view?usp=sharing">
+    <img src="https://img.shields.io/badge/Demo%20Video-보기-4A90E2?style=for-the-badge"/>
+  </a>
+</p>
